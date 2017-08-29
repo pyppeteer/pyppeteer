@@ -81,11 +81,11 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
     if subtype == 'promise':
         return remoteObject.get('description')
     try:
-        response = await (await client.send('Runtime.callFunctionOn', {
+        response = await client.send('Runtime.callFunctionOn', {
             'objectId': objectId,
             'functionDeclaration': 'function() { return this; }',
             'returnByValue': True,
-        }))
+        })
         return response.get('result', {'value': None}).get('value')
     except:
         # Return description for unserializable object, e.g. 'window'.

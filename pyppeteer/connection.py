@@ -156,7 +156,7 @@ class Session(EventEmitter):
         """Get target id of this session."""
         return self._targetId
 
-    async def send(self, method: str, params: dict = None) -> Awaitable[dict]:
+    async def send(self, method: str, params: dict = None) -> dict:
         """Send message to the connected session."""
         self._lastId += 1
         _id = self._lastId
@@ -172,7 +172,7 @@ class Session(EventEmitter):
             'sessionId': self._sessionId,
             'message': msg,
         })
-        return callback
+        return await callback
 
     def _on_message(self, msg: str) -> None:
         obj = json.loads(msg)

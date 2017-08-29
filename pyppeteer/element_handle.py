@@ -41,14 +41,14 @@ class ElementHandle(object):
 function() {{ return ({pageFunction})({stringifiedArgs}) }}
 '''
         objectId = self._remoteObject.get('objectId')
-        obj = await (await self._client.send(
+        obj = await self._client.send(
             'Runtime.callFunctionOn', {
                 'objectId': objectId,
                 'functionDeclaration': functionDeclaration,
                 'returnByValue': False,
                 'awaitPromise': True,
             }
-        ))
+        )
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
@@ -89,7 +89,7 @@ element => {
             options = dict()
         await self._mouse.click(x, y, options)
 
-    async def uploadFile(self, *filePaths: str) -> Awaitable[dict]:
+    async def uploadFile(self, *filePaths: str) -> dict:
         """Upload files."""
         files = [os.path.abspath(p) for p in filePaths]
         objectId = self._remoteObject.get('objectId')

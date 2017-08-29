@@ -336,7 +336,7 @@ fucntion(html) {
         return await self._go(+1, options)
 
     async def _go(self, delta: int, options: dict) -> Optional[Response]:
-        history = await (await self._client.send('Page.getNavigationHistory'))
+        history = await self._client.send('Page.getNavigationHistory')
         _count = history.get('currentIndex', 0) + delta
         entries = history.get('entries', [])
         if len(entries) < _count:
@@ -408,7 +408,7 @@ fucntion(html) {
             clip['scale'] = 1
 
         if options.get('fullPage'):
-            metrics = await(await self._client.send('Page.getLayoutMetrics'))
+            metrics = await self._client.send('Page.getLayoutMetrics')
             width = math.ceil(metrics['contentSize']['width'])
             height = math.ceil(metrics['contentSize']['height'])
 
@@ -437,7 +437,7 @@ fucntion(html) {
         opt = {'format': format}
         if clip:
             opt['clip'] = clip
-        result = await (await self._client.send('Page.captureScreenshot', opt))
+        result = await self._client.send('Page.captureScreenshot', opt)
 
         if options.get('omitBackground'):
             await self._client.send(

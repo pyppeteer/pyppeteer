@@ -62,7 +62,7 @@ class NetworkManager(EventEmitter):
         """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
 
-    async def setUserAgent(self, userAgent: str) -> Awaitable:
+    async def setUserAgent(self, userAgent: str) -> Any:
         """Set user agent."""
         return await self._client.send('Network.setUserAgentOverride',
                                        {'userAgent': userAgent})
@@ -250,9 +250,9 @@ class Response(object):
         self.url = request.url
 
     async def _bufread(self) -> bytes:
-        response = await (await self._client.send('Network.getResponseBody', {
+        response = await self._client.send('Network.getResponseBody', {
           'requestId': self._request._requestId
-        }))
+        })
         body = response.get('body', b'')
         if response.get('base64Encoded'):
             return base64.b64decode(body)

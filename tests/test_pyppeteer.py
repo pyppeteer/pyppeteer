@@ -36,6 +36,7 @@ BASE_HTML = '''
 </html>
 '''
 
+
 class MainHandler(web.RequestHandler):
     def get(self) -> None:
         self.write(BASE_HTML)

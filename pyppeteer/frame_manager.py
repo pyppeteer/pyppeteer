@@ -165,12 +165,12 @@ class Frame(object):
     async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:
         expression = helper.evaluationString(pageFunction, *args)
         contextId = self._defaultContextId
-        obj = await (await self._client.send('Runtime.evaluate', {
+        obj = await self._client.send('Runtime.evaluate', {
             'expression': expression,
             'contextId': contextId,
             'returnByValue': False,
             'awaitPromise': True,
-        }))
+        })
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
