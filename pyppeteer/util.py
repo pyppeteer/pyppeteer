@@ -4,6 +4,17 @@
 import gc
 import socket
 
+from pyppeteer.chromium_downloader import check_chromium, chromium_excutable
+from pyppeteer.chromium_downloader import download_chromium
+
+__all__ = [
+    'check_chromium',
+    'chromium_excutable',
+    'download_chromium',
+    'install_asyncio',
+    'get_free_port',
+]
+
 
 def install_asyncio() -> None:
     try:
