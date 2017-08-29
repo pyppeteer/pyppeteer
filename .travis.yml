@@ -16,4 +16,4 @@ install:
 script:
   - python -m coverage run --source pyppeteer -m unittest discover tests
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then && codecov; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coverage report && codecov; fi
