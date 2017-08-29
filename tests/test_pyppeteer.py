@@ -44,7 +44,7 @@ class LinkHandler1(web.RequestHandler):
         ''')
 
 
-class TestGoTo(TestCase):
+class TestPyppeteer(TestCase):
     def setUp(self):
         self.port = get_free_port()
         self.app = web.Application([
