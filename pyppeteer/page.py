@@ -300,14 +300,15 @@ fucntion(html) {
             raise Exception('Failed to navigate: ' + url)
         return responses.get(self.url)
 
-    async def reload(self, options: dict = None) -> Response:
+    async def reload(self, options: dict = None) -> Optional[Response]:
         """Reload this page."""
         if options is None:
             options = dict()
         await self._client.send('Page.reload')
         return await self.waitForNavigation(options)
 
-    async def waitForNavigation(self, options: dict = None) -> Response:
+    async def waitForNavigation(self, options: dict = None
+                                ) -> Optional[Response]:
         """Wait navigation completes."""
         if options is None:
             options = dict()
@@ -322,7 +323,7 @@ fucntion(html) {
         )
         await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
-        return responses[self.url]
+        return responses.get(self.url)
 
     async def goBack(self, options: dict = None) -> Optional[Response]:
         """Go back history."""

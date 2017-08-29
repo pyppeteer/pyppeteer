@@ -27,7 +27,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.2',
+    version='0.0.3',
     description="short description for this project",
     long_description=readme,
 
