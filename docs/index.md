@@ -1,14 +1,18 @@
 Welcome to pyppeteer's documentation!
 ======================================
 
-Contents:
+.. mdinclude:: ../README.md
+
+
+Contents
+--------
 
 .. toctree::
    :maxdepth: 2
 
-   readme
    installation
    usage
+   reference
 
 Indices and tables
 ==================

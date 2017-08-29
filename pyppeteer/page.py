@@ -9,23 +9,21 @@ import json
 import math
 import mimetypes
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.dialog import Dialog
+from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
+from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
-
-if TYPE_CHECKING:
-    from pyppeteer.element_handle import ElementHandle  # noqa: F401
-    from pyppeteer.frame_manager import Frame  # noqa: F401
 
 
 class Page(EventEmitter):
