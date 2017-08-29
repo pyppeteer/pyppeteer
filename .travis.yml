@@ -14,6 +14,6 @@ install:
 
 # command to run tests, e.g. python setup.py test
 script:
-  - python -m coverage run --source pyppeteer -m unittest discover pyppeteer 
+  - python -m coverage run --source pyppeteer -m unittest discover tests
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then && codecov; fi
