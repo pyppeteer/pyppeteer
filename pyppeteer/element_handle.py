@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Element handle module."""
+
 import json
 import os.path
-from typing import Dict
+from typing import Any, Awaitable, Dict
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
@@ -11,20 +13,25 @@ from pyppeteer.input import Mouse
 
 
 class ElementHandle(object):
+    """ElementHandle class."""
+
     def __init__(self, client: Session, remoteObject: dict, mouse: Mouse
                  ) -> None:
+        """Make new element handle object."""
         self._client = client
         self._remoteObject = remoteObject
         self._mouse = mouse
         self._disposed = False
 
     async def dispose(self) -> None:
+        """Release element handle."""
         if self._disposed:
             return
         self._disposed = True
         await helper.releaseObject(self._client, self._remoteObject)
 
-    async def evaluate(self, pageFunction: str, *args) -> dict:
+    async def evaluate(self, pageFunction: str, *args: Any) -> dict:
+        """Evaluate the pageFuncion on browser."""
         if self._disposed:
             raise Exception('ElementHandle is disposed!')
         _args = ['this']
@@ -42,8 +49,8 @@ function() {{ return ({pageFunction})({stringifiedArgs}) }}
                 'awaitPromise': True,
             }
         ))
-        exceptionDetails = obj.get('exceptionDetails')
-        remoteObject = obj.get('result')
+        exceptionDetails = obj.get('exceptionDetails', dict())
+        remoteObject = obj.get('result', dict())
         if exceptionDetails:
             raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
         return await helper.serializeRemoteObject(self._client, remoteObject)
@@ -67,12 +74,14 @@ element => {
         return center
 
     async def hover(self) -> None:
+        """Move mouse over this element."""
         obj = await self._visibleCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._mouse.move(x, y)
 
     async def click(self, options: dict = None) -> None:
+        """Click this element."""
         obj = await self._visibleCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
@@ -80,7 +89,8 @@ element => {
             options = dict()
         await self._mouse.click(x, y, options)
 
-    async def uploadFile(self, *filePaths: str) -> None:
+    async def uploadFile(self, *filePaths: str) -> Awaitable[dict]:
+        """Upload files."""
         files = [os.path.abspath(p) for p in filePaths]
         objectId = self._remoteObject.get('objectId')
         return await self._client.send(

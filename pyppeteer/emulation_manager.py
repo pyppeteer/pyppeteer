@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Emulation Managet module."""
+
 from pyppeteer.connection import Session
 
 
 class EmulationManager(object):
+    """EmulationManager class."""
+
     def __init__(self, client: Session) -> None:
+        """Make new elmulation manager."""
         self._client = client
         self._emulatingMobile = False
         self._injectedTouchScriptId = None
 
     async def emulateViewport(self, client: Session, viewport: dict) -> bool:
+        """Evaluate viewport."""
         mobile = viewport.get('isMobile', False)
         width = viewport.get('width')
         height = viewport.get('height')

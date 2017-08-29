@@ -1,11 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Utitlity functions."""
+
 import gc
 import socket
 
+from pyppeteer.chromium_downloader import check_chromium, chromium_excutable
+from pyppeteer.chromium_downloader import download_chromium
+
+__all__ = [
+    'check_chromium',
+    'chromium_excutable',
+    'download_chromium',
+    'install_asyncio',
+    'get_free_port',
+]
+
 
 def install_asyncio() -> None:
+    """Install tornado's loop to asyncio."""
     try:
         from tornado.ioloop import IOLoop
         from tornado.platform.asyncio import AsyncIOMainLoop
@@ -16,6 +30,7 @@ def install_asyncio() -> None:
 
 
 def get_free_port() -> int:
+    """Get free port."""
     sock = socket.socket()
     sock.bind(('localhost', 0))
     port = sock.getsockname()[1]

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Chromium process launcher module."""
+
 import atexit
 import logging
 import os
@@ -12,10 +14,12 @@ from typing import Any, Dict
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
+from pyppeteer.util import check_chromium, chromium_excutable
+from pyppeteer.util import download_chromium
 
 logger = logging.getLogger(__name__)
 
-rootdir = Path(__file__).resolve().parent.parent
+rootdir = Path.home() / '.pyppeteer'
 CHROME_PROFILIE_PATH = rootdir / '.dev_profile'
 BROWSER_ID = 0
 
@@ -39,11 +43,15 @@ DEFAULT_ARGS = [
 
 
 class Launcher(object):
+    """Chromium parocess launcher class."""
+
     def __init__(self, options: Dict[str, Any] = None) -> None:
+        """Make new launcher."""
         global BROWSER_ID
         BROWSER_ID += 1
         self.options = options or dict()
-        self.user_data_dir = CHROME_PROFILIE_PATH / str(os.getpid()) / str(BROWSER_ID)  # noqa: E501
+        self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
+                              str(BROWSER_ID))
         self.chrome_args = DEFAULT_ARGS + [
             '--user-data-dir=' + shlex.quote(str(self.user_data_dir)),
         ]
@@ -54,10 +62,16 @@ class Launcher(object):
                 '--hide-scrollbars',
                 '--mute-audio',
             ]
-        self.exec = str(rootdir / 'chrome')
+        if 'executablePath' in self.options:
+            self.exec = self.options['executablePath']
+        else:
+            if not check_chromium():
+                download_chromium()
+            self.exec = str(chromium_excutable())
         self.cmd = [self.exec] + self.chrome_args
 
     def launch(self, options: dict = None) -> Browser:
+        """Start chromium process."""
         if options is None:
             options = dict()
         self.proc = subprocess.Popen(
@@ -79,26 +93,28 @@ class Launcher(object):
         self.url = m.group(1).strip()
         connectionDelay = options.get('slowMo', 0)
         connection = Connection(self.url, connectionDelay)
-        return Browser(connection, options.get('ignoreHTTPSErrors'),
+        return Browser(connection, options.get('ignoreHTTPSErrors', False),
                        self.killChrome)
 
     def killChrome(self) -> None:
+        """Terminate chromium process."""
         logger.debug('terminate chrome process...')
         if self.proc.poll() is None:
             self.proc.terminate()
             self.proc.wait()
             logger.debug('done.')
 
-    async def connect(self, browserWSEndpoint: str,
-                      ignoreHTTPSErrors: bool = False) -> Browser:
-        connection = await Connection.create(browserWSEndpoint)
-        return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
+    # async def connect(self, browserWSEndpoint: str,
+    #                   ignoreHTTPSErrors: bool = False) -> Browser:
+    #     connection = await Connection.create(browserWSEndpoint)
+    #     return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
 
 
 def launch(options: dict = None) -> Browser:
+    """Start chromium process and return `Browser` object."""
     return Launcher(options).launch()
 
 
-def connect(options: dict = None) -> Browser:
-    l = Launcher(options)
-    return l.connect()
+# def connect(options: dict = None) -> Browser:
+#     l = Launcher(options)
+#     return l.connect()

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Page module."""
+
 import asyncio
 import base64
 import json
@@ -27,6 +29,8 @@ if TYPE_CHECKING:
 
 
 class Page(EventEmitter):
+    """Page class."""
+
     Events = SimpleNamespace(
         Console='console',
         Dialog='dialog',
@@ -46,6 +50,7 @@ class Page(EventEmitter):
                  ignoreHTTPSErrors: bool = True,
                  screenshotTaskQueue: list = None,
                  ) -> None:
+        """Make new page object."""
         super().__init__()
         self._client = client
         self._keyboard = Keyboard(client)
@@ -97,22 +102,27 @@ class Page(EventEmitter):
         self.emit('error', Exception('Page crashed!'))
 
     @property
-    def mainFrame(self) -> 'Frame':
+    def mainFrame(self) -> Optional['Frame']:
+        """Get main frame."""
         return self._frameManager._mainFrame
 
     @property
     def keyboard(self) -> 'Keyboard':
+        """Get keybord object."""
         return self._keyboard
 
     @property
     def tracing(self) -> 'Tracing':
+        """Get tracing object."""
         return self._tracing
 
     @property
     def frames(self) -> List['Frame']:
+        """Get frames."""
         return list(self._frames.values())
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
+        """Enable request interception."""
         return await self._networkManager.setRequestInterceptionEnabled(value)
 
     def _onCertificateError(self, event: Any) -> None:
@@ -125,18 +135,33 @@ class Page(EventEmitter):
             })
         )
 
-    async def J(self, selector: str) -> Optional['ElementHandle']:
-        return await self.mainFrame.J(selector)
+    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+        """Get Element which matches `selector`."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return await frame.querySelector(selector)
+
+    #: alias to querySelector
+    J = querySelector
 
     async def addScriptTag(self, url: str):
-        return self.mainFrame.addScriptTag(url)
+        """Add script tag to this page."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.addScriptTag(url)
 
     async def injectFile(self, filePath: str):
-        return self.mainFrame.injectFile(filePath)
+        """Inject file to this page."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.injectFile(filePath)
 
-    async def exposeFunction(self, name: str,
-                             puppeteerFunction: Optional[Callable] = None,
+    async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
+        """Execute function on this page."""
         if self._pageBindings[name]:
             raise Exception(f'Failed to add page binding with name {name}: '
                             'window["{name}"] already exists!')
@@ -169,9 +194,11 @@ function addPageBinding(bindingName) {
         })
 
     async def setExtraHTTPHeaders(self, headers: Dict[str, str]):
+        """Set extra http headers."""
         return self._networkManager.setExtraHTTPHeaders(headers)
 
     async def setUserAgent(self, userAgent: str):
+        """Set user agent."""
         return self._networkManager.setUserAgent(userAgent)
 
     def _handleException(self, exceptionDetails: Dict) -> None:
@@ -179,10 +206,10 @@ function addPageBinding(bindingName) {
         self.emit(Page.Events.PageError, Exception(message))
 
     async def _onConsoleAPI(self, event: dict) -> None:
-        if (event.get('type') == 'debug' and
-                len(event.get('args')) and
-                event.get('args')[0].get('value') == 'driver:page-binding'):
-            obj = json.loads(event.get('args')[1].get('value'))
+        _args = event.get('args', [])
+        if (event.get('type') == 'debug' and _args and
+                _args[0]['value'] == 'driver:page-binding'):
+            obj = json.loads(_args[1]['value'])
             name = obj.get('name')
             seq = obj.get('seq')
             args = obj.get('args')
@@ -202,19 +229,19 @@ function deliverResult(name, seq, result) {
             return
 
         if not self.listenerCount(Page.Events.Console):
-            for arg in event.get('args'):
+            for arg in _args:
                 helper.releaseObject(self._client, arg)
             return
 
         _values = []
-        for arg in event.get('args'):
+        for arg in _args:
             _values.append(asyncio.ensure_future(
                 helper.serializeRemoteObject(self._client, arg)))
         values = await asyncio.gather(*_values)
         self.emit(Page.Events.Console, *values)
 
     def _onDialog(self, event: Any) -> None:
-        dialogType = None
+        dialogType = ''
         _type = event.get('type')
         if _type == 'alert':
             dialogType = Dialog.Type.Alert
@@ -230,9 +257,14 @@ function deliverResult(name, seq, result) {
 
     @property
     def url(self) -> str:
-        return self.mainFrame.url
+        """Get url of this page."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.url
 
     async def setContent(self, html: str) -> None:
+        """Set content."""
         func = '''
 fucntion(html) {
   document.open();
@@ -244,6 +276,7 @@ fucntion(html) {
 
     async def goto(self, url: str, options: dict = None
                    ) -> Optional[Response]:
+        """Got to url."""
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
                                    options)
         responses: Dict[str, Response] = dict()
@@ -265,15 +298,17 @@ fucntion(html) {
 
         if self._frameManager.isMainFrameLoadingFailed():
             raise Exception('Failed to navigate: ' + url)
-        return responses.get(self.mainFrame.url)
+        return responses.get(self.url)
 
     async def reload(self, options: dict = None) -> Response:
+        """Reload this page."""
         if options is None:
             options = dict()
         await self._client.send('Page.reload')
         return await self.waitForNavigation(options)
 
     async def waitForNavigation(self, options: dict = None) -> Response:
+        """Wait navigation completes."""
         if options is None:
             options = dict()
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
@@ -287,14 +322,16 @@ fucntion(html) {
         )
         await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
-        return responses[self.mainFrame.url]
+        return responses[self.url]
 
     async def goBack(self, options: dict = None) -> Optional[Response]:
+        """Go back history."""
         if options is None:
             options = dict()
         return await self._go(-1, options)
 
     async def goForward(self, options: dict = None) -> Optional[Response]:
+        """Go forward history."""
         if options is None:
             options = dict()
         return await self._go(+1, options)
@@ -312,10 +349,12 @@ fucntion(html) {
         return await self.waitForNavigation(options)
 
     async def emulate(self, options: dict) -> None:
+        """Emulate viewport and user agent."""
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', {}))
 
     async def setViewport(self, viewport: dict) -> None:
+        """Set viewport."""
         needsReload = await self._emulationManager.emulateViewport(
             self._client, viewport,
         )
@@ -325,9 +364,11 @@ fucntion(html) {
 
     @property
     def viewport(self) -> dict:
+        """Get viewport."""
         return self._viewport
 
-    async def evaluate(self, pageFunction: str, *args: str) -> Optional[dict]:
+    async def evaluate(self, pageFunction: str, *args: str) -> str:
+        """Execute js-function on this page and get result."""
         frame = self._frameManager.mainFrame
         if frame is None:
             raise Exception('No main frame.')
@@ -335,16 +376,18 @@ fucntion(html) {
 
     async def evaluateOnNewDocument(self, pageFunction: str, *args: str
                                     ) -> None:
+        """Evaluate js-function on new document."""
         source = helper.evaluationString(pageFunction, *args)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {
             'source': source,
         })
 
     async def screenshot(self, options: dict = None) -> bytes:
+        """Take screen shot."""
         options = options or dict()
         screenshotType = None
         if options.get('path'):
-            mimeType, _ = mimetypes.guess_type(options.get('path'))
+            mimeType, _ = mimetypes.guess_type(options.get('path', ''))
         if mimeType == 'image/png':
             screenshotType = 'png'
         elif mimeType == 'image/jpeg':
@@ -412,22 +455,31 @@ fucntion(html) {
         return buffer
 
     async def pdf(self, options: dict) -> None:
+        """Not yet implemented."""
         raise NotImplementedError
 
     async def plainText(self) -> str:
+        """Get page content as plain text."""
         return await self.evaluate('() => document.body.innerText')
 
     async def title(self) -> str:
-        return await self.mainFrame.title()
+        """Get page title."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return await frame.title()
 
     async def close(self) -> None:
+        """Close connection."""
         await self._client.dispose()
 
     @property
     def mouse(self) -> Mouse:
+        """Get mouse object."""
         return self._mouse
 
     async def click(self, selector: str, options: dict = None) -> None:
+        """Click element which matches `selector`."""
         if options is None:
             options = dict()
         handle = await self.J(selector)
@@ -437,6 +489,7 @@ fucntion(html) {
         await handle.dispose()
 
     async def hover(self, selector: str) -> None:
+        """Mouse hover the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
             raise Exception('No node found for selector: ' + selector)
@@ -444,6 +497,7 @@ fucntion(html) {
         await handle.dispose()
 
     async def focus(self, selector: str) -> None:
+        """Focus the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
             raise Exception('No node found for selector: ' + selector)
@@ -453,6 +507,7 @@ fucntion(html) {
 
 async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
                       screenshotTaskQueue: list = None) -> Page:
+    """Async function which make new page."""
     await client.send('Network.enable', {}),
     await client.send('Page.enable', {}),
     await client.send('Runtime.enable', {}),
