@@ -60,33 +60,37 @@ class TestPyppeteer(TestCase):
         ], logging='error')
         self.server = self.app.listen(self.port)
         self.browser = launch()
+        self.page = sync(self.browser.newPage())
+        sync(self.page.goto('http://localhost:' + str(self.port)))
+
+    def tearDown(self):
+        self.browser.close()
+        self.server.stop()
 
     @sync
     async def test_get(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         self.assertEqual(await self.page.title(), 'main')
         self.elm = await self.page.querySelector('h1#hello')
         self.assertTrue(self.elm)
 
     @sync
     async def test_plain_text(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         text = await self.page.plainText()
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
     async def test_html(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         html = await self.page.html()
         self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
 
     @sync
+    async def test_element_get_text(self):
+        elm = await self.page.querySelector('h1')
+        text = await elm.evaluate('() => this.innerText')
+        self.assertEqual('Hello', text)
+
+    @sync
     async def test_click(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         await self.page.click('#link1')
         await asyncio.sleep(0.1)
         self.assertEqual(await self.page.title(), 'link1')
@@ -95,8 +99,6 @@ class TestPyppeteer(TestCase):
 
     @sync
     async def test_elm_click(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
@@ -105,8 +107,6 @@ class TestPyppeteer(TestCase):
 
     @sync
     async def test_back_forward(self):
-        self.page = await self.browser.newPage()
-        await self.page.goto('http://localhost:' + str(self.port))
         await self.page.click('#link1')
         await asyncio.sleep(0.1)
         self.assertEqual(await self.page.title(), 'link1')
@@ -120,7 +120,3 @@ class TestPyppeteer(TestCase):
         self.assertEqual(await self.page.title(), 'link1')
         btn2 = await self.page.querySelector('#link1')
         self.assertTrue(btn2)
-
-    def tearDown(self):
-        self.browser.close()
-        self.server.stop()
