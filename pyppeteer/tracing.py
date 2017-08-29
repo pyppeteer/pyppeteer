@@ -61,9 +61,9 @@ class Tracing(object):
         file = Path(path)
         with file.open('w') as f:
             while not eof:
-                response = await(await self._client.send('IO.read', {
+                response = await self._client.send('IO.read', {
                     'handle': handle
-                }))
+                })
                 eof = response.get('eof', False)
             if path:
                 f.write(response.get('data', ''))

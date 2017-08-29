@@ -23,6 +23,7 @@ requirements = [
 test_requirements = [
     'syncer',
     'tornado',
+    'wdom',
 ]
 
 setup(

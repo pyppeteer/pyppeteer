@@ -226,9 +226,9 @@ function deliverResult(name, seq, result) {
             })
             return
 
-        if not self.listenerCount(Page.Events.Console):
+        if not self.listeners(Page.Events.Console):
             for arg in _args:
-                helper.releaseObject(self._client, arg)
+                await helper.releaseObject(self._client, arg)
             return
 
         _values = []

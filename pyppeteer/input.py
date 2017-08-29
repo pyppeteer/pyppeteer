@@ -21,22 +21,26 @@ class Keyboard(object):
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
-    async def down(self, key: str, options: dict):
+    async def down(self, key: str, options: dict = None) -> None:
         """Press down key."""
+        options = options or dict()
         text = options.get('text')
-        autoRepeat = key in self._pressedKeys
         self._pressedKeys.add(key)
         self._modifiers |= self._modifierBit(key)
-
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'keyDown' if text else 'rawKeyDown',
+        config = {
+            'type': 'rawKeyDown',
             'modifiers': self._modifiers,
             'windowsVirtualKeyCode': codeForKey(key),
             'key': key,
-            'text': text,
-            'unmodifiedText': text,
-            'autoRepeat': autoRepeat,
-        })
+        }
+        if text:
+            config['type'] = 'keyDown'
+            config['text'] = text
+            config['unmodifiedText'] = text
+        if 'autoRepeat' in self._pressedKeys:
+            config['autoRepeat'] = True
+
+        await self._client.send('Input.dispatchKeyEvent', config)
 
     def _modifierBit(self, key: str) -> int:
         if key == 'Alt':

@@ -5,7 +5,7 @@
 
 import json
 import os.path
-from typing import Any, Awaitable, Dict
+from typing import Any, Dict
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
