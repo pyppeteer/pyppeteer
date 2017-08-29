@@ -7,7 +7,7 @@ import logging
 
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 __chromimum_revision__ = '496140'
 
 # Setup root logger
