@@ -25,14 +25,20 @@ def setUpModule() -> None:
     install_asyncio()
 
 
-class MainHandler(web.RequestHandler):
-    def get(self) -> None:
-        self.write('''
+BASE_HTML = '''
+<html>
 <head><title>main</title></head>
+<body>
 <h1 id="hello">Hello</h1>
 <a id="link1" href="./1">link1</a>
 <a id="link2" href="./2">link2</a>
-        ''')
+</body>
+</html>
+'''
+
+class MainHandler(web.RequestHandler):
+    def get(self) -> None:
+        self.write(BASE_HTML)
 
 
 class LinkHandler1(web.RequestHandler):
@@ -68,6 +74,13 @@ class TestPyppeteer(TestCase):
         await self.page.goto('http://localhost:' + str(self.port))
         text = await self.page.plainText()
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
+
+    @sync
+    async def test_html(self):
+        self.page = await self.browser.newPage()
+        await self.page.goto('http://localhost:' + str(self.port))
+        html = await self.page.html()
+        self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
 
     @sync
     async def test_click(self):
