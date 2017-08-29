@@ -6,6 +6,7 @@
 from io import BytesIO
 import logging
 from pathlib import Path
+import stat
 import sys
 from urllib import request
 from zipfile import ZipFile
@@ -63,6 +64,11 @@ def extract_zip(data: bytes, path: Path) -> None:
     """Extract zipped data to path."""
     with ZipFile(BytesIO(data)) as f:
         f.extractall(str(path))
+    exec_path = chromium_excutable()
+    if not exec_path.exists():
+        raise Exception('Failed to extract chromium.')
+    exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP |
+                    stat.S_IXUSR)
     logger.warn(f'chromium extracted to: {path}')
 
 

@@ -19,7 +19,7 @@ from pyppeteer.util import download_chromium
 
 logger = logging.getLogger(__name__)
 
-rootdir = Path(__file__).resolve().parent.parent
+rootdir = Path.home() / '.pyppeteer'
 CHROME_PROFILIE_PATH = rootdir / '.dev_profile'
 BROWSER_ID = 0
 
@@ -67,8 +67,7 @@ class Launcher(object):
         else:
             if not check_chromium():
                 download_chromium()
-            self.exec = chromium_excutable()
-        self.exec = str(rootdir / 'chrome')
+            self.exec = str(chromium_excutable())
         self.cmd = [self.exec] + self.chrome_args
 
     def launch(self, options: dict = None) -> Browser:
