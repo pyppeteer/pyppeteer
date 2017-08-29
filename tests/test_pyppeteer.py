@@ -63,6 +63,13 @@ class TestPyppeteer(TestCase):
         self.assertTrue(self.elm)
 
     @sync
+    async def test_plain_text(self):
+        self.page = await self.browser.newPage()
+        await self.page.goto('http://localhost:' + str(self.port))
+        text = await self.page.plainText()
+        self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
+
+    @sync
     async def test_click(self):
         self.page = await self.browser.newPage()
         await self.page.goto('http://localhost:' + str(self.port))
