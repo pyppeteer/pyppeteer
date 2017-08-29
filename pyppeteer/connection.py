@@ -87,18 +87,20 @@ class Connection(EventEmitter):
             callback.set_result(msg.get('result'))
 
     def _on_query(self, msg: dict) -> None:
-        params = msg['params']
-        if msg['method'] == 'Target.receivedMessageFromTarget':
-            session = self._sessions.get(params['sessionId'])
+        params = msg.get('params', {})
+        method = msg.get('method', '')
+        sessionId = params.get('sessionId')
+        if method == 'Target.receivedMessageFromTarget':
+            session = self._sessions.get(sessionId)
             if session:
-                session._on_message(params['message'])
-        elif msg['method'] == 'Target.detachedFromTarget':
-            session = self._sessions.get(params['sessionId'])
+                session._on_message(params.get('message'))
+        elif method == 'Target.detachedFromTarget':
+            session = self._sessions.get(sessionId)
             if session:
                 session._onClosed()
-                self._sessions.pop(params['sessionId'])
+                del self._sessions[sessionId]
         else:
-            self.emit(msg.get('method'), msg.get('params'))
+            self.emit(method, params)
 
     def _on_message(self, message: str) -> None:
         logger.debug(f'◀RECV: {message}')
@@ -175,13 +177,12 @@ class Session(EventEmitter):
     def _on_message(self, msg: str) -> None:
         obj = json.loads(msg)
         _id = obj.get('id')
-        # print(msg, _id in self._callbacks, flush=True)
         if _id and _id in self._callbacks:
             callback = self._callbacks.pop(_id)
             if 'error' in obj:
                 error = obj['error']
-                msg = error['message']
-                data = error['data']
+                msg = error.get('message')
+                data = error.get('data')
                 callback.set_exception(
                     Exception(f'Protocol Error: {msg} {data}')
                 )

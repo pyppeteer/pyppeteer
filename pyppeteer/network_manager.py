@@ -117,19 +117,21 @@ class NetworkManager(EventEmitter):
             if event.get('redirectResponse'):
                 return
             requestHash = generateRequestHash(event['request'])
-            self._requestHashToRequestIds.set(
-                requestHash, event.get('requestId'))
+            self._requestHashToRequestIds.set(requestHash, event['requestId'])
             self._maybeResolveInterception(requestHash)
             return
         if event.get('redirectResponse'):
-            request = self._requestIdToRequest[event['requestId']]
-            self._handleRequestRedirect(
-                request, event['redirectResponse']['status'],
-                event['redirectResponse']['headers']
-            )
-        self._handleRequestStart(event['requestId'], '',
-                                 event['request']['url'],
-                                 event['request'])
+            request = self._requestIdToRequest.get(event['requestId'])
+            if request is not None:
+                redirectResponse = event.get('redirectResponse', {})
+                self._handleRequestRedirect(
+                    request,
+                    redirectResponse.get('status'),
+                    redirectResponse.get('headers'),
+                )
+        self._handleRequestStart(event.get('requestId', ''), '',
+                                 event.get('request', {}).get('url', ''),
+                                 event.get('request', {}))
 
     def _maybeResolveInterception(self, requestHash: str) -> None:
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
@@ -147,21 +149,24 @@ class NetworkManager(EventEmitter):
         # FileUpload sends a response without a matching request.
         if not request:
             return
+        _resp = event.get('response', {})
         response = Response(self._client, request,
-                            event['response']['status'],
-                            event['response']['headers'])
+                            _resp.get('status', 0),
+                            _resp.get('headers', {}))
         request._response = response
         self.emit(NetworkManager.Events.Response, response)
 
     def _onLoadingFinished(self, event: dict) -> None:
-        request = self._requestIdToRequest.get(event['requestId'])
+        requestId = event.get('requestId', '')
+        interceptionId = event.get('interceptionId', '')
+        request = self._requestIdToRequest.get(requestId)
         # For certain requestIds we never receive requestWillBeSent event.
         # @see https://crbug.com/750469
         if not request:
             return
         request._completePromiseFulfill()
-        self._requestIdToRequest.pop(event['requestId'], None)
-        self._interceptionIdToRequest.pop(event['interceptionId'], None)
+        self._requestIdToRequest.pop(requestId, None)
+        self._interceptionIdToRequest.pop(interceptionId, None)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _onLoadingFailed(self, event: dict) -> None:
