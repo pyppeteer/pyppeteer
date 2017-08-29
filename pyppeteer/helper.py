@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Helper functions."""
+
 import json
 import math
 from typing import Any, Callable, Dict, List
@@ -11,18 +13,38 @@ from pyppeteer.connection import Session
 
 
 def evaluationString(fun: str, *args: str) -> str:
+    """Convert function and arguments to str."""
     _args = ', '.join([json.dumps(arg) for arg in args])
     expr = f'({fun})({_args})'
     return expr
 
 
+def getExceptionMessage(exceptionDetails: dict) -> str:
+    """Get exception message from `exceptionDetails` object."""
+    exception = exceptionDetails.get('exception')
+    if exception:
+        return exception.get('description')
+    message = exceptionDetails.get('text', '')
+    stackTrace = exceptionDetails.get('stackTrace', dict())
+    if stackTrace:
+        for callframe in stackTrace.get('callFrames'):
+            location = (callframe.get('url', '') + ':' +
+                        callframe.get('lineNumber', '') + ':' +
+                        callframe.get('columnNumber'))
+            functionName = callframe.get('functionName', '<anonymous>')
+            message = message + f'\n    at {functionName} ({location})'
+    return message
+
+
 def addEventListener(emitter: EventEmitter, eventName: str, handler: Callable
                      ) -> Dict[str, Any]:
+    """Add handler to the emitter and return emitter/handler."""
     emitter.on(eventName, handler)
     return {'emitter': emitter, 'eventName': eventName, 'handler': handler}
 
 
 def removeEventListeners(listeners: List[dict]) -> None:
+    """Remove listeners from emitter."""
     for listener in listeners:
         emitter = listener['emitter']
         eventName = listener['eventName']
@@ -40,14 +62,15 @@ unserializableValueMap = {
 }
 
 
-async def serializeRemoteObject(client: Session, remoteObject: dict) -> dict:
+async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
+    """Serialize remote object."""
     if 'unserializableValue' in remoteObject:
         unserializableValue = remoteObject.get('unserializableValue')
         if unserializableValue in unserializableValueMap:
             return unserializableValueMap[unserializableValue]
         else:
             raise Exception(
-                'Unsupported unserializable value: ' + unserializableValue
+                'Unsupported unserializable value: ' + str(unserializableValue)
             )
 
     objectId = remoteObject.get('objectId')
@@ -71,7 +94,8 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> dict:
         await releaseObject(client, remoteObject)
 
 
-async def releaseObject(client, remoteObject) -> None:
+async def releaseObject(client: Session, remoteObject: dict) -> None:
+    """Release remote object."""
     objectId = remoteObject.get('objectId')
     if not objectId:
         return

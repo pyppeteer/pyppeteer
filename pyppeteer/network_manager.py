@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Network Manager module."""
+
 import asyncio
 import base64
 from collections import OrderedDict
 import json
 from urllib.parse import urldefrag, urlunparse
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict
+from typing import Any, Awaitable, Dict, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer.connection import Session
 from pyppeteer.multimap import Multimap
 
+if TYPE_CHECKING:
+    from typing import Optional  # noqa: F401
+
 
 class NetworkManager(EventEmitter):
+    """NetworkManager class."""
+
     Events = SimpleNamespace(
         Request='request',
         Response='response',
@@ -24,6 +31,7 @@ class NetworkManager(EventEmitter):
     )
 
     def __init__(self, client: Session) -> None:
+        """Make new NetworkManager."""
         super().__init__()
         self._client = client
         self._requestIdToRequest: Dict[str, Request] = dict()
@@ -41,6 +49,7 @@ class NetworkManager(EventEmitter):
 
     async def setExtraHTTPHeaders(self, extraHTTPHeaders: Dict[str, str]
                                   ) -> None:
+        """Set extra http headers."""
         self._extraHTTPHeaders = OrderedDict()
         headers = OrderedDict()  # type: Dict[str, str]
         for k, v in extraHTTPHeaders:
@@ -50,13 +59,16 @@ class NetworkManager(EventEmitter):
                                 {'headers': headers})
 
     def extraHTTPHeaders(self) -> Dict[str, str]:
+        """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
 
     async def setUserAgent(self, userAgent: str) -> Awaitable:
+        """Set user agent."""
         return await self._client.send('Network.setUserAgentOverride',
                                        {'userAgent': userAgent})
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
+        """Enable request intercetion."""
         await self._client.send('Network.setRequestInterceptionEnabled',
                                 {'enabled': bool(value)})
         self._requestInterceptionEnabled = value
@@ -87,8 +99,8 @@ class NetworkManager(EventEmitter):
         response = Response(
             self._client, request, redirectStatus, redirectHeaders)
         request._response = response
-        self._requestIdToRequest.pop(request.get('_requestId'), None)
-        self._interceptionIdToRequest.pop(request.get('_interceptionId'), None)
+        self._requestIdToRequest.pop(request._requestId, None)
+        self._interceptionIdToRequest.pop(request._interceptionId, None)
         self.emit(NetworkManager.Events.Response, response)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
@@ -101,23 +113,23 @@ class NetworkManager(EventEmitter):
 
     def _onRequestWillBeSent(self, event: dict) -> None:
         if (self._requestInterceptionEnabled and
-                not event.get('request').get('url').startswith('data:')):
+                not event['request']['url'].startswith('data:')):
             if event.get('redirectResponse'):
                 return
-            requestHash = generateRequestHash(event.get('request'))
+            requestHash = generateRequestHash(event['request'])
             self._requestHashToRequestIds.set(
                 requestHash, event.get('requestId'))
             self._maybeResolveInterception(requestHash)
             return
         if event.get('redirectResponse'):
-            request = self._requestIdToRequest.get(event.get('requestId'))
+            request = self._requestIdToRequest[event['requestId']]
             self._handleRequestRedirect(
-                request, event.get('redirectResponse').get('status'),
-                event.get('redirectResponse').get('headers')
+                request, event['redirectResponse']['status'],
+                event['redirectResponse']['headers']
             )
-        self._handleRequestStart(event.get('requestId'), None,
-                                 event.get('request').get('url'),
-                                 event.get('request'))
+        self._handleRequestStart(event['requestId'], '',
+                                 event['request']['url'],
+                                 event['request'])
 
     def _maybeResolveInterception(self, requestHash: str) -> None:
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
@@ -131,52 +143,55 @@ class NetworkManager(EventEmitter):
                                  interception.request)
 
     def _onResponseReceived(self, event: dict) -> None:
-        request = self._requestIdToRequest.get(event.get('requestId'))
+        request = self._requestIdToRequest.get(event['requestId'])
         # FileUpload sends a response without a matching request.
         if not request:
             return
         response = Response(self._client, request,
-                            event.get('response').get('status'),
-                            event.get('response').get('headers'))
+                            event['response']['status'],
+                            event['response']['headers'])
         request._response = response
         self.emit(NetworkManager.Events.Response, response)
 
     def _onLoadingFinished(self, event: dict) -> None:
-        request = self._requestIdToRequest.get(event.get('requestId'))
+        request = self._requestIdToRequest.get(event['requestId'])
         # For certain requestIds we never receive requestWillBeSent event.
         # @see https://crbug.com/750469
         if not request:
             return
         request._completePromiseFulfill()
-        self._requestIdToRequest.pop(event.get('requestId'), None)
-        self._interceptionIdToRequest.pop(event.get('interceptionId'), None)
+        self._requestIdToRequest.pop(event['requestId'], None)
+        self._interceptionIdToRequest.pop(event['interceptionId'], None)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _onLoadingFailed(self, event: dict) -> None:
-        request = self._requestIdToRequest.get(event.get('requestId'))
+        request = self._requestIdToRequest.get(event['requestId'])
         # For certain requestIds we never receive requestWillBeSent event.
         # @see https://crbug.com/750469
         if not request:
             return
         request._completePromiseFulfill()
-        self._requestIdToRequest.pop(event.get('requestId'), None)
-        self._interceptionIdToRequest.pop(event.get('interceptionId'), None)
+        self._requestIdToRequest.pop(event['requestId'], None)
+        self._interceptionIdToRequest.pop(event['interceptionId'], None)
         self.emit(NetworkManager.Events.RequestFailed, request)
 
 
 class Request(object):
+    """Request class."""
+
     def __init__(self, client: Session, requestId: str, interceptionId: str,
-                 url: str, payload: object) -> None:
+                 url: str, payload: dict) -> None:
+        """Make new request class."""
         self._client = client
         self._requestId = requestId
         self._interceptionId = interceptionId
         self._interceptionHandled = False
-        self._response = None
+        self._response: Optional[Response] = None
         self._completePromise = asyncio.get_event_loop().create_future()
 
         self.url = url
-        self.method = payload.get('method')
-        self.postData = payload.get('postData')
+        self.method = payload.get('method', '')
+        self.postData = payload.get('postData', '')
         self.headers = payload.get('headers', {})
 
     def _completePromiseFulfill(self) -> None:
@@ -184,9 +199,11 @@ class Request(object):
 
     @property
     def response(self) -> Any:
+        """Get response."""
         return self._response
 
-    async def continue_(self, overrides: dict = None) -> None:
+    async def continue_(self, overrides: dict) -> None:
+        """Continue request."""
         if self.url.startswith('data:'):
             return
         self._interceptionHandled = True
@@ -203,6 +220,7 @@ class Request(object):
         ))
 
     async def abort(self) -> None:
+        """Abort request."""
         if self.url.startswith('data:'):
             return
         self._interceptionHandled = True
@@ -213,8 +231,11 @@ class Request(object):
 
 
 class Response(object):
+    """Response class."""
+
     def __init__(self, client: Session, request: Request, status: int,
                  headers: dict) -> None:
+        """Make new response."""
         self._client = client
         self._request = request
         self.status = status
@@ -233,24 +254,29 @@ class Response(object):
         return body
 
     def buffer(self) -> Awaitable:
+        """Get buffer."""
         if not self._contentPromise.done():
             return asyncio.ensure_future(self._bufread())
         return self._contentPromise
 
     async def text(self) -> str:
+        """Get content as text."""
         content = await self.buffer()
         return content.decode('utf-8')
 
     async def json(self) -> dict:
+        """Get content as json."""
         content = await self.text()
         return json.loads(content)
 
     @property
     def request(self) -> Request:
+        """Get request."""
         return self._request
 
 
 def generateRequestHash(request: dict) -> str:
+    """Generate request hash."""
     _hash = {
         'url': request.get('url'),
         'method': request.get('method'),
@@ -268,5 +294,6 @@ def generateRequestHash(request: dict) -> str:
 
 
 def removeURLHash(url: str) -> str:
+    """Remove url hash."""
     urlObject, _ = urldefrag(url)
     return urlunparse(urlObject)

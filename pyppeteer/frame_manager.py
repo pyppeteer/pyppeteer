@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Frame Manager module."""
+
 import asyncio
 from types import SimpleNamespace
-from typing import Awaitable, List, Optional, TYPE_CHECKING
+from typing import Any, Awaitable, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -17,13 +19,16 @@ if TYPE_CHECKING:
 
 
 class FrameManager(EventEmitter):
+    """FrameManager class."""
+
     Events = SimpleNamespace(
         FrameAttached='frameattached',
         FrameNavigated='framenavigated',
         FrameDetached='framedetached'
     )
 
-    def __init__(self, client: Session, mouse: Mouse = None) -> None:
+    def __init__(self, client: Session, mouse: Mouse) -> None:
+        """Make new frame manager."""
         super().__init__()
         self._client = client
         self._mouse = mouse
@@ -32,7 +37,8 @@ class FrameManager(EventEmitter):
 
         client.on('Page.frameAttached',
                   lambda event: self._onFrameAttached(
-                      event.get('frameId'), event.get('parentFrameId')))
+                      event.get('frameId', ''), event.get('parentFrameId', ''))
+                  )
         client.on('Page.frameNavigated',
                   lambda event: self._onFrameNavigated(event.get('frame')))
         client.on('Page.frameDetached',
@@ -43,13 +49,14 @@ class FrameManager(EventEmitter):
 
     @property
     def mainFrame(self) -> Optional['Frame']:
+        """Retrun main frame."""
         return self._mainFrame
 
     def frames(self) -> List['Frame']:
+        """Retrun all frames."""
         return list(self._frames.values())
 
-    def _onFrameAttached(self, frameId: str, parentFrameId: Optional[str]
-                         ) -> None:
+    def _onFrameAttached(self, frameId: str, parentFrameId: str) -> None:
         if frameId in self._frames:
             return
         parentFrame = self._frames.get(parentFrameId)
@@ -62,9 +69,9 @@ class FrameManager(EventEmitter):
         if isMainFrame:
             frame = self._mainFrame
         else:
-            self._frames.get(framePayload.get('id'))
+            self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            Exception('We either navigate top level or have old version of the navigated frame')  # noqa: #501
+            raise Exception('We either navigate top level or have old version of the navigated frame')  # noqa: #501
 
         # Detach all child frames first.
         if frame:
@@ -72,7 +79,7 @@ class FrameManager(EventEmitter):
                 self._removeFramesRecursively(child)
 
         # Update or create main frame.
-        _id = framePayload.get('id')
+        _id = framePayload.get('id', '')
         if isMainFrame:
             if frame:
                 # Update frame id to retain frame identity on cross-process navigation.  # noqa: E501
@@ -85,7 +92,7 @@ class FrameManager(EventEmitter):
             self._mainFrame = frame
 
         # Update frame payload.
-        frame._navigated(framePayload)
+        frame._navigated(framePayload)  # type: ignore
         self.emit(FrameManager.Events.FrameNavigated, frame)
 
     def _onFrameDetached(self, frameId: str) -> None:
@@ -101,7 +108,7 @@ class FrameManager(EventEmitter):
         frame = self._frames.get(frameId)
         if not frame:
             return
-        frame._defaultContextId = context.get('id')
+        frame._defaultContextId = context.get('id', '')
         for waitTask in frame._waitTasks:
             waitTask.rerun()
 
@@ -113,6 +120,7 @@ class FrameManager(EventEmitter):
         self.emit(FrameManager.Events.FrameDetached, frame)
 
     def isMainFrameLoadingFailed(self) -> bool:
+        """Check if main frame is laoded correctly."""
         mainFrame = self._mainFrame
         if not mainFrame:
             return True
@@ -120,8 +128,11 @@ class FrameManager(EventEmitter):
 
 
 class Frame(object):
-    def __init__(self, client: Session, mouse: Mouse, parentFrame: 'Frame',
-                 frameId: str) -> None:
+    """Frame class."""
+
+    def __init__(self, client: Session, mouse: Mouse,
+                 parentFrame: Optional['Frame'], frameId: str) -> None:
+        """Make new frame."""
         self._client = client
         self._mouse = mouse
         self._parentFrame = parentFrame
@@ -134,17 +145,22 @@ class Frame(object):
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-    async def evaluate(self, pageFunction: str, *args: str) -> dict:
+    async def evaluate(self, pageFunction: str, *args: str) -> str:
+        """Evaluate pageFunction on this frame."""
         remoteObject = await self._rawEvaluate(pageFunction, *args)
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
-    async def J(self, selector: str) -> Optional['ElementHandle']:
+    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+        """Get element which matches `selector` string."""
         remoteObject = await self._rawEvaluate(
             'selector => document.querySelector(selector)', selector)
         if remoteObject.get('subtype') == 'node':
             return ElementHandle(self._client, remoteObject, self._mouse)
         await helper.releaseObject(self._client, remoteObject)
         return None
+
+    #: Alias to querySelector
+    J = querySelector
 
     async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:
         expression = helper.evaluationString(pageFunction, *args)
@@ -155,40 +171,47 @@ class Frame(object):
             'returnByValue': False,
             'awaitPromise': True,
         }))
-        exceptionDetails = obj.get('exceptionDetails')
-        remoteObject = obj.get('result')
+        exceptionDetails = obj.get('exceptionDetails', dict())
+        remoteObject = obj.get('result', dict())
         if exceptionDetails:
             raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
         return remoteObject
 
     @property
     def name(self) -> str:
+        """Get frame name."""
         return self.__dict__.get('_name', '')
 
     @property
     def url(self) -> str:
+        """Get url."""
         return self._url
 
     @property
-    def parentFrame(self) -> 'Frame':
+    def parentFrame(self) -> Optional['Frame']:
+        """Get parent frame."""
         return self._parentFrame
 
     @property
     def childFrames(self) -> List['Frame']:
+        """Get child frames."""
         return list(self._childFrames)
 
     @property
     def idDetached(self) -> bool:
+        """Check if this frame is detached."""
         return self._detached
 
     async def injectFile(self, filePath: str) -> str:
+        """Inject file to the frame."""
         # to be changed to async func
         with open(filePath) as f:
             contents = f.read()
         contents += f'//# sourceURL=' + filePath.replace('\n', '')
         return await self.evaluate(contents)
 
-    async def addScriptTag(self, url: str) -> dict:
+    async def addScriptTag(self, url: str) -> str:
+        """Add script tag to this frame."""
         addScriptTag = '''
 function addScriptTag(url) {
   let script = document.createElement('script');
@@ -200,8 +223,9 @@ function addScriptTag(url) {
         '''
         return await self.evaluate(addScriptTag, url)
 
-    def waitFor(self, selectorOrFunctionOrTimeout, options: dict = None
-                ) -> Awaitable:
+    def waitFor(self, selectorOrFunctionOrTimeout: Any, options: dict = None
+                ) -> Union['WaitTask', Awaitable]:
+        """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
         if isinstance(selectorOrFunctionOrTimeout, str):
@@ -220,12 +244,14 @@ function addScriptTag(url) {
         return fut
 
     def waitForSelector(self, selector: str, options: dict = None
-                        ) -> Awaitable:
+                        ) -> 'WaitTask':
+        """Wait selector result."""
         if options is None:
             options = dict()
         timeout = options.get('timeout', 30000)
         waitForVisible = bool(options.get('visible'))
         polling = 'raf' if waitForVisible else 'mutation'
+        _waitForVisible = 'true' if waitForVisible else 'false'
         predicate = '''
 function predicate(selector, waitForVisible) {
   const node = document.querySelector(selector);
@@ -241,25 +267,27 @@ function predicate(selector, waitForVisible) {
             predicate,
             {'timeout': timeout, 'polling': polling},
             selector,
-            waitForVisible
+            _waitForVisible,
         )
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str) -> 'WaitTask':
+        """Wait function result."""
         if options is None:
             options = dict()
         timeout = options.get('timeout',  30000)
         polling = options.get('polling', 'raf')
         predicateCode = 'return ' + helper.evaluationString(pageFunction,
                                                             *args)
-        return WaitTask(self, predicateCode, polling, timeout).promise
+        return WaitTask(self, predicateCode, polling, timeout)
 
     async def title(self) -> str:
+        """Get title of the frame."""
         return await self.evaluate('() => document.title')
 
     def _navigated(self, framePayload: dict) -> None:
-        self._name = framePayload.get('name')
-        self._url = framePayload.get('url')
+        self._name = framePayload.get('name', '')
+        self._url = framePayload.get('url', '')
         self._loadingFailed = bool(framePayload.get('unreachableUrl'))
 
     def _detach(self) -> None:
@@ -273,8 +301,11 @@ function predicate(selector, waitForVisible) {
 
 
 class WaitTask(object):
+    """WaitTask class."""
+
     def __init__(self, frame: Frame, predicateBody: str, polling: str,
                  timeout: float) -> None:
+        """Make new wait task."""
         if isinstance(polling, str) and polling not in ('raf', 'mutation'):
             raise Exception('Unknown polling option: ' + polling)
         elif isinstance(polling, (int, float)):
@@ -284,12 +315,12 @@ class WaitTask(object):
         else:
             raise Exception('Unknown polling options: ' + str(polling))
 
-        self._frame = frame
-        self._pageScript = helper.evaluationString(
+        self._frame: Frame = frame
+        self._pageScript: str = helper.evaluationString(
             waitForPredicatePageFunction, predicateBody, polling, timeout)
-        self._runCount = 0
+        self._runCount: int = 0
         frame._waitTasks.add(self)
-        self._promise = asyncio.get_event_loop().create_future()
+        self._promise: asyncio.Future = asyncio.get_event_loop().create_future()  # noqa: E501
         # this.promise = new Promise((resolve, reject) => {
         #     this._resolve = resolve
         #     this._reject = reject
@@ -302,17 +333,19 @@ class WaitTask(object):
         self.rerun()
 
     def terminate(self, error: Exception) -> None:
+        """Terminate task by error."""
         self._terminated = True
         self._promise.set_exception(error)
         self._cleanup()
 
-    async def rerun(self) -> None:
+    async def rerun(self) -> None:  # noqa: C901
+        """Re-run the task."""
         self._runCount += 1
         runCount = self._runCount
         success = False
         error = None
         try:
-            success = await self._frame.evaluate(self._pageScript)
+            success = bool(await self._frame.evaluate(self._pageScript))
         except Exception as e:
             error = e
 
@@ -325,8 +358,10 @@ class WaitTask(object):
 
         # // When the page is navigated, the promise is rejected.
         # // We will try again in the new execution context.
-        if error and error.message.includes('Execution context was destroyed'):
-            return
+        if error:
+            error_msg = str(error)
+            if 'Execution context was destroyed' in error_msg:
+                return
 
         if error:
             self._promise.set_exception(error)

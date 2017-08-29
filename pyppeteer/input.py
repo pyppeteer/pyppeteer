@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Keyboard and Mouse module."""
+
 import asyncio
+from typing import TYPE_CHECKING
 
 from pyppeteer.connection import Session
 
+if TYPE_CHECKING:
+    from typing import Set  # noqa: F401
+
 
 class Keyboard(object):
+    """Keyboard class."""
+
     def __init__(self, client: Session) -> None:
-        self._cliet = client
+        """Make new keyboard object."""
+        self._client = client
         self._modifiers = 0
-        self._pressedKeys = set()
+        self._pressedKeys: Set[str] = set()
 
     async def down(self, key: str, options: dict):
+        """Press down key."""
         text = options.get('text')
         autoRepeat = key in self._pressedKeys
         self._pressedKeys.add(key)
@@ -40,8 +50,9 @@ class Keyboard(object):
         return 0
 
     async def up(self, key: str) -> None:
+        """Up pressed key."""
         self._modifiers &= not self._modifierBit(key)
-        self._pressedKeys.pop(key, None)
+        self._pressedKeys.remove(key)
         await self._client.send('Input.dispatchKeyEvent', {
             'type': 'keyUp',
             'modifiers': self._modifiers,
@@ -50,7 +61,8 @@ class Keyboard(object):
         })
 
     async def sendCharacter(self, char: str) -> None:
-        await self._cliet.send('Input.dispatchKeyEvent', {
+        """Send character."""
+        await self._client.send('Input.dispatchKeyEvent', {
             'type': 'char',
             'modifiers': self._modifiers,
             'text': char,
@@ -60,7 +72,10 @@ class Keyboard(object):
 
 
 class Mouse(object):
+    """Mouse class."""
+
     def __init__(self, client: Session, keyboard: Keyboard) -> None:
+        """Make new mouse object."""
         self._client = client
         self._keyboard = keyboard
         self._x = 0
@@ -68,6 +83,7 @@ class Mouse(object):
         self._button = 'none'
 
     async def move(self, x: int, y: int) -> None:
+        """Move cursor."""
         self._x = x
         self._y = y
         await self._client.send('Input.dispatchMouseEvent', {
@@ -79,15 +95,17 @@ class Mouse(object):
         })
 
     async def click(self, x: int, y: int, options: dict = None) -> None:
+        """Click button at (x, y)."""
         if options is None:
             options = dict()
         await self.move(x, y)
         await self.down(options)
         if options and options.get('delay'):
-            await asyncio.sleep(options.get('delay'))
+            await asyncio.sleep(options.get('delay', 0))
         await self.up(options)
 
     async def down(self, options: dict = None) -> None:
+        """Press down button."""
         if options is None:
             options = dict()
         self._button = options.get('button', 'left')
@@ -101,6 +119,7 @@ class Mouse(object):
         })
 
     async def up(self, options: dict = None) -> None:
+        """Up pressed button."""
         if options is None:
             options = dict()
         self._button = 'none'
@@ -223,6 +242,7 @@ keys = {
 
 
 def codeForKey(key: str) -> int:
+    """Get code for key."""
     if keys.get(key):
         return keys[key]
     if len(key) == 1:

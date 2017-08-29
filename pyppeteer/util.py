@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Utitlity functions."""
+
 import gc
 import socket
 
@@ -17,6 +19,7 @@ __all__ = [
 
 
 def install_asyncio() -> None:
+    """Install tornado's loop to asyncio."""
     try:
         from tornado.ioloop import IOLoop
         from tornado.platform.asyncio import AsyncIOMainLoop
@@ -27,6 +30,7 @@ def install_asyncio() -> None:
 
 
 def get_free_port() -> int:
+    """Get free port."""
     sock = socket.socket()
     sock.bind(('localhost', 0))
     port = sock.getsockname()[1]

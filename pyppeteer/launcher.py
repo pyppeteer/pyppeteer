@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Chromium process launcher module."""
+
 import atexit
 import logging
 import os
@@ -44,6 +46,7 @@ class Launcher(object):
     """Chromium parocess launcher class."""
 
     def __init__(self, options: Dict[str, Any] = None) -> None:
+        """Make new launcher."""
         global BROWSER_ID
         BROWSER_ID += 1
         self.options = options or dict()
@@ -102,10 +105,10 @@ class Launcher(object):
             self.proc.wait()
             logger.debug('done.')
 
-    async def connect(self, browserWSEndpoint: str,
-                      ignoreHTTPSErrors: bool = False) -> Browser:
-        connection = await Connection.create(browserWSEndpoint)
-        return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
+    # async def connect(self, browserWSEndpoint: str,
+    #                   ignoreHTTPSErrors: bool = False) -> Browser:
+    #     connection = await Connection.create(browserWSEndpoint)
+    #     return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
 
 
 def launch(options: dict = None) -> Browser:
@@ -113,6 +116,6 @@ def launch(options: dict = None) -> Browser:
     return Launcher(options).launch()
 
 
-def connect(options: dict = None) -> Browser:
-    l = Launcher(options)
-    return l.connect()
+# def connect(options: dict = None) -> Browser:
+#     l = Launcher(options)
+#     return l.connect()

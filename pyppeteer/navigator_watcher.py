@@ -1,25 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Navigator Watcher module."""
+
 import asyncio
 import concurrent.futures
 
-from typing import Any, Awaitable
+from typing import Any, Awaitable, Optional, TYPE_CHECKING, Union
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
 
+if TYPE_CHECKING:
+    from typing import Callable, List, Set  # noqa: F401
+
 
 class NavigatorWatcher:
+    """NavigatorWatcher class."""
+
     def __init__(self, client: Session, ignoreHTTPSErrors: Any,
                  options: dict = None) -> None:
+        """Make new navigator watcher."""
         if options is None:
             options = {}
         self._client = client
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._timeout = options.get('timeout', 3000)
         self._idleTime = options.get('networkIdleTimeout', 1000)
-        self._idleTimer = None
+        self._idleTimer: Optional[Union[asyncio.Future, asyncio.Handle]] = None
         self._idleInflight = options.get('networkIdleInflight', 2)
         self._waitUntil = options.get('waitUntil', 'load')
         if self._waitUntil not in ('load', 'networkidle'):
@@ -30,8 +38,9 @@ class NavigatorWatcher:
         raise error
 
     async def waitForNavigation(self) -> None:
-        self._requestIds = set()
-        self._eventListeners = list()
+        """Wait until navigatoin completes."""
+        self._requestIds: Set[str] = set()
+        self._eventListeners: List[dict] = list()
         navigationPromises = list()
         loop = asyncio.get_event_loop()
 
@@ -41,7 +50,8 @@ class NavigatorWatcher:
                     self._timeout)
             ))
 
-        watchdog = asyncio.ensure_future(asyncio.sleep(self._timeout / 1000))
+        watchdog: asyncio.Future = asyncio.ensure_future(
+            asyncio.sleep(self._timeout / 1000))
         self._maximumTimer = watchdog
         watchdog.add_done_callback(watchdog_cb)
         navigationPromises.append(watchdog)
@@ -86,16 +96,17 @@ class NavigatorWatcher:
         self._cleanup()
 
     def cancel(self) -> None:
+        """Cancel navigation."""
         self._cleanup()
 
-    def _onLoadingStarted(self, event) -> None:
-        self._requestIds.add(event.get('requestIds'))
+    def _onLoadingStarted(self, event: dict) -> None:
+        self._requestIds.add(event.get('requestIds', ''))
         if len(self._requestIds) > self._idleInflight:
             clearTimeout(self._idleTimer)
             self._idleTimer = None
 
-    def _onLoadingCompleted(self, event) -> None:
-        self._requestIds.remove(event.get('requestIds'))
+    def _onLoadingCompleted(self, event: dict) -> None:
+        self._requestIds.remove(event.get('requestIds', ''))
         if len(self._requestIds) <= self._idleInflight and not self._idleTimer:
             self._idleTimer = asyncio.get_event_loop().call_later(
                 self._idleTime / 1000,
@@ -108,6 +119,7 @@ class NavigatorWatcher:
         clearTimeout(self._maximumTimer)
 
 
-def clearTimeout(fut) -> None:
+def clearTimeout(fut: Optional[Union[asyncio.Future, asyncio.Handle]]) -> None:
+    """Cancel timer task."""
     if fut:
         fut.cancel()

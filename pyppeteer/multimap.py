@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Multimap module."""
+
 from collections import OrderedDict
 from typing import Any, List, TYPE_CHECKING
 
@@ -9,11 +11,15 @@ if TYPE_CHECKING:
 
 
 class Multimap(object):
+    """Multimap class."""
+
     def __init__(self) -> None:
+        """Make new multimap."""
         # maybe defaultdict(set) is better
         self._map: OrderedDict[str, List[Any]] = OrderedDict()
 
     def set(self, key: str, value: Any) -> None:
+        """Set value."""
         _set = self._map.get(key)
         if not _set:
             _set = list()
@@ -22,19 +28,24 @@ class Multimap(object):
             _set.append(value)
 
     def get(self, key: str) -> List[Any]:
+        """Get values."""
         return self._map.get(key, list())
 
     def has(self, key: str) -> bool:
+        """Check key is in this map."""
         return key in self._map
 
     def hasValue(self, key: str, value: Any) -> bool:
+        """Chekc value is in this map."""
         _set = self._map.get(key, list())
         return value in _set
 
     def size(self) -> int:
+        """Length of this map."""
         return len(self._map)
 
     def delete(self, key: str, value: Any) -> bool:
+        """Delete value from key."""
         values = self.get(key)
         result = value in values
         if result:
@@ -44,22 +55,27 @@ class Multimap(object):
         return result
 
     def deleteAll(self, key: str) -> None:
+        """Delete all value of the key."""
         self._map.pop(key, None)
 
     def firstValue(self, key: str) -> Any:
+        """Get first value of the key."""
         _set = self._map.get(key)
         if not _set:
             return None
         return _set[0]
 
     def firstKey(self) -> str:
+        """Get first key."""
         return next(iter(self._map.keys()))
 
     def valuesArray(self) -> List[Any]:
+        """Get all values as list."""
         result: List[Any] = list()
         for values in self._map.values():
             result.extend(values)
         return result
 
     def clear(self) -> None:
+        """Clear all entries of this map."""
         self._map.clear()

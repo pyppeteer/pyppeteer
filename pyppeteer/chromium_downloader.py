@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""Chromium dowload module."""
+
 from io import BytesIO
 import logging
 from pathlib import Path

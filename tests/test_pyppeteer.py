@@ -21,7 +21,7 @@ from pyppeteer.util import install_asyncio, get_free_port
 
 def setUpModule() -> None:
     logging.getLogger('tornado').setLevel(logging.ERROR)
-    logging.getLogger('pyppeteer').setLevel(logging.ERROR)
+    # logging.getLogger('pyppeteer').setLevel(logging.ERROR)
     install_asyncio()
 
 
@@ -59,7 +59,7 @@ class TestGoTo(TestCase):
         self.page = await self.browser.newPage()
         await self.page.goto('http://localhost:' + str(self.port))
         self.assertEqual(await self.page.title(), 'main')
-        self.elm = await self.page.J('h1#hello')
+        self.elm = await self.page.querySelector('h1#hello')
         self.assertTrue(self.elm)
 
     @sync
@@ -69,14 +69,14 @@ class TestGoTo(TestCase):
         await self.page.click('#link1')
         await asyncio.sleep(0.1)
         self.assertEqual(await self.page.title(), 'link1')
-        elm = await self.page.J('h1#link1')
+        elm = await self.page.querySelector('h1#link1')
         self.assertTrue(elm)
 
     @sync
     async def test_elm_click(self):
         self.page = await self.browser.newPage()
         await self.page.goto('http://localhost:' + str(self.port))
-        btn1 = await self.page.J('#link1')
+        btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
         await asyncio.sleep(0.1)
@@ -92,12 +92,12 @@ class TestGoTo(TestCase):
         await self.page.goBack()
         await asyncio.sleep(0.1)
         self.assertEqual(await self.page.title(), 'main')
-        elm = await self.page.J('h1#hello')
+        elm = await self.page.querySelector('h1#hello')
         self.assertTrue(elm)
         await self.page.goForward()
         await asyncio.sleep(0.1)
         self.assertEqual(await self.page.title(), 'link1')
-        btn2 = await self.page.J('#link1')
+        btn2 = await self.page.querySelector('#link1')
         self.assertTrue(btn2)
 
     def tearDown(self):
