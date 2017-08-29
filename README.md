@@ -14,15 +14,31 @@ Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer)
 * Free software: MIT license (will be changed to Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
-## Features
-
-* TODO
-
 ## Installation
 
-### Requirements
+Pyppeteer requires python 3.6+.
+
+```
+pip install https://github.com/miyakogi/pyppeteer.git
+```
 
 ## Usage
+
+Below code open web page and take a screenshot.
+
+```py
+import asyncio
+from pyppeteer.launcher import launch
+
+async def main(browser):
+    page = await browser.newPage()
+    await page.goto('http://example.com')
+    await page.screenshot({'path': 'example.png'})
+
+browser = launch()
+asyncio.get_event_loop().run_until_complete(main(browser))
+browser.close()
+```
 
 Credits
 ---------
