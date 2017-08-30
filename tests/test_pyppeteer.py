@@ -90,7 +90,7 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.innerText')
+        text = await elm.evaluate('(element) => element.textContent')
         self.assertEqual('Hello', text)
 
     @sync

@@ -87,7 +87,7 @@ Example to get element's inner text:
 
 ```python
 element = page.querySelector('h1')
-title = element.evaluate('(element) => element.innerText')
+title = element.evaluate('(element) => element.textContent')
 ```
 
 Credits
