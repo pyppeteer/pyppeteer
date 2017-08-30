@@ -513,6 +513,7 @@ fucntion(html) {
         await handle.dispose()
 
     async def type(self, text: str, options: dict = None) -> None:
+        """Type text on the page."""
         options = options or dict()
         delay = options.get('delay', 0)
         last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
@@ -524,6 +525,7 @@ fucntion(html) {
         await last
 
     async def press(self, key: str, options: dict = None) -> None:
+        """Press key."""
         options = options or dict()
         delay = options.get('delay', 0)
         await self._keyboard.down(key, options)
@@ -532,6 +534,7 @@ fucntion(html) {
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None) -> Awaitable:
+        """Wait for function, timeout, or element which matches on page."""
         frame = self.mainFrame
         if not frame:
             raise Exception('no main frame.')
@@ -539,6 +542,7 @@ fucntion(html) {
 
     def waitForSelector(self, selector: str, options: dict = None
                         ) -> Awaitable:
+        """Wait until element which matches selector appears on page."""
         frame = self.mainFrame
         if not frame:
             raise Exception('no main frame.')
@@ -546,6 +550,7 @@ fucntion(html) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str) -> Awaitable:
+        """Wait for function."""
         frame = self.mainFrame
         if not frame:
             raise Exception('no main frame.')

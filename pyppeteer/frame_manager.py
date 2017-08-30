@@ -5,7 +5,7 @@
 
 import asyncio
 from types import SimpleNamespace
-from typing import Any, Awaitable, List, Optional, Union, TYPE_CHECKING
+from typing import Awaitable, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
