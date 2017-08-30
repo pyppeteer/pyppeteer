@@ -153,7 +153,10 @@ class Frame(object):
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
-        """Get element which matches `selector` string."""
+        """Get element which matches `selector` string.
+
+        If `selector` matches multiple elements, return first-matched element.
+        """
         remoteObject = await self._rawEvaluate(
             'selector => document.querySelector(selector)', selector)
         if remoteObject.get('subtype') == 'node':
@@ -162,8 +165,27 @@ class Frame(object):
         return None
 
     async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
-        """Not Implemented."""
-        raise NotImplementedError
+        """Get all elelments which matches `selector`."""
+        remoteObject = await self._rawEvaluate(
+            'selector => Array.from(document.querySelectorAll(selector))',
+            selector,
+        )
+        response = await self._client.send('Runtime.getProperties', {
+            'objectId': remoteObject.get('objectId', ''),
+            'ownProperties': True,
+        })
+        properties = response.get('result', {})
+        result: List[ElementHandle] = []
+        releasePromises = [helper.releaseObject(self._client, remoteObject)]
+        for prop in properties:
+            value = prop.get('value', {})
+            if prop.get('enumerable') and value.get('subtype') == 'node':
+                result.append(ElementHandle(self._client, value, self._mouse))
+            else:
+                releasePromises.append(
+                    helper.releaseObject(self._client, value))
+        await asyncio.gather(*releasePromises)
+        return result
 
     #: Alias to querySelector
     J = querySelector

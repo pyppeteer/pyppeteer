@@ -88,10 +88,19 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
 
     @sync
-    async def test_element_text(self):
+    async def test_element(self):
         elm = await self.page.querySelector('h1')
         text = await elm.evaluate('(element) => element.innerText')
         self.assertEqual('Hello', text)
+
+    @sync
+    async def test_elements(self):
+        elms = await self.page.querySelectorAll('a')
+        self.assertEqual(len(elms), 2)
+        elm1 = elms[0]
+        elm2 = elms[1]
+        self.assertEqual(await elm1.attribute('id'), 'link1')
+        self.assertEqual(await elm2.attribute('id'), 'link2')
 
     @sync
     async def test_element_inner_html(self):
