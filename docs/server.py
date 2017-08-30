@@ -9,7 +9,7 @@ from livereload import Server
 docsdir = path.dirname(path.abspath(__file__))
 builddir = path.join(docsdir, '_build')
 build_cmd = [
-    'sphinx-build', '-b', 'html', '-E', '-q',
+    'sphinx-build', '-b', 'html', '-E', '-q', '-j', '4',
     '-d', path.join(builddir, 'doctrees'),
     docsdir, path.join(builddir, 'html'),
 ]

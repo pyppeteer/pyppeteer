@@ -4,8 +4,8 @@ API Reference
 Launcher
 --------
 
-.. autoclass:: pyppeteer.launcher.Launcher
-   :members:
+.. autofunction:: pyppeteer.launcher.launch
+.. autofunction:: pyppeteer.launcher.connect
 
 Browser
 -------
