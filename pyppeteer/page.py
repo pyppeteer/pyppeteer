@@ -262,6 +262,7 @@ function deliverResult(name, seq, result) {
         return frame.url
 
     async def content(self) -> str:
+        """Get the whole HTML contents of the page."""
         return await self.evaluate('''
 () => {
   let retVal = '';

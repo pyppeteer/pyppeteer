@@ -90,6 +90,12 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual('Hello', text)
 
     @sync
+    async def test_element_attr(self):
+        elm = await self.page.querySelector('h1')
+        _id = await elm.attribute('id')
+        self.assertEqual('hello', _id)
+
+    @sync
     async def test_click(self):
         await self.page.click('#link1')
         await asyncio.sleep(0.1)

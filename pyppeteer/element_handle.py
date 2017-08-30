@@ -30,7 +30,7 @@ class ElementHandle(object):
         self._disposed = True
         await helper.releaseObject(self._client, self._remoteObject)
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> dict:
+    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
         """Evaluate the pageFunction on browser."""
         if self._disposed:
             raise Exception('ElementHandle is disposed!')
@@ -98,3 +98,8 @@ element => {
             'DOM.setFileInputFiles',
             {'objectId': objectId, 'files': files}
         )
+
+    async def attribute(self, key: str) -> str:
+        """Get attribute value of the `key` of this element."""
+        return await self.evaluate(
+            '(element, key) => element.getAttribute(key)', key)
