@@ -72,7 +72,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyppeteer'
+project = u'Pyppeteer'
 copyright = u"2017, Hiroyuki Takagi"
 
 # The version info for the project you're documenting, acts as replacement
@@ -134,7 +134,8 @@ html_theme = 'alabaster'
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'description': 'short description for this project',
+    'description': ('Headless chrome/chromium automation library '
+                    '(unofficial port of puppeteer)'),
     'github_user': 'miyakogi',
     'github_repo': 'pyppeteer',
     'github_banner': True,

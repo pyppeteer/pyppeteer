@@ -5,17 +5,18 @@
 
 import asyncio
 from types import SimpleNamespace
-from typing import Any, Awaitable, List, Optional, Union, TYPE_CHECKING
+from typing import Awaitable, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.errors import BrowserError, NetworkError, PageError
 from pyppeteer.input import Mouse
 from pyppeteer.element_handle import ElementHandle
 
 if TYPE_CHECKING:
-    from typing import Dict, Set  # noqa
+    from typing import Dict, Set  # noqa: F401
 
 
 class FrameManager(EventEmitter):
@@ -71,7 +72,8 @@ class FrameManager(EventEmitter):
         else:
             self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise Exception('We either navigate top level or have old version of the navigated frame')  # noqa: #501
+            raise PageError('We either navigate top level or have old version '
+                            'of the navigated frame')
 
         # Detach all child frames first.
         if frame:
@@ -151,7 +153,10 @@ class Frame(object):
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
-        """Get element which matches `selector` string."""
+        """Get element which matches `selector` string.
+
+        If `selector` matches multiple elements, return first-matched element.
+        """
         remoteObject = await self._rawEvaluate(
             'selector => document.querySelector(selector)', selector)
         if remoteObject.get('subtype') == 'node':
@@ -159,22 +164,50 @@ class Frame(object):
         await helper.releaseObject(self._client, remoteObject)
         return None
 
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+        """Get all elelments which matches `selector`."""
+        remoteObject = await self._rawEvaluate(
+            'selector => Array.from(document.querySelectorAll(selector))',
+            selector,
+        )
+        response = await self._client.send('Runtime.getProperties', {
+            'objectId': remoteObject.get('objectId', ''),
+            'ownProperties': True,
+        })
+        properties = response.get('result', {})
+        result: List[ElementHandle] = []
+        releasePromises = [helper.releaseObject(self._client, remoteObject)]
+        for prop in properties:
+            value = prop.get('value', {})
+            if prop.get('enumerable') and value.get('subtype') == 'node':
+                result.append(ElementHandle(self._client, value, self._mouse))
+            else:
+                releasePromises.append(
+                    helper.releaseObject(self._client, value))
+        await asyncio.gather(*releasePromises)
+        return result
+
     #: Alias to querySelector
     J = querySelector
+    JJ = querySelectorAll
 
     async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:
         expression = helper.evaluationString(pageFunction, *args)
         contextId = self._defaultContextId
-        obj = await (await self._client.send('Runtime.evaluate', {
+        obj = await self._client.send('Runtime.evaluate', {
             'expression': expression,
             'contextId': contextId,
             'returnByValue': False,
             'awaitPromise': True,
-        }))
+        })
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
+            raise BrowserError(
+                'Evaluation failed: ' +
+                helper.getExceptionMessage(exceptionDetails) +
+                f'\npageFunction:\n{pageFunction}'
+            )
         return remoteObject
 
     @property
@@ -198,7 +231,7 @@ class Frame(object):
         return list(self._childFrames)
 
     @property
-    def idDetached(self) -> bool:
+    def isDetached(self) -> bool:
         """Check if this frame is detached."""
         return self._detached
 
@@ -223,29 +256,31 @@ function addScriptTag(url) {
         '''
         return await self.evaluate(addScriptTag, url)
 
-    def waitFor(self, selectorOrFunctionOrTimeout: Any, options: dict = None
-                ) -> Union['WaitTask', Awaitable]:
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
+                options: dict = None) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
-        if isinstance(selectorOrFunctionOrTimeout, str):
-            return self.waitForSelector(selectorOrFunctionOrTimeout, options)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
                 asyncio.sleep(selectorOrFunctionOrTimeout))
             return fut
-        if callable(selectorOrFunctionOrTimeout):
+        if not isinstance(selectorOrFunctionOrTimeout, str):
+            fut = asyncio.get_event_loop().create_future()
+            fut.set_exception(TypeError(
+                'Unsupported target type: ' +
+                str(type(selectorOrFunctionOrTimeout))
+            ))
+            return fut
+        if ('=>' in selectorOrFunctionOrTimeout or
+                selectorOrFunctionOrTimeout.strip().startswith('function')):
             return self.waitForFunction(selectorOrFunctionOrTimeout, options)
-        fut = asyncio.get_event_loop().create_future()
-        fut.set_exception(Exception(
-            'Unsupported target type: ' +
-            str(type(selectorOrFunctionOrTimeout))
-        ))
-        return fut
+        return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None
-                        ) -> 'WaitTask':
-        """Wait selector result."""
+                        ) -> Awaitable:
+        """Wait selector result (broken)."""
+        raise NotImplementedError('This function is broken')
         if options is None:
             options = dict()
         timeout = options.get('timeout', 30000)
@@ -262,7 +297,7 @@ function predicate(selector, waitForVisible) {
   const style = window.getComputedStyle(node);
   return style && style.display !== 'none' && style.visibility !== 'hidden';
 }
-'''  # noqa: E501
+'''.strip()
         return self.waitForFunction(
             predicate,
             {'timeout': timeout, 'polling': polling},
@@ -271,14 +306,15 @@ function predicate(selector, waitForVisible) {
         )
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str) -> 'WaitTask':
-        """Wait function result."""
+                        *args: str) -> Awaitable:
+        """Wait function result (broken)."""
+        raise NotImplementedError('This function is broken')
         if options is None:
             options = dict()
         timeout = options.get('timeout',  30000)
         polling = options.get('polling', 'raf')
-        predicateCode = 'return ' + helper.evaluationString(pageFunction,
-                                                            *args)
+        predicateCode = ('return ' +
+                         helper.evaluationString(pageFunction, *args))
         return WaitTask(self, predicateCode, polling, timeout)
 
     async def title(self) -> str:
@@ -293,49 +329,51 @@ function predicate(selector, waitForVisible) {
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
             waitTask.terminate(
-                Exception('waitForSelector failed: frame got detached.'))
+                PageError('waitForSelector failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
 
 
-class WaitTask(object):
+class WaitTask(asyncio.Future):
     """WaitTask class."""
 
-    def __init__(self, frame: Frame, predicateBody: str, polling: str,
-                 timeout: float) -> None:
+    def __init__(self, frame: Frame, predicateBody: str,
+                 polling: Union[str, int, float], timeout: float) -> None:
         """Make new wait task."""
-        if isinstance(polling, str) and polling not in ('raf', 'mutation'):
-            raise Exception('Unknown polling option: ' + polling)
+        super().__init__()
+        if isinstance(polling, str):
+            if polling not in ('raf', 'mutation'):
+                raise ValueError('Unknown polling option: ' + polling)
         elif isinstance(polling, (int, float)):
             if polling <= 0:
-                raise Exception(
+                raise ValueError(
                     f'Cannot poll with non-positive interval: {polling}')
         else:
-            raise Exception('Unknown polling options: ' + str(polling))
+            raise ValueError('Unknown polling options: ' + str(polling))
 
         self._frame: Frame = frame
         self._pageScript: str = helper.evaluationString(
             waitForPredicatePageFunction, predicateBody, polling, timeout)
         self._runCount: int = 0
+        self._terminated = False
         frame._waitTasks.add(self)
-        self._promise: asyncio.Future = asyncio.get_event_loop().create_future()  # noqa: E501
-        # this.promise = new Promise((resolve, reject) => {
-        #     this._resolve = resolve
-        #     this._reject = reject
-        # })
         # Since page navigation requires us to re-install the pageScript,
         # we should track timeout on our end.
-        # this._timeoutTimer = setTimeout(
-        # () => this.terminate(
-        # new Error(`waiting failed: timeout ${timeout}ms exceeded`)), timeout)
-        self.rerun()
+        loop = asyncio.get_event_loop()
+        self._timeoutTimer = loop.call_later(
+            timeout / 1000,
+            lambda: self.terminate(
+                NetworkError(f'waiting failed: timeout {timeout}ms exceeded')
+            )
+        )
+        asyncio.ensure_future(self.rerun())
 
     def terminate(self, error: Exception) -> None:
         """Terminate task by error."""
         self._terminated = True
-        self._promise.set_exception(error)
+        self.set_exception(error)
         self._cleanup()
 
     async def rerun(self) -> None:  # noqa: C901
@@ -364,13 +402,13 @@ class WaitTask(object):
                 return
 
         if error:
-            self._promise.set_exception(error)
+            self.set_exception(error)
         else:
-            self._promise.set_result(None)
+            self.set_result(None)
         self._cleanup()
 
     def _cleanup(self) -> None:
-        # clearTimeout(this._timeoutTimer)
+        self._timeoutTimer.cancel()
         self._frame._waitTasks.remove(self)
         self._runningTask = None
 
@@ -445,4 +483,4 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
     }
   }
 }
-'''
+'''.strip()

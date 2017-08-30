@@ -81,7 +81,7 @@ pydocstyle:  ## run pydocstyle check
 docs:  ## build document
 	@echo "Sphinx build start."
 	@cd docs && \
-	sphinx-build -q -E -W -b html . _build/html && \
+	sphinx-build -q -E -W -j 4 -b html . _build/html && \
 	cd ../
 	@echo "Sphinx build done."
 

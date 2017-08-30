@@ -43,7 +43,7 @@ def curret_platform() -> str:
         if sys.maxsize > 2 ** 31 - 1:
             return 'win64'
         return 'win32'
-    raise Exception('Unsupported platform: ' + sys.platform)
+    raise OSError('Unsupported platform: ' + sys.platform)
 
 
 def get_url() -> str:
@@ -66,7 +66,7 @@ def extract_zip(data: bytes, path: Path) -> None:
         f.extractall(str(path))
     exec_path = chromium_excutable()
     if not exec_path.exists():
-        raise Exception('Failed to extract chromium.')
+        raise IOError('Failed to extract chromium.')
     exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP |
                     stat.S_IXUSR)
     logger.warn(f'chromium extracted to: {path}')

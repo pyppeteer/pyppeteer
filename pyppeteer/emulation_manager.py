@@ -57,9 +57,9 @@ function injectedTouchEventsFunction() {
         reloadNeeded = False
         if viewport.get('hasTouch') and not self._injectedTouchScriptId:
             source = f'({injectedTouchEventsFunction})()'
-            self._injectedTouchScriptId = (await (await self._client.send(
+            self._injectedTouchScriptId = (await self._client.send(
                 'Page.addScriptToEvaluateOnNewDocument',
-                {'source': source}))).get('identifier')
+                {'source': source})).get('identifier')
             reloadNeeded = True
         elif not viewport.get('hasTouch') and self._injectedTouchScriptId:
             await self._client.send(

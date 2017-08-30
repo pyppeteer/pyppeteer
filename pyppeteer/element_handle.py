@@ -5,10 +5,11 @@
 
 import json
 import os.path
-from typing import Any, Awaitable, Dict
+from typing import Any, Dict
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.errors import ElementHandleError, BrowserError
 from pyppeteer.input import Mouse
 
 
@@ -30,10 +31,10 @@ class ElementHandle(object):
         self._disposed = True
         await helper.releaseObject(self._client, self._remoteObject)
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> dict:
-        """Evaluate the pageFuncion on browser."""
+    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+        """Evaluate the pageFunction on browser."""
         if self._disposed:
-            raise Exception('ElementHandle is disposed!')
+            raise ElementHandleError('ElementHandle is disposed!')
         _args = ['this']
         _args.extend(json.dumps(x) for x in args)
         stringifiedArgs = ','.join(_args)
@@ -41,18 +42,21 @@ class ElementHandle(object):
 function() {{ return ({pageFunction})({stringifiedArgs}) }}
 '''
         objectId = self._remoteObject.get('objectId')
-        obj = await (await self._client.send(
+        obj = await self._client.send(
             'Runtime.callFunctionOn', {
                 'objectId': objectId,
                 'functionDeclaration': functionDeclaration,
                 'returnByValue': False,
                 'awaitPromise': True,
             }
-        ))
+        )
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
+            raise BrowserError(
+                'Evaluation failed: ' +
+                helper.getExceptionMessage(exceptionDetails)
+            )
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def _visibleCenter(self) -> Dict[str, int]:
@@ -70,7 +74,7 @@ element => {
         ''')  # noqa: E501
         if not center:
             # raise Exception('No node found for selector: ' + selector)
-            raise Exception('No node found for selector: ')
+            raise BrowserError('No node found for selector: ')
         return center
 
     async def hover(self) -> None:
@@ -89,7 +93,7 @@ element => {
             options = dict()
         await self._mouse.click(x, y, options)
 
-    async def uploadFile(self, *filePaths: str) -> Awaitable[dict]:
+    async def uploadFile(self, *filePaths: str) -> dict:
         """Upload files."""
         files = [os.path.abspath(p) for p in filePaths]
         objectId = self._remoteObject.get('objectId')
@@ -97,3 +101,8 @@ element => {
             'DOM.setFileInputFiles',
             {'objectId': objectId, 'files': files}
         )
+
+    async def attribute(self, key: str) -> str:
+        """Get attribute value of the `key` of this element."""
+        return await self.evaluate(
+            '(element, key) => element.getAttribute(key)', key)

@@ -104,10 +104,12 @@ class Launcher(object):
             self.proc.wait()
             logger.debug('done.')
 
-    # async def connect(self, browserWSEndpoint: str,
-    #                   ignoreHTTPSErrors: bool = False) -> Browser:
-    #     connection = await Connection.create(browserWSEndpoint)
-    #     return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
+    async def connect(self, browserWSEndpoint: str,
+                      ignoreHTTPSErrors: bool = False) -> Browser:
+        """Not Implemented."""
+        raise NotImplementedError('NotImplemented')
+        # connection = await Connection.create(browserWSEndpoint)
+        # return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
 
 
 def launch(options: dict = None) -> Browser:
@@ -115,6 +117,8 @@ def launch(options: dict = None) -> Browser:
     return Launcher(options).launch()
 
 
-# def connect(options: dict = None) -> Browser:
-#     l = Launcher(options)
-#     return l.connect()
+def connect(options: dict = None) -> Browser:
+    """Not Implemented."""
+    raise NotImplementedError('NotImplemented')
+    # l = Launcher(options)
+    # return l.connect()

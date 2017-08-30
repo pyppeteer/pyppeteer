@@ -9,23 +9,22 @@ import json
 import math
 import mimetypes
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.dialog import Dialog
+from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
+from pyppeteer.errors import PageError
+from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
-
-if TYPE_CHECKING:
-    from pyppeteer.element_handle import ElementHandle  # noqa: F401
-    from pyppeteer.frame_manager import Frame  # noqa: F401
 
 
 class Page(EventEmitter):
@@ -92,14 +91,14 @@ class Page(EventEmitter):
                   lambda event: self._onDialog(event))
         client.on('Runtime.exceptionThrown',
                   lambda exception: self._handleException(
-                      exception.exceptionDetails))
+                      exception.get('exceptionDetails')))
         client.on('Security.certificateError',
                   lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
-        self.emit('error', Exception('Page crashed!'))
+        self.emit('error', PageError('Page crashed!'))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -139,31 +138,74 @@ class Page(EventEmitter):
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return await frame.querySelector(selector)
+
+    async def querySelectorAll(self, selector: str
+                               ) -> List['ElementHandle']:
+        """Get Element which matches `selector`."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.querySelectorAll(selector)
 
     #: alias to querySelector
     J = querySelector
+    #: alias to querySelectorAll
+    JJ = querySelectorAll
+
+    async def cookies(self, *urls: str) -> dict:
+        """Get cookies."""
+        if not urls:
+            urls = (self.url, )
+        resp = await self._client.send('Network.getCookies', {
+            'urls': urls,
+        })
+        return resp.get('cookies', {})
+
+    async def deleteCookie(self, *cookies: dict) -> None:
+        """Delete cookie."""
+        pageURL = self.url
+        for cookie in cookies:
+            item = dict(**cookie)
+            if not cookie.get('url') and pageURL.startswith('http'):
+                item['url'] = pageURL
+            await self._client.send('Network.deleteCookies', item)
+
+    async def setCookie(self, *cookies: dict) -> None:
+        """Set cookies."""
+        items = []
+        for cookie in cookies:
+            item = dict(**cookie)
+            pageURL = self.url
+            if 'url' not in item and pageURL.startswith('http'):
+                item['url'] = pageURL
+            items.append(item)
+        await self.deleteCookie(*items)
+        if items:
+            await self._client.send('Network.setCookies', {
+                'cookies': items,
+            })
 
     async def addScriptTag(self, url: str):
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.addScriptTag(url)
 
     async def injectFile(self, filePath: str):
         """Inject file to this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.injectFile(filePath)
 
     async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
         """Execute function on this page."""
         if self._pageBindings[name]:
-            raise Exception(f'Failed to add page binding with name {name}: '
+            raise PageError(f'Failed to add page binding with name {name}: '
                             'window["{name}"] already exists!')
         self._pageBindings[name] = puppeteerFunction
 
@@ -203,7 +245,7 @@ function addPageBinding(bindingName) {
 
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
-        self.emit(Page.Events.PageError, Exception(message))
+        self.emit(Page.Events.PageError, PageError(message))
 
     async def _onConsoleAPI(self, event: dict) -> None:
         _args = event.get('args', [])
@@ -228,9 +270,9 @@ function deliverResult(name, seq, result) {
             })
             return
 
-        if not self.listenerCount(Page.Events.Console):
+        if not self.listeners(Page.Events.Console):
             for arg in _args:
-                helper.releaseObject(self._client, arg)
+                await helper.releaseObject(self._client, arg)
             return
 
         _values = []
@@ -260,8 +302,21 @@ function deliverResult(name, seq, result) {
         """Get url of this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.url
+
+    async def content(self) -> str:
+        """Get the whole HTML contents of the page."""
+        return await self.evaluate('''
+() => {
+  let retVal = '';
+  if (document.doctype)
+    retVal = new XMLSerializer().serializeToString(document.doctype);
+  if (document.documentElement)
+    retVal += document.documentElement.outerHTML;
+  return retVal;
+}
+        '''.strip())
 
     async def setContent(self, html: str) -> None:
         """Set content."""
@@ -297,7 +352,7 @@ fucntion(html) {
         helper.removeEventListeners([listener])
 
         if self._frameManager.isMainFrameLoadingFailed():
-            raise Exception('Failed to navigate: ' + url)
+            raise PageError('Failed to navigate: ' + url)
         return responses.get(self.url)
 
     async def reload(self, options: dict = None) -> Optional[Response]:
@@ -338,7 +393,7 @@ fucntion(html) {
         return await self._go(+1, options)
 
     async def _go(self, delta: int, options: dict) -> Optional[Response]:
-        history = await (await self._client.send('Page.getNavigationHistory'))
+        history = await self._client.send('Page.getNavigationHistory')
         _count = history.get('currentIndex', 0) + delta
         entries = history.get('entries', [])
         if len(entries) < _count:
@@ -353,6 +408,20 @@ fucntion(html) {
         """Emulate viewport and user agent."""
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', {}))
+
+    async def setJavaScriptEnabled(self, enabled: bool) -> None:
+        """Set JavaScript enabled/disabled."""
+        await self._client.send('Emulation.setScriptExecutionDisabled', {
+            'value': not enabled,
+        })
+
+    async def emulateMedia(self, mediaType: str = None) -> None:
+        """Emulate css media type of the page."""
+        if mediaType not in ['screen', 'print', None, '']:
+            raise ValueError(f'Unsupported media type: {mediaType}')
+        await self._client.send('Emulation.setEmulatedMedia', {
+            'media': mediaType or '',
+        })
 
     async def setViewport(self, viewport: dict) -> None:
         """Set viewport."""
@@ -372,7 +441,7 @@ fucntion(html) {
         """Execute js-function on this page and get result."""
         frame = self._frameManager.mainFrame
         if frame is None:
-            raise Exception('No main frame.')
+            raise PageError('No main frame.')
         return await frame.evaluate(pageFunction, *args)
 
     async def evaluateOnNewDocument(self, pageFunction: str, *args: str
@@ -394,7 +463,7 @@ fucntion(html) {
         elif mimeType == 'image/jpeg':
             screenshotType = 'jpeg'
         else:
-            raise Exception(f'Unsupported screenshot mime type: {mimeType}')
+            raise PageError(f'Unsupported screenshot mime type: {mimeType}')
         if options.get('type'):
             screenshotType = options.get('type')
         if not screenshotType:
@@ -410,7 +479,7 @@ fucntion(html) {
             clip['scale'] = 1
 
         if options.get('fullPage'):
-            metrics = await(await self._client.send('Page.getLayoutMetrics'))
+            metrics = await self._client.send('Page.getLayoutMetrics')
             width = math.ceil(metrics['contentSize']['width'])
             height = math.ceil(metrics['contentSize']['height'])
 
@@ -439,7 +508,7 @@ fucntion(html) {
         opt = {'format': format}
         if clip:
             opt['clip'] = clip
-        result = await (await self._client.send('Page.captureScreenshot', opt))
+        result = await self._client.send('Page.captureScreenshot', opt)
 
         if options.get('omitBackground'):
             await self._client.send(
@@ -467,7 +536,7 @@ fucntion(html) {
         """Get page title."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return await frame.title()
 
     async def close(self) -> None:
@@ -485,7 +554,7 @@ fucntion(html) {
             options = dict()
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.click(options)
         await handle.dispose()
 
@@ -493,7 +562,7 @@ fucntion(html) {
         """Mouse hover the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.hover()
         await handle.dispose()
 
@@ -501,9 +570,53 @@ fucntion(html) {
         """Focus the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.evaluate('element => element.focus()')
         await handle.dispose()
+
+    async def type(self, text: str, options: dict = None) -> None:
+        """Type text on the page."""
+        options = options or dict()
+        delay = options.get('delay', 0)
+        last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
+        for char in text:
+            last = asyncio.ensure_future(
+                self.press(char, {'text': char, 'delay': delay})
+            )
+            await asyncio.sleep(delay)
+        await last
+
+    async def press(self, key: str, options: dict = None) -> None:
+        """Press key."""
+        options = options or dict()
+        delay = options.get('delay', 0)
+        await self._keyboard.down(key, options)
+        await asyncio.sleep(delay)
+        await self._keyboard.up(key)
+
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
+                options: dict = None) -> Awaitable:
+        """Wait for function, timeout, or element which matches on page."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return frame.waitFor(selectorOrFunctionOrTimeout, options)
+
+    def waitForSelector(self, selector: str, options: dict = None
+                        ) -> Awaitable:
+        """Wait until element which matches selector appears on page."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return frame.waitForSelector(selector, options)
+
+    def waitForFunction(self, pageFunction: str, options: dict = None,
+                        *args: str) -> Awaitable:
+        """Wait for function."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return frame.waitForFunction(pageFunction, options, *args)
 
 
 async def create_page(client: Session, ignoreHTTPSErrors: bool = False,

@@ -38,7 +38,7 @@ def task_pydocstyle():
 def task_docs():
     """Build sphinx document."""
     return {
-        'actions': ['sphinx-build -q -W -E -b html docs docs/_build/html'],
+        'actions': ['sphinx-build -q -W -E -j 4 -b html docs docs/_build/html'],
     }
 
 

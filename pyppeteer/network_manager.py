@@ -14,6 +14,7 @@ from typing import Any, Awaitable, Dict, TYPE_CHECKING
 from pyee import EventEmitter
 
 from pyppeteer.connection import Session
+from pyppeteer.errors import NetworkError
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
@@ -62,7 +63,7 @@ class NetworkManager(EventEmitter):
         """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
 
-    async def setUserAgent(self, userAgent: str) -> Awaitable:
+    async def setUserAgent(self, userAgent: str) -> Any:
         """Set user agent."""
         return await self._client.send('Network.setUserAgentOverride',
                                        {'userAgent': userAgent})
@@ -81,14 +82,16 @@ class NetworkManager(EventEmitter):
         if event.get('redirectStatusCode'):
             request = self._interceptionIdToRequest[event['interceptionId']]
             if not request:
-                raise Exception('INTERNAL ERROR: failed to find request for interception redirect.')  # noqa: E501
+                raise NetworkError('INTERNAL ERROR: failed to find request '
+                                   'for interception redirect.')
             self._handleRequestRedirect(request,
-                                        event['redirectStatusCode'],
-                                        event['redirectHeaders'])
+                                        event.get('redirectStatusCode', 0),
+                                        event.get('redirectHeaders', {}))
             self._handleRequestStart(request._requestId,
-                                     event['interceptionId'],
-                                     event['redirectUrl'],
-                                     event['request'])
+                                     event.get('interceptionId', ''),
+                                     event.get('redirectUrl', ''),
+                                     event.get('resourceType', ''),
+                                     event.get('request', {}))
             return
         requestHash = generateRequestHash(event['request'])
         self._requestHashToInterceptions.set(requestHash, event)
@@ -105,8 +108,10 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _handleRequestStart(self, requestId: str, interceptionId: str,
-                            url: str, requestPayload: dict) -> None:
-        request = Request(self._client, requestId, interceptionId, url, requestPayload)  # noqa: E501
+                            url: str, resourceType: str, requestPayload: dict
+                            ) -> None:
+        request = Request(self._client, requestId, interceptionId, url,
+                          resourceType, requestPayload)
         self._requestIdToRequest[requestId] = request
         self._interceptionIdToRequest[interceptionId] = request
         self.emit(NetworkManager.Events.Request, request)
@@ -129,20 +134,29 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('status'),
                     redirectResponse.get('headers'),
                 )
-        self._handleRequestStart(event.get('requestId', ''), '',
-                                 event.get('request', {}).get('url', ''),
-                                 event.get('request', {}))
+        self._handleRequestStart(
+            event.get('requestId', ''), '',
+            event.get('request', {}).get('url', ''),
+            event.get('request', {}).get('resourceType', ''),
+            event.get('request', {}),
+        )
 
     def _maybeResolveInterception(self, requestHash: str) -> None:
+        """Maybe broken."""
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
         interception = self._requestHashToInterceptions.firstValue(requestHash)
         if not requestId or not interception:
             return
         self._requestHashToRequestIds.delete(requestHash, requestId)
         self._requestHashToInterceptions.delete(requestHash, interception)
-        self._handleRequestStart(requestId, interception.interceptionId,
-                                 interception.request.url,
-                                 interception.request)
+        request_obj = interception.get('request', {})
+        self._handleRequestStart(
+            requestId,
+            interception.get('interceptionId', ''),
+            request_obj.get('url', ''),
+            request_obj.get('resourceType'),
+            request_obj,
+        )
 
     def _onResponseReceived(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
@@ -184,8 +198,19 @@ class NetworkManager(EventEmitter):
 class Request(object):
     """Request class."""
 
+    #: url of this request.
+    url: str
+    #: headers associated with the request.
+    headers: dict
+    #: contains the request method (GET/POST/...).
+    method: str
+    #: contains the request's post body, if any.
+    postData: str
+    #: contains the request's resource type
+    resourceType: str
+
     def __init__(self, client: Session, requestId: str, interceptionId: str,
-                 url: str, payload: dict) -> None:
+                 url: str, resourceType: str, payload: dict) -> None:
         """Make new request class."""
         self._client = client
         self._requestId = requestId
@@ -238,6 +263,13 @@ class Request(object):
 class Response(object):
     """Response class."""
 
+    #: whether the repoonse succeeded or not.
+    ok: bool
+    #: status code of the reponse.
+    status: int
+    #: url of the reponse.
+    url: str
+
     def __init__(self, client: Session, request: Request, status: int,
                  headers: dict) -> None:
         """Make new response."""
@@ -250,9 +282,9 @@ class Response(object):
         self.url = request.url
 
     async def _bufread(self) -> bytes:
-        response = await (await self._client.send('Network.getResponseBody', {
+        response = await self._client.send('Network.getResponseBody', {
           'requestId': self._request._requestId
-        }))
+        })
         body = response.get('body', b'')
         if response.get('base64Encoded'):
             return base64.b64decode(body)

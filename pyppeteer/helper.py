@@ -12,7 +12,7 @@ from pyee import EventEmitter
 from pyppeteer.connection import Session
 
 
-def evaluationString(fun: str, *args: str) -> str:
+def evaluationString(fun: str, *args: Any) -> str:
     """Convert function and arguments to str."""
     _args = ', '.join([json.dumps(arg) for arg in args])
     expr = f'({fun})({_args})'
@@ -69,7 +69,8 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
         if unserializableValue in unserializableValueMap:
             return unserializableValueMap[unserializableValue]
         else:
-            raise Exception(
+            # BrowserError may be better
+            raise ValueError(
                 'Unsupported unserializable value: ' + str(unserializableValue)
             )
 
@@ -81,12 +82,12 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
     if subtype == 'promise':
         return remoteObject.get('description')
     try:
-        response = await (await client.send('Runtime.callFunctionOn', {
+        response = await client.send('Runtime.callFunctionOn', {
             'objectId': objectId,
             'functionDeclaration': 'function() { return this; }',
             'returnByValue': True,
-        }))
-        return response.get('result', {'value': None}).get('value')
+        })
+        return response.get('result', {}).get('value')
     except:
         # Return description for unserializable object, e.g. 'window'.
         return remoteObject.get('description')
