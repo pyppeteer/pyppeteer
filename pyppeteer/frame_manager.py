@@ -160,8 +160,13 @@ class Frame(object):
         await helper.releaseObject(self._client, remoteObject)
         return None
 
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+        """Not Implemented."""
+        raise NotImplementedError
+
     #: Alias to querySelector
     J = querySelector
+    JJ = querySelectorAll
 
     async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:
         expression = helper.evaluationString(pageFunction, *args)

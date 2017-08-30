@@ -89,6 +89,7 @@ class NetworkManager(EventEmitter):
             self._handleRequestStart(request._requestId,
                                      event['interceptionId'],
                                      event['redirectUrl'],
+                                     event['resourceType'],
                                      event['request'])
             return
         requestHash = generateRequestHash(event['request'])
@@ -106,9 +107,10 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _handleRequestStart(self, requestId: str, interceptionId: str,
-                            url: str, requestPayload: dict) -> None:
+                            url: str, resourceType: str, requestPayload: dict
+                            ) -> None:
         request = Request(self._client, requestId, interceptionId, url,
-                          requestPayload)
+                          resourceType, requestPayload)
         self._requestIdToRequest[requestId] = request
         self._interceptionIdToRequest[interceptionId] = request
         self.emit(NetworkManager.Events.Request, request)
@@ -131,11 +133,15 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('status'),
                     redirectResponse.get('headers'),
                 )
-        self._handleRequestStart(event.get('requestId', ''), '',
-                                 event.get('request', {}).get('url', ''),
-                                 event.get('request', {}))
+        self._handleRequestStart(
+            event.get('requestId', ''), '',
+            event.get('request', {}).get('url', ''),
+            event.get('request', {}).get('resourceType', ''),
+            event.get('request', {}),
+        )
 
     def _maybeResolveInterception(self, requestHash: str) -> None:
+        """Maybe broken."""
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
         interception = self._requestHashToInterceptions.firstValue(requestHash)
         if not requestId or not interception:
@@ -144,6 +150,7 @@ class NetworkManager(EventEmitter):
         self._requestHashToInterceptions.delete(requestHash, interception)
         self._handleRequestStart(requestId, interception.interceptionId,
                                  interception.request.url,
+                                 interception.request.resourceType,
                                  interception.request)
 
     def _onResponseReceived(self, event: dict) -> None:
@@ -186,8 +193,19 @@ class NetworkManager(EventEmitter):
 class Request(object):
     """Request class."""
 
+    #: url of this request.
+    url: str
+    #: headers associated with the request.
+    headers: dict
+    #: contains the request method (GET/POST/...).
+    method: str
+    #: contains the request's post body, if any.
+    postData: str
+    #: contains the request's resource type
+    resourceType: str
+
     def __init__(self, client: Session, requestId: str, interceptionId: str,
-                 url: str, payload: dict) -> None:
+                 url: str, resourceType: str, payload: dict) -> None:
         """Make new request class."""
         self._client = client
         self._requestId = requestId
@@ -239,6 +257,13 @@ class Request(object):
 
 class Response(object):
     """Response class."""
+
+    #: whether the repoonse succeeded or not.
+    ok: bool
+    #: status code of the reponse.
+    status: int
+    #: url of the reponse.
+    url: str
 
     def __init__(self, client: Session, request: Request, status: int,
                  headers: dict) -> None:

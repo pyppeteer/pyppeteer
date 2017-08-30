@@ -140,8 +140,30 @@ class Page(EventEmitter):
             raise Exception('no main frame.')
         return await frame.querySelector(selector)
 
+    async def querySelectorAll(self, selector: str
+                               ) -> List['ElementHandle']:
+        """Get Element which matches `selector`."""
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return await frame.querySelectorAll(selector)
+
     #: alias to querySelector
     J = querySelector
+    #: alias to querySelectorAll
+    JJ = querySelectorAll
+
+    async def cookies(self, *urls: str) -> dict:
+        """Not Implemented."""
+        raise NotImplementedError
+
+    async def deleteCookie(self, *cookies: List[dict]) -> None:
+        """Not Implemented."""
+        raise NotImplementedError
+
+    async def setCookie(self, *cookies: List[dict]) -> None:
+        """Not Implemented."""
+        raise NotImplementedError
 
     async def addScriptTag(self, url: str):
         """Add script tag to this page."""
@@ -364,6 +386,20 @@ fucntion(html) {
         """Emulate viewport and user agent."""
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', {}))
+
+    async def setJavaScriptEnabled(self, enabled: bool) -> None:
+        """Set JavaScript enabled/disabled."""
+        await self._client.send('Emulation.setScriptExecutionDisabled', {
+            'value': not enabled,
+        })
+
+    async def emulateMedia(self, mediaType: str = None) -> None:
+        """Emulate css media type of the page."""
+        if mediaType not in ['screen', 'print', None, '']:
+            raise ValueError(f'Unsupported media type: {mediaType}')
+        await self._client.send('Emulation.setEmulatedMedia', {
+            'media': mediaType or '',
+        })
 
     async def setViewport(self, viewport: dict) -> None:
         """Set viewport."""
