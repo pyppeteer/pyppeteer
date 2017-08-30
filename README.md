@@ -13,7 +13,7 @@ Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer)
 
 Not all features are implemented or tested.
 
-* Free software: MIT license (will be changed to Apache 2.0 license)
+* Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
 ## Installation
