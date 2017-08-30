@@ -279,7 +279,8 @@ function addScriptTag(url) {
 
     def waitForSelector(self, selector: str, options: dict = None
                         ) -> Awaitable:
-        """Wait selector result."""
+        """Wait selector result (broken)."""
+        raise NotImplementedError('This function is broken')
         if options is None:
             options = dict()
         timeout = options.get('timeout', 30000)
@@ -306,7 +307,8 @@ function predicate(selector, waitForVisible) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str) -> Awaitable:
-        """Wait function result."""
+        """Wait function result (broken)."""
+        raise NotImplementedError('This function is broken')
         if options is None:
             options = dict()
         timeout = options.get('timeout',  30000)
