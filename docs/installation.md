@@ -10,7 +10,7 @@ Stable release
 To install pyppeteer, run this command in your terminal:
 
 ```
-$ pip install pyppeteer
+$ python3 -m pip install pyppeteer
 ```
 
 This is the preferred method to install pyppeteer, as it will always install the most recent stable release. 

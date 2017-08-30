@@ -27,8 +27,16 @@ Not all features are implemented or tested currently.
 
 Pyppeteer requires python 3.6+.
 
+Install by pip from PyPI:
+
 ```
-pip install https://github.com/miyakogi/pyppeteer.git
+pytyon3 -m pip install pyppeteer
+```
+
+Or install latest version from github:
+
+```
+python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git
 ```
 
 ## Usage
