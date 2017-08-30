@@ -11,6 +11,9 @@ Unofficial Python port of
 [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless)
 chrome/chromium browser automation library.
 
+* Free software: MIT license (including the work distributed under the Apache 2.0 license)
+* Documentation: https://miyakogi.github.io/pyppeteer
+
 ## WORK IN PROGRESS
 
 Not all features are implemented or tested currently.
@@ -19,9 +22,6 @@ Not all features are implemented or tested currently.
     * PDF screenshot
     * `Page.waitForSelector()` and `Frame.waitForSelector()`
     * `Page.waitForFunction()` and `Frame.waitForFunction()`
-
-* Free software: MIT license (including the work distributed under the Apache 2.0 license)
-* Documentation: https://miyakogi.github.io/pyppeteer
 
 ## Installation
 
