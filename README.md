@@ -1,4 +1,4 @@
-pyppeteer
+Pyppeteer
 =========
 
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer.svg)](https://pypi.python.org/pypi/pyppeteer)
@@ -9,7 +9,9 @@ pyppeteer
 
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer)
 
-# !!! WORK IN PROGRESS !!!
+## WORK IN PROGRESS
+
+Not all features are implemented or tested.
 
 * Free software: MIT license (will be changed to Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
@@ -38,6 +40,39 @@ async def main(browser):
 browser = launch()
 asyncio.get_event_loop().run_until_complete(main(browser))
 browser.close()
+```
+
+Pyppeteer has almost same API as puppeteer.
+More APIs are listed in the
+[document](https://miyakogi.github.io/pyppeteer/reference.html).
+
+[Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
+is also useful for pyppeteer users.
+
+### Differences between puppeteer and pyppeteer
+
+Pyppeteer is to be as similar as puppeteer, but some differences between python
+and JavaScript make it difficult.
+
+These are differences between puppeteer and pyppeteer.
+
+#### Element selector method name (`$` -> `querySelector`)
+
+In python, `$` is not usable for method name.
+So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and
+`ElementHandle.querySelector()` instead of `ElementHandle.$()`.
+Pyppeteer has shorthand of this method, `Page.J()` and `ElementHandle.J()`.
+
+#### Argument of `Page.evaluate()` / `ElementHandle.evaluate()`
+
+Puppeteer's version of `evaluate()` takes JavaScript raw function, but
+pyppeteer takes string of JavaScript function.
+
+Example to get element's inner text:
+
+```python
+element = page.querySelector('h1')
+title = element.evaluate('(element) => element.innerText')
 ```
 
 Credits

@@ -72,7 +72,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyppeteer'
+project = u'Pyppeteer'
 copyright = u"2017, Hiroyuki Takagi"
 
 # The version info for the project you're documenting, acts as replacement

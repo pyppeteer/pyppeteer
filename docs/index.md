@@ -1,4 +1,4 @@
-Welcome to pyppeteer's documentation!
+Welcome to Pyppeteer's documentation!
 ======================================
 
 .. mdinclude:: ../README.md
