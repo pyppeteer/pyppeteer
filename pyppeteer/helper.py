@@ -86,7 +86,7 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
             'functionDeclaration': 'function() { return this; }',
             'returnByValue': True,
         })
-        return response.get('result', {'value': None}).get('value')
+        return response.get('result', {}).get('value')
     except:
         # Return description for unserializable object, e.g. 'window'.
         return remoteObject.get('description')

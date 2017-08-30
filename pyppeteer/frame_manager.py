@@ -15,7 +15,7 @@ from pyppeteer.input import Mouse
 from pyppeteer.element_handle import ElementHandle
 
 if TYPE_CHECKING:
-    from typing import Dict, Set  # noqa
+    from typing import Dict, Set  # noqa: F401
 
 
 class FrameManager(EventEmitter):
@@ -71,7 +71,8 @@ class FrameManager(EventEmitter):
         else:
             self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise Exception('We either navigate top level or have old version of the navigated frame')  # noqa: #501
+            raise Exception('We either navigate top level or have old version '
+                            'of the navigated frame')
 
         # Detach all child frames first.
         if frame:
@@ -174,7 +175,8 @@ class Frame(object):
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
+            raise Exception('Evaluation failed: ' +
+                            helper.getExceptionMessage(exceptionDetails))
         return remoteObject
 
     @property
@@ -262,7 +264,7 @@ function predicate(selector, waitForVisible) {
   const style = window.getComputedStyle(node);
   return style && style.display !== 'none' && style.visibility !== 'hidden';
 }
-'''  # noqa: E501
+'''
         return self.waitForFunction(
             predicate,
             {'timeout': timeout, 'polling': polling},

@@ -62,7 +62,8 @@ class NavigatorWatcher:
                 helper.addEventListener(
                     self._client, 'Security.certificateError',
                     lambda event: certificateError.set_exception(
-                        Exception('SSL Certificate error: ' + str(event.get('errorType')))  # noqa: E501
+                        Exception('SSL Certificate error: ' +
+                                  str(event.get('errorType')))
                     )
                 )
             )

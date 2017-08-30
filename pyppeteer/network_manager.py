@@ -81,7 +81,8 @@ class NetworkManager(EventEmitter):
         if event.get('redirectStatusCode'):
             request = self._interceptionIdToRequest[event['interceptionId']]
             if not request:
-                raise Exception('INTERNAL ERROR: failed to find request for interception redirect.')  # noqa: E501
+                raise Exception('INTERNAL ERROR: failed to find request for '
+                                'interception redirect.')
             self._handleRequestRedirect(request,
                                         event['redirectStatusCode'],
                                         event['redirectHeaders'])
@@ -106,7 +107,8 @@ class NetworkManager(EventEmitter):
 
     def _handleRequestStart(self, requestId: str, interceptionId: str,
                             url: str, requestPayload: dict) -> None:
-        request = Request(self._client, requestId, interceptionId, url, requestPayload)  # noqa: E501
+        request = Request(self._client, requestId, interceptionId, url,
+                          requestPayload)
         self._requestIdToRequest[requestId] = request
         self._interceptionIdToRequest[interceptionId] = request
         self.emit(NetworkManager.Events.Request, request)

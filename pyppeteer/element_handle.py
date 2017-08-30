@@ -31,7 +31,7 @@ class ElementHandle(object):
         await helper.releaseObject(self._client, self._remoteObject)
 
     async def evaluate(self, pageFunction: str, *args: Any) -> dict:
-        """Evaluate the pageFuncion on browser."""
+        """Evaluate the pageFunction on browser."""
         if self._disposed:
             raise Exception('ElementHandle is disposed!')
         _args = ['this']
@@ -52,7 +52,8 @@ function() {{ return ({pageFunction})({stringifiedArgs}) }}
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' + helper.getExceptionMessage(exceptionDetails))  # noqa: E501
+            raise Exception('Evaluation failed: ' +
+                            helper.getExceptionMessage(exceptionDetails))
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def _visibleCenter(self) -> Dict[str, int]:
