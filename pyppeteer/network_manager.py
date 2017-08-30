@@ -85,13 +85,13 @@ class NetworkManager(EventEmitter):
                 raise NetworkError('INTERNAL ERROR: failed to find request '
                                    'for interception redirect.')
             self._handleRequestRedirect(request,
-                                        event['redirectStatusCode'],
-                                        event['redirectHeaders'])
+                                        event.get('redirectStatusCode', 0),
+                                        event.get('redirectHeaders', {}))
             self._handleRequestStart(request._requestId,
-                                     event['interceptionId'],
-                                     event['redirectUrl'],
-                                     event['resourceType'],
-                                     event['request'])
+                                     event.get('interceptionId', ''),
+                                     event.get('redirectUrl', ''),
+                                     event.get('resourceType', ''),
+                                     event.get('request', {}))
             return
         requestHash = generateRequestHash(event['request'])
         self._requestHashToInterceptions.set(requestHash, event)
@@ -149,10 +149,14 @@ class NetworkManager(EventEmitter):
             return
         self._requestHashToRequestIds.delete(requestHash, requestId)
         self._requestHashToInterceptions.delete(requestHash, interception)
-        self._handleRequestStart(requestId, interception.interceptionId,
-                                 interception.request.url,
-                                 interception.request.resourceType,
-                                 interception.request)
+        request_obj = interception.get('request', {})
+        self._handleRequestStart(
+            requestId,
+            interception.get('interceptionId', ''),
+            request_obj.get('url', ''),
+            request_obj.get('resourceType'),
+            request_obj,
+        )
 
     def _onResponseReceived(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
