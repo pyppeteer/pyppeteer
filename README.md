@@ -13,7 +13,12 @@ chrome/chromium browser automation library.
 
 ## WORK IN PROGRESS
 
-Not all features are implemented or tested.
+Not all features are implemented or tested currently.
+
+* The following features are not implemented yet.
+    * PDF screenshot
+    * `Page.waitForSelector()` and `Frame.waitForSelector()`
+    * `Page.waitForFunction()` and `Frame.waitForFunction()`
 
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
