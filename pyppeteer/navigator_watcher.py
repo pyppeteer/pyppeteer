@@ -10,6 +10,7 @@ from typing import Any, Awaitable, Optional, TYPE_CHECKING, Union
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.errors import NetworkError
 
 if TYPE_CHECKING:
     from typing import Callable, List, Set  # noqa: F401
@@ -31,7 +32,7 @@ class NavigatorWatcher:
         self._idleInflight = options.get('networkIdleInflight', 2)
         self._waitUntil = options.get('waitUntil', 'load')
         if self._waitUntil not in ('load', 'networkidle'):
-            raise Exception(
+            raise ValueError(
                 f'Unknown value for options.waitUntil: {self._waitUntil}')
 
     def _raise_error(self, error: Exception = Exception()) -> None:
@@ -62,8 +63,8 @@ class NavigatorWatcher:
                 helper.addEventListener(
                     self._client, 'Security.certificateError',
                     lambda event: certificateError.set_exception(
-                        Exception('SSL Certificate error: ' +
-                                  str(event.get('errorType')))
+                        NetworkError('SSL Certificate error: ' +
+                                     str(event.get('errorType')))
                     )
                 )
             )

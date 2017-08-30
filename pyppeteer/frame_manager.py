@@ -11,6 +11,7 @@ from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.errors import BrowserError, NetworkError, PageError
 from pyppeteer.input import Mouse
 from pyppeteer.element_handle import ElementHandle
 
@@ -71,7 +72,7 @@ class FrameManager(EventEmitter):
         else:
             self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise Exception('We either navigate top level or have old version '
+            raise PageError('We either navigate top level or have old version '
                             'of the navigated frame')
 
         # Detach all child frames first.
@@ -180,10 +181,11 @@ class Frame(object):
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' +
-                            helper.getExceptionMessage(exceptionDetails) +
-                            f'\npageFunction:\n{pageFunction}'
-                            )
+            raise BrowserError(
+                'Evaluation failed: ' +
+                helper.getExceptionMessage(exceptionDetails) +
+                f'\npageFunction:\n{pageFunction}'
+            )
         return remoteObject
 
     @property
@@ -243,7 +245,7 @@ function addScriptTag(url) {
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
             fut = asyncio.get_event_loop().create_future()
-            fut.set_exception(Exception(
+            fut.set_exception(TypeError(
                 'Unsupported target type: ' +
                 str(type(selectorOrFunctionOrTimeout))
             ))
@@ -303,7 +305,7 @@ function predicate(selector, waitForVisible) {
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
             waitTask.terminate(
-                Exception('waitForSelector failed: frame got detached.'))
+                PageError('waitForSelector failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
@@ -319,13 +321,13 @@ class WaitTask(asyncio.Future):
         super().__init__()
         if isinstance(polling, str):
             if polling not in ('raf', 'mutation'):
-                raise Exception('Unknown polling option: ' + polling)
+                raise ValueError('Unknown polling option: ' + polling)
         elif isinstance(polling, (int, float)):
             if polling <= 0:
-                raise Exception(
+                raise ValueError(
                     f'Cannot poll with non-positive interval: {polling}')
         else:
-            raise Exception('Unknown polling options: ' + str(polling))
+            raise ValueError('Unknown polling options: ' + str(polling))
 
         self._frame: Frame = frame
         self._pageScript: str = helper.evaluationString(
@@ -339,7 +341,7 @@ class WaitTask(asyncio.Future):
         self._timeoutTimer = loop.call_later(
             timeout / 1000,
             lambda: self.terminate(
-                Exception(f'waiting failed: timeout {timeout}ms exceeded')
+                NetworkError(f'waiting failed: timeout {timeout}ms exceeded')
             )
         )
         asyncio.ensure_future(self.rerun())

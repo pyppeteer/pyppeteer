@@ -18,6 +18,7 @@ from pyppeteer.connection import Session
 from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
+from pyppeteer.errors import PageError
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse
@@ -90,14 +91,14 @@ class Page(EventEmitter):
                   lambda event: self._onDialog(event))
         client.on('Runtime.exceptionThrown',
                   lambda exception: self._handleException(
-                      exception.exceptionDetails))
+                      exception.get('exceptionDetails')))
         client.on('Security.certificateError',
                   lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
-        self.emit('error', Exception('Page crashed!'))
+        self.emit('error', PageError('Page crashed!'))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -137,7 +138,7 @@ class Page(EventEmitter):
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return await frame.querySelector(selector)
 
     async def querySelectorAll(self, selector: str
@@ -145,7 +146,7 @@ class Page(EventEmitter):
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return await frame.querySelectorAll(selector)
 
     #: alias to querySelector
@@ -169,21 +170,21 @@ class Page(EventEmitter):
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.addScriptTag(url)
 
     async def injectFile(self, filePath: str):
         """Inject file to this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.injectFile(filePath)
 
     async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
         """Execute function on this page."""
         if self._pageBindings[name]:
-            raise Exception(f'Failed to add page binding with name {name}: '
+            raise PageError(f'Failed to add page binding with name {name}: '
                             'window["{name}"] already exists!')
         self._pageBindings[name] = puppeteerFunction
 
@@ -223,7 +224,7 @@ function addPageBinding(bindingName) {
 
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
-        self.emit(Page.Events.PageError, Exception(message))
+        self.emit(Page.Events.PageError, PageError(message))
 
     async def _onConsoleAPI(self, event: dict) -> None:
         _args = event.get('args', [])
@@ -280,7 +281,7 @@ function deliverResult(name, seq, result) {
         """Get url of this page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.url
 
     async def content(self) -> str:
@@ -330,7 +331,7 @@ fucntion(html) {
         helper.removeEventListeners([listener])
 
         if self._frameManager.isMainFrameLoadingFailed():
-            raise Exception('Failed to navigate: ' + url)
+            raise PageError('Failed to navigate: ' + url)
         return responses.get(self.url)
 
     async def reload(self, options: dict = None) -> Optional[Response]:
@@ -419,7 +420,7 @@ fucntion(html) {
         """Execute js-function on this page and get result."""
         frame = self._frameManager.mainFrame
         if frame is None:
-            raise Exception('No main frame.')
+            raise PageError('No main frame.')
         return await frame.evaluate(pageFunction, *args)
 
     async def evaluateOnNewDocument(self, pageFunction: str, *args: str
@@ -441,7 +442,7 @@ fucntion(html) {
         elif mimeType == 'image/jpeg':
             screenshotType = 'jpeg'
         else:
-            raise Exception(f'Unsupported screenshot mime type: {mimeType}')
+            raise PageError(f'Unsupported screenshot mime type: {mimeType}')
         if options.get('type'):
             screenshotType = options.get('type')
         if not screenshotType:
@@ -514,7 +515,7 @@ fucntion(html) {
         """Get page title."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return await frame.title()
 
     async def close(self) -> None:
@@ -532,7 +533,7 @@ fucntion(html) {
             options = dict()
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.click(options)
         await handle.dispose()
 
@@ -540,7 +541,7 @@ fucntion(html) {
         """Mouse hover the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.hover()
         await handle.dispose()
 
@@ -548,7 +549,7 @@ fucntion(html) {
         """Focus the element which matches `selector`."""
         handle = await self.J(selector)
         if not handle:
-            raise Exception('No node found for selector: ' + selector)
+            raise PageError('No node found for selector: ' + selector)
         await handle.evaluate('element => element.focus()')
         await handle.dispose()
 
@@ -577,7 +578,7 @@ fucntion(html) {
         """Wait for function, timeout, or element which matches on page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.waitFor(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None
@@ -585,7 +586,7 @@ fucntion(html) {
         """Wait until element which matches selector appears on page."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.waitForSelector(selector, options)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
@@ -593,7 +594,7 @@ fucntion(html) {
         """Wait for function."""
         frame = self.mainFrame
         if not frame:
-            raise Exception('no main frame.')
+            raise PageError('no main frame.')
         return frame.waitForFunction(pageFunction, options, *args)
 
 

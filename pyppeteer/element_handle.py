@@ -9,6 +9,7 @@ from typing import Any, Dict
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.errors import ElementHandleError, BrowserError
 from pyppeteer.input import Mouse
 
 
@@ -33,7 +34,7 @@ class ElementHandle(object):
     async def evaluate(self, pageFunction: str, *args: Any) -> Any:
         """Evaluate the pageFunction on browser."""
         if self._disposed:
-            raise Exception('ElementHandle is disposed!')
+            raise ElementHandleError('ElementHandle is disposed!')
         _args = ['this']
         _args.extend(json.dumps(x) for x in args)
         stringifiedArgs = ','.join(_args)
@@ -52,8 +53,10 @@ function() {{ return ({pageFunction})({stringifiedArgs}) }}
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
-            raise Exception('Evaluation failed: ' +
-                            helper.getExceptionMessage(exceptionDetails))
+            raise BrowserError(
+                'Evaluation failed: ' +
+                helper.getExceptionMessage(exceptionDetails)
+            )
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def _visibleCenter(self) -> Dict[str, int]:
@@ -71,7 +74,7 @@ element => {
         ''')  # noqa: E501
         if not center:
             # raise Exception('No node found for selector: ' + selector)
-            raise Exception('No node found for selector: ')
+            raise BrowserError('No node found for selector: ')
         return center
 
     async def hover(self) -> None:

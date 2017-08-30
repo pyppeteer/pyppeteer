@@ -69,7 +69,8 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
         if unserializableValue in unserializableValueMap:
             return unserializableValueMap[unserializableValue]
         else:
-            raise Exception(
+            # BrowserError may be better
+            raise ValueError(
                 'Unsupported unserializable value: ' + str(unserializableValue)
             )
 

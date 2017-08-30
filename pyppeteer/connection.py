@@ -6,11 +6,12 @@
 import asyncio
 import json
 import logging
-
 from typing import Awaitable, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
+
+from pyppeteer.errors import NetworkError
 
 if TYPE_CHECKING:
     from typing import Callable, Dict, Optional  # noqa: F401
@@ -82,7 +83,7 @@ class Connection(EventEmitter):
         if 'error' in msg:
             error = msg['error']
             callback.set_exception(
-                Exception(f'Protocol Error: {error}'))
+                NetworkError(f'Protocol Error: {error}'))
         else:
             callback.set_result(msg.get('result'))
 
@@ -167,7 +168,7 @@ class Session(EventEmitter):
         callback.method: str = method  # type: ignore
 
         if not self._connection:
-            raise Exception('Connection closed.')
+            raise NetworkError('Connection closed.')
         await self._connection.send('Target.sendMessageToTarget', {
             'sessionId': self._sessionId,
             'message': msg,
@@ -184,7 +185,7 @@ class Session(EventEmitter):
                 msg = error.get('message')
                 data = error.get('data')
                 callback.set_exception(
-                    Exception(f'Protocol Error: {msg} {data}')
+                    NetworkError(f'Protocol Error: {msg} {data}')
                 )
             else:
                 result = obj.get('result')

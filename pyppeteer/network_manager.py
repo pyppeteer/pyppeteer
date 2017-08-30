@@ -14,6 +14,7 @@ from typing import Any, Awaitable, Dict, TYPE_CHECKING
 from pyee import EventEmitter
 
 from pyppeteer.connection import Session
+from pyppeteer.errors import NetworkError
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
@@ -81,8 +82,8 @@ class NetworkManager(EventEmitter):
         if event.get('redirectStatusCode'):
             request = self._interceptionIdToRequest[event['interceptionId']]
             if not request:
-                raise Exception('INTERNAL ERROR: failed to find request for '
-                                'interception redirect.')
+                raise NetworkError('INTERNAL ERROR: failed to find request '
+                                   'for interception redirect.')
             self._handleRequestRedirect(request,
                                         event['redirectStatusCode'],
                                         event['redirectHeaders'])
