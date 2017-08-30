@@ -134,7 +134,8 @@ html_theme = 'alabaster'
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'description': 'Headless chrome/chromium automation library',
+    'description': ('Headless chrome/chromium automation library '
+                    '(unofficial port of puppeteer)'),
     'github_user': 'miyakogi',
     'github_repo': 'pyppeteer',
     'github_banner': True,

@@ -29,7 +29,8 @@ test_requirements = [
 setup(
     name='pyppeteer',
     version='0.0.3',
-    description="Headless chrome/chromium automation library",
+    description=('Headless chrome/chromium automation library '
+                 '(unofficial port of puppeteer)'),
     long_description=readme,
 
     author="Hiroyuki Takagi",

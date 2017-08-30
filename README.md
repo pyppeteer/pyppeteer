@@ -7,7 +7,9 @@ Pyppeteer
 [![Build Status](https://travis-ci.org/miyakogi/pyppeteer.svg?branch=master)](https://travis-ci.org/miyakogi/pyppeteer)
 [![codecov](https://codecov.io/gh/miyakogi/pyppeteer/branch/master/graph/badge.svg)](https://codecov.io/ghmiyakogi//pyppeteer)
 
-Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer)
+Unofficial Python port of
+[puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless)
+chrome/chromium browser automation library.
 
 ## WORK IN PROGRESS
 
