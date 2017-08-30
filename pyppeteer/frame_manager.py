@@ -176,7 +176,9 @@ class Frame(object):
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
             raise Exception('Evaluation failed: ' +
-                            helper.getExceptionMessage(exceptionDetails))
+                            helper.getExceptionMessage(exceptionDetails) +
+                            f'\npageFunction:\n{pageFunction}'
+                            )
         return remoteObject
 
     @property
@@ -225,28 +227,29 @@ function addScriptTag(url) {
         '''
         return await self.evaluate(addScriptTag, url)
 
-    def waitFor(self, selectorOrFunctionOrTimeout: Any, options: dict = None
-                ) -> Union['WaitTask', Awaitable]:
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
+                options: dict = None) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
-        if isinstance(selectorOrFunctionOrTimeout, str):
-            return self.waitForSelector(selectorOrFunctionOrTimeout, options)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
                 asyncio.sleep(selectorOrFunctionOrTimeout))
             return fut
-        if callable(selectorOrFunctionOrTimeout):
+        if not isinstance(selectorOrFunctionOrTimeout, str):
+            fut = asyncio.get_event_loop().create_future()
+            fut.set_exception(Exception(
+                'Unsupported target type: ' +
+                str(type(selectorOrFunctionOrTimeout))
+            ))
+            return fut
+        if ('=>' in selectorOrFunctionOrTimeout or
+                selectorOrFunctionOrTimeout.startswith('function')):
             return self.waitForFunction(selectorOrFunctionOrTimeout, options)
-        fut = asyncio.get_event_loop().create_future()
-        fut.set_exception(Exception(
-            'Unsupported target type: ' +
-            str(type(selectorOrFunctionOrTimeout))
-        ))
-        return fut
+        return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None
-                        ) -> 'WaitTask':
+                        ) -> Awaitable:
         """Wait selector result."""
         if options is None:
             options = dict()
@@ -273,7 +276,7 @@ function predicate(selector, waitForVisible) {
         )
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str) -> 'WaitTask':
+                        *args: str) -> Awaitable:
         """Wait function result."""
         if options is None:
             options = dict()
@@ -302,14 +305,16 @@ function predicate(selector, waitForVisible) {
         self._parentFrame = None
 
 
-class WaitTask(object):
+class WaitTask(asyncio.Future):
     """WaitTask class."""
 
-    def __init__(self, frame: Frame, predicateBody: str, polling: str,
-                 timeout: float) -> None:
+    def __init__(self, frame: Frame, predicateBody: str,
+                 polling: Union[str, int, float], timeout: float) -> None:
         """Make new wait task."""
-        if isinstance(polling, str) and polling not in ('raf', 'mutation'):
-            raise Exception('Unknown polling option: ' + polling)
+        super().__init__()
+        if isinstance(polling, str):
+            if polling not in ('raf', 'mutation'):
+                raise Exception('Unknown polling option: ' + polling)
         elif isinstance(polling, (int, float)):
             if polling <= 0:
                 raise Exception(
@@ -321,23 +326,23 @@ class WaitTask(object):
         self._pageScript: str = helper.evaluationString(
             waitForPredicatePageFunction, predicateBody, polling, timeout)
         self._runCount: int = 0
+        self._terminated = False
         frame._waitTasks.add(self)
-        self._promise: asyncio.Future = asyncio.get_event_loop().create_future()  # noqa: E501
-        # this.promise = new Promise((resolve, reject) => {
-        #     this._resolve = resolve
-        #     this._reject = reject
-        # })
         # Since page navigation requires us to re-install the pageScript,
         # we should track timeout on our end.
-        # this._timeoutTimer = setTimeout(
-        # () => this.terminate(
-        # new Error(`waiting failed: timeout ${timeout}ms exceeded`)), timeout)
-        self.rerun()
+        loop = asyncio.get_event_loop()
+        self._timeoutTimer = loop.call_later(
+            timeout / 1000,
+            lambda: self.terminate(
+                Exception(f'waiting failed: timeout {timeout}ms exceeded')
+            )
+        )
+        asyncio.ensure_future(self.rerun())
 
     def terminate(self, error: Exception) -> None:
         """Terminate task by error."""
         self._terminated = True
-        self._promise.set_exception(error)
+        self.set_exception(error)
         self._cleanup()
 
     async def rerun(self) -> None:  # noqa: C901
@@ -366,13 +371,13 @@ class WaitTask(object):
                 return
 
         if error:
-            self._promise.set_exception(error)
+            self.set_exception(error)
         else:
-            self._promise.set_result(None)
+            self.set_result(None)
         self._cleanup()
 
     def _cleanup(self) -> None:
-        # clearTimeout(this._timeoutTimer)
+        self._timeoutTimer.cancel()
         self._frame._waitTasks.remove(self)
         self._runningTask = None
 

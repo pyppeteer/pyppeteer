@@ -9,7 +9,7 @@ import json
 import math
 import mimetypes
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from pyee import EventEmitter
 
@@ -529,6 +529,27 @@ fucntion(html) {
         await self._keyboard.down(key, options)
         await asyncio.sleep(delay)
         await self._keyboard.up(key)
+
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
+                options: dict = None) -> Awaitable:
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.waitFor(selectorOrFunctionOrTimeout, options)
+
+    def waitForSelector(self, selector: str, options: dict = None
+                        ) -> Awaitable:
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.waitForSelector(selector, options)
+
+    def waitForFunction(self, pageFunction: str, options: dict = None,
+                        *args: str) -> Awaitable:
+        frame = self.mainFrame
+        if not frame:
+            raise Exception('no main frame.')
+        return frame.waitForFunction(pageFunction, options, *args)
 
 
 async def create_page(client: Session, ignoreHTTPSErrors: bool = False,

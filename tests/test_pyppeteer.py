@@ -10,7 +10,7 @@ Tests for `pyppeteer` module.
 
 import asyncio
 import logging
-from unittest import TestCase
+import unittest
 
 from syncer import sync
 from tornado import web
@@ -51,7 +51,7 @@ class LinkHandler1(web.RequestHandler):
         ''')
 
 
-class TestPyppeteer(TestCase):
+class TestPyppeteer(unittest.TestCase):
     def setUp(self):
         self.port = get_free_port()
         self.app = web.Application([
@@ -96,6 +96,11 @@ class TestPyppeteer(TestCase):
         self.assertEqual(await self.page.title(), 'link1')
         elm = await self.page.querySelector('h1#link1')
         self.assertTrue(elm)
+
+    @unittest.skip('waitFor* is broken.')
+    @sync
+    async def test_wait_for(self):
+        await self.page.waitForSelector('h1#hello')
 
     @sync
     async def test_elm_click(self):
