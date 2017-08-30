@@ -3,6 +3,7 @@
 
 import asyncio
 import unittest
+from typing import Callable
 
 from syncer import sync
 
@@ -20,11 +21,11 @@ def setUpModule():
 
 
 class TestBase(unittest.TestCase):
-    app: Tag
+    app: Callable[[], Tag]
 
     def setUp(self):
         self.doc = get_document()
-        self.doc.body.appendChild(self.app)
+        self.doc.body.appendChild(self.app())
         self.server = start_server(port=0)
         self.addr = server_config['address']
         self.port = server_config['port']
@@ -42,7 +43,7 @@ class TestBase(unittest.TestCase):
 
 
 class TestClick(TestBase):
-    app = rev_text.sample_app()
+    app = staticmethod(rev_text.sample_app)
 
     @sync
     async def test_click(self):
@@ -55,10 +56,10 @@ class TestClick(TestBase):
 
 
 class TestInput(TestBase):
-    app = data_binding.sample_app()
+    app = staticmethod(data_binding.sample_app)
 
     @sync
-    async def test_click(self):
+    async def test_keyboard_sendchar(self):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Hello!')
         await self.page.focus('input')
@@ -68,9 +69,20 @@ class TestInput(TestBase):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'abc')
 
+    @sync
+    async def test_page_type(self):
+        text = await self.page.plainText()
+        self.assertEqual(text.strip(), 'Hello!')
+        await self.page.focus('input')
+        await self.wait()
+        await self.page.type('abc', {})
+        await self.wait()
+        text = await self.page.plainText()
+        self.assertEqual(text.strip(), 'abc')
+
 
 class TestDrag(TestBase):
-    app = drag.sample_app()
+    app = staticmethod(drag.sample_app)
 
     @sync
     async def test_click(self):

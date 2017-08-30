@@ -512,6 +512,24 @@ fucntion(html) {
         await handle.evaluate('element => element.focus()')
         await handle.dispose()
 
+    async def type(self, text: str, options: dict = None) -> None:
+        options = options or dict()
+        delay = options.get('delay', 0)
+        last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
+        for char in text:
+            last = asyncio.ensure_future(
+                self.press(char, {'text': char, 'delay': delay})
+            )
+            await asyncio.sleep(delay)
+        await last
+
+    async def press(self, key: str, options: dict = None) -> None:
+        options = options or dict()
+        delay = options.get('delay', 0)
+        await self._keyboard.down(key, options)
+        await asyncio.sleep(delay)
+        await self._keyboard.up(key)
+
 
 async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
                       screenshotTaskQueue: list = None) -> Page:
