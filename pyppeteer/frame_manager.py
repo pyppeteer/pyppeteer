@@ -202,7 +202,7 @@ class Frame(object):
         return list(self._childFrames)
 
     @property
-    def idDetached(self) -> bool:
+    def isDetached(self) -> bool:
         """Check if this frame is detached."""
         return self._detached
 

@@ -261,6 +261,18 @@ function deliverResult(name, seq, result) {
             raise Exception('no main frame.')
         return frame.url
 
+    async def content(self) -> str:
+        return await self.evaluate('''
+() => {
+  let retVal = '';
+  if (document.doctype)
+    retVal = new XMLSerializer().serializeToString(document.doctype);
+  if (document.documentElement)
+    retVal += document.documentElement.outerHTML;
+  return retVal;
+}
+        '''.strip())
+
     async def setContent(self, html: str) -> None:
         """Set content."""
         func = '''
@@ -460,15 +472,6 @@ fucntion(html) {
     async def plainText(self) -> str:
         """Get page content as plain text."""
         return await self.evaluate('() => document.body.innerText')
-
-    async def html(self) -> str:
-        """Get page html."""
-        return await self.evaluate('''
-() => {
-    let doctype = document.doctype ? document.doctype : '';
-    return doctype + document.documentElement.outerHTML;
-}
-        ''')
 
     async def title(self) -> str:
         """Get page title."""

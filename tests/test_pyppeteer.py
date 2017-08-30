@@ -79,8 +79,8 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
-    async def test_html(self):
-        html = await self.page.html()
+    async def test_content(self):
+        html = await self.page.content()
         self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
 
     @sync
