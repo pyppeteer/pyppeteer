@@ -155,16 +155,37 @@ class Page(EventEmitter):
     JJ = querySelectorAll
 
     async def cookies(self, *urls: str) -> dict:
-        """Not Implemented."""
-        raise NotImplementedError
+        """Get cookies."""
+        if not urls:
+            urls = (self.url, )
+        resp = await self._client.send('Network.getCookies', {
+            'urls': urls,
+        })
+        return resp.get('cookies', {})
 
-    async def deleteCookie(self, *cookies: List[dict]) -> None:
-        """Not Implemented."""
-        raise NotImplementedError
+    async def deleteCookie(self, *cookies: dict) -> None:
+        """Delete cookie."""
+        pageURL = self.url
+        for cookie in cookies:
+            item = dict(**cookie)
+            if not cookie.get('url') and pageURL.startswith('http'):
+                item['url'] = pageURL
+            await self._client.send('Network.deleteCookies', item)
 
-    async def setCookie(self, *cookies: List[dict]) -> None:
-        """Not Implemented."""
-        raise NotImplementedError
+    async def setCookie(self, *cookies: dict) -> None:
+        """Set cookies."""
+        items = []
+        for cookie in cookies:
+            item = dict(**cookie)
+            pageURL = self.url
+            if 'url' not in item and pageURL.startswith('http'):
+                item['url'] = pageURL
+            items.append(item)
+        await self.deleteCookie(*items)
+        if items:
+            await self._client.send('Network.setCookies', {
+                'cookies': items,
+            })
 
     async def addScriptTag(self, url: str):
         """Add script tag to this page."""

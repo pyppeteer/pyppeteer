@@ -153,3 +153,67 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(await self.page.title(), 'link1')
         btn2 = await self.page.querySelector('#link1')
         self.assertTrue(btn2)
+
+    @sync
+    async def test_cookies(self) -> None:
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [])
+        await self.page.evaluate(
+            '() => {document.cookie = "username=John Doe"}'
+        )
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'username',
+            'value': 'John Doe',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': 0,
+            'size': 16,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+        await self.page.setCookie({'name': 'password', 'value': '123456'})
+        cookies = await self.page.evaluate(
+            '() => document.cookie'
+        )
+        self.assertEqual(cookies, 'username=John Doe; password=123456')
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'password',
+            'value': '123456',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': 0,
+            'size': 14,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }, {
+            'name': 'username',
+            'value': 'John Doe',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': 0,
+            'size': 16,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+        await self.page.deleteCookie({'name': 'username'})
+        cookies = await self.page.evaluate(
+            '() => document.cookie'
+        )
+        self.assertEqual(cookies, 'password=123456')
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'password',
+            'value': '123456',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': 0,
+            'size': 14,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
