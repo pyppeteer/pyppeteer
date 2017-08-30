@@ -1,0 +1,248 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.4 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+  <!-- font -->
+  <link href='https://fonts.googleapis.com/css?family=Raleway:500' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,400italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Noto+Serif:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <!-- Style -->
+  
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-pyppeteer-s-documentation">
+<h1>Welcome to Pyppeteer’s documentation!<a class="headerlink" href="#welcome-to-pyppeteer-s-documentation" title="Permalink to this headline">¶</a></h1>
+</div>
+<div class="section" id="pyppeteer">
+<h1>Pyppeteer<a class="headerlink" href="#pyppeteer" title="Permalink to this headline">¶</a></h1>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/pyppeteer"><img alt="PyPI" src="https://img.shields.io/pypi/v/pyppeteer.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.python.org/pypi/pyppeteer"><img alt="PyPI version" src="https://img.shields.io/pypi/pyversions/pyppeteer.svg" /></a>
+<a class="reference external image-reference" href="https://miyakogi.github.io/pyppeteer"><img alt="Documentation" src="https://img.shields.io/badge/docs-latest-brightgreen.svg" /></a>
+<a class="reference external image-reference" href="https://travis-ci.org/miyakogi/pyppeteer"><img alt="Build Status" src="https://travis-ci.org/miyakogi/pyppeteer.svg?branch=master" /></a>
+<a class="reference external image-reference" href="https://codecov.io/ghmiyakogi//pyppeteer"><img alt="codecov" src="https://codecov.io/gh/miyakogi/pyppeteer/branch/master/graph/badge.svg" /></a>
+<p>Unofficial Python port of
+<a class="reference external" href="https://github.com/GoogleChrome/puppeteer">puppeteer</a> JavaScript (headless)
+chrome/chromium browser automation library.</p>
+<div class="section" id="work-in-progress">
+<h2>WORK IN PROGRESS<a class="headerlink" href="#work-in-progress" title="Permalink to this headline">¶</a></h2>
+<p>Not all features are implemented or tested currently.</p>
+<ul class="simple">
+<li>The following features are not implemented yet.<ul>
+<li>PDF screenshot</li>
+<li><code class="docutils literal"><span class="pre">Page.waitForSelector()</span></code> and <code class="docutils literal"><span class="pre">Frame.waitForSelector()</span></code></li>
+<li><code class="docutils literal"><span class="pre">Page.waitForFunction()</span></code> and <code class="docutils literal"><span class="pre">Frame.waitForFunction()</span></code></li>
+</ul>
+</li>
+<li>Free software: MIT license (including the work distributed under the Apache 2.0 license)</li>
+<li>Documentation: <a class="reference external" href="https://miyakogi.github.io/pyppeteer">https://miyakogi.github.io/pyppeteer</a></li>
+</ul>
+</div>
+<div class="section" id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
+<p>Pyppeteer requires python 3.6+.</p>
+<p>Install by pip from PyPI:</p>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>pytyon3 -m pip install pyppeteer
+</pre></div>
+</div>
+<p>Or install latest version from github:</p>
+<div class="highlight-guess"><div class="highlight"><pre><span></span>python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>Below code open web page and take a screenshot.</p>
+<div class="highlight-py"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.launcher</span> <span class="kn">import</span> <span class="n">launch</span>
+
+<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">browser</span><span class="p">):</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="n">await</span> <span class="n">browser</span><span class="o">.</span><span class="n">newPage</span><span class="p">()</span>
+    <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;http://example.com&#39;</span><span class="p">)</span>
+    <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">({</span><span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example.png&#39;</span><span class="p">})</span>
+
+<span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">browser</span><span class="p">))</span>
+<span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Pyppeteer has almost same API as puppeteer.
+More APIs are listed in the
+<a class="reference external" href="https://miyakogi.github.io/pyppeteer/reference.html">document</a>.</p>
+<p><a class="reference external" href="https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#">Puppeteer’s document</a>
+is also useful for pyppeteer users.</p>
+<div class="section" id="differences-between-puppeteer-and-pyppeteer">
+<h3>Differences between puppeteer and pyppeteer<a class="headerlink" href="#differences-between-puppeteer-and-pyppeteer" title="Permalink to this headline">¶</a></h3>
+<p>Pyppeteer is to be as similar as puppeteer, but some differences between python
+and JavaScript make it difficult.</p>
+<p>These are differences between puppeteer and pyppeteer.</p>
+<div class="section" id="element-selector-method-name-queryselector">
+<h4>Element selector method name (<code class="docutils literal"><span class="pre">$</span></code> -&gt; <code class="docutils literal"><span class="pre">querySelector</span></code>)<a class="headerlink" href="#element-selector-method-name-queryselector" title="Permalink to this headline">¶</a></h4>
+<p>In python, <code class="docutils literal"><span class="pre">$</span></code> is not usable for method name.
+So pyppeteer uses <code class="docutils literal"><span class="pre">Page.querySelector()</span></code> instead of <code class="docutils literal"><span class="pre">Page.$()</span></code>, and
+<code class="docutils literal"><span class="pre">ElementHandle.querySelector()</span></code> instead of <code class="docutils literal"><span class="pre">ElementHandle.$()</span></code>.
+Pyppeteer has shorthand of this method, <code class="docutils literal"><span class="pre">Page.J()</span></code> and <code class="docutils literal"><span class="pre">ElementHandle.J()</span></code>.</p>
+</div>
+<div class="section" id="argument-of-page-evaluate-elementhandle-evaluate">
+<h4>Argument of <code class="docutils literal"><span class="pre">Page.evaluate()</span></code> / <code class="docutils literal"><span class="pre">ElementHandle.evaluate()</span></code><a class="headerlink" href="#argument-of-page-evaluate-elementhandle-evaluate" title="Permalink to this headline">¶</a></h4>
+<p>Puppeteer’s version of <code class="docutils literal"><span class="pre">evaluate()</span></code> takes JavaScript raw function, but
+pyppeteer takes string of JavaScript function.</p>
+<p>Example to get element’s inner text:</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">element</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">)</span>
+<span class="n">title</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;(element) =&gt; element.innerText&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="credits">
+<h2>Credits<a class="headerlink" href="#credits" title="Permalink to this headline">¶</a></h2>
+<p>This package was created with Cookiecutter* and the <code class="docutils literal"><span class="pre">audreyr/cookiecutter-pypackage</span></code>* project template.</p>
+</div>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#stable-release">Stable release</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#from-sources">From sources</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#launcher">Launcher</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#browser">Browser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#page">Page</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#keyboard">Keyboard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#mouse">Mouse</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#tracing">Tracing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#dialog">Dialog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#frame">Frame</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#elementhandle">ElementHandle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#request">Request</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#response">Response</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">Pyppeteer</a></h1>
+
+
+
+<p class="blurb">Headless chrome/chromium automation library (unofficial port of puppeteer)</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=miyakogi&repo=pyppeteer&type=mark&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="installation.html" title="next chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Hiroyuki Takagi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/index.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+    <a href="https://github.com/miyakogi/pyppeteer" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

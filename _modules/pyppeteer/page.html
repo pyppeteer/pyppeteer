@@ -1,0 +1,761 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.4 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.0.4',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <!-- font -->
+  <link href='https://fonts.googleapis.com/css?family=Raleway:500' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,400italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Noto+Serif:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <!-- Style -->
+  
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyppeteer.page</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;Page module.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">mimetypes</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">SimpleNamespace</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">pyee</span> <span class="k">import</span> <span class="n">EventEmitter</span>
+
+<span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.dialog</span> <span class="k">import</span> <span class="n">Dialog</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.element_handle</span> <span class="k">import</span> <span class="n">ElementHandle</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.emulation_manager</span> <span class="k">import</span> <span class="n">EmulationManager</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">PageError</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">Frame</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">FrameManager</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Keyboard</span><span class="p">,</span> <span class="n">Mouse</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.navigator_watcher</span> <span class="k">import</span> <span class="n">NavigatorWatcher</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.network_manager</span> <span class="k">import</span> <span class="n">NetworkManager</span><span class="p">,</span> <span class="n">Response</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.tracing</span> <span class="k">import</span> <span class="n">Tracing</span>
+
+
+<div class="viewcode-block" id="Page"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page">[docs]</a><span class="k">class</span> <span class="nc">Page</span><span class="p">(</span><span class="n">EventEmitter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Page class.&quot;&quot;&quot;</span>
+
+    <span class="n">Events</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
+        <span class="n">Console</span><span class="o">=</span><span class="s1">&#39;console&#39;</span><span class="p">,</span>
+        <span class="n">Dialog</span><span class="o">=</span><span class="s1">&#39;dialog&#39;</span><span class="p">,</span>
+        <span class="n">Error</span><span class="o">=</span><span class="s1">&#39;error&#39;</span><span class="p">,</span>
+        <span class="n">PageError</span><span class="o">=</span><span class="s1">&#39;pageerror&#39;</span><span class="p">,</span>
+        <span class="n">Request</span><span class="o">=</span><span class="s1">&#39;request&#39;</span><span class="p">,</span>
+        <span class="n">Response</span><span class="o">=</span><span class="s1">&#39;response&#39;</span><span class="p">,</span>
+        <span class="n">RequestFailed</span><span class="o">=</span><span class="s1">&#39;requestfailed&#39;</span><span class="p">,</span>
+        <span class="n">RequestFinished</span><span class="o">=</span><span class="s1">&#39;requestfinished&#39;</span><span class="p">,</span>
+        <span class="n">FrameAttached</span><span class="o">=</span><span class="s1">&#39;frameattached&#39;</span><span class="p">,</span>
+        <span class="n">FrameDetached</span><span class="o">=</span><span class="s1">&#39;framedetached&#39;</span><span class="p">,</span>
+        <span class="n">FrameNavigated</span><span class="o">=</span><span class="s1">&#39;framenavigated&#39;</span><span class="p">,</span>
+        <span class="n">Load</span><span class="o">=</span><span class="s1">&#39;load&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                 <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">screenshotTaskQueue</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make new page object.&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span> <span class="o">=</span> <span class="n">Keyboard</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span> <span class="o">=</span> <span class="n">Mouse</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span> <span class="o">=</span> <span class="n">FrameManager</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span> <span class="o">=</span> <span class="n">NetworkManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_emulationManager</span> <span class="o">=</span> <span class="n">EmulationManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tracing</span> <span class="o">=</span> <span class="n">Tracing</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pageBindings</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span> <span class="o">=</span> <span class="n">ignoreHTTPSErrors</span>
+
+        <span class="k">if</span> <span class="n">screenshotTaskQueue</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">screenshotTaskQueue</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span> <span class="o">=</span> <span class="n">screenshotTaskQueue</span>
+
+        <span class="n">_fm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span>
+        <span class="n">_fm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">FrameManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameAttached</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameAttached</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+        <span class="n">_fm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">FrameManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameDetached</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameDetached</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+        <span class="n">_fm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">FrameManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameNavigated</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameNavigated</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+
+        <span class="n">_nm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span>
+        <span class="n">_nm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Request</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Request</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+        <span class="n">_nm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+        <span class="n">_nm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">RequestFailed</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">RequestFailed</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+        <span class="n">_nm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">RequestFinished</span><span class="p">,</span>
+               <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">RequestFinished</span><span class="p">,</span> <span class="n">event</span><span class="p">))</span>
+
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Page.loadEventFired&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Load</span><span class="p">))</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Runtime.consoleAPICalled&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_onConsoleAPI</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Page.javascriptDialogOpening&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_onDialog</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Runtime.exceptionThrown&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">exception</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_handleException</span><span class="p">(</span>
+                      <span class="n">exception</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">)))</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Security.certificateError&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_onCertificateError</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Inspector.targetCrashed&#39;</span><span class="p">,</span>
+                  <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_onTargetCrashed</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">_onTargetCrashed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;Page crashed!&#39;</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mainFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get main frame.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">_mainFrame</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">keyboard</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Keyboard&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get keybord object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">tracing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Tracing&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get tracing object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tracing</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">frames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get frames.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+<div class="viewcode-block" id="Page.setRequestInterceptionEnabled"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setRequestInterceptionEnabled">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setRequestInterceptionEnabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Enable request interception.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setRequestInterceptionEnabled</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_onCertificateError</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Security.handleCertificateError&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;eventId&#39;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;eventId&#39;</span><span class="p">),</span>
+                <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="s1">&#39;continue&#39;</span>
+            <span class="p">})</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Page.querySelector"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.querySelector">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get Element which matches `selector`.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.querySelectorAll"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.querySelectorAll">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span>
+                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get Element which matches `selector`.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">querySelectorAll</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span></div>
+
+    <span class="c1">#: alias to querySelector</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">querySelector</span>
+    <span class="c1">#: alias to querySelectorAll</span>
+    <span class="n">JJ</span> <span class="o">=</span> <span class="n">querySelectorAll</span>
+
+<div class="viewcode-block" id="Page.cookies"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.cookies">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">cookies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">urls</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get cookies.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">urls</span><span class="p">:</span>
+            <span class="n">urls</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="p">)</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.getCookies&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;urls&#39;</span><span class="p">:</span> <span class="n">urls</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="p">{})</span></div>
+
+<div class="viewcode-block" id="Page.deleteCookie"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.deleteCookie">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">deleteCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">cookies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Delete cookie.&quot;&quot;&quot;</span>
+        <span class="n">pageURL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+        <span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">cookies</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">cookie</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cookie</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">pageURL</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">):</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pageURL</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.deleteCookies&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.setCookie"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setCookie">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">cookies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set cookies.&quot;&quot;&quot;</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">cookies</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">cookie</span><span class="p">)</span>
+            <span class="n">pageURL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
+            <span class="k">if</span> <span class="s1">&#39;url&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">item</span> <span class="ow">and</span> <span class="n">pageURL</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">):</span>
+                <span class="n">item</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pageURL</span>
+            <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">deleteCookie</span><span class="p">(</span><span class="o">*</span><span class="n">items</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.setCookies&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;cookies&#39;</span><span class="p">:</span> <span class="n">items</span><span class="p">,</span>
+            <span class="p">})</span></div>
+
+<div class="viewcode-block" id="Page.addScriptTag"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.addScriptTag">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">addScriptTag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add script tag to this page.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">addScriptTag</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.injectFile"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.injectFile">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">injectFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filePath</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Inject file to this page.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">injectFile</span><span class="p">(</span><span class="n">filePath</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.exposeFunction"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.exposeFunction">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">exposeFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">puppeteerFunction</span><span class="p">:</span> <span class="n">Callable</span>
+                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute function on this page.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pageBindings</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Failed to add page binding with name </span><span class="si">{name}</span><span class="s1">: &#39;</span>
+                            <span class="s1">&#39;window[&quot;</span><span class="si">{name}</span><span class="s1">&quot;] already exists!&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pageBindings</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">puppeteerFunction</span>
+
+        <span class="n">addPageBinding</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">function addPageBinding(bindingName) {</span>
+<span class="s1">  window[bindingName] = async(...args) =&gt; {</span>
+<span class="s1">    const me = window[bindingName];</span>
+<span class="s1">    let callbacks = me[&#39;callbacks&#39;];</span>
+<span class="s1">    if (!callbacks) {</span>
+<span class="s1">      callbacks = new Map();</span>
+<span class="s1">      me[&#39;callbacks&#39;] = callbacks;</span>
+<span class="s1">    }</span>
+<span class="s1">    const seq = (me[&#39;lastSeq&#39;] || 0) + 1;</span>
+<span class="s1">    me[&#39;lastSeq&#39;] = seq;</span>
+<span class="s1">    const promise = new Promise(fulfill =&gt; callbacks.set(seq, fulfill));</span>
+<span class="s1">    // eslint-disable-next-line no-console</span>
+<span class="s1">    console.debug(&#39;driver:page-binding&#39;, JSON.stringify({name: bindingName, seq, args}));</span>
+<span class="s1">    return promise;</span>
+<span class="s1">  };</span>
+<span class="s1">}</span>
+<span class="s1">        &#39;&#39;&#39;</span>  <span class="c1"># noqa: E501</span>
+        <span class="n">expression</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span><span class="n">addPageBinding</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.addScriptToEvaluateOnNewDocument&#39;</span><span class="p">,</span>
+                                <span class="p">{</span><span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="n">expression</span><span class="p">})</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">expression</span><span class="p">,</span>
+            <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">True</span>
+        <span class="p">})</span></div>
+
+<div class="viewcode-block" id="Page.setExtraHTTPHeaders"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setExtraHTTPHeaders">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setExtraHTTPHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;Set extra http headers.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setExtraHTTPHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.setUserAgent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setUserAgent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setUserAgent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userAgent</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set user agent.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">userAgent</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_handleException</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exceptionDetails</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">getExceptionMessage</span><span class="p">(</span><span class="n">exceptionDetails</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">PageError</span><span class="p">,</span> <span class="n">PageError</span><span class="p">(</span><span class="n">message</span><span class="p">))</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_onConsoleAPI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_args</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;debug&#39;</span> <span class="ow">and</span> <span class="n">_args</span> <span class="ow">and</span>
+                <span class="n">_args</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;driver:page-binding&#39;</span><span class="p">):</span>
+            <span class="n">obj</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">_args</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s1">&#39;value&#39;</span><span class="p">])</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)</span>
+            <span class="n">seq</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;seq&#39;</span><span class="p">)</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pageBindings</span><span class="p">[</span><span class="n">name</span><span class="p">](</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+
+            <span class="n">deliverResult</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">function deliverResult(name, seq, result) {</span>
+<span class="s1">  window[name][&#39;callbacks&#39;].get(seq)(result)</span>
+<span class="s1">  window[name][&#39;callbacks&#39;].delete(seq)</span>
+<span class="s1">}</span>
+<span class="s1">            &#39;&#39;&#39;</span>
+            <span class="n">expression</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span><span class="n">deliverResult</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span>
+                                                 <span class="n">result</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">expression</span>
+            <span class="p">})</span>
+            <span class="k">return</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">listeners</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">_args</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">helper</span><span class="o">.</span><span class="n">releaseObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">_args</span><span class="p">:</span>
+            <span class="n">_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
+                <span class="n">helper</span><span class="o">.</span><span class="n">serializeRemoteObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">arg</span><span class="p">)))</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">_values</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">,</span> <span class="o">*</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_onDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dialogType</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="n">_type</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;alert&#39;</span><span class="p">:</span>
+            <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Alert</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;confirm&#39;</span><span class="p">):</span>
+            <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Confirm</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;prompt&#39;</span><span class="p">):</span>
+            <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Prompt</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;beforeunload&#39;</span><span class="p">):</span>
+            <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">BeforeUnload</span>
+        <span class="n">dialog</span> <span class="o">=</span> <span class="n">Dialog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">dialogType</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;message&#39;</span><span class="p">),</span>
+                        <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;defaultPrompt&#39;</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Dialog</span><span class="p">,</span> <span class="n">dialog</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get url of this page.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">url</span>
+
+<div class="viewcode-block" id="Page.content"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.content">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the whole HTML contents of the page.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">() =&gt; {</span>
+<span class="s1">  let retVal = &#39;&#39;;</span>
+<span class="s1">  if (document.doctype)</span>
+<span class="s1">    retVal = new XMLSerializer().serializeToString(document.doctype);</span>
+<span class="s1">  if (document.documentElement)</span>
+<span class="s1">    retVal += document.documentElement.outerHTML;</span>
+<span class="s1">  return retVal;</span>
+<span class="s1">}</span>
+<span class="s1">        &#39;&#39;&#39;</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Page.setContent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setContent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setContent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">html</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set content.&quot;&quot;&quot;</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">fucntion(html) {</span>
+<span class="s1">  document.open();</span>
+<span class="s1">  document.write(html);</span>
+<span class="s1">  document.close();</span>
+<span class="s1">}</span>
+<span class="s1">&#39;&#39;&#39;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">html</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.goto"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.goto">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">goto</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span>
+                   <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Got to url.&quot;&quot;&quot;</span>
+        <span class="n">watcher</span> <span class="o">=</span> <span class="n">NavigatorWatcher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">,</span>
+                                   <span class="n">options</span><span class="p">)</span>
+        <span class="n">responses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Response</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">listener</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="p">,</span> <span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">response</span><span class="p">:</span> <span class="n">responses</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">watcher</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">())</span>
+        <span class="n">referrer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">extraHTTPHeaders</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;referer&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.navigate&#39;</span><span class="p">,</span>
+                                    <span class="nb">dict</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">referrer</span><span class="o">=</span><span class="n">referrer</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">watcher</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+            <span class="k">raise</span>
+        <span class="k">await</span> <span class="n">result</span>
+        <span class="n">helper</span><span class="o">.</span><span class="n">removeEventListeners</span><span class="p">([</span><span class="n">listener</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">isMainFrameLoadingFailed</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;Failed to navigate: &#39;</span> <span class="o">+</span> <span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">responses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.reload"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.reload">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">reload</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Reload this page.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.reload&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.waitForNavigation"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitForNavigation">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">waitForNavigation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span>
+                                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Wait navigation completes.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">watcher</span> <span class="o">=</span> <span class="n">NavigatorWatcher</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">,</span>
+                                   <span class="n">options</span><span class="p">)</span>
+        <span class="n">responses</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Response</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">listener</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="p">,</span>
+            <span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span>
+            <span class="k">lambda</span> <span class="n">response</span><span class="p">:</span> <span class="n">responses</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">await</span> <span class="n">watcher</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">()</span>
+        <span class="n">helper</span><span class="o">.</span><span class="n">removeEventListeners</span><span class="p">([</span><span class="n">listener</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">responses</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.goBack"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.goBack">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">goBack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Go back history.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_go</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.goForward"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.goForward">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">goForward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Go forward history.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_go</span><span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_go</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]:</span>
+        <span class="n">history</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.getNavigationHistory&#39;</span><span class="p">)</span>
+        <span class="n">_count</span> <span class="o">=</span> <span class="n">history</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;currentIndex&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">delta</span>
+        <span class="n">entries</span> <span class="o">=</span> <span class="n">history</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;entries&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">entries</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">_count</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">entry</span> <span class="o">=</span> <span class="n">entries</span><span class="p">[</span><span class="n">_count</span><span class="p">]</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.navigateToHistoryEntry&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;entryId&#39;</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Page.emulate"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.emulate">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">emulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Emulate viewport and user agent.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setViewport</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;viewport&#39;</span><span class="p">,</span> <span class="p">{}))</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userAgent&#39;</span><span class="p">,</span> <span class="p">{}))</span></div>
+
+<div class="viewcode-block" id="Page.setJavaScriptEnabled"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setJavaScriptEnabled">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setJavaScriptEnabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set JavaScript enabled/disabled.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Emulation.setScriptExecutionDisabled&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">,</span>
+        <span class="p">})</span></div>
+
+<div class="viewcode-block" id="Page.emulateMedia"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.emulateMedia">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">emulateMedia</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mediaType</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Emulate css media type of the page.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mediaType</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;screen&#39;</span><span class="p">,</span> <span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unsupported media type: </span><span class="si">{mediaType}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Emulation.setEmulatedMedia&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;media&#39;</span><span class="p">:</span> <span class="n">mediaType</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
+        <span class="p">})</span></div>
+
+<div class="viewcode-block" id="Page.setViewport"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setViewport">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setViewport</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viewport</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Set viewport.&quot;&quot;&quot;</span>
+        <span class="n">needsReload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emulationManager</span><span class="o">.</span><span class="n">emulateViewport</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">viewport</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span> <span class="o">=</span> <span class="n">viewport</span>
+        <span class="k">if</span> <span class="n">needsReload</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get viewport.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span>
+
+<div class="viewcode-block" id="Page.evaluate"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.evaluate">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute js-function on this page and get result.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.evaluateOnNewDocument"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.evaluateOnNewDocument">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluateOnNewDocument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span>
+                                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate js-function on new document.&quot;&quot;&quot;</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.addScriptToEvaluateOnNewDocument&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+        <span class="p">})</span></div>
+
+<div class="viewcode-block" id="Page.screenshot"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.screenshot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Take screen shot.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">screenshotType</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">):</span>
+            <span class="n">mimeType</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/png&#39;</span><span class="p">:</span>
+            <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;png&#39;</span>
+        <span class="k">elif</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/jpeg&#39;</span><span class="p">:</span>
+            <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;jpeg&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unsupported screenshot mime type: </span><span class="si">{mimeType}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">):</span>
+            <span class="n">screenshotType</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">screenshotType</span><span class="p">:</span>
+            <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;png&#39;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTask</span><span class="p">(</span><span class="n">screenshotType</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_screenshotTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>  <span class="c1"># noqa: C901,E501</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.activateTarget&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">targetId</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">clip</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clip&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">clip</span><span class="p">:</span>
+            <span class="n">clip</span><span class="p">[</span><span class="s1">&#39;scale&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fullPage&#39;</span><span class="p">):</span>
+            <span class="n">metrics</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.getLayoutMetrics&#39;</span><span class="p">)</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;contentSize&#39;</span><span class="p">][</span><span class="s1">&#39;width&#39;</span><span class="p">])</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;contentSize&#39;</span><span class="p">][</span><span class="s1">&#39;height&#39;</span><span class="p">])</span>
+
+            <span class="c1"># Overwrite clip for full page at all times.</span>
+            <span class="n">clip</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">mobile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;isMobile&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="n">deviceScaleFactor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;deviceScaleFactor&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">landscape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;isLandscape&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">landscape</span><span class="p">:</span>
+                <span class="n">screenOrientation</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;landscapePrimary&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">screenOrientation</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">angle</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s1">&#39;portraitPrimary&#39;</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Emulation.setDeviceMetricsOverride&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;mobile&#39;</span><span class="p">:</span> <span class="n">mobile</span><span class="p">,</span>
+                <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span>
+                <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">,</span>
+                <span class="s1">&#39;deviceScaleFactor&#39;</span><span class="p">:</span> <span class="n">deviceScaleFactor</span><span class="p">,</span>
+                <span class="s1">&#39;screenOrientation&#39;</span><span class="p">:</span> <span class="n">screenOrientation</span><span class="p">,</span>
+            <span class="p">})</span>
+
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;omitBackground&#39;</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+                <span class="s1">&#39;Emulation.setDefaultBackgroundColorOverride&#39;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;r&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}},</span>
+            <span class="p">)</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;format&#39;</span><span class="p">:</span> <span class="nb">format</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">clip</span><span class="p">:</span>
+            <span class="n">opt</span><span class="p">[</span><span class="s1">&#39;clip&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clip</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.captureScreenshot&#39;</span><span class="p">,</span> <span class="n">opt</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;omitBackground&#39;</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+                <span class="s1">&#39;Emulation.setDefaultBackgroundColorOverride&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fullPage&#39;</span><span class="p">):</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setViewport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="p">)</span>
+
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="n">_path</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_path</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">buffer</span>
+
+<div class="viewcode-block" id="Page.pdf"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.pdf">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Not yet implemented.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="Page.plainText"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.plainText">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">plainText</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get page content as plain text.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;() =&gt; document.body.innerText&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.title"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.title">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get page title.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">title</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Page.close"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Close connection.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mouse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mouse</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get mouse object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span>
+
+<div class="viewcode-block" id="Page.click"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.click">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Click element which matches `selector`.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No node found for selector: &#39;</span> <span class="o">+</span> <span class="n">selector</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Page.hover"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.hover">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">hover</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Mouse hover the element which matches `selector`.&quot;&quot;&quot;</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No node found for selector: &#39;</span> <span class="o">+</span> <span class="n">selector</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">hover</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Page.focus"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.focus">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">focus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Focus the element which matches `selector`.&quot;&quot;&quot;</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No node found for selector: &#39;</span> <span class="o">+</span> <span class="n">selector</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;element =&gt; element.focus()&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Page.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.type">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Type text on the page.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">last</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">char</span><span class="p">,</span> <span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="n">delay</span><span class="p">})</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">last</span></div>
+
+<div class="viewcode-block" id="Page.press"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.press">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Press key.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">down</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.waitFor"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitFor">[docs]</a>    <span class="k">def</span> <span class="nf">waitFor</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selectorOrFunctionOrTimeout</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+                <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Wait for function, timeout, or element which matches on page.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">waitFor</span><span class="p">(</span><span class="n">selectorOrFunctionOrTimeout</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.waitForSelector"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitForSelector">[docs]</a>    <span class="k">def</span> <span class="nf">waitForSelector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span>
+                        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Wait until element which matches selector appears on page.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">waitForSelector</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Page.waitForFunction"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitForFunction">[docs]</a>    <span class="k">def</span> <span class="nf">waitForFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Wait for function.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">waitForFunction</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">create_page</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                      <span class="n">screenshotTaskQueue</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Async function which make new page.&quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Security.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
+    <span class="k">if</span> <span class="n">ignoreHTTPSErrors</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Security.setOverrideCertificateErrors&#39;</span><span class="p">,</span>
+                          <span class="p">{</span><span class="s1">&#39;override&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="n">Page</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">,</span> <span class="n">screenshotTaskQueue</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;about:blank&#39;</span><span class="p">)</span>
+    <span class="c1"># await page.setViewport({&#39;width&#39;: 800, &#39;height&#39;: 600})</span>
+    <span class="k">return</span> <span class="n">page</span>
+
+
+<span class="c1">#: alias to :func:`create_page()`</span>
+<span class="n">craete</span> <span class="o">=</span> <span class="n">create_page</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Pyppeteer</a></h1>
+
+
+
+<p class="blurb">Headless chrome/chromium automation library (unofficial port of puppeteer)</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=miyakogi&repo=pyppeteer&type=mark&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">API Reference</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Hiroyuki Takagi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/miyakogi/pyppeteer" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>
