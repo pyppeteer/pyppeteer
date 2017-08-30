@@ -52,20 +52,24 @@ class LinkHandler1(web.RequestHandler):
 
 
 class TestPyppeteer(unittest.TestCase):
-    def setUp(self):
-        self.port = get_free_port()
-        self.app = web.Application([
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        cls.app = web.Application([
             ('/', MainHandler),
             ('/1', LinkHandler1),
         ], logging='error')
-        self.server = self.app.listen(self.port)
-        self.browser = launch()
-        self.page = sync(self.browser.newPage())
-        sync(self.page.goto('http://localhost:' + str(self.port)))
+        cls.server = cls.app.listen(cls.port)
+        cls.browser = launch()
+        cls.page = sync(cls.browser.newPage())
 
-    def tearDown(self):
-        self.browser.close()
-        self.server.stop()
+    @classmethod
+    def tearDownModule(cls):
+        cls.browser.close()
+        cls.server.stop()
+
+    def setUp(self):
+        sync(self.page.goto('http://localhost:' + str(self.port)))
 
     @sync
     async def test_get(self):
