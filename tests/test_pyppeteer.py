@@ -97,9 +97,15 @@ class TestPyppeteer(unittest.TestCase):
         elm = await self.page.querySelector('h1#link1')
         self.assertTrue(elm)
 
+    @sync
+    async def test_wait_for_timeout(self):
+        await self.page.click('#link1')
+        await self.page.waitFor(0.1)
+        self.assertEqual(await self.page.title(), 'link1')
+
     @unittest.skip('waitFor* is broken.')
     @sync
-    async def test_wait_for(self):
+    async def test_wait_for_selector(self):
         await self.page.waitForSelector('h1#hello')
 
     @sync

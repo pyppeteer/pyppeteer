@@ -244,7 +244,7 @@ function addScriptTag(url) {
             ))
             return fut
         if ('=>' in selectorOrFunctionOrTimeout or
-                selectorOrFunctionOrTimeout.startswith('function')):
+                selectorOrFunctionOrTimeout.strip().startswith('function')):
             return self.waitForFunction(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
@@ -267,7 +267,7 @@ function predicate(selector, waitForVisible) {
   const style = window.getComputedStyle(node);
   return style && style.display !== 'none' && style.visibility !== 'hidden';
 }
-'''
+'''.strip()
         return self.waitForFunction(
             predicate,
             {'timeout': timeout, 'polling': polling},
@@ -282,8 +282,8 @@ function predicate(selector, waitForVisible) {
             options = dict()
         timeout = options.get('timeout',  30000)
         polling = options.get('polling', 'raf')
-        predicateCode = 'return ' + helper.evaluationString(pageFunction,
-                                                            *args)
+        predicateCode = ('return ' +
+                         helper.evaluationString(pageFunction, *args))
         return WaitTask(self, predicateCode, polling, timeout)
 
     async def title(self) -> str:
@@ -452,4 +452,4 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
     }
   }
 }
-'''
+'''.strip()
