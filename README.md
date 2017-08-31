@@ -20,8 +20,6 @@ Not all features are implemented or tested currently.
 
 * The following features are not implemented yet.
     * PDF screenshot
-    * `Page.waitForSelector()` and `Frame.waitForSelector()`
-    * `Page.waitForFunction()` and `Frame.waitForFunction()`
 
 ## Installation
 

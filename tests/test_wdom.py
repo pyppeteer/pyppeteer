@@ -18,6 +18,13 @@ from pyppeteer.launcher import launch
 
 def setUpModule():
     suppress_logging()
+    global browser, page
+    browser = launch({'headless': True})
+    page = sync(browser.newPage())
+
+
+def tearDownModule():
+    browser.close()
 
 
 class TestBase(unittest.TestCase):
@@ -30,13 +37,13 @@ class TestBase(unittest.TestCase):
         self.addr = server_config['address']
         self.port = server_config['port']
         self.url = f'http://{self.addr}:{self.port}/'
-        self.browser = launch({'headless': True})
-        self.page = sync(self.browser.newPage())
+        self.page = page
         sync(self.page.goto(self.url))
 
     def tearDown(self):
         stop_server(self.server)
         set_document(get_new_document())
+        sync(self.page.goto('about:blank'))
 
     async def wait(self, timeout=0.1):
         await asyncio.sleep(timeout)
@@ -50,7 +57,10 @@ class TestClick(TestBase):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Click!')
         await self.page.click('h1')
-        await self.wait()
+        await self.page.waitForFunction(
+            '() => document.body.textContent.indexOf("!kcilC") >= 0',
+            {'timeout': 1000},
+        )
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Click!'[::-1])
 
@@ -63,9 +73,11 @@ class TestInput(TestBase):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Hello!')
         await self.page.focus('input')
-        await self.wait()
         await self.page.keyboard.sendCharacter('abc')
-        await self.wait()
+        await self.page.waitForFunction(
+            '() => document.body.textContent.indexOf("abc") >= 0',
+            {'timeout': 1000},
+        )
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'abc')
 
@@ -74,9 +86,11 @@ class TestInput(TestBase):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Hello!')
         await self.page.focus('input')
-        await self.wait()
         await self.page.type('abc', {})
-        await self.wait()
+        await self.page.waitForFunction(
+            '() => document.body.textContent.indexOf("abc") >= 0',
+            {'timeout': 1000},
+        )
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'abc')
 
@@ -88,10 +102,7 @@ class TestDrag(TestBase):
     async def test_click(self):
         mouse = self.page.mouse
         await self.page.hover('[id="1"]')
-        await self.wait()
         await mouse.down()
-        await self.wait()
         await self.page.hover('[id="2"]')
-        await self.wait()
         await mouse.up()
         await self.wait()
