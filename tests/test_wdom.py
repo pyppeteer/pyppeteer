@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import unittest
 from typing import Callable
+import unittest
 
 from syncer import sync
 

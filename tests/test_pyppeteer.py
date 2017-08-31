@@ -8,7 +8,6 @@ test_pyppeteer
 Tests for `pyppeteer` module.
 """
 
-import asyncio
 import logging
 import unittest
 
@@ -19,9 +18,8 @@ from pyppeteer.launcher import launch
 from pyppeteer.util import install_asyncio, get_free_port
 
 
-def setUpModule() -> None:
+def setUpModule():
     logging.getLogger('tornado').setLevel(logging.ERROR)
-    # logging.getLogger('pyppeteer').setLevel(logging.ERROR)
     install_asyncio()
 
 
@@ -38,12 +36,12 @@ BASE_HTML = '''
 
 
 class MainHandler(web.RequestHandler):
-    def get(self) -> None:
+    def get(self):
         self.write(BASE_HTML)
 
 
 class LinkHandler1(web.RequestHandler):
-    def get(self) -> None:
+    def get(self):
         self.write('''
 <head><title>link1</title></head>
 <h1 id="link1">Link1</h1>
@@ -159,7 +157,7 @@ class TestPyppeteer(unittest.TestCase):
         self.assertTrue(btn2)
 
     @sync
-    async def test_cookies(self) -> None:
+    async def test_cookies(self):
         cookies = await self.page.cookies()
         self.assertEqual(cookies, [])
         await self.page.evaluate(
