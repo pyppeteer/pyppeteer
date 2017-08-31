@@ -683,6 +683,7 @@ unitToPixels = {
 
 def convertPrintParameterToInches(parameter: Union[None, int, float, str]
                                   ) -> Optional[float]:
+    """Convert print parameter to inches."""
     if parameter is None:
         return None
     if isinstance(parameter, (int, float)):
