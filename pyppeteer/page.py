@@ -45,6 +45,19 @@ class Page(EventEmitter):
         Load='load',
     )
 
+    PaperFormats: Dict[str, Dict[str, float]] = dict(
+        letter={'width': 8.5, 'height': 11},
+        legal={'width': 8.5, 'height': 14},
+        tabloid={'width': 11, 'height': 17},
+        ledger={'width': 17, 'height': 11},
+        a0={'width': 33.1, 'height': 46.8},
+        a1={'width': 23.4, 'height': 33.1},
+        a2={'width': 16.5, 'height': 23.4},
+        a3={'width': 11.7, 'height': 16.5},
+        a4={'width': 8.27, 'height': 11.7},
+        a5={'width': 5.83, 'height': 8.27},
+    )
+
     def __init__(self, client: Session,
                  ignoreHTTPSErrors: bool = True,
                  screenshotTaskQueue: list = None,
@@ -524,9 +537,50 @@ fucntion(html) {
                 f.write(buffer)
         return buffer
 
-    async def pdf(self, options: dict) -> None:
+    async def pdf(self, options: dict) -> bytes:
         """Not yet implemented."""
-        raise NotImplementedError
+        scale = options.get('scale', 1)
+        displayHeaderFooter = bool(options.get('displayHeaderFooter'))
+        printBackground = bool(options.get('printBackground'))
+        landscape = bool(options.get('landscape'))
+        pageRanges = options.get('pageRanges', '')
+
+        paperWidth = 8.5
+        paperHeight = 11.0
+        if 'format' in options:
+            fmt = Page.PaperFormats.get(options['format'].lower())
+            if not fmt:
+                raise ValueError('Unknown paper format: ' + options['format'])
+            paperWidth = fmt['width']
+            paperHeight = fmt['height']
+        else:
+            paperWidth = convertPrintParameterToInches(options.get('width')) or paperWidth  # noqa: E501
+            paperHeight = convertPrintParameterToInches(options.get('height')) or paperHeight  # noqa: E501
+
+        marginOptions = options.get('margin', {})
+        marginTop = convertPrintParameterToInches(marginOptions.get('top')) or 0  # noqa: E501
+        marginLeft = convertPrintParameterToInches(marginOptions.get('left')) or 0  # noqa: E501
+        marginBottom = convertPrintParameterToInches(marginOptions.get('bottom')) or 0  # noqa: E501
+        marginRight = convertPrintParameterToInches(marginOptions.get('right')) or 0  # noqa: E501
+
+        result = await self._client.send('Page.printToPDF', dict(
+            landscape=landscape,
+            displayHeaderFooter=displayHeaderFooter,
+            printBackground=printBackground,
+            scale=scale,
+            paperWidth=paperWidth,
+            paperHeight=paperHeight,
+            marginTop=marginTop,
+            marginBottom=marginBottom,
+            marginLeft=marginLeft,
+            marginRight=marginRight,
+            pageRanges=pageRanges
+        ))
+        buffer = base64.b64decode(result.get('data', b''))
+        if 'path' in options:
+            with open(options['path'], 'wb') as f:
+                f.write(buffer)
+        return buffer
 
     async def plainText(self) -> str:
         """Get page content as plain text."""
@@ -617,6 +671,39 @@ fucntion(html) {
         if not frame:
             raise PageError('no main frame.')
         return frame.waitForFunction(pageFunction, options, *args)
+
+
+unitToPixels = {
+    'px': 1,
+    'in': 96,
+    'cm': 37.8,
+    'mm': 3.78
+}
+
+
+def convertPrintParameterToInches(parameter: Union[None, int, float, str]
+                                  ) -> Optional[float]:
+    if parameter is None:
+        return None
+    if isinstance(parameter, (int, float)):
+        pixels = parameter
+    elif isinstance(parameter, str):
+        text = parameter
+        unit = text[-2:].lower()
+        if unit in unitToPixels:
+            valueText = text[:-2]
+        else:
+            unit = 'px'
+            valueText = text
+        try:
+            value = float(valueText)
+        except ValueError:
+            raise ValueError('Failed to parse parameter value: ' + text)
+        pixels = value * unitToPixels[unit]
+    else:
+        raise TypeError('page.pdf() Cannot handle parameter type: ' +
+                        str(type(parameter)))
+    return pixels / 96
 
 
 async def create_page(client: Session, ignoreHTTPSErrors: bool = False,

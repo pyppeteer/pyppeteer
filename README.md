@@ -16,10 +16,7 @@ chrome/chromium browser automation library.
 
 ## WORK IN PROGRESS
 
-Not all features are implemented or tested currently.
-
-* The following features are not implemented yet.
-    * PDF screenshot
+Currently not all features are tested.
 
 ## Installation
 
