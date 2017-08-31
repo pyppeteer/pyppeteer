@@ -1,5 +1,6 @@
 include README.md
 include LICENSE
+include CHANGES.md
 
 recursive-include tests *
 recursive-exclude * __pycache__
