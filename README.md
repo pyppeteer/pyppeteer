@@ -11,24 +11,27 @@ Unofficial Python port of
 [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless)
 chrome/chromium browser automation library.
 
-## WORK IN PROGRESS
-
-Not all features are implemented or tested currently.
-
-* The following features are not implemented yet.
-    * PDF screenshot
-    * `Page.waitForSelector()` and `Frame.waitForSelector()`
-    * `Page.waitForFunction()` and `Frame.waitForFunction()`
-
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
+
+## WORK IN PROGRESS
+
+Currently not all features are tested.
 
 ## Installation
 
 Pyppeteer requires python 3.6+.
 
+Install by pip from PyPI:
+
 ```
-pip install https://github.com/miyakogi/pyppeteer.git
+pytyon3 -m pip install pyppeteer
+```
+
+Or install latest version from github:
+
+```
+python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git
 ```
 
 ## Usage
@@ -79,7 +82,7 @@ Example to get element's inner text:
 
 ```python
 element = page.querySelector('h1')
-title = element.evaluate('(element) => element.innerText')
+title = element.evaluate('(element) => element.textContent')
 ```
 
 Credits

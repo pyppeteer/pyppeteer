@@ -5,13 +5,13 @@
 
 import asyncio
 from types import SimpleNamespace
-from typing import Awaitable, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Awaitable, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
-from pyppeteer.errors import BrowserError, NetworkError, PageError
+from pyppeteer.errors import BrowserError, PageError
 from pyppeteer.input import Mouse
 from pyppeteer.element_handle import ElementHandle
 
@@ -112,7 +112,7 @@ class FrameManager(EventEmitter):
             return
         frame._defaultContextId = context.get('id', '')
         for waitTask in frame._waitTasks:
-            waitTask.rerun()
+            asyncio.ensure_future(waitTask.rerun())
 
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
         for child in frame.childFrames:
@@ -279,43 +279,19 @@ function addScriptTag(url) {
 
     def waitForSelector(self, selector: str, options: dict = None
                         ) -> Awaitable:
-        """Wait selector result (broken)."""
-        raise NotImplementedError('This function is broken')
+        """Wait for selector matches element."""
         if options is None:
             options = dict()
         timeout = options.get('timeout', 30000)
-        waitForVisible = bool(options.get('visible'))
-        polling = 'raf' if waitForVisible else 'mutation'
-        _waitForVisible = 'true' if waitForVisible else 'false'
-        predicate = '''
-function predicate(selector, waitForVisible) {
-  const node = document.querySelector(selector);
-  if (!node)
-    return false;
-  if (!waitForVisible)
-    return true;
-  const style = window.getComputedStyle(node);
-  return style && style.display !== 'none' && style.visibility !== 'hidden';
-}
-'''.strip()
-        return self.waitForFunction(
-            predicate,
-            {'timeout': timeout, 'polling': polling},
-            selector,
-            _waitForVisible,
-        )
+        return WaitTask(self, 'selector', selector, timeout)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str) -> Awaitable:
-        """Wait function result (broken)."""
-        raise NotImplementedError('This function is broken')
+        """Wait for js function result become true-able."""
         if options is None:
             options = dict()
         timeout = options.get('timeout',  30000)
-        polling = options.get('polling', 'raf')
-        predicateCode = ('return ' +
-                         helper.evaluationString(pageFunction, *args))
-        return WaitTask(self, predicateCode, polling, timeout)
+        return WaitTask(self, 'function', pageFunction, timeout, *args)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -339,36 +315,31 @@ function predicate(selector, waitForVisible) {
 class WaitTask(asyncio.Future):
     """WaitTask class."""
 
-    def __init__(self, frame: Frame, predicateBody: str,
-                 polling: Union[str, int, float], timeout: float) -> None:
+    def __init__(self, frame: Frame, _type: str, expr: str, timeout: float,
+                 *args: Any) -> None:
         """Make new wait task."""
+        if _type not in ['function', 'selector']:
+            raise ValueError('Unsupported type for WaitTask: ' + _type)
         super().__init__()
-        if isinstance(polling, str):
-            if polling not in ('raf', 'mutation'):
-                raise ValueError('Unknown polling option: ' + polling)
-        elif isinstance(polling, (int, float)):
-            if polling <= 0:
-                raise ValueError(
-                    f'Cannot poll with non-positive interval: {polling}')
-        else:
-            raise ValueError('Unknown polling options: ' + str(polling))
-
         self._frame: Frame = frame
-        self._pageScript: str = helper.evaluationString(
-            waitForPredicatePageFunction, predicateBody, polling, timeout)
+        self._type = _type
+        self.expr = expr
+        self._timeout = timeout / 1000
         self._runCount: int = 0
         self._terminated = False
+        self._done = False
         frame._waitTasks.add(self)
         # Since page navigation requires us to re-install the pageScript,
         # we should track timeout on our end.
-        loop = asyncio.get_event_loop()
-        self._timeoutTimer = loop.call_later(
-            timeout / 1000,
+        self.__loop = asyncio.get_event_loop()
+        self._timeoutTimer = self.__loop.call_later(
+            self._timeout,
             lambda: self.terminate(
-                NetworkError(f'waiting failed: timeout {timeout}ms exceeded')
+                BrowserError(f'waiting failed: timeout {timeout}ms exceeded')
             )
         )
-        asyncio.ensure_future(self.rerun())
+        self._timers: List[asyncio.Handle] = []
+        asyncio.ensure_future(self.rerun(True))
 
     def terminate(self, error: Exception) -> None:
         """Terminate task by error."""
@@ -376,26 +347,36 @@ class WaitTask(asyncio.Future):
         self.set_exception(error)
         self._cleanup()
 
-    async def rerun(self) -> None:  # noqa: C901
+    async def rerun(self, internal: bool = False) -> None:  # noqa: C901
         """Re-run the task."""
+        if self._done:
+            return
         self._runCount += 1
         runCount = self._runCount
         success = False
         error = None
         try:
-            success = bool(await self._frame.evaluate(self._pageScript))
+            if self._type == 'selector':
+                success = bool(await self._frame.J(self.expr))
+            else:
+                success = bool(await self._frame.evaluate(self.expr))
         except Exception as e:
             error = e
 
         if self._terminated or runCount != self._runCount:
             return
 
-        # // Ignore timeouts in pageScript - we track timeouts ourselves.
+        # Ignore timeouts in pageScript - we track timeouts ourselves.
         if not success and not error:
+            if internal:
+                self.__loop.call_later(
+                    self._timeout / 10,
+                    lambda: asyncio.ensure_future(self.rerun(True)),
+                )
             return
 
-        # // When the page is navigated, the promise is rejected.
-        # // We will try again in the new execution context.
+        # When the page is navigated, the promise is rejected.
+        # We will try again in the new execution context.
         if error:
             error_msg = str(error)
             if 'Execution context was destroyed' in error_msg:
@@ -409,78 +390,8 @@ class WaitTask(asyncio.Future):
 
     def _cleanup(self) -> None:
         self._timeoutTimer.cancel()
+        for handle in self._timers:
+            handle.cancel()
         self._frame._waitTasks.remove(self)
         self._runningTask = None
-
-
-waitForPredicatePageFunction = '''
-async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
-  const predicate = new Function(predicateBody);
-  let timedOut = false;
-  setTimeout(() => timedOut = true, timeout);
-  if (polling === 'raf')
-    await pollRaf();
-  else if (polling === 'mutation')
-    await pollMutation();
-  else if (typeof polling === 'number')
-    await pollInterval(polling);
-  return !timedOut;
-
-  /**
-   * @return {!Promise<!Element>}
-   */
-  function pollMutation() {
-    if (predicate())
-      return Promise.resolve();
-
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    const observer = new MutationObserver(mutations => {
-      if (timedOut || predicate()) {
-        observer.disconnect();
-        fulfill();
-      }
-    });
-    observer.observe(document, {
-      childList: true,
-      subtree: true
-    });
-    return result;
-  }
-
-  /**
-   * @return {!Promise}
-   */
-  function pollRaf() {
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    onRaf();
-    return result;
-
-    function onRaf() {
-      if (timedOut || predicate())
-        fulfill();
-      else
-        requestAnimationFrame(onRaf);
-    }
-  }
-
-  /**
-   * @param {number} pollInterval
-   * @return {!Promise}
-   */
-  function pollInterval(pollInterval) {
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    onTimeout();
-    return result;
-
-    function onTimeout() {
-      if (timedOut || predicate())
-        fulfill();
-      else
-        setTimeout(onTimeout, pollInterval);
-    }
-  }
-}
-'''.strip()
+        self._done = True

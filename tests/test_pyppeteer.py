@@ -90,7 +90,7 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.innerText')
+        text = await elm.evaluate('(element) => element.textContent')
         self.assertEqual('Hello', text)
 
     @sync
@@ -123,7 +123,7 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_click(self):
         await self.page.click('#link1')
-        await asyncio.sleep(0.1)
+        await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
         elm = await self.page.querySelector('h1#link1')
         self.assertTrue(elm)
@@ -134,31 +134,26 @@ class TestPyppeteer(unittest.TestCase):
         await self.page.waitFor(0.1)
         self.assertEqual(await self.page.title(), 'link1')
 
-    @unittest.skip('waitFor* is broken.')
-    @sync
-    async def test_wait_for_selector(self):
-        await self.page.waitForSelector('h1#hello')
-
     @sync
     async def test_elm_click(self):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
-        await asyncio.sleep(0.1)
+        await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
     async def test_back_forward(self):
         await self.page.click('#link1')
-        await asyncio.sleep(0.1)
+        await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
         await self.page.goBack()
-        await asyncio.sleep(0.1)
+        await self.page.waitForSelector('h1#hello')
         self.assertEqual(await self.page.title(), 'main')
         elm = await self.page.querySelector('h1#hello')
         self.assertTrue(elm)
         await self.page.goForward()
-        await asyncio.sleep(0.1)
+        await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
         btn2 = await self.page.querySelector('#link1')
         self.assertTrue(btn2)
