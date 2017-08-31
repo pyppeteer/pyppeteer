@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.4 documentation</title>
+    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.5 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.0.4',
+        VERSION:     '0.0.5',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -66,15 +66,7 @@ chrome/chromium browser automation library.</p>
 </ul>
 <div class="section" id="work-in-progress">
 <h2>WORK IN PROGRESS<a class="headerlink" href="#work-in-progress" title="Permalink to this headline">¶</a></h2>
-<p>Not all features are implemented or tested currently.</p>
-<ul class="simple">
-<li>The following features are not implemented yet.<ul>
-<li>PDF screenshot</li>
-<li><code class="docutils literal"><span class="pre">Page.waitForSelector()</span></code> and <code class="docutils literal"><span class="pre">Frame.waitForSelector()</span></code></li>
-<li><code class="docutils literal"><span class="pre">Page.waitForFunction()</span></code> and <code class="docutils literal"><span class="pre">Frame.waitForFunction()</span></code></li>
-</ul>
-</li>
-</ul>
+<p>Currently not all features are tested.</p>
 </div>
 <div class="section" id="installation">
 <h2>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h2>
@@ -127,7 +119,7 @@ Pyppeteer has shorthand of this method, <code class="docutils literal"><span cla
 pyppeteer takes string of JavaScript function.</p>
 <p>Example to get element’s inner text:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">element</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">)</span>
-<span class="n">title</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;(element) =&gt; element.innerText&#39;</span><span class="p">)</span>
+<span class="n">title</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;(element) =&gt; element.textContent&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>

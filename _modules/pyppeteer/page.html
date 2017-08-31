@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.4 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.5 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.4',
+        VERSION:     '0.0.5',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -92,6 +92,19 @@
         <span class="n">FrameDetached</span><span class="o">=</span><span class="s1">&#39;framedetached&#39;</span><span class="p">,</span>
         <span class="n">FrameNavigated</span><span class="o">=</span><span class="s1">&#39;framenavigated&#39;</span><span class="p">,</span>
         <span class="n">Load</span><span class="o">=</span><span class="s1">&#39;load&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">PaperFormats</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">letter</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">8.5</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">},</span>
+        <span class="n">legal</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">8.5</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">14</span><span class="p">},</span>
+        <span class="n">tabloid</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">17</span><span class="p">},</span>
+        <span class="n">ledger</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">17</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">11</span><span class="p">},</span>
+        <span class="n">a0</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">33.1</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">46.8</span><span class="p">},</span>
+        <span class="n">a1</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">23.4</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">33.1</span><span class="p">},</span>
+        <span class="n">a2</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">16.5</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">23.4</span><span class="p">},</span>
+        <span class="n">a3</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">11.7</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">16.5</span><span class="p">},</span>
+        <span class="n">a4</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">8.27</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">11.7</span><span class="p">},</span>
+        <span class="n">a5</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mf">5.83</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mf">8.27</span><span class="p">},</span>
     <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
@@ -573,9 +586,50 @@
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">buffer</span>
 
-<div class="viewcode-block" id="Page.pdf"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.pdf">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="Page.pdf"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.pdf">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">pdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Not yet implemented.&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scale&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">displayHeaderFooter</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;displayHeaderFooter&#39;</span><span class="p">))</span>
+        <span class="n">printBackground</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;printBackground&#39;</span><span class="p">))</span>
+        <span class="n">landscape</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;landscape&#39;</span><span class="p">))</span>
+        <span class="n">pageRanges</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;pageRanges&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="n">paperWidth</span> <span class="o">=</span> <span class="mf">8.5</span>
+        <span class="n">paperHeight</span> <span class="o">=</span> <span class="mf">11.0</span>
+        <span class="k">if</span> <span class="s1">&#39;format&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">fmt</span> <span class="o">=</span> <span class="n">Page</span><span class="o">.</span><span class="n">PaperFormats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fmt</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown paper format: &#39;</span> <span class="o">+</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;format&#39;</span><span class="p">])</span>
+            <span class="n">paperWidth</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span>
+            <span class="n">paperHeight</span> <span class="o">=</span> <span class="n">fmt</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">paperWidth</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;width&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="n">paperWidth</span>  <span class="c1"># noqa: E501</span>
+            <span class="n">paperHeight</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;height&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="n">paperHeight</span>  <span class="c1"># noqa: E501</span>
+
+        <span class="n">marginOptions</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;margin&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="n">marginTop</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">marginOptions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;top&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>  <span class="c1"># noqa: E501</span>
+        <span class="n">marginLeft</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">marginOptions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;left&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>  <span class="c1"># noqa: E501</span>
+        <span class="n">marginBottom</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">marginOptions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;bottom&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>  <span class="c1"># noqa: E501</span>
+        <span class="n">marginRight</span> <span class="o">=</span> <span class="n">convertPrintParameterToInches</span><span class="p">(</span><span class="n">marginOptions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">))</span> <span class="ow">or</span> <span class="mi">0</span>  <span class="c1"># noqa: E501</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.printToPDF&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">landscape</span><span class="o">=</span><span class="n">landscape</span><span class="p">,</span>
+            <span class="n">displayHeaderFooter</span><span class="o">=</span><span class="n">displayHeaderFooter</span><span class="p">,</span>
+            <span class="n">printBackground</span><span class="o">=</span><span class="n">printBackground</span><span class="p">,</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">scale</span><span class="p">,</span>
+            <span class="n">paperWidth</span><span class="o">=</span><span class="n">paperWidth</span><span class="p">,</span>
+            <span class="n">paperHeight</span><span class="o">=</span><span class="n">paperHeight</span><span class="p">,</span>
+            <span class="n">marginTop</span><span class="o">=</span><span class="n">marginTop</span><span class="p">,</span>
+            <span class="n">marginBottom</span><span class="o">=</span><span class="n">marginBottom</span><span class="p">,</span>
+            <span class="n">marginLeft</span><span class="o">=</span><span class="n">marginLeft</span><span class="p">,</span>
+            <span class="n">marginRight</span><span class="o">=</span><span class="n">marginRight</span><span class="p">,</span>
+            <span class="n">pageRanges</span><span class="o">=</span><span class="n">pageRanges</span>
+        <span class="p">))</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">buffer</span></div>
 
 <div class="viewcode-block" id="Page.plainText"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.plainText">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">plainText</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get page content as plain text.&quot;&quot;&quot;</span>
@@ -666,6 +720,39 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">waitForFunction</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+
+
+<span class="n">unitToPixels</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;px&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">&#39;in&#39;</span><span class="p">:</span> <span class="mi">96</span><span class="p">,</span>
+    <span class="s1">&#39;cm&#39;</span><span class="p">:</span> <span class="mf">37.8</span><span class="p">,</span>
+    <span class="s1">&#39;mm&#39;</span><span class="p">:</span> <span class="mf">3.78</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">convertPrintParameterToInches</span><span class="p">(</span><span class="n">parameter</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+                                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+        <span class="n">pixels</span> <span class="o">=</span> <span class="n">parameter</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameter</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">parameter</span>
+        <span class="n">unit</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="ow">in</span> <span class="n">unitToPixels</span><span class="p">:</span>
+            <span class="n">valueText</span> <span class="o">=</span> <span class="n">text</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="s1">&#39;px&#39;</span>
+            <span class="n">valueText</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">valueText</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Failed to parse parameter value: &#39;</span> <span class="o">+</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">pixels</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="n">unitToPixels</span><span class="p">[</span><span class="n">unit</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s1">&#39;page.pdf() Cannot handle parameter type: &#39;</span> <span class="o">+</span>
+                        <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">parameter</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">pixels</span> <span class="o">/</span> <span class="mi">96</span>
 
 
 <span class="k">async</span> <span class="k">def</span> <span class="nf">create_page</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>

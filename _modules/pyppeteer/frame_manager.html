@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.4 documentation</title>
+    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.5 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.4',
+        VERSION:     '0.0.5',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -54,13 +54,13 @@
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">SimpleNamespace</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
 
 <span class="kn">from</span> <span class="nn">pyee</span> <span class="k">import</span> <span class="n">EventEmitter</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">BrowserError</span><span class="p">,</span> <span class="n">NetworkError</span><span class="p">,</span> <span class="n">PageError</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">BrowserError</span><span class="p">,</span> <span class="n">PageError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Mouse</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.element_handle</span> <span class="k">import</span> <span class="n">ElementHandle</span>
 
@@ -161,7 +161,7 @@
             <span class="k">return</span>
         <span class="n">frame</span><span class="o">.</span><span class="n">_defaultContextId</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">waitTask</span> <span class="ow">in</span> <span class="n">frame</span><span class="o">.</span><span class="n">_waitTasks</span><span class="p">:</span>
-            <span class="n">waitTask</span><span class="o">.</span><span class="n">rerun</span><span class="p">()</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">waitTask</span><span class="o">.</span><span class="n">rerun</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">_removeFramesRecursively</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="s1">&#39;Frame&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">frame</span><span class="o">.</span><span class="n">childFrames</span><span class="p">:</span>
@@ -328,43 +328,19 @@
 
 <div class="viewcode-block" id="Frame.waitForSelector"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.waitForSelector">[docs]</a>    <span class="k">def</span> <span class="nf">waitForSelector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span>
                         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Wait selector result (broken).&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;This function is broken&#39;</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;Wait for selector matches element.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">timeout</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timeout&#39;</span><span class="p">,</span> <span class="mi">30000</span><span class="p">)</span>
-        <span class="n">waitForVisible</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;visible&#39;</span><span class="p">))</span>
-        <span class="n">polling</span> <span class="o">=</span> <span class="s1">&#39;raf&#39;</span> <span class="k">if</span> <span class="n">waitForVisible</span> <span class="k">else</span> <span class="s1">&#39;mutation&#39;</span>
-        <span class="n">_waitForVisible</span> <span class="o">=</span> <span class="s1">&#39;true&#39;</span> <span class="k">if</span> <span class="n">waitForVisible</span> <span class="k">else</span> <span class="s1">&#39;false&#39;</span>
-        <span class="n">predicate</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">function predicate(selector, waitForVisible) {</span>
-<span class="s1">  const node = document.querySelector(selector);</span>
-<span class="s1">  if (!node)</span>
-<span class="s1">    return false;</span>
-<span class="s1">  if (!waitForVisible)</span>
-<span class="s1">    return true;</span>
-<span class="s1">  const style = window.getComputedStyle(node);</span>
-<span class="s1">  return style &amp;&amp; style.display !== &#39;none&#39; &amp;&amp; style.visibility !== &#39;hidden&#39;;</span>
-<span class="s1">}</span>
-<span class="s1">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">waitForFunction</span><span class="p">(</span>
-            <span class="n">predicate</span><span class="p">,</span>
-            <span class="p">{</span><span class="s1">&#39;timeout&#39;</span><span class="p">:</span> <span class="n">timeout</span><span class="p">,</span> <span class="s1">&#39;polling&#39;</span><span class="p">:</span> <span class="n">polling</span><span class="p">},</span>
-            <span class="n">selector</span><span class="p">,</span>
-            <span class="n">_waitForVisible</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">WaitTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;selector&#39;</span><span class="p">,</span> <span class="n">selector</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Frame.waitForFunction"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.waitForFunction">[docs]</a>    <span class="k">def</span> <span class="nf">waitForFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Wait function result (broken).&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;This function is broken&#39;</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;Wait for js function result become true-able.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">timeout</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timeout&#39;</span><span class="p">,</span>  <span class="mi">30000</span><span class="p">)</span>
-        <span class="n">polling</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;polling&#39;</span><span class="p">,</span> <span class="s1">&#39;raf&#39;</span><span class="p">)</span>
-        <span class="n">predicateCode</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;return &#39;</span> <span class="o">+</span>
-                         <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">WaitTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predicateCode</span><span class="p">,</span> <span class="n">polling</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">WaitTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;function&#39;</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">,</span> <span class="n">timeout</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Frame.title"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.title">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get title of the frame.&quot;&quot;&quot;</span>
@@ -388,36 +364,31 @@
 <span class="k">class</span> <span class="nc">WaitTask</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Future</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;WaitTask class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">predicateBody</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">polling</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+                 <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Make new wait task.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;function&#39;</span><span class="p">,</span> <span class="s1">&#39;selector&#39;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unsupported type for WaitTask: &#39;</span> <span class="o">+</span> <span class="n">_type</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polling</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">polling</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;raf&#39;</span><span class="p">,</span> <span class="s1">&#39;mutation&#39;</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown polling option: &#39;</span> <span class="o">+</span> <span class="n">polling</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">polling</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="n">polling</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="n">f</span><span class="s1">&#39;Cannot poll with non-positive interval: </span><span class="si">{polling}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown polling options: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">polling</span><span class="p">))</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="p">:</span> <span class="n">Frame</span> <span class="o">=</span> <span class="n">frame</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pageScript</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span>
-            <span class="n">waitForPredicatePageFunction</span><span class="p">,</span> <span class="n">predicateBody</span><span class="p">,</span> <span class="n">polling</span><span class="p">,</span> <span class="n">timeout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">=</span> <span class="n">_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expr</span> <span class="o">=</span> <span class="n">expr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">=</span> <span class="n">timeout</span> <span class="o">/</span> <span class="mi">1000</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runCount</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_terminated</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">frame</span><span class="o">.</span><span class="n">_waitTasks</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="c1"># Since page navigation requires us to re-install the pageScript,</span>
         <span class="c1"># we should track timeout on our end.</span>
-        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutTimer</span> <span class="o">=</span> <span class="n">loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span>
-            <span class="n">timeout</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutTimer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span><span class="p">,</span>
             <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">terminate</span><span class="p">(</span>
-                <span class="n">NetworkError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;waiting failed: timeout </span><span class="si">{timeout}</span><span class="s1">ms exceeded&#39;</span><span class="p">)</span>
+                <span class="n">BrowserError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;waiting failed: timeout </span><span class="si">{timeout}</span><span class="s1">ms exceeded&#39;</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="p">)</span>
-        <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rerun</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_timers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Handle</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rerun</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">terminate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Terminate task by error.&quot;&quot;&quot;</span>
@@ -425,26 +396,36 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup</span><span class="p">()</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">rerun</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: C901</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">rerun</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">internal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># noqa: C901</span>
         <span class="sd">&quot;&quot;&quot;Re-run the task.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runCount</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="n">runCount</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runCount</span>
         <span class="n">success</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="n">error</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">success</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_pageScript</span><span class="p">))</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;selector&#39;</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">success</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">expr</span><span class="p">))</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">error</span> <span class="o">=</span> <span class="n">e</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_terminated</span> <span class="ow">or</span> <span class="n">runCount</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_runCount</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="c1"># // Ignore timeouts in pageScript - we track timeouts ourselves.</span>
+        <span class="c1"># Ignore timeouts in pageScript - we track timeouts ourselves.</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">internal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__loop</span><span class="o">.</span><span class="n">call_later</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_timeout</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span>
+                    <span class="k">lambda</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rerun</span><span class="p">(</span><span class="kc">True</span><span class="p">)),</span>
+                <span class="p">)</span>
             <span class="k">return</span>
 
-        <span class="c1"># // When the page is navigated, the promise is rejected.</span>
-        <span class="c1"># // We will try again in the new execution context.</span>
+        <span class="c1"># When the page is navigated, the promise is rejected.</span>
+        <span class="c1"># We will try again in the new execution context.</span>
         <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
             <span class="n">error_msg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
             <span class="k">if</span> <span class="s1">&#39;Execution context was destroyed&#39;</span> <span class="ow">in</span> <span class="n">error_msg</span><span class="p">:</span>
@@ -458,81 +439,11 @@
 
     <span class="k">def</span> <span class="nf">_cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_timeoutTimer</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_timers</span><span class="p">:</span>
+            <span class="n">handle</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">_waitTasks</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_runningTask</span> <span class="o">=</span> <span class="kc">None</span>
-
-
-<span class="n">waitForPredicatePageFunction</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">async function waitForPredicatePageFunction(predicateBody, polling, timeout) {</span>
-<span class="s1">  const predicate = new Function(predicateBody);</span>
-<span class="s1">  let timedOut = false;</span>
-<span class="s1">  setTimeout(() =&gt; timedOut = true, timeout);</span>
-<span class="s1">  if (polling === &#39;raf&#39;)</span>
-<span class="s1">    await pollRaf();</span>
-<span class="s1">  else if (polling === &#39;mutation&#39;)</span>
-<span class="s1">    await pollMutation();</span>
-<span class="s1">  else if (typeof polling === &#39;number&#39;)</span>
-<span class="s1">    await pollInterval(polling);</span>
-<span class="s1">  return !timedOut;</span>
-
-<span class="s1">  /**</span>
-<span class="s1">   * @return {!Promise&lt;!Element&gt;}</span>
-<span class="s1">   */</span>
-<span class="s1">  function pollMutation() {</span>
-<span class="s1">    if (predicate())</span>
-<span class="s1">      return Promise.resolve();</span>
-
-<span class="s1">    let fulfill;</span>
-<span class="s1">    const result = new Promise(x =&gt; fulfill = x);</span>
-<span class="s1">    const observer = new MutationObserver(mutations =&gt; {</span>
-<span class="s1">      if (timedOut || predicate()) {</span>
-<span class="s1">        observer.disconnect();</span>
-<span class="s1">        fulfill();</span>
-<span class="s1">      }</span>
-<span class="s1">    });</span>
-<span class="s1">    observer.observe(document, {</span>
-<span class="s1">      childList: true,</span>
-<span class="s1">      subtree: true</span>
-<span class="s1">    });</span>
-<span class="s1">    return result;</span>
-<span class="s1">  }</span>
-
-<span class="s1">  /**</span>
-<span class="s1">   * @return {!Promise}</span>
-<span class="s1">   */</span>
-<span class="s1">  function pollRaf() {</span>
-<span class="s1">    let fulfill;</span>
-<span class="s1">    const result = new Promise(x =&gt; fulfill = x);</span>
-<span class="s1">    onRaf();</span>
-<span class="s1">    return result;</span>
-
-<span class="s1">    function onRaf() {</span>
-<span class="s1">      if (timedOut || predicate())</span>
-<span class="s1">        fulfill();</span>
-<span class="s1">      else</span>
-<span class="s1">        requestAnimationFrame(onRaf);</span>
-<span class="s1">    }</span>
-<span class="s1">  }</span>
-
-<span class="s1">  /**</span>
-<span class="s1">   * @param </span><span class="si">{number}</span><span class="s1"> pollInterval</span>
-<span class="s1">   * @return {!Promise}</span>
-<span class="s1">   */</span>
-<span class="s1">  function pollInterval(pollInterval) {</span>
-<span class="s1">    let fulfill;</span>
-<span class="s1">    const result = new Promise(x =&gt; fulfill = x);</span>
-<span class="s1">    onTimeout();</span>
-<span class="s1">    return result;</span>
-
-<span class="s1">    function onTimeout() {</span>
-<span class="s1">      if (timedOut || predicate())</span>
-<span class="s1">        fulfill();</span>
-<span class="s1">      else</span>
-<span class="s1">        setTimeout(onTimeout, pollInterval);</span>
-<span class="s1">    }</span>
-<span class="s1">  }</span>
-<span class="s1">}</span>
-<span class="s1">&#39;&#39;&#39;</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done</span> <span class="o">=</span> <span class="kc">True</span>
 </pre></div>
 
           </div>
