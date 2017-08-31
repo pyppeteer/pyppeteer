@@ -52,9 +52,8 @@ class TestPDF(TestCase):
     async def test_pdf(self) -> None:
         page = await self.browser.newPage()
         await page.goto('about:blank')
-        options = {'path': str(self.target_path)}
         self.assertFalse(self.target_path.exists())
-        await page.pdf(options)
+        await page.pdf(path=str(self.target_path))
         self.assertTrue(self.target_path.exists())
         self.assertTrue(self.target_path.stat().st_size >= 800)
 

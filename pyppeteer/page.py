@@ -342,9 +342,12 @@ fucntion(html) {
 '''
         await self.evaluate(func, html)
 
-    async def goto(self, url: str, options: dict = None
+    async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
         """Got to url."""
+        if options is None:
+            options = dict()
+        options.update(kwargs)
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
                                    options)
         responses: Dict[str, Response] = dict()
@@ -368,18 +371,21 @@ fucntion(html) {
             raise PageError('Failed to navigate: ' + url)
         return responses.get(self.url)
 
-    async def reload(self, options: dict = None) -> Optional[Response]:
+    async def reload(self, options: dict = None, **kwargs: Any
+                     ) -> Optional[Response]:
         """Reload this page."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         await self._client.send('Page.reload')
         return await self.waitForNavigation(options)
 
-    async def waitForNavigation(self, options: dict = None
+    async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
         """Wait navigation completes."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
                                    options)
         responses: Dict[str, Response] = dict()
@@ -393,16 +399,20 @@ fucntion(html) {
         helper.removeEventListeners([listener])
         return responses.get(self.url)
 
-    async def goBack(self, options: dict = None) -> Optional[Response]:
+    async def goBack(self, options: dict = None, **kwargs: Any
+                     ) -> Optional[Response]:
         """Go back history."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         return await self._go(-1, options)
 
-    async def goForward(self, options: dict = None) -> Optional[Response]:
+    async def goForward(self, options: dict = None, **kwargs: Any
+                        ) -> Optional[Response]:
         """Go forward history."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         return await self._go(+1, options)
 
     async def _go(self, delta: int, options: dict) -> Optional[Response]:
@@ -417,8 +427,11 @@ fucntion(html) {
         })
         return await self.waitForNavigation(options)
 
-    async def emulate(self, options: dict) -> None:
+    async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
+        if options is None:
+            options = dict()
+        options.update(kwargs)
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', {}))
 
@@ -465,20 +478,21 @@ fucntion(html) {
             'source': source,
         })
 
-    async def screenshot(self, options: dict = None) -> bytes:
+    async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
         """Take screen shot."""
         options = options or dict()
+        options.update(kwargs)
         screenshotType = None
-        if options.get('path'):
-            mimeType, _ = mimetypes.guess_type(options.get('path', ''))
+        if 'path' in options:
+            mimeType, _ = mimetypes.guess_type(options['path'])
         if mimeType == 'image/png':
             screenshotType = 'png'
         elif mimeType == 'image/jpeg':
             screenshotType = 'jpeg'
         else:
             raise PageError(f'Unsupported screenshot mime type: {mimeType}')
-        if options.get('type'):
-            screenshotType = options.get('type')
+        if 'type' in options:
+            screenshotType = options['type']
         if not screenshotType:
             screenshotType = 'png'
         return await self._screenshotTask(screenshotType, options)
@@ -537,8 +551,11 @@ fucntion(html) {
                 f.write(buffer)
         return buffer
 
-    async def pdf(self, options: dict) -> bytes:
+    async def pdf(self, options: dict = None, **kwargs: Any) -> bytes:
         """Not yet implemented."""
+        if options is None:
+            options = dict()
+        options.update(kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
         printBackground = bool(options.get('printBackground'))
@@ -602,10 +619,12 @@ fucntion(html) {
         """Get mouse object."""
         return self._mouse
 
-    async def click(self, selector: str, options: dict = None) -> None:
+    async def click(self, selector: str, options: dict = None, **kwargs: Any
+                    ) -> None:
         """Click element which matches `selector`."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -628,9 +647,11 @@ fucntion(html) {
         await handle.evaluate('element => element.focus()')
         await handle.dispose()
 
-    async def type(self, text: str, options: dict = None) -> None:
+    async def type(self, text: str, options: dict = None, **kwargs: Any
+                   ) -> None:
         """Type text on the page."""
         options = options or dict()
+        options.update(kwargs)
         delay = options.get('delay', 0)
         last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
         for char in text:
@@ -640,37 +661,39 @@ fucntion(html) {
             await asyncio.sleep(delay)
         await last
 
-    async def press(self, key: str, options: dict = None) -> None:
+    async def press(self, key: str, options: dict = None, **kwargs: Any
+                    ) -> None:
         """Press key."""
         options = options or dict()
+        options.update(kwargs)
         delay = options.get('delay', 0)
         await self._keyboard.down(key, options)
         await asyncio.sleep(delay)
         await self._keyboard.up(key)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None) -> Awaitable:
+                options: dict = None, **kwargs: Any) -> Awaitable:
         """Wait for function, timeout, or element which matches on page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.waitFor(selectorOrFunctionOrTimeout, options)
+        return frame.waitFor(selectorOrFunctionOrTimeout, options, **kwargs)
 
-    def waitForSelector(self, selector: str, options: dict = None
-                        ) -> Awaitable:
+    def waitForSelector(self, selector: str, options: dict = None,
+                        **kwargs: Any) -> Awaitable:
         """Wait until element which matches selector appears on page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.waitForSelector(selector, options)
+        return frame.waitForSelector(selector, options, **kwargs)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str) -> Awaitable:
+                        *args: str, **kwargs: Any) -> Awaitable:
         """Wait for function."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.waitForFunction(pageFunction, options, *args)
+        return frame.waitForFunction(pageFunction, options, *args, **kwargs)
 
 
 unitToPixels = {

@@ -66,6 +66,23 @@ and JavaScript make it difficult.
 
 These are differences between puppeteer and pyppeteer.
 
+#### Keyword argument for options
+
+Puppeteer uses object (dictionary in python) for passing options to functions/methods.
+Pyppeteer accepts both dictionary and keyword argument for options.
+
+Dictionary style option (similar to puppeteer):
+
+```python
+browser = launch({'headless': True})
+```
+
+Keyword argument style option (more pythonic, isn't it?):
+
+```python
+browser = launch(headless=True)
+```
+
 #### Element selector method name (`$` -> `querySelector`)
 
 In python, `$` is not usable for method name.

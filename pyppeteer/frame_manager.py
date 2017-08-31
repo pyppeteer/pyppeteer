@@ -257,10 +257,11 @@ function addScriptTag(url) {
         return await self.evaluate(addScriptTag, url)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None) -> Awaitable:
+                options: dict = None, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
                 asyncio.sleep(selectorOrFunctionOrTimeout))
@@ -277,19 +278,21 @@ function addScriptTag(url) {
             return self.waitForFunction(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
-    def waitForSelector(self, selector: str, options: dict = None
-                        ) -> Awaitable:
+    def waitForSelector(self, selector: str, options: dict = None,
+                        **kwargs: Any) -> Awaitable:
         """Wait for selector matches element."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         timeout = options.get('timeout', 30000)
         return WaitTask(self, 'selector', selector, timeout)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str) -> Awaitable:
+                        *args: str, **kwargs: Any) -> Awaitable:
         """Wait for js function result become true-able."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         timeout = options.get('timeout',  30000)
         return WaitTask(self, 'function', pageFunction, timeout, *args)
 

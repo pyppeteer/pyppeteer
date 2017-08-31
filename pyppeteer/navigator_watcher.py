@@ -20,10 +20,11 @@ class NavigatorWatcher:
     """NavigatorWatcher class."""
 
     def __init__(self, client: Session, ignoreHTTPSErrors: Any,
-                 options: dict = None) -> None:
+                 options: dict = None, **kwargs: Any) -> None:
         """Make new navigator watcher."""
         if options is None:
             options = {}
+        options.update(kwargs)
         self._client = client
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._timeout = options.get('timeout', 3000)
