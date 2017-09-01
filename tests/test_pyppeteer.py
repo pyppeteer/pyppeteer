@@ -201,7 +201,7 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(await self.page.plainText(), 'redirect2')
 
 
-class TestDialog(unittest.TestCase):
+class TestPage(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
@@ -250,3 +250,12 @@ class TestDialog(unittest.TestCase):
         self.page.on('dialog', dismiss_test)
         result = await self.page.evaluate('() => prompt("question?", "yes.")')
         self.assertIsNone(result)
+
+    @sync
+    async def test_user_agent(self):
+        self.assertIn('Mozilla', await self.page.evaluate(
+            '() => navigator.userAgent'))
+        await self.page.setUserAgent('foobar')
+        await self.page.goto(self.url)
+        self.assertEqual('foobar', await self.page.evaluate(
+            '() => navigator.userAgent'))

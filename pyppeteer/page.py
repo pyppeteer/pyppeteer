@@ -250,11 +250,11 @@ function addPageBinding(bindingName) {
 
     async def setExtraHTTPHeaders(self, headers: Dict[str, str]):
         """Set extra http headers."""
-        return self._networkManager.setExtraHTTPHeaders(headers)
+        return await self._networkManager.setExtraHTTPHeaders(headers)
 
     async def setUserAgent(self, userAgent: str):
         """Set user agent."""
-        return self._networkManager.setUserAgent(userAgent)
+        return await self._networkManager.setUserAgent(userAgent)
 
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
