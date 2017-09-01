@@ -30,6 +30,7 @@ include/
 lib/
 lib64
 lib64/
+man/
 pyvenv.cfg
 
 # PyInstaller
