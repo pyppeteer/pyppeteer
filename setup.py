@@ -2,22 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from os import path
-import sys
-
-setup_extras = dict()
-if sys.version_info >= (3, 6):
-    from setuptools import setup
-elif sys.version_info >= (3, 5):
-    try:
-        from py_backwards_packager import setup
-        setup_extras['py_backwards_targets'] = ['3.5']
-    except ImportError:
-        print('To install pyppeteer to python3.5, '
-              'needs `py-backwards-packager`.')
-        raise
-else:
-    raise Exception('Pyppeteer requires python >= 3.5 (3.6 is recommended).')
-
+from setuptools import setup
 
 basedir = path.dirname(path.abspath(__file__))
 readme_file = path.join(basedir, 'README.md')
@@ -74,5 +59,4 @@ setup(
     python_requires='>=3.5',
     test_suite='tests',
     tests_require=test_requirements,
-    **setup_extras,
 )
