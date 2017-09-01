@@ -37,14 +37,17 @@ class TestPyppeteer(unittest.TestCase):
         cls.server.stop()
 
     def setUp(self):
-        self.url = 'http://localhost:' + str(self.port)
+        self.url = 'http://localhost:{}/'.format(self.port)
         sync(self.page.goto(self.url))
 
     @sync
     async def test_get(self):
         self.assertEqual(await self.page.title(), 'main')
+        self.assertEqual(self.page.url, self.url)
         self.elm = await self.page.querySelector('h1#hello')
         self.assertTrue(self.elm)
+        await self.page.goto('about:blank')
+        self.assertEqual(self.page.url, 'about:blank')
 
     @sync
     async def test_plain_text(self):
@@ -193,7 +196,7 @@ class TestPyppeteer(unittest.TestCase):
 
     @sync
     async def test_redirect(self):
-        await self.page.goto(self.url + '/redirect1')
+        await self.page.goto(self.url + 'redirect1')
         await self.page.waitForSelector('h1#red2')
         self.assertEqual(await self.page.plainText(), 'redirect2')
 
@@ -202,7 +205,7 @@ class TestDialog(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
-        cls.url = 'http://localhost:' + str(cls.port)
+        cls.url = 'http://localhost:{}/'.format(cls.port)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch(headless=True)
