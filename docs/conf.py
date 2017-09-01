@@ -45,6 +45,7 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.viewcode',
     'sphinx_autodoc_typehints',
+    'sphinxcontrib.asyncio',
     'm2r',
 ]
 
