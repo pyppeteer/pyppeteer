@@ -259,3 +259,17 @@ class TestPage(unittest.TestCase):
         await self.page.goto(self.url)
         self.assertEqual('foobar', await self.page.evaluate(
             '() => navigator.userAgent'))
+
+    @sync
+    async def test_no_await_check_just_call(self):
+        await self.page.setExtraHTTPHeaders({'a': 'b'})
+        await self.page.setRequestInterceptionEnabled(False)  # bug on True?
+        # await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
+        # await self.page.injectFile('/path/to/jsfile')
+        await self.page.setContent('')
+        await self.page.reload()
+        # await self.page.emulate({})
+        await self.page.setJavaScriptEnabled(True)
+        await self.page.emulateMedia()
+        # await self.page.setViewport({})
+        await self.page.evaluateOnNewDocument('() => 1 + 2')

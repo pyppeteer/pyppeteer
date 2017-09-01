@@ -53,7 +53,7 @@ class NetworkManager(EventEmitter):
         """Set extra http headers."""
         self._extraHTTPHeaders = OrderedDict()
         headers = OrderedDict()  # type: Dict[str, str]
-        for k, v in extraHTTPHeaders:
+        for k, v in extraHTTPHeaders.items():
             self._extraHTTPHeaders[k] = v
             headers[k] = v
         await self._client.send('Network.setExtraHTTPHeaders',

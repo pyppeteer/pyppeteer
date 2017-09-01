@@ -205,14 +205,14 @@ class Page(EventEmitter):
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.addScriptTag(url)
+        return await frame.addScriptTag(url)
 
     async def injectFile(self, filePath: str):
         """Inject file to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.injectFile(filePath)
+        return await frame.injectFile(filePath)
 
     async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
@@ -334,7 +334,7 @@ function deliverResult(name, seq, result) {
     async def setContent(self, html: str) -> None:
         """Set content."""
         func = '''
-fucntion(html) {
+function(html) {
   document.open();
   document.write(html);
   document.close();
@@ -392,8 +392,7 @@ fucntion(html) {
         listener = helper.addEventListener(
             self._networkManager,
             NetworkManager.Events.Response,
-            lambda response: responses.__setitem__(
-                response.url, response)
+            lambda response: responses.__setitem__(response.url, response)
         )
         await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
