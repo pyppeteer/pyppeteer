@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from typing import Callable
 import unittest
 
 from syncer import sync
@@ -10,7 +9,6 @@ from syncer import sync
 from wdom.document import get_document, get_new_document, set_document
 from wdom.examples import data_binding, drag, rev_text
 from wdom.server import start_server, stop_server, server_config
-from wdom.tag import Tag
 from wdom.util import suppress_logging
 
 from pyppeteer.launcher import launch
@@ -28,7 +26,7 @@ def tearDownModule():
 
 
 class TestBase(unittest.TestCase):
-    app: Callable[[], Tag]
+    app = None  # type: Callable[[], Tag]
 
     def setUp(self):
         self.doc = get_document()
@@ -36,7 +34,7 @@ class TestBase(unittest.TestCase):
         self.server = start_server(port=0)
         self.addr = server_config['address']
         self.port = server_config['port']
-        self.url = f'http://{self.addr}:{self.port}/'
+        self.url = 'http://{}:{}/'.format(self.addr, self.port)
         self.page = page
         sync(self.page.goto(self.url))
 

@@ -1,4 +1,5 @@
 [nosetests]
 logging-level=INFO
-; with-coverage=true
-; cover-package=pyppeteer
+no-path-adjustment=true
+# with-coverage=true
+# cover-package=pyppeteer
