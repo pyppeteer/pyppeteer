@@ -94,11 +94,12 @@
 <span class="k">class</span> <span class="nc">Launcher</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Chromium parocess launcher class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Make new launcher.&quot;&quot;&quot;</span>
         <span class="k">global</span> <span class="n">BROWSER_ID</span>
         <span class="n">BROWSER_ID</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">user_data_dir</span> <span class="o">=</span> <span class="p">(</span><span class="n">CHROME_PROFILIE_PATH</span> <span class="o">/</span> <span class="nb">str</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span> <span class="o">/</span>
                               <span class="nb">str</span><span class="p">(</span><span class="n">BROWSER_ID</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chrome_args</span> <span class="o">=</span> <span class="n">DEFAULT_ARGS</span> <span class="o">+</span> <span class="p">[</span>
@@ -119,10 +120,8 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_excutable</span><span class="p">())</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exec</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">chrome_args</span>
 
-    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Start chromium process.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="p">,</span>
             <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
@@ -140,9 +139,10 @@
                 <span class="k">break</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
-        <span class="n">connectionDelay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;slowMo&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">connectionDelay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;slowMo&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">connection</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">connectionDelay</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">Browser</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ignoreHTTPSErrors&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="k">return</span> <span class="n">Browser</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ignoreHTTPSErrors&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">killChrome</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">killChrome</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -161,9 +161,9 @@
         <span class="c1"># return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)</span>
 
 
-<div class="viewcode-block" id="launch"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.launch">[docs]</a><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
+<div class="viewcode-block" id="launch"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.launch">[docs]</a><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Start chromium process and return `Browser` object.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">Launcher</span><span class="p">(</span><span class="n">options</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">Launcher</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="connect"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.connect">[docs]</a><span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>

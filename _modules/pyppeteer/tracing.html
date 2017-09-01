@@ -54,7 +54,7 @@
 
 <span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Awaitable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
 
@@ -68,8 +68,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 
-<div class="viewcode-block" id="Tracing.start"><a class="viewcode-back" href="../../reference.html#pyppeteer.tracing.Tracing.start">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<div class="viewcode-block" id="Tracing.start"><a class="viewcode-back" href="../../reference.html#pyppeteer.tracing.Tracing.start">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Start.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">categoriesArray</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s1">&#39;-*&#39;</span><span class="p">,</span> <span class="s1">&#39;devtools.timeline&#39;</span><span class="p">,</span> <span class="s1">&#39;v8.execute&#39;</span><span class="p">,</span>
             <span class="s1">&#39;disabled-by-default-devtools.timeline&#39;</span><span class="p">,</span>

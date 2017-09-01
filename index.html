@@ -106,6 +106,19 @@ is also useful for pyppeteer users.</p>
 <p>Pyppeteer is to be as similar as puppeteer, but some differences between python
 and JavaScript make it difficult.</p>
 <p>These are differences between puppeteer and pyppeteer.</p>
+<div class="section" id="keyword-argument-for-options">
+<h4>Keyword argument for options<a class="headerlink" href="#keyword-argument-for-options" title="Permalink to this headline">¶</a></h4>
+<p>Puppeteer uses object (dictionary in python) for passing options to functions/methods.
+Pyppeteer accepts both dictionary and keyword argument for options.</p>
+<p>Dictionary style option (similar to puppeteer):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">({</span><span class="s1">&#39;headless&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>Keyword argument style option (more pythonic, isn’t it?):</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">(</span><span class="n">headless</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 <div class="section" id="element-selector-method-name-queryselector">
 <h4>Element selector method name (<code class="docutils literal"><span class="pre">$</span></code> -&gt; <code class="docutils literal"><span class="pre">querySelector</span></code>)<a class="headerlink" href="#element-selector-method-name-queryselector" title="Permalink to this headline">¶</a></h4>
 <p>In python, <code class="docutils literal"><span class="pre">$</span></code> is not usable for method name.
