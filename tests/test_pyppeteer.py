@@ -8,55 +8,24 @@ test_pyppeteer
 Tests for `pyppeteer` module.
 """
 
-import logging
 import unittest
 
 from syncer import sync
-from tornado import web
 
 from pyppeteer.launcher import launch
 from pyppeteer.util import install_asyncio, get_free_port
+from server import get_application, BASE_HTML
 
 
 def setUpModule():
-    logging.getLogger('tornado').setLevel(logging.ERROR)
     install_asyncio()
-
-
-BASE_HTML = '''
-<html>
-<head><title>main</title></head>
-<body>
-<h1 id="hello">Hello</h1>
-<a id="link1" href="./1">link1</a>
-<a id="link2" href="./2">link2</a>
-</body>
-</html>
-'''
-
-
-class MainHandler(web.RequestHandler):
-    def get(self):
-        self.write(BASE_HTML)
-
-
-class LinkHandler1(web.RequestHandler):
-    def get(self):
-        self.write('''
-<head><title>link1</title></head>
-<h1 id="link1">Link1</h1>
-<a id="back1" href="./">back1</a>
-        ''')
 
 
 class TestPyppeteer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
-        cls.app = web.Application([
-            ('/', MainHandler),
-            ('/1', LinkHandler1),
-        ], logging='error')
+        cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch()
         cls.page = sync(cls.browser.newPage())
@@ -67,7 +36,8 @@ class TestPyppeteer(unittest.TestCase):
         cls.server.stop()
 
     def setUp(self):
-        sync(self.page.goto('http://localhost:' + str(self.port)))
+        self.url = 'http://localhost:' + str(self.port)
+        sync(self.page.goto(self.url))
 
     @sync
     async def test_get(self):
