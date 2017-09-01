@@ -349,7 +349,6 @@ class WaitTask(asyncio.Future):
                 BrowserError(f'waiting failed: timeout {timeout}ms exceeded')
             )
         )
-        self.__timers: List[asyncio.Handle] = []
         asyncio.ensure_future(self.rerun(True))
 
     def terminate(self, error: Exception) -> None:
@@ -401,8 +400,6 @@ class WaitTask(asyncio.Future):
 
     def __cleanup(self) -> None:
         self.__timeoutTimer.cancel()
-        for handle in self.__timers:
-            handle.cancel()
         self.__frame._waitTasks.remove(self)
         self._runningTask = None
         self.__done = True
