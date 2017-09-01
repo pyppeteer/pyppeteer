@@ -7,13 +7,12 @@ python:
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
-  - pip install tox
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -U -r requirements-test.txt; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -U coverage codecov tox; fi
+  - pip install -r requirements-test.txt
+  - pip install coverage codecov tox
 
 # command to run tests, e.g. python setup.py test
 script:
   - tox
 
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then python -m coverage run --source pyppeteer -m unittest discover tests && coverage report && codecov; fi
+  - python -m coverage run --source pyppeteer -m unittest discover tests && coverage report && codecov
