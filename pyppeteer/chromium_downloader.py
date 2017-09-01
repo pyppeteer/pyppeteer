@@ -53,10 +53,10 @@ def get_url() -> str:
 
 def download_zip(url: str) -> bytes:
     """Download data from url."""
-    logger.warn('start chromium download.\nDownload may take a few minutes.')
+    logger.warning('start chromium download.\nDownload may take a few minutes.')
     with request.urlopen(url) as f:
         data = f.read()
-    logger.warn('chromium download done.')
+    logger.warning('chromium download done.')
     return data
 
 
@@ -69,7 +69,7 @@ def extract_zip(data: bytes, path: Path) -> None:
         raise IOError('Failed to extract chromium.')
     exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP |
                     stat.S_IXUSR)
-    logger.warn(f'chromium extracted to: {path}')
+    logger.warning(f'chromium extracted to: {path}')
 
 
 def download_chromium() -> None:
