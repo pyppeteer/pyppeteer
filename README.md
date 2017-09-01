@@ -59,14 +59,14 @@ More APIs are listed in the
 [Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
 is also useful for pyppeteer users.
 
-### Differences between puppeteer and pyppeteer
+## Differences between puppeteer and pyppeteer
 
 Pyppeteer is to be as similar as puppeteer, but some differences between python
 and JavaScript make it difficult.
 
 These are differences between puppeteer and pyppeteer.
 
-#### Keyword argument for options
+### Keyword argument for options
 
 Puppeteer uses object (dictionary in python) for passing options to functions/methods.
 Pyppeteer accepts both dictionary and keyword argument for options.
@@ -83,14 +83,14 @@ Keyword argument style option (more pythonic, isn't it?):
 browser = launch(headless=True)
 ```
 
-#### Element selector method name (`$` -> `querySelector`)
+### Element selector method name (`$` -> `querySelector`)
 
 In python, `$` is not usable for method name.
 So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and
 `ElementHandle.querySelector()` instead of `ElementHandle.$()`.
 Pyppeteer has shorthand of this method, `Page.J()` and `ElementHandle.J()`.
 
-#### Argument of `Page.evaluate()` / `ElementHandle.evaluate()`
+### Argument of `Page.evaluate()` / `ElementHandle.evaluate()`
 
 Puppeteer's version of `evaluate()` takes JavaScript raw function, but
 pyppeteer takes string of JavaScript function.
