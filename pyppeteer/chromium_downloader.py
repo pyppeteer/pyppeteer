@@ -53,7 +53,8 @@ def get_url() -> str:
 
 def download_zip(url: str) -> bytes:
     """Download data from url."""
-    logger.warning('start chromium download.\nDownload may take a few minutes.')
+    logger.warning('start chromium download.\n'
+                   'Download may take a few minutes.')
     with request.urlopen(url) as f:
         data = f.read()
     logger.warning('chromium download done.')
