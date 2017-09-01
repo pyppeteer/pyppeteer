@@ -189,3 +189,9 @@ class TestPyppeteer(unittest.TestCase):
             'secure': False,
             'session': True,
         }])
+
+    @sync
+    async def test_redirect(self):
+        await self.page.goto(self.url + '/redirect1')
+        await self.page.waitForSelector('h1#red2')
+        self.assertEqual(await self.page.plainText(), 'redirect2')
