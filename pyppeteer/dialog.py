@@ -26,6 +26,11 @@ class Dialog(object):
         self._handled = False
         self._defalutValue = defaultValue
 
+    @property
+    def type(self) -> str:
+        """Get dialog type."""
+        return self._type
+
     def message(self) -> str:
         """Get dialog message."""
         return self._message
@@ -34,7 +39,7 @@ class Dialog(object):
         """Get default selected dialog value."""
         return self._defalutValue
 
-    async def accept(self, promptText: str) -> None:
+    async def accept(self, promptText: str = '') -> None:
         """Accept the dialog."""
         self._handled = True
         await self._client.send('Page.handleJavaScriptDialog', {

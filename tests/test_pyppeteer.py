@@ -8,6 +8,7 @@ test_pyppeteer
 Tests for `pyppeteer` module.
 """
 
+import asyncio
 import unittest
 
 from syncer import sync
@@ -195,3 +196,54 @@ class TestPyppeteer(unittest.TestCase):
         await self.page.goto(self.url + '/redirect1')
         await self.page.waitForSelector('h1#red2')
         self.assertEqual(await self.page.plainText(), 'redirect2')
+
+
+class TestDialog(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        cls.url = 'http://localhost:' + str(cls.port)
+        cls.app = get_application()
+        cls.server = cls.app.listen(cls.port)
+        cls.browser = launch(headless=True)
+
+    def setUp(self):
+        self.page = sync(self.browser.newPage())
+        sync(self.page.goto(self.url))
+
+    def tearDown(self):
+        sync(self.page.goto('about:blank'))
+
+    @classmethod
+    def tearDownModule(cls):
+        cls.browser.close()
+        cls.server.stop()
+
+    @sync
+    async def test_alert(self):
+        def dialog_test(dialog):
+            self.assertEqual(dialog.type, 'alert')
+            self.assertEqual(dialog.defaultValue(), '')
+            self.assertEqual(dialog.message(), 'yo')
+            asyncio.ensure_future(dialog.accept())
+        self.page.on('dialog', dialog_test)
+        await self.page.evaluate('() => alert("yo")')
+
+    @sync
+    async def test_prompt(self):
+        def dialog_test(dialog):
+            self.assertEqual(dialog.type, 'prompt')
+            self.assertEqual(dialog.defaultValue(), 'yes.')
+            self.assertEqual(dialog.message(), 'question?')
+            asyncio.ensure_future(dialog.accept('answer!'))
+        self.page.on('dialog', dialog_test)
+        answer = await self.page.evaluate('() => prompt("question?", "yes.")')
+        self.assertEqual(answer, 'answer!')
+
+    @sync
+    async def test_prompt_dismiss(self):
+        def dismiss_test(dialog, *args):
+            asyncio.ensure_future(dialog.dismiss())
+        self.page.on('dialog', dismiss_test)
+        result = await self.page.evaluate('() => prompt("question?", "yes.")')
+        self.assertIsNone(result)

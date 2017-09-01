@@ -193,6 +193,14 @@ class Session(EventEmitter):
         else:
             self.emit(obj.get('method'), obj.get('params'))
 
+    async def dispose(self) -> None:
+        """Close target."""
+        if self._connection:
+            # broken...?
+            await self._connection.send('Target.closeTarget', {
+                'targetId': self.targetId,
+            })
+
     def _on_closed(self) -> None:
         # for cb in self._callbacks.values():
         #     cb.set_exception(Exception('connection closed'))
