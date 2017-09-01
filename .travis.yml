@@ -8,6 +8,7 @@ python:
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
   - pip install tox
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -U -r requirements-test.txt; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pip install -U coverage codecov tox; fi
 
 # command to run tests, e.g. python setup.py test
