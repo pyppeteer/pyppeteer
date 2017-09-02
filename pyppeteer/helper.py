@@ -111,6 +111,7 @@ async def releaseObject(client: Session, remoteObject: dict) -> None:
 
 
 def get_positive_int(obj: dict, name: str) -> int:
+    """Get and check the value of name in obj is positive integer."""
     value = obj[name]
     if not isinstance(value, int):
         raise TypeError(
