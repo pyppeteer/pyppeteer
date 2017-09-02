@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.5 documentation</title>
+    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.6 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.0.5',
+        VERSION:     '0.0.6',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -76,7 +76,7 @@ chrome/chromium browser automation library.</p>
 </pre></div>
 </div>
 <p>Or install latest version from github:</p>
-<div class="highlight-guess"><div class="highlight"><pre><span></span>python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git
+<div class="highlight-guess"><div class="highlight"><pre><span></span>python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 </pre></div>
 </div>
 </div>
@@ -86,14 +86,14 @@ chrome/chromium browser automation library.</p>
 <div class="highlight-py"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.launcher</span> <span class="kn">import</span> <span class="n">launch</span>
 
-<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">browser</span><span class="p">):</span>
+<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
     <span class="n">page</span> <span class="o">=</span> <span class="n">await</span> <span class="n">browser</span><span class="o">.</span><span class="n">newPage</span><span class="p">()</span>
     <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;http://example.com&#39;</span><span class="p">)</span>
     <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">({</span><span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example.png&#39;</span><span class="p">})</span>
+    <span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-<span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
-<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">browser</span><span class="p">))</span>
-<span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </pre></div>
 </div>
 <p>Pyppeteer has almost same API as puppeteer.
@@ -101,13 +101,14 @@ More APIs are listed in the
 <a class="reference external" href="https://miyakogi.github.io/pyppeteer/reference.html">document</a>.</p>
 <p><a class="reference external" href="https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#">Puppeteer’s document</a>
 is also useful for pyppeteer users.</p>
+</div>
 <div class="section" id="differences-between-puppeteer-and-pyppeteer">
-<h3>Differences between puppeteer and pyppeteer<a class="headerlink" href="#differences-between-puppeteer-and-pyppeteer" title="Permalink to this headline">¶</a></h3>
+<h2>Differences between puppeteer and pyppeteer<a class="headerlink" href="#differences-between-puppeteer-and-pyppeteer" title="Permalink to this headline">¶</a></h2>
 <p>Pyppeteer is to be as similar as puppeteer, but some differences between python
 and JavaScript make it difficult.</p>
 <p>These are differences between puppeteer and pyppeteer.</p>
 <div class="section" id="keyword-argument-for-options">
-<h4>Keyword argument for options<a class="headerlink" href="#keyword-argument-for-options" title="Permalink to this headline">¶</a></h4>
+<h3>Keyword argument for options<a class="headerlink" href="#keyword-argument-for-options" title="Permalink to this headline">¶</a></h3>
 <p>Puppeteer uses object (dictionary in python) for passing options to functions/methods.
 Pyppeteer accepts both dictionary and keyword argument for options.</p>
 <p>Dictionary style option (similar to puppeteer):</p>
@@ -120,21 +121,20 @@ Pyppeteer accepts both dictionary and keyword argument for options.</p>
 </div>
 </div>
 <div class="section" id="element-selector-method-name-queryselector">
-<h4>Element selector method name (<code class="docutils literal"><span class="pre">$</span></code> -&gt; <code class="docutils literal"><span class="pre">querySelector</span></code>)<a class="headerlink" href="#element-selector-method-name-queryselector" title="Permalink to this headline">¶</a></h4>
+<h3>Element selector method name (<code class="docutils literal"><span class="pre">$</span></code> -&gt; <code class="docutils literal"><span class="pre">querySelector</span></code>)<a class="headerlink" href="#element-selector-method-name-queryselector" title="Permalink to this headline">¶</a></h3>
 <p>In python, <code class="docutils literal"><span class="pre">$</span></code> is not usable for method name.
 So pyppeteer uses <code class="docutils literal"><span class="pre">Page.querySelector()</span></code> instead of <code class="docutils literal"><span class="pre">Page.$()</span></code>, and
 <code class="docutils literal"><span class="pre">ElementHandle.querySelector()</span></code> instead of <code class="docutils literal"><span class="pre">ElementHandle.$()</span></code>.
 Pyppeteer has shorthand of this method, <code class="docutils literal"><span class="pre">Page.J()</span></code> and <code class="docutils literal"><span class="pre">ElementHandle.J()</span></code>.</p>
 </div>
 <div class="section" id="argument-of-page-evaluate-elementhandle-evaluate">
-<h4>Argument of <code class="docutils literal"><span class="pre">Page.evaluate()</span></code> / <code class="docutils literal"><span class="pre">ElementHandle.evaluate()</span></code><a class="headerlink" href="#argument-of-page-evaluate-elementhandle-evaluate" title="Permalink to this headline">¶</a></h4>
+<h3>Argument of <code class="docutils literal"><span class="pre">Page.evaluate()</span></code> / <code class="docutils literal"><span class="pre">ElementHandle.evaluate()</span></code><a class="headerlink" href="#argument-of-page-evaluate-elementhandle-evaluate" title="Permalink to this headline">¶</a></h3>
 <p>Puppeteer’s version of <code class="docutils literal"><span class="pre">evaluate()</span></code> takes JavaScript raw function, but
 pyppeteer takes string of JavaScript function.</p>
 <p>Example to get element’s inner text:</p>
-<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">element</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">)</span>
-<span class="n">title</span> <span class="o">=</span> <span class="n">element</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;(element) =&gt; element.textContent&#39;</span><span class="p">)</span>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">element</span> <span class="o">=</span> <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">)</span>
+<span class="n">title</span> <span class="o">=</span> <span class="n">await</span> <span class="n">element</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;(element) =&gt; element.textContent&#39;</span><span class="p">)</span>
 </pre></div>
-</div>
 </div>
 </div>
 </div>

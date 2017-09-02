@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.5 documentation</title>
+    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.6 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.5',
+        VERSION:     '0.0.6',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -102,7 +102,7 @@
         <span class="sd">&quot;&quot;&quot;Set extra http headers.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_extraHTTPHeaders</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
         <span class="n">headers</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>  <span class="c1"># type: Dict[str, str]</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">extraHTTPHeaders</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">extraHTTPHeaders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_extraHTTPHeaders</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
             <span class="n">headers</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.setExtraHTTPHeaders&#39;</span><span class="p">,</span>
@@ -167,11 +167,12 @@
 
     <span class="k">def</span> <span class="nf">_onRequestWillBeSent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_requestInterceptionEnabled</span> <span class="ow">and</span>
-                <span class="ow">not</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;data:&#39;</span><span class="p">)):</span>
+                <span class="ow">not</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;data:&#39;</span><span class="p">)):</span>
             <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;redirectResponse&#39;</span><span class="p">):</span>
                 <span class="k">return</span>
             <span class="n">requestHash</span> <span class="o">=</span> <span class="n">generateRequestHash</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToRequestIds</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">requestHash</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;requestId&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToRequestIds</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                <span class="n">requestHash</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;requestId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_maybeResolveInterception</span><span class="p">(</span><span class="n">requestHash</span><span class="p">)</span>
             <span class="k">return</span>
         <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;redirectResponse&#39;</span><span class="p">):</span>
@@ -191,7 +192,6 @@
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_maybeResolveInterception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requestHash</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Maybe broken.&quot;&quot;&quot;</span>
         <span class="n">requestId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToRequestIds</span><span class="o">.</span><span class="n">firstValue</span><span class="p">(</span><span class="n">requestHash</span><span class="p">)</span>
         <span class="n">interception</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToInterceptions</span><span class="o">.</span><span class="n">firstValue</span><span class="p">(</span><span class="n">requestHash</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">requestId</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">interception</span><span class="p">:</span>

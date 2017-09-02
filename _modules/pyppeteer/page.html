@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.5 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.6 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.5',
+        VERSION:     '0.0.6',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -254,14 +254,14 @@
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">addScriptTag</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">addScriptTag</span><span class="p">(</span><span class="n">url</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.injectFile"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.injectFile">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">injectFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filePath</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Inject file to this page.&quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">injectFile</span><span class="p">(</span><span class="n">filePath</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">injectFile</span><span class="p">(</span><span class="n">filePath</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.exposeFunction"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.exposeFunction">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">exposeFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">puppeteerFunction</span><span class="p">:</span> <span class="n">Callable</span>
                              <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -299,11 +299,11 @@
 
 <div class="viewcode-block" id="Page.setExtraHTTPHeaders"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setExtraHTTPHeaders">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setExtraHTTPHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]):</span>
         <span class="sd">&quot;&quot;&quot;Set extra http headers.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setExtraHTTPHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setExtraHTTPHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.setUserAgent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setUserAgent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setUserAgent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userAgent</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Set user agent.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">userAgent</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">userAgent</span><span class="p">)</span></div>
 
     <span class="k">def</span> <span class="nf">_handleException</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exceptionDetails</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">message</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">getExceptionMessage</span><span class="p">(</span><span class="n">exceptionDetails</span><span class="p">)</span>
@@ -383,7 +383,7 @@
 <div class="viewcode-block" id="Page.setContent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setContent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setContent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">html</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Set content.&quot;&quot;&quot;</span>
         <span class="n">func</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">fucntion(html) {</span>
+<span class="s1">function(html) {</span>
 <span class="s1">  document.open();</span>
 <span class="s1">  document.write(html);</span>
 <span class="s1">  document.close();</span>
@@ -441,8 +441,7 @@
         <span class="n">listener</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="p">,</span>
             <span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Response</span><span class="p">,</span>
-            <span class="k">lambda</span> <span class="n">response</span><span class="p">:</span> <span class="n">responses</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span>
-                <span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+            <span class="k">lambda</span> <span class="n">response</span><span class="p">:</span> <span class="n">responses</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">await</span> <span class="n">watcher</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">()</span>
         <span class="n">helper</span><span class="o">.</span><span class="n">removeEventListeners</span><span class="p">([</span><span class="n">listener</span><span class="p">])</span>
@@ -482,7 +481,7 @@
             <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setViewport</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;viewport&#39;</span><span class="p">,</span> <span class="p">{}))</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userAgent&#39;</span><span class="p">,</span> <span class="p">{}))</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userAgent&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="Page.setJavaScriptEnabled"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setJavaScriptEnabled">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setJavaScriptEnabled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Set JavaScript enabled/disabled.&quot;&quot;&quot;</span>
