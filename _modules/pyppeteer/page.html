@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.6 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.7 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.6',
+        VERSION:     '0.0.7',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -70,7 +70,7 @@
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">PageError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">Frame</span>  <span class="c1"># noqa: F401</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">FrameManager</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Keyboard</span><span class="p">,</span> <span class="n">Mouse</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Keyboard</span><span class="p">,</span> <span class="n">Mouse</span><span class="p">,</span> <span class="n">Touchscreen</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.navigator_watcher</span> <span class="k">import</span> <span class="n">NavigatorWatcher</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.network_manager</span> <span class="k">import</span> <span class="n">NetworkManager</span><span class="p">,</span> <span class="n">Response</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.tracing</span> <span class="k">import</span> <span class="n">Tracing</span>
@@ -116,7 +116,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span> <span class="o">=</span> <span class="n">Keyboard</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span> <span class="o">=</span> <span class="n">Mouse</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span> <span class="o">=</span> <span class="n">FrameManager</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span> <span class="o">=</span> <span class="n">Touchscreen</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span> <span class="o">=</span> <span class="n">FrameManager</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span> <span class="o">=</span> <span class="n">NetworkManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_emulationManager</span> <span class="o">=</span> <span class="n">EmulationManager</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_tracing</span> <span class="o">=</span> <span class="n">Tracing</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
@@ -168,9 +169,22 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">_mainFrame</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">keyboard</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Keyboard&#39;</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">keyboard</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Keyboard</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get keybord object.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">touchscreen</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Touchscreen</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get touchscreen object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span>
+
+<div class="viewcode-block" id="Page.tap"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.tap">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">tap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Tap the element which matches selector.&quot;&quot;&quot;</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">J</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No node found for selector: &#39;</span> <span class="o">+</span> <span class="n">selector</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">tap</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">tracing</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Tracing&#39;</span><span class="p">:</span>
@@ -203,6 +217,14 @@
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span></div>
 
+<div class="viewcode-block" id="Page.querySelectorEval"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.querySelectorEval">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorEval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                                <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Execute function on element which matches selector.&quot;&quot;&quot;</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">querySelectorEval</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="Page.querySelectorAll"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.querySelectorAll">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span>
                                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Get Element which matches `selector`.&quot;&quot;&quot;</span>
@@ -213,6 +235,8 @@
 
     <span class="c1">#: alias to querySelector</span>
     <span class="n">J</span> <span class="o">=</span> <span class="n">querySelector</span>
+    <span class="c1">#: alias to querySelectorEval</span>
+    <span class="n">Jeval</span> <span class="o">=</span> <span class="n">querySelectorEval</span>
     <span class="c1">#: alias to querySelectorAll</span>
     <span class="n">JJ</span> <span class="o">=</span> <span class="n">querySelectorAll</span>
 

@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.6 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.7 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.6',
+        VERSION:     '0.0.7',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -53,24 +53,29 @@
 <span class="sd">&quot;&quot;&quot;Element handle module.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os.path</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span><span class="p">,</span> <span class="n">BrowserError</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Mouse</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Mouse</span><span class="p">,</span> <span class="n">Touchscreen</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="ElementHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle">[docs]</a><span class="k">class</span> <span class="nc">ElementHandle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;ElementHandle class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">mouse</span><span class="p">:</span> <span class="n">Mouse</span>
-                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">mouse</span><span class="p">:</span> <span class="n">Mouse</span><span class="p">,</span>
+                 <span class="n">touchscreen</span><span class="p">:</span> <span class="n">Touchscreen</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Make new element handle object.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span> <span class="o">=</span> <span class="n">remoteObject</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span> <span class="o">=</span> <span class="n">mouse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span> <span class="o">=</span> <span class="n">touchscreen</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="ElementHandle.dispose"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.dispose">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">dispose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -153,9 +158,24 @@
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.attribute"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.attribute">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get attribute value of the `key` of this element.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;[Deprecated] Get attribute value of the `key` of this element.&quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s1">&#39;[DEPRECATED] ElementHandle.attribute is dropped in puppeteer. &#39;</span>
+            <span class="s1">&#39;Use Page.querySelectorEval or Page.Jeval instead.&#39;</span>
+        <span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="ne">DeprecationWarning</span><span class="p">(</span>
+            <span class="s1">&#39;ElementHandle.attribute is dropped in puppeteer.</span><span class="se">\n</span><span class="s1">&#39;</span>
+            <span class="s1">&#39;Use Page.Jeval instead.&#39;</span>
+        <span class="p">))</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-            <span class="s1">&#39;(element, key) =&gt; element.getAttribute(key)&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span></div></div>
+            <span class="s1">&#39;(element, key) =&gt; element.getAttribute(key)&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ElementHandle.tap"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.tap">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">tap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Tap this element.&quot;&quot;&quot;</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>

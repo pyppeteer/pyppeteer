@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.input &#8212; Pyppeteer 0.0.6 documentation</title>
+    <title>pyppeteer.input &#8212; Pyppeteer 0.0.7 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.6',
+        VERSION:     '0.0.7',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -190,6 +190,29 @@
             <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
             <span class="s1">&#39;clickCount&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clickCount&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span>
         <span class="p">})</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">Touchscreen</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Touchscreen class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">keyboard</span><span class="p">:</span> <span class="n">Keyboard</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Make new touchscreen object.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span> <span class="o">=</span> <span class="n">keyboard</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">tap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Tap (x, y).&quot;&quot;&quot;</span>
+        <span class="n">touchPoints</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">y</span><span class="p">)}]</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Input.dispatchTouchEvent&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;touchStart&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;touchPoints&#39;</span><span class="p">:</span> <span class="n">touchPoints</span><span class="p">,</span>
+            <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Input.dispatchTouchEvent&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;touchEnd&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;touchPoints&#39;</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
+        <span class="p">})</span>
 
 
 <span class="n">keys</span> <span class="o">=</span> <span class="p">{</span>
