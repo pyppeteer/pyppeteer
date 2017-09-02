@@ -15,4 +15,4 @@ script:
   - tox
 
 after_success:
-  - python -m coverage run --source pyppeteer -m unittest discover tests && coverage report && codecov
+  - python -m coverage run --source pyppeteer -m unittest discover tests && coverage report && codecov -b $TRAVIS_BRANCH
