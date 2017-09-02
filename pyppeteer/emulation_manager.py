@@ -3,6 +3,7 @@
 
 """Emulation Managet module."""
 
+from pyppeteer import helper
 from pyppeteer.connection import Session
 
 
@@ -17,22 +18,23 @@ class EmulationManager(object):
 
     async def emulateViewport(self, client: Session, viewport: dict) -> bool:
         """Evaluate viewport."""
+        options = dict()
         mobile = viewport.get('isMobile', False)
-        width = viewport.get('width')
-        height = viewport.get('height')
-        deviceScaleFactor = viewport.get('deviceScaleFactor', 1)
-        if viewport.get('isLandscape'):
-            screenOrientation = {'angle': 90, type: 'landscapePrimary'}
-        else:
-            screenOrientation = {'angle': 0, type: 'portraitPrimary'}
+        options['mobile'] = mobile
+        if 'width' in viewport:
+            options['width'] = helper.get_positive_int(viewport, 'width')
+        if 'height' in viewport:
+            options['height'] = helper.get_positive_int(viewport, 'height')
 
-        await self._client.send('Emulation.setDeviceMetricsOverride', {
-            'mobile': mobile,
-            'width': width,
-            'height': height,
-            'deviceScaleFactor': deviceScaleFactor,
-            'screenOrientation': screenOrientation,
-        })
+        options['deviceScaleFactor'] = viewport.get('deviceScaleFactor', 1)
+        if viewport.get('isLandscape'):
+            options['screenOrientation'] = {'angle': 90,
+                                            'type': 'landscapePrimary'}
+        else:
+            options['screenOrientation'] = {'angle': 0,
+                                            'type': 'portraitPrimary'}
+
+        await self._client.send('Emulation.setDeviceMetricsOverride', options)
         await self._client.send('Emulation.setTouchEmulationEnabled', {
             'enabled': viewport.get('hasTouch', False),
             'configuration': 'mobile' if mobile else 'desktop'

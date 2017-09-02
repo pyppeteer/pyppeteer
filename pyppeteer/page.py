@@ -432,7 +432,7 @@ function(html) {
             options = dict()
         options.update(kwargs)
         await self.setViewport(options.get('viewport', {}))
-        await self.setUserAgent(options.get('userAgent', {}))
+        await self.setUserAgent(options.get('userAgent', ''))
 
     async def setJavaScriptEnabled(self, enabled: bool) -> None:
         """Set JavaScript enabled/disabled."""

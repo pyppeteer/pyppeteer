@@ -9,6 +9,7 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
+from pathlib import Path
 import unittest
 
 from syncer import sync
@@ -287,15 +288,37 @@ class TestPage(unittest.TestCase):
             '() => navigator.userAgent'))
 
     @sync
+    async def test_viewport(self):
+        await self.page.setViewport(dict(
+            width=480,
+            height=640,
+            deviceScaleFactor=3,
+            isMobile=True,
+            hasTouch=True,
+            isLandscape=True,
+        ))
+
+    @sync
+    async def test_emulate(self):
+        await self.page.emulate(dict(
+            userAgent='test',
+            viewport=dict(
+                width=480,
+                height=640,
+                deviceScaleFactor=3,
+                isMobile=True,
+                hasTouch=True,
+                isLandscape=True,
+            ),
+        ))
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.setRequestInterceptionEnabled(False)  # bug on True?
-        # await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
-        # await self.page.injectFile('/path/to/jsfile')
+        await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
         await self.page.setContent('')
         await self.page.reload()
-        # await self.page.emulate({})
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()
-        # await self.page.setViewport({})
         await self.page.evaluateOnNewDocument('() => 1 + 2')
