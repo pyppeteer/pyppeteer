@@ -31,7 +31,7 @@ pytyon3 -m pip install pyppeteer
 Or install latest version from github:
 
 ```
-python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git
+python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 ```
 
 ## Usage
@@ -42,14 +42,14 @@ Below code open web page and take a screenshot.
 import asyncio
 from pyppeteer.launcher import launch
 
-async def main(browser):
+async def main():
+    browser = launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
+    browser.close()
 
-browser = launch()
-asyncio.get_event_loop().run_until_complete(main(browser))
-browser.close()
+asyncio.get_event_loop().run_until_complete(main())
 ```
 
 Pyppeteer has almost same API as puppeteer.
@@ -98,8 +98,8 @@ pyppeteer takes string of JavaScript function.
 Example to get element's inner text:
 
 ```python
-element = page.querySelector('h1')
-title = element.evaluate('(element) => element.textContent')
+element = await page.querySelector('h1')
+title = await element.evaluate('(element) => element.textContent')
 ```
 
 Credits
