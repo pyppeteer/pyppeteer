@@ -118,11 +118,12 @@ class NetworkManager(EventEmitter):
 
     def _onRequestWillBeSent(self, event: dict) -> None:
         if (self._requestInterceptionEnabled and
-                not event['request']['url'].startswith('data:')):
+                not event['request'].get('url', '').startswith('data:')):
             if event.get('redirectResponse'):
                 return
             requestHash = generateRequestHash(event['request'])
-            self._requestHashToRequestIds.set(requestHash, event['requestId'])
+            self._requestHashToRequestIds.set(
+                requestHash, event.get('requestId', ''))
             self._maybeResolveInterception(requestHash)
             return
         if event.get('redirectResponse'):
@@ -142,7 +143,6 @@ class NetworkManager(EventEmitter):
         )
 
     def _maybeResolveInterception(self, requestHash: str) -> None:
-        """Maybe broken."""
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
         interception = self._requestHashToInterceptions.firstValue(requestHash)
         if not requestId or not interception:

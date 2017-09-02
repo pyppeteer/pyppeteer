@@ -342,9 +342,13 @@ class TestPage(unittest.TestCase):
         self.assertTrue(outfile.is_file())
 
     @sync
+    async def test_interception_enable(self):
+        await self.page.setRequestInterceptionEnabled(True)
+        # await self.page.goto(self.url)
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
-        await self.page.setRequestInterceptionEnabled(False)  # bug on True?
         await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
         await self.page.setContent('')
         await self.page.reload()
