@@ -9,56 +9,25 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
-import logging
+from pathlib import Path
 import unittest
 
 from syncer import sync
-from tornado import web
 
 from pyppeteer.launcher import launch
 from pyppeteer.util import install_asyncio, get_free_port
+from server import get_application, BASE_HTML
 
 
-def setUpModule() -> None:
-    logging.getLogger('tornado').setLevel(logging.ERROR)
-    # logging.getLogger('pyppeteer').setLevel(logging.ERROR)
+def setUpModule():
     install_asyncio()
-
-
-BASE_HTML = '''
-<html>
-<head><title>main</title></head>
-<body>
-<h1 id="hello">Hello</h1>
-<a id="link1" href="./1">link1</a>
-<a id="link2" href="./2">link2</a>
-</body>
-</html>
-'''
-
-
-class MainHandler(web.RequestHandler):
-    def get(self) -> None:
-        self.write(BASE_HTML)
-
-
-class LinkHandler1(web.RequestHandler):
-    def get(self) -> None:
-        self.write('''
-<head><title>link1</title></head>
-<h1 id="link1">Link1</h1>
-<a id="back1" href="./">back1</a>
-        ''')
 
 
 class TestPyppeteer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
-        cls.app = web.Application([
-            ('/', MainHandler),
-            ('/1', LinkHandler1),
-        ], logging='error')
+        cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch()
         cls.page = sync(cls.browser.newPage())
@@ -69,13 +38,22 @@ class TestPyppeteer(unittest.TestCase):
         cls.server.stop()
 
     def setUp(self):
-        sync(self.page.goto('http://localhost:' + str(self.port)))
+        self.url = 'http://localhost:{}/'.format(self.port)
+        sync(self.page.goto(self.url))
 
     @sync
     async def test_get(self):
         self.assertEqual(await self.page.title(), 'main')
+        self.assertEqual(self.page.url, self.url)
         self.elm = await self.page.querySelector('h1#hello')
         self.assertTrue(self.elm)
+        await self.page.goto('about:blank')
+        self.assertEqual(self.page.url, 'about:blank')
+
+    @sync
+    async def test_get_https(self):
+        await self.page.goto('https://example.com/')
+        self.assertEqual(self.page.url, 'https://example.com/')
 
     @sync
     async def test_plain_text(self):
@@ -135,6 +113,32 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
+    async def test_wait_for_function(self):
+        await self.page.evaluate(
+            '() => {'
+            '  setTimeout(() => {'
+            '    document.body.innerHTML = "<section>a</section>"'
+            '  }, 200)'
+            '}'
+        )
+        await self.page.waitForFunction(
+            '() => !!document.querySelector("section")'
+        )
+        self.assertIsNotNone(await self.page.querySelector('section'))
+
+    @sync
+    async def test_wait_for_selector(self):
+        await self.page.evaluate(
+            '() => {'
+            '  setTimeout(() => {'
+            '    document.body.innerHTML = "<section>a</section>"'
+            '  }, 200)'
+            '}'
+        )
+        await self.page.waitForSelector('section')
+        self.assertIsNotNone(await self.page.querySelector('section'))
+
+    @sync
     async def test_elm_click(self):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
@@ -159,7 +163,7 @@ class TestPyppeteer(unittest.TestCase):
         self.assertTrue(btn2)
 
     @sync
-    async def test_cookies(self) -> None:
+    async def test_cookies(self):
         cookies = await self.page.cookies()
         self.assertEqual(cookies, [])
         await self.page.evaluate(
@@ -221,3 +225,133 @@ class TestPyppeteer(unittest.TestCase):
             'secure': False,
             'session': True,
         }])
+
+    @sync
+    async def test_redirect(self):
+        await self.page.goto(self.url + 'redirect1')
+        await self.page.waitForSelector('h1#red2')
+        self.assertEqual(await self.page.plainText(), 'redirect2')
+
+
+class TestPage(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        cls.url = 'http://localhost:{}/'.format(cls.port)
+        cls.app = get_application()
+        cls.server = cls.app.listen(cls.port)
+        cls.browser = launch(headless=True)
+
+    def setUp(self):
+        self.page = sync(self.browser.newPage())
+        sync(self.page.goto(self.url))
+
+    def tearDown(self):
+        sync(self.page.goto('about:blank'))
+
+    @classmethod
+    def tearDownModule(cls):
+        cls.browser.close()
+        cls.server.stop()
+
+    @sync
+    async def test_alert(self):
+        def dialog_test(dialog):
+            self.assertEqual(dialog.type, 'alert')
+            self.assertEqual(dialog.defaultValue(), '')
+            self.assertEqual(dialog.message(), 'yo')
+            asyncio.ensure_future(dialog.accept())
+        self.page.on('dialog', dialog_test)
+        await self.page.evaluate('() => alert("yo")')
+
+    @sync
+    async def test_prompt(self):
+        def dialog_test(dialog):
+            self.assertEqual(dialog.type, 'prompt')
+            self.assertEqual(dialog.defaultValue(), 'yes.')
+            self.assertEqual(dialog.message(), 'question?')
+            asyncio.ensure_future(dialog.accept('answer!'))
+        self.page.on('dialog', dialog_test)
+        answer = await self.page.evaluate('() => prompt("question?", "yes.")')
+        self.assertEqual(answer, 'answer!')
+
+    @sync
+    async def test_prompt_dismiss(self):
+        def dismiss_test(dialog, *args):
+            asyncio.ensure_future(dialog.dismiss())
+        self.page.on('dialog', dismiss_test)
+        result = await self.page.evaluate('() => prompt("question?", "yes.")')
+        self.assertIsNone(result)
+
+    @sync
+    async def test_user_agent(self):
+        self.assertIn('Mozilla', await self.page.evaluate(
+            '() => navigator.userAgent'))
+        await self.page.setUserAgent('foobar')
+        await self.page.goto(self.url)
+        self.assertEqual('foobar', await self.page.evaluate(
+            '() => navigator.userAgent'))
+
+    @sync
+    async def test_viewport(self):
+        await self.page.setViewport(dict(
+            width=480,
+            height=640,
+            deviceScaleFactor=3,
+            isMobile=True,
+            hasTouch=True,
+            isLandscape=True,
+        ))
+
+    @sync
+    async def test_emulate(self):
+        await self.page.emulate(dict(
+            userAgent='test',
+            viewport=dict(
+                width=480,
+                height=640,
+                deviceScaleFactor=3,
+                isMobile=True,
+                hasTouch=True,
+                isLandscape=True,
+            ),
+        ))
+
+    @sync
+    async def test_inject_file(self):
+        tmp_file = Path('tmp.js')
+        with tmp_file.open('w') as f:
+            f.write('''
+() => document.body.appendChild(document.createElement("section"))
+            '''.strip())
+        await self.page.injectFile(str(tmp_file))
+        await self.page.waitForSelector('section')
+        self.assertIsNotNone(await self.page.J('section'))
+        tmp_file.unlink()
+
+    @sync
+    async def test_tracing(self):
+        outfile = Path(__file__).parent / 'trace.json'
+        if outfile.is_file():
+            outfile.unlink()
+        await self.page.tracing.start({
+            'path': str(outfile)
+        })
+        await self.page.goto(self.url)
+        await self.page.tracing.stop()
+        self.assertTrue(outfile.is_file())
+
+    @sync
+    async def test_interception_enable(self):
+        await self.page.setRequestInterceptionEnabled(True)
+        # await self.page.goto(self.url)
+
+    @sync
+    async def test_no_await_check_just_call(self):
+        await self.page.setExtraHTTPHeaders({'a': 'b'})
+        await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
+        await self.page.setContent('')
+        await self.page.reload()
+        await self.page.setJavaScriptEnabled(True)
+        await self.page.emulateMedia()
+        await self.page.evaluateOnNewDocument('() => 1 + 2')

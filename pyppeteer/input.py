@@ -4,7 +4,7 @@
 """Keyboard and Mouse module."""
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from pyppeteer.connection import Session
 
@@ -21,9 +21,11 @@ class Keyboard(object):
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
-    async def down(self, key: str, options: dict = None) -> None:
+    async def down(self, key: str, options: dict = None, **kwargs: Any
+                   ) -> None:
         """Press down key."""
         options = options or dict()
+        options.update(kwargs)
         text = options.get('text')
         self._pressedKeys.add(key)
         self._modifiers |= self._modifierBit(key)
@@ -98,20 +100,23 @@ class Mouse(object):
             'modifiers': self._keyboard._modifiers,
         })
 
-    async def click(self, x: int, y: int, options: dict = None) -> None:
+    async def click(self, x: int, y: int, options: dict = None, **kwargs: Any
+                    ) -> None:
         """Click button at (x, y)."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         await self.move(x, y)
         await self.down(options)
         if options and options.get('delay'):
             await asyncio.sleep(options.get('delay', 0))
         await self.up(options)
 
-    async def down(self, options: dict = None) -> None:
+    async def down(self, options: dict = None, **kwargs: Any) -> None:
         """Press down button."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         self._button = options.get('button', 'left')
         await self._client.send('Input.dispatchMouseEvent', {
             'type': 'mousePressed',
@@ -122,10 +127,11 @@ class Mouse(object):
             'clickCount': options.get('clickCount') or 1,
         })
 
-    async def up(self, options: dict = None) -> None:
+    async def up(self, options: dict = None, **kwargs: Any) -> None:
         """Up pressed button."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         self._button = 'none'
         await self._client.send('Input.dispatchMouseEvent', {
             'type': 'mouseReleased',

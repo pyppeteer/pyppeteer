@@ -6,14 +6,12 @@ python:
   - 3.6
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-
 install:
-  - pip install .
-  - pip install -r requirements-test.txt
-  - pip install -U coverage codecov
+  - pip install codecov tox
 
 # command to run tests, e.g. python setup.py test
 script:
-  - python -m coverage run --source pyppeteer -m unittest discover tests
+  - tox
+
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then coverage report && codecov; fi
+  - codecov -b $TRAVIS_BRANCH

@@ -84,13 +84,14 @@ element => {
         y = obj.get('y', 0)
         await self._mouse.move(x, y)
 
-    async def click(self, options: dict = None) -> None:
+    async def click(self, options: dict = None, **kwargs: Any) -> None:
         """Click this element."""
         obj = await self._visibleCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         if options is None:
             options = dict()
+        options.update(kwargs)
         await self._mouse.click(x, y, options)
 
     async def uploadFile(self, *filePaths: str) -> dict:

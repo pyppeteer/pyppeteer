@@ -30,6 +30,7 @@ include/
 lib/
 lib64
 lib64/
+man/
 pyvenv.cfg
 
 # PyInstaller
@@ -77,3 +78,6 @@ target/
 ###### zsh-autoenv ######
 .autoenv.zsh
 .autoenv_leave.zsh
+
+# test files
+trace.json

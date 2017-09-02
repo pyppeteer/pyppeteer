@@ -1,3 +1,4 @@
 sphinx>=1.6
 sphinx-autodoc-typehints
+sphinxcontrib-asyncio
 m2r

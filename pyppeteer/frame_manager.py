@@ -240,7 +240,7 @@ class Frame(object):
         # to be changed to async func
         with open(filePath) as f:
             contents = f.read()
-        contents += f'//# sourceURL=' + filePath.replace('\n', '')
+        contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
         return await self.evaluate(contents)
 
     async def addScriptTag(self, url: str) -> str:
@@ -257,10 +257,11 @@ function addScriptTag(url) {
         return await self.evaluate(addScriptTag, url)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None) -> Awaitable:
+                options: dict = None, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
+        options.update(kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
                 asyncio.sleep(selectorOrFunctionOrTimeout))
@@ -277,21 +278,26 @@ function addScriptTag(url) {
             return self.waitForFunction(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
-    def waitForSelector(self, selector: str, options: dict = None
-                        ) -> Awaitable:
+    def waitForSelector(self, selector: str, options: dict = None,
+                        **kwargs: Any) -> Awaitable:
         """Wait for selector matches element."""
         if options is None:
             options = dict()
-        timeout = options.get('timeout', 30000)
-        return WaitTask(self, 'selector', selector, timeout)
+        options.update(kwargs)
+        timeout = options.get('timeout', 30_000)  # msec
+        interval = options.get('interval', 0)  # msec
+        return WaitTask(self, 'selector', selector, timeout, interval=interval)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str) -> Awaitable:
-        """Wait for js function result become true-able."""
+                        *args: str, **kwargs: Any) -> Awaitable:
+        """Wait for js function return true."""
         if options is None:
             options = dict()
-        timeout = options.get('timeout',  30000)
-        return WaitTask(self, 'function', pageFunction, timeout, *args)
+        options.update(kwargs)
+        timeout = options.get('timeout',  30_000)  # msec
+        interval = options.get('interval', 0)  # msec
+        return WaitTask(self, 'function', pageFunction, timeout, *args,
+                        interval=interval)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -316,61 +322,65 @@ class WaitTask(asyncio.Future):
     """WaitTask class."""
 
     def __init__(self, frame: Frame, _type: str, expr: str, timeout: float,
-                 *args: Any) -> None:
-        """Make new wait task."""
+                 *args: Any, interval: float = 0) -> None:
+        """Make new wait task.
+
+        :arg float timeout: msec to wait for task [default 30_000 [msec]].
+        :arg float interval: msec to poll for task [default timeout / 1000].
+        """
         if _type not in ['function', 'selector']:
             raise ValueError('Unsupported type for WaitTask: ' + _type)
         super().__init__()
-        self._frame: Frame = frame
-        self._type = _type
+        self.__frame: Frame = frame
+        self.__type = _type
         self.expr = expr
-        self._timeout = timeout / 1000
-        self._runCount: int = 0
-        self._terminated = False
-        self._done = False
+        self.__timeout = timeout / 1000  # sec
+        self.__interval = interval / 1000 or self.__timeout / 100  # sec
+        self.__runCount: int = 0
+        self.__terminated = False
+        self.__done = False
         frame._waitTasks.add(self)
         # Since page navigation requires us to re-install the pageScript,
         # we should track timeout on our end.
         self.__loop = asyncio.get_event_loop()
-        self._timeoutTimer = self.__loop.call_later(
-            self._timeout,
+        self.__timeoutTimer = self.__loop.call_later(
+            self.__timeout,
             lambda: self.terminate(
                 BrowserError(f'waiting failed: timeout {timeout}ms exceeded')
             )
         )
-        self._timers: List[asyncio.Handle] = []
         asyncio.ensure_future(self.rerun(True))
 
     def terminate(self, error: Exception) -> None:
         """Terminate task by error."""
-        self._terminated = True
+        self.__terminated = True
         self.set_exception(error)
-        self._cleanup()
+        self.__cleanup()
 
     async def rerun(self, internal: bool = False) -> None:  # noqa: C901
         """Re-run the task."""
-        if self._done:
+        if self.__done:
             return
-        self._runCount += 1
-        runCount = self._runCount
+        self.__runCount += 1
+        runCount = self.__runCount
         success = False
         error = None
         try:
-            if self._type == 'selector':
-                success = bool(await self._frame.J(self.expr))
+            if self.__type == 'selector':
+                success = bool(await self.__frame.J(self.expr))
             else:
-                success = bool(await self._frame.evaluate(self.expr))
+                success = bool(await self.__frame.evaluate(self.expr))
         except Exception as e:
             error = e
 
-        if self._terminated or runCount != self._runCount:
+        if self.__terminated or runCount != self.__runCount:
             return
 
         # Ignore timeouts in pageScript - we track timeouts ourselves.
         if not success and not error:
             if internal:
                 self.__loop.call_later(
-                    self._timeout / 10,
+                    self.__interval,
                     lambda: asyncio.ensure_future(self.rerun(True)),
                 )
             return
@@ -386,12 +396,10 @@ class WaitTask(asyncio.Future):
             self.set_exception(error)
         else:
             self.set_result(None)
-        self._cleanup()
+        self.__cleanup()
 
-    def _cleanup(self) -> None:
-        self._timeoutTimer.cancel()
-        for handle in self._timers:
-            handle.cancel()
-        self._frame._waitTasks.remove(self)
+    def __cleanup(self) -> None:
+        self.__timeoutTimer.cancel()
+        self.__frame._waitTasks.remove(self)
         self._runningTask = None
-        self._done = True
+        self.__done = True

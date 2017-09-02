@@ -5,7 +5,7 @@
 
 import asyncio
 from pathlib import Path
-from typing import Awaitable
+from typing import Any, Awaitable
 
 from pyppeteer.connection import Session
 
@@ -19,8 +19,10 @@ class Tracing(object):
         self._recording = False
         self._path = ''
 
-    async def start(self, options: dict) -> None:
+    async def start(self, options: dict = None, **kwargs: Any) -> None:
         """Start."""
+        options = options or dict()
+        options.update(kwargs)
         categoriesArray = [
             '-*', 'devtools.timeline', 'v8.execute',
             'disabled-by-default-devtools.timeline',
@@ -54,7 +56,7 @@ class Tracing(object):
         )
         await self._client.send('Tracing.end')
         self._recording = False
-        return contentPromise
+        return await contentPromise
 
     async def _readStream(self, handle: str, path: str) -> None:
         eof = False
@@ -65,6 +67,6 @@ class Tracing(object):
                     'handle': handle
                 })
                 eof = response.get('eof', False)
-            if path:
-                f.write(response.get('data', ''))
+                if path:
+                    f.write(response.get('data', ''))
         await self._client.send('IO.close', {'handle': handle})

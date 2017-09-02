@@ -108,3 +108,15 @@ async def releaseObject(client: Session, remoteObject: dict) -> None:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
         pass
+
+
+def get_positive_int(obj: dict, name: str) -> int:
+    """Get and check the value of name in obj is positive integer."""
+    value = obj[name]
+    if not isinstance(value, int):
+        raise TypeError(
+            f'{name} must be integer: {type(value)}')
+    elif value < 0:
+        raise ValueError(
+            f'{name} must be positive integer: {value}')
+    return value

@@ -45,11 +45,12 @@ DEFAULT_ARGS = [
 class Launcher(object):
     """Chromium parocess launcher class."""
 
-    def __init__(self, options: Dict[str, Any] = None) -> None:
+    def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
         global BROWSER_ID
         BROWSER_ID += 1
         self.options = options or dict()
+        self.options.update(kwargs)
         self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
                               str(BROWSER_ID))
         self.chrome_args = DEFAULT_ARGS + [
@@ -70,10 +71,8 @@ class Launcher(object):
             self.exec = str(chromium_excutable())
         self.cmd = [self.exec] + self.chrome_args
 
-    def launch(self, options: dict = None) -> Browser:
+    def launch(self) -> Browser:
         """Start chromium process."""
-        if options is None:
-            options = dict()
         self.proc = subprocess.Popen(
             self.cmd,
             stdout=subprocess.PIPE,
@@ -91,9 +90,10 @@ class Launcher(object):
                 break
         logger.debug(m.group(0))
         self.url = m.group(1).strip()
-        connectionDelay = options.get('slowMo', 0)
+        connectionDelay = self.options.get('slowMo', 0)
         connection = Connection(self.url, connectionDelay)
-        return Browser(connection, options.get('ignoreHTTPSErrors', False),
+        return Browser(connection,
+                       self.options.get('ignoreHTTPSErrors', False),
                        self.killChrome)
 
     def killChrome(self) -> None:
@@ -112,9 +112,9 @@ class Launcher(object):
         # return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
 
 
-def launch(options: dict = None) -> Browser:
+def launch(options: dict = None, **kwargs: Any) -> Browser:
     """Start chromium process and return `Browser` object."""
-    return Launcher(options).launch()
+    return Launcher(options, **kwargs).launch()
 
 
 def connect(options: dict = None) -> Browser:
