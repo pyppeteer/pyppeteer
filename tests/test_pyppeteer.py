@@ -107,6 +107,32 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
+    async def test_wait_for_function(self):
+        await self.page.evaluate(
+            '() => {'
+            '  setTimeout(() => {'
+            '    document.body.innerHTML = "<section>a</section>"'
+            '  }, 200)'
+            '}'
+        )
+        await self.page.waitForFunction(
+            '() => !!document.querySelector("section")'
+        )
+        self.assertIsNotNone(await self.page.querySelector('section'))
+
+    @sync
+    async def test_wait_for_selector(self):
+        await self.page.evaluate(
+            '() => {'
+            '  setTimeout(() => {'
+            '    document.body.innerHTML = "<section>a</section>"'
+            '  }, 200)'
+            '}'
+        )
+        await self.page.waitForSelector('section')
+        self.assertIsNotNone(await self.page.querySelector('section'))
+
+    @sync
     async def test_elm_click(self):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)

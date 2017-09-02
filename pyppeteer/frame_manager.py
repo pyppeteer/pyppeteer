@@ -290,7 +290,7 @@ function addScriptTag(url) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:
-        """Wait for js function result become true-able."""
+        """Wait for js function return true."""
         if options is None:
             options = dict()
         options.update(kwargs)
