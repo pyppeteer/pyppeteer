@@ -51,6 +51,11 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(self.page.url, 'about:blank')
 
     @sync
+    async def test_get_https(self):
+        await self.page.goto('https://example.com/')
+        self.assertEqual(self.page.url, 'https://example.com/')
+
+    @sync
     async def test_plain_text(self):
         text = await self.page.plainText()
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
