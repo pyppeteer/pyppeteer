@@ -313,6 +313,18 @@ class TestPage(unittest.TestCase):
         ))
 
     @sync
+    async def test_inject_file(self):
+        tmp_file = Path('tmp.js')
+        with tmp_file.open('w') as f:
+            f.write('''
+() => document.body.appendChild(document.createElement("section"))
+            '''.strip())
+        await self.page.injectFile(str(tmp_file))
+        await self.page.waitForSelector('section')
+        self.assertIsNotNone(await self.page.J('section'))
+        tmp_file.unlink()
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.setRequestInterceptionEnabled(False)  # bug on True?

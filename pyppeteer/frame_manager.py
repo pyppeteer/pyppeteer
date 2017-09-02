@@ -240,7 +240,7 @@ class Frame(object):
         # to be changed to async func
         with open(filePath) as f:
             contents = f.read()
-        contents += f'//# sourceURL=' + filePath.replace('\n', '')
+        contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
         return await self.evaluate(contents)
 
     async def addScriptTag(self, url: str) -> str:
