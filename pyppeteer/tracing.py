@@ -56,7 +56,7 @@ class Tracing(object):
         )
         await self._client.send('Tracing.end')
         self._recording = False
-        return contentPromise
+        return await contentPromise
 
     async def _readStream(self, handle: str, path: str) -> None:
         eof = False
@@ -67,6 +67,6 @@ class Tracing(object):
                     'handle': handle
                 })
                 eof = response.get('eof', False)
-            if path:
-                f.write(response.get('data', ''))
+                if path:
+                    f.write(response.get('data', ''))
         await self._client.send('IO.close', {'handle': handle})

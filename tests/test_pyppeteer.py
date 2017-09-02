@@ -325,6 +325,18 @@ class TestPage(unittest.TestCase):
         tmp_file.unlink()
 
     @sync
+    async def test_tracing(self):
+        outfile = Path(__file__).parent / 'trace.json'
+        if outfile.is_file():
+            outfile.unlink()
+        await self.page.tracing.start({
+            'path': str(outfile)
+        })
+        await self.page.goto(self.url)
+        await self.page.tracing.stop()
+        self.assertTrue(outfile.is_file())
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.setRequestInterceptionEnabled(False)  # bug on True?

@@ -78,3 +78,6 @@ target/
 ###### zsh-autoenv ######
 .autoenv.zsh
 .autoenv_leave.zsh
+
+# test files
+trace.json
