@@ -8,7 +8,7 @@ import logging
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
 __version__ = '0.0.7'
-__chromimum_revision__ = '496140'
+__chromimum_revision__ = '497674'
 __base_puppeteer_version__ = 'v0.10.2'
 
 # Setup root logger

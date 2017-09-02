@@ -1,7 +1,11 @@
 History
 =======
 
-### Version 0.0.7 (next version)
+### Version 0.0.8 (next version)
+
+* Change chromium revision
+
+### Version 0.0.7 (2017-09-03)
 
 * Catch up puppeteer v0.10.2
     * Add `Page.querySelectorEval` (`Page.$eval` in puppeteer)
