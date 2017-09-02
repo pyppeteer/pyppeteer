@@ -4,6 +4,7 @@ History
 ### Version 0.0.8 (next version)
 
 * Change chromium revision
+* Support steps option of `Mouse.move()`
 
 ### Version 0.0.7 (2017-09-03)
 

@@ -88,17 +88,26 @@ class Mouse(object):
         self._y = 0
         self._button = 'none'
 
-    async def move(self, x: int, y: int) -> None:
+    async def move(self, x: int, y: int, options: dict = None, **kwargs: Any
+                   ) -> None:
         """Move cursor."""
+        options = options or dict()
+        options.update(kwargs)
+        fromX = self._x
+        fromY = self._y
         self._x = x
         self._y = y
-        await self._client.send('Input.dispatchMouseEvent', {
-            'type': 'mouseMoved',
-            'button': self._button,
-            'x': x,
-            'y': y,
-            'modifiers': self._keyboard._modifiers,
-        })
+        steps = options.get('steps', 1)
+        for i in range(1, steps + 1):
+            x = round(fromX + (self._x - fromX) * (i / steps))
+            y = round(fromY + (self._y - fromY) * (i / steps))
+            await self._client.send('Input.dispatchMouseEvent', {
+                'type': 'mouseMoved',
+                'button': self._button,
+                'x': x,
+                'y': y,
+                'modifiers': self._keyboard._modifiers,
+            })
 
     async def click(self, x: int, y: int, options: dict = None, **kwargs: Any
                     ) -> None:

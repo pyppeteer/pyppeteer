@@ -99,8 +99,16 @@ class TestDrag(TestBase):
     @sync
     async def test_click(self):
         mouse = self.page.mouse
-        await self.page.hover('[id="1"]')
+        _from = await self.page.J('[id="1"]')
+        _to = await self.page.J('[id="2"]')
+        _from_c = await _from._visibleCenter()
+        _to_c = await _to._visibleCenter()
+        start = (_from_c['x'], _from_c['y'])
+        end = (_to_c['x'], _to_c['y'])
+        await mouse.move(*start)
+        await self.wait()
         await mouse.down()
-        await self.page.hover('[id="2"]')
+        await self.wait()
+        await mouse.move(*end, steps=50)
         await mouse.up()
         await self.wait()
