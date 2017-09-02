@@ -1,6 +1,12 @@
 History
 =======
 
+### Version 0.0.7 (next version)
+
+* Catch up puppeteer v10.0.2
+* Add `Page.querySelectorEval` (`Page.$eval` in puppeteer)
+* Deprecate `ElementHandle.attribute`
+
 ### Version 0.0.6 (2017-09-02)
 
 * Accept keyword arguments for options

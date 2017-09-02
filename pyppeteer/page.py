@@ -154,6 +154,14 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelector(selector)
 
+    async def querySelectorEval(self, selector: str, pageFunction: str,
+                                *args: Any) -> Optional[Any]:
+        """Execute function on element which matches selector."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.querySelectorEval(selector, pageFunction, *args)
+
     async def querySelectorAll(self, selector: str
                                ) -> List['ElementHandle']:
         """Get Element which matches `selector`."""
@@ -164,6 +172,8 @@ class Page(EventEmitter):
 
     #: alias to querySelector
     J = querySelector
+    #: alias to querySelectorEval
+    Jeval = querySelectorEval
     #: alias to querySelectorAll
     JJ = querySelectorAll
 

@@ -164,6 +164,18 @@ class Frame(object):
         await helper.releaseObject(self._client, remoteObject)
         return None
 
+    async def querySelectorEval(self, selector: str, pageFunction: str,
+                                *args: Any) -> Optional[Any]:
+        """Execute function on element which matches selector."""
+        elementHandle = await self.querySelector(selector)
+        if elementHandle is None:
+            raise PageError(
+                f'Error: failed to find element matching selector "{selector}"'
+            )
+        result = await elementHandle.evaluate(pageFunction, *args)
+        await elementHandle.dispose()
+        return result
+
     async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
         """Get all elelments which matches `selector`."""
         remoteObject = await self._rawEvaluate(
@@ -189,6 +201,7 @@ class Frame(object):
 
     #: Alias to querySelector
     J = querySelector
+    Jeval = querySelectorEval
     JJ = querySelectorAll
 
     async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:

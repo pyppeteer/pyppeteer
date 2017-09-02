@@ -4,13 +4,17 @@
 """Element handle module."""
 
 import json
+import logging
 import os.path
 from typing import Any, Dict
+import warnings
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.errors import ElementHandleError, BrowserError
 from pyppeteer.input import Mouse
+
+logger = logging.getLogger(__name__)
 
 
 class ElementHandle(object):
@@ -104,6 +108,14 @@ element => {
         )
 
     async def attribute(self, key: str) -> str:
-        """Get attribute value of the `key` of this element."""
+        """[Deprecated] Get attribute value of the `key` of this element."""
+        logger.warning(
+            '[DEPRECATED] ElementHandle.attribute is dropped in puppeteer. '
+            'Use Page.querySelectorEval or Page.Jeval instead.'
+        )
+        warnings.warn(DeprecationWarning(
+            'ElementHandle.attribute is dropped in puppeteer.\n'
+            'Use Page.Jeval instead.'
+        ))
         return await self.evaluate(
             '(element, key) => element.getAttribute(key)', key)
