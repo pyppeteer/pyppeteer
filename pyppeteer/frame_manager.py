@@ -12,7 +12,7 @@ from pyee import EventEmitter
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.errors import BrowserError, PageError
-from pyppeteer.input import Mouse
+from pyppeteer.input import Mouse, Touchscreen
 from pyppeteer.element_handle import ElementHandle
 
 if TYPE_CHECKING:
@@ -28,11 +28,13 @@ class FrameManager(EventEmitter):
         FrameDetached='framedetached'
     )
 
-    def __init__(self, client: Session, mouse: Mouse) -> None:
+    def __init__(self, client: Session, mouse: Mouse, touchscreen: Touchscreen
+                 ) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
         self._mouse = mouse
+        self._touchscreen = touchscreen
         self._frames: Dict[str, Frame] = dict()
         self._mainFrame: Optional[Frame] = None
 
@@ -61,7 +63,8 @@ class FrameManager(EventEmitter):
         if frameId in self._frames:
             return
         parentFrame = self._frames.get(parentFrameId)
-        frame = Frame(self._client, self._mouse, parentFrame, frameId)
+        frame = Frame(self._client, self._mouse, self._touchscreen,
+                      parentFrame, frameId)
         self._frames[frameId] = frame
         self.emit(FrameManager.Events.FrameAttached, frame)
 
@@ -89,7 +92,8 @@ class FrameManager(EventEmitter):
                 frame._id = _id
             else:
                 # Initial main frame navigation.
-                frame = Frame(self._client, self._mouse, None, _id)
+                frame = Frame(self._client, self._mouse, self._touchscreen,
+                              None, _id)
             self._frames[_id] = frame
             self._mainFrame = frame
 
@@ -132,11 +136,12 @@ class FrameManager(EventEmitter):
 class Frame(object):
     """Frame class."""
 
-    def __init__(self, client: Session, mouse: Mouse,
+    def __init__(self, client: Session, mouse: Mouse, touchscreen: Touchscreen,
                  parentFrame: Optional['Frame'], frameId: str) -> None:
         """Make new frame."""
         self._client = client
         self._mouse = mouse
+        self._touchscreen = touchscreen
         self._parentFrame = parentFrame
         self._url = ''
         self._detached = False
@@ -160,7 +165,8 @@ class Frame(object):
         remoteObject = await self._rawEvaluate(
             'selector => document.querySelector(selector)', selector)
         if remoteObject.get('subtype') == 'node':
-            return ElementHandle(self._client, remoteObject, self._mouse)
+            return ElementHandle(self._client, remoteObject, self._mouse,
+                                 self._touchscreen)
         await helper.releaseObject(self._client, remoteObject)
         return None
 
@@ -192,7 +198,8 @@ class Frame(object):
         for prop in properties:
             value = prop.get('value', {})
             if prop.get('enumerable') and value.get('subtype') == 'node':
-                result.append(ElementHandle(self._client, value, self._mouse))
+                result.append(ElementHandle(self._client, value, self._mouse,
+                                            self._touchscreen))
             else:
                 releasePromises.append(
                     helper.releaseObject(self._client, value))

@@ -21,7 +21,7 @@ from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
-from pyppeteer.input import Keyboard, Mouse
+from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
@@ -67,7 +67,8 @@ class Page(EventEmitter):
         self._client = client
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
-        self._frameManager = FrameManager(client, self._mouse)
+        self._touchscreen = Touchscreen(client, self._keyboard)
+        self._frameManager = FrameManager(client, self._mouse, self._touchscreen)  # noqa: E501
         self._networkManager = NetworkManager(client)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
@@ -119,9 +120,22 @@ class Page(EventEmitter):
         return self._frameManager._mainFrame
 
     @property
-    def keyboard(self) -> 'Keyboard':
+    def keyboard(self) -> Keyboard:
         """Get keybord object."""
         return self._keyboard
+
+    @property
+    def touchscreen(self) -> Touchscreen:
+        """Get touchscreen object."""
+        return self._touchscreen
+
+    async def tap(self, selector: str):
+        """Tap the element which matches selector."""
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.tap()
+        await handle.dispose()
 
     @property
     def tracing(self) -> 'Tracing':

@@ -110,6 +110,13 @@ class TestPyppeteer(unittest.TestCase):
         self.assertTrue(elm)
 
     @sync
+    async def test_tap(self):
+        await self.page.tap('#link1')
+        await self.page.waitForSelector('h1#link1')
+        self.assertEqual(self.page.url, self.url + '1')
+        self.assertEqual(await self.page.title(), 'link1')
+
+    @sync
     async def test_wait_for_timeout(self):
         await self.page.click('#link1')
         await self.page.waitFor(0.1)
@@ -146,6 +153,14 @@ class TestPyppeteer(unittest.TestCase):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
+        await self.page.waitForSelector('h1#link1')
+        self.assertEqual(await self.page.title(), 'link1')
+
+    @sync
+    async def test_elm_tap(self):
+        btn1 = await self.page.querySelector('#link1')
+        self.assertTrue(btn1)
+        await btn1.tap()
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
 
