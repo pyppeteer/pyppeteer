@@ -143,6 +143,29 @@ class Mouse(object):
         })
 
 
+class Touchscreen(object):
+    """Touchscreen class."""
+
+    def __init__(self, client: Session, keyboard: Keyboard) -> None:
+        """Make new touchscreen object."""
+        self._client = client
+        self._keyboard = keyboard
+
+    async def tap(self, x: float, y: float) -> None:
+        """Tap (x, y)."""
+        touchPoints = [{'x': round(x), 'y': round(y)}]
+        await self._client.send('Input.dispatchTouchEvent', {
+            'type': 'touchStart',
+            'touchPoints': touchPoints,
+            'modifiers': self._keyboard._modifiers,
+        })
+        await self._client.send('Input.dispatchTouchEvent', {
+            'type': 'touchEnd',
+            'touchPoints': [],
+            'modifiers': self._keyboard._modifiers,
+        })
+
+
 keys = {
   'Cancel': 3,
   'Help': 6,

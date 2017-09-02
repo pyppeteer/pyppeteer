@@ -77,8 +77,12 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
         elm2 = elms[1]
-        self.assertEqual(await elm1.attribute('id'), 'link1')
-        self.assertEqual(await elm2.attribute('id'), 'link2')
+        with self.assertLogs('pyppeteer', level='WARN') as cm:
+            self.assertEqual(await elm1.attribute('id'), 'link1')
+        self.assertIn('[DEPRECATED]', cm.output[0])
+        with self.assertLogs('pyppeteer', level='WARN') as cm:
+            self.assertEqual(await elm2.attribute('id'), 'link2')
+        self.assertIn('[DEPRECATED]', cm.output[0])
 
     @sync
     async def test_element_inner_html(self):
@@ -94,8 +98,7 @@ class TestPyppeteer(unittest.TestCase):
 
     @sync
     async def test_element_attr(self):
-        elm = await self.page.querySelector('h1')
-        _id = await elm.attribute('id')
+        _id = await self.page.querySelectorEval('h1', ('(elm) => elm.id'))
         self.assertEqual('hello', _id)
 
     @sync
@@ -105,6 +108,13 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(await self.page.title(), 'link1')
         elm = await self.page.querySelector('h1#link1')
         self.assertTrue(elm)
+
+    @sync
+    async def test_tap(self):
+        await self.page.tap('#link1')
+        await self.page.waitForSelector('h1#link1')
+        self.assertEqual(self.page.url, self.url + '1')
+        self.assertEqual(await self.page.title(), 'link1')
 
     @sync
     async def test_wait_for_timeout(self):
@@ -143,6 +153,14 @@ class TestPyppeteer(unittest.TestCase):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
+        await self.page.waitForSelector('h1#link1')
+        self.assertEqual(await self.page.title(), 'link1')
+
+    @sync
+    async def test_elm_tap(self):
+        btn1 = await self.page.querySelector('#link1')
+        self.assertTrue(btn1)
+        await btn1.tap()
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
 

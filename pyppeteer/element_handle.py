@@ -4,24 +4,29 @@
 """Element handle module."""
 
 import json
+import logging
 import os.path
 from typing import Any, Dict
+import warnings
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.errors import ElementHandleError, BrowserError
-from pyppeteer.input import Mouse
+from pyppeteer.input import Mouse, Touchscreen
+
+logger = logging.getLogger(__name__)
 
 
 class ElementHandle(object):
     """ElementHandle class."""
 
-    def __init__(self, client: Session, remoteObject: dict, mouse: Mouse
-                 ) -> None:
+    def __init__(self, client: Session, remoteObject: dict, mouse: Mouse,
+                 touchscreen: Touchscreen) -> None:
         """Make new element handle object."""
         self._client = client
         self._remoteObject = remoteObject
         self._mouse = mouse
+        self._touchscreen = touchscreen
         self._disposed = False
 
     async def dispose(self) -> None:
@@ -104,6 +109,21 @@ element => {
         )
 
     async def attribute(self, key: str) -> str:
-        """Get attribute value of the `key` of this element."""
+        """[Deprecated] Get attribute value of the `key` of this element."""
+        logger.warning(
+            '[DEPRECATED] ElementHandle.attribute is dropped in puppeteer. '
+            'Use Page.querySelectorEval or Page.Jeval instead.'
+        )
+        warnings.warn(DeprecationWarning(
+            'ElementHandle.attribute is dropped in puppeteer.\n'
+            'Use Page.Jeval instead.'
+        ))
         return await self.evaluate(
             '(element, key) => element.getAttribute(key)', key)
+
+    async def tap(self) -> None:
+        """Tap this element."""
+        center = await self._visibleCenter()
+        x = center.get('x', 0)
+        y = center.get('y', 0)
+        await self._touchscreen.tap(x, y)
