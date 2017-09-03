@@ -3,8 +3,29 @@
 
 from os import path
 from setuptools import setup
+import sys
 
 basedir = path.dirname(path.abspath(__file__))
+extra_args = {}
+
+if (3, 6) > sys.version_info >= (3, 5):
+    try:
+        from py_backwards.compiler import compile_files
+    except ImportError:
+        import subprocess
+        subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', 'py-backwards']
+        )
+        from py_backwards.compiler import compile_files
+    in_dir = path.join(basedir, 'pyppeteer')
+    out_dir = path.join(basedir, '.pyppeteer')
+    compile_files(in_dir, out_dir, (3, 5))
+    packages = ['pyppeteer']
+    package_dir = {'pyppeteer': '.pyppeteer'}
+else:
+    packages = ['pyppeteer']
+    package_dir = {'pyppeteer': 'pyppeteer'}
+
 readme_file = path.join(basedir, 'README.md')
 with open(readme_file) as f:
     src = f.read()
@@ -28,7 +49,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.7',
+    version='0.0.8',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,
@@ -37,10 +58,8 @@ setup(
     author_email='miyako.dev@gmail.com',
     url='https://github.com/miyakogi/pyppeteer',
 
-    packages=[
-        'pyppeteer',
-    ],
-    package_dir={'pyppeteer': 'pyppeteer'},
+    packages=packages,
+    package_dir=package_dir,
     include_package_data=True,
     install_requires=requirements,
 
@@ -59,4 +78,5 @@ setup(
     python_requires='>=3.5',
     test_suite='tests',
     tests_require=test_requirements,
+    **extra_args,
 )

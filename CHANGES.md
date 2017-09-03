@@ -1,7 +1,13 @@
 History
 =======
 
-### Version 0.0.7 (next version)
+### Version 0.0.8 (2017-09-03)
+
+* Change chromium revision
+* Support steps option of `Mouse.move()`
+* Experimentally supports python 3.5 by py-backwards
+
+### Version 0.0.7 (2017-09-03)
 
 * Catch up puppeteer v0.10.2
     * Add `Page.querySelectorEval` (`Page.$eval` in puppeteer)

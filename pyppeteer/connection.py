@@ -31,7 +31,7 @@ class Connection(EventEmitter):
         super().__init__()
         self._url = url
         self._lastId = 0
-        self._callbacks: Dict[int, Awaitable[None]] = dict()
+        self._callbacks: Dict[int, asyncio.Future] = dict()
         self._delay = delay
         self._sessions: Dict[str, Session] = dict()
         self.connection: Session
@@ -115,8 +115,8 @@ class Connection(EventEmitter):
         if not self._recv_fut.done():
             self._recv_fut.cancel()
             await self.connection.close()
-        # for cb in self._callbacks.values():
-        #     cb.set_exception(Exception('connection closed'))
+        for cb in self._callbacks.values():
+            cb.set_exception(NetworkError('connection closed'))
         self._callbacks.clear()
         for session in self._sessions.values():
             session._on_closed()
@@ -147,7 +147,7 @@ class Session(EventEmitter):
         """Make new session."""
         super().__init__()
         self._lastId = 0
-        self._callbacks: Dict[int, Awaitable[None]] = {}
+        self._callbacks: Dict[int, asyncio.Future] = {}
         self._connection: Optional[Connection] = connection
         self._targetId = targetId
         self._sessionId = sessionId
@@ -202,7 +202,7 @@ class Session(EventEmitter):
             })
 
     def _on_closed(self) -> None:
-        # for cb in self._callbacks.values():
-        #     cb.set_exception(Exception('connection closed'))
+        for cb in self._callbacks.values():
+            cb.set_exception(NetworkError('connection closed'))
         self._callbacks.clear()
         self._connection = None
