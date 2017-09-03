@@ -2,7 +2,21 @@
 # -*- coding: utf-8 -*-
 
 from os import path
-from setuptools import setup
+import sys
+
+extra_args = {}
+if (3, 6) > sys.version_info and sys.version_info >= (3, 5):
+    try:
+        from py_backwards_packager import setup
+    except ImportError:
+        import subprocess
+        subprocess.run(
+            [sys.executable, '-m', 'pip', 'install', 'py-backwards-packager']
+        )
+        from py_backwards_packager import setup
+    extra_args['py_backwards_targets'] = ['3.5']
+else:
+    from setuptools import setup
 
 basedir = path.dirname(path.abspath(__file__))
 readme_file = path.join(basedir, 'README.md')
@@ -59,4 +73,5 @@ setup(
     python_requires='>=3.5',
     test_suite='tests',
     tests_require=test_requirements,
+    **extra_args,
 )
