@@ -2,23 +2,30 @@
 # -*- coding: utf-8 -*-
 
 from os import path
+from setuptools import setup
 import sys
 
+basedir = path.dirname(path.abspath(__file__))
 extra_args = {}
+
 if (3, 6) > sys.version_info and sys.version_info >= (3, 5):
     try:
-        from py_backwards_packager import setup
+        from py_backwards.compiler import compile_files
     except ImportError:
         import subprocess
         subprocess.run(
-            [sys.executable, '-m', 'pip', 'install', 'py-backwards-packager']
+            [sys.executable, '-m', 'pip', 'install', 'py-backwards']
         )
-        from py_backwards_packager import setup
-    extra_args['py_backwards_targets'] = ['3.5']
+        from py_backwards.compiler import compile_files
+    in_dir = path.join(basedir, 'pyppeteer')
+    out_dir = path.join(basedir, '.pyppeteer')
+    compile_files(in_dir, out_dir, (3, 5))
+    packages = ['pyppeteer']
+    package_dir = {'pyppeteer': '.pyppeteer'}
 else:
-    from setuptools import setup
+    packages = ['pyppeteer']
+    package_dir = {'pyppeteer': 'pyppeteer'}
 
-basedir = path.dirname(path.abspath(__file__))
 readme_file = path.join(basedir, 'README.md')
 with open(readme_file) as f:
     src = f.read()
@@ -51,10 +58,8 @@ setup(
     author_email='miyako.dev@gmail.com',
     url='https://github.com/miyakogi/pyppeteer',
 
-    packages=[
-        'pyppeteer',
-    ],
-    package_dir={'pyppeteer': 'pyppeteer'},
+    packages=packages,
+    package_dir=package_dir,
     include_package_data=True,
     install_requires=requirements,
 
