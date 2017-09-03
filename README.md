@@ -26,7 +26,7 @@ Pyppeteer requires python 3.6+.
 Install by pip from PyPI:
 
 ```
-pytyon3 -m pip install pyppeteer
+python3 -m pip install pyppeteer
 ```
 
 Or install latest version from github:
@@ -106,7 +106,4 @@ title = await element.evaluate('(element) => element.textContent')
 Credits
 ---------
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
-
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage) project template.
