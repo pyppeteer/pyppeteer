@@ -49,7 +49,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.7',
+    version='0.0.8',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,
