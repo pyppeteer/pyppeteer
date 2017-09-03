@@ -8,7 +8,7 @@ import sys
 basedir = path.dirname(path.abspath(__file__))
 extra_args = {}
 
-if (3, 6) > sys.version_info and sys.version_info >= (3, 5):
+if (3, 6) > sys.version_info >= (3, 5):
     try:
         from py_backwards.compiler import compile_files
     except ImportError:
