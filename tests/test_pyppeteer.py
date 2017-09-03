@@ -10,6 +10,7 @@ Tests for `pyppeteer` module.
 
 import asyncio
 from pathlib import Path
+import time
 import unittest
 
 from syncer import sync
@@ -27,6 +28,7 @@ class TestPyppeteer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
+        time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch()
@@ -257,6 +259,7 @@ class TestPage(unittest.TestCase):
         cls.port = get_free_port()
         cls.url = 'http://localhost:{}/'.format(cls.port)
         cls.app = get_application()
+        time.sleep(0.1)
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch(headless=True)
 
