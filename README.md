@@ -21,6 +21,7 @@ Currently not all features are tested.
 ## Installation
 
 Pyppeteer requires python 3.6+.
+(experimentally supports python 3.5)
 
 Install by pip from PyPI:
 

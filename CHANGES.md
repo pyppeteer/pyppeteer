@@ -5,6 +5,7 @@ History
 
 * Change chromium revision
 * Support steps option of `Mouse.move()`
+* Experimentally supports python 3.5 by py-backwards
 
 ### Version 0.0.7 (2017-09-03)
 
