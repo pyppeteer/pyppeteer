@@ -18,10 +18,10 @@ DOWNLOADS_FOLDER = Path.home() / '.pyppeteer' / 'local-chromium'
 BASE_URL = 'https://storage.googleapis.com/chromium-browser-snapshots'
 
 downloadURLs = {
-  'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
-  'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
-  'win32': f'{BASE_URL}/Win/{REVISION}/chrome-win32.zip',
-  'win64': f'{BASE_URL}/Win_x64/{REVISION}/chrome-win32.zip',
+    'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
+    'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
+    'win32': f'{BASE_URL}/Win/{REVISION}/chrome-win32.zip',
+    'win64': f'{BASE_URL}/Win_x64/{REVISION}/chrome-win32.zip',
 }
 
 chromiumExecutable = {
