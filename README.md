@@ -44,13 +44,13 @@ import asyncio
 from pyppeteer.launcher import launch
 
 async def main():
-    browser = launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
-    browser.close()
 
+browser = launch()
 asyncio.get_event_loop().run_until_complete(main())
+browser.close()
 ```
 
 Pyppeteer has almost same API as puppeteer.
