@@ -51,11 +51,8 @@ class Launcher(object):
         BROWSER_ID += 1
         self.options = options or dict()
         self.options.update(kwargs)
-        self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
-                              str(BROWSER_ID))
-        self.chrome_args = DEFAULT_ARGS + [
-            '--user-data-dir=' + shlex.quote(str(self.user_data_dir)),
-        ]
+        self.chrome_args = DEFAULT_ARGS
+        self._parse_args()
         if 'headless' not in self.options or self.options.get('headless'):
             self.chrome_args = self.chrome_args + [
                 '--headless',
@@ -70,6 +67,21 @@ class Launcher(object):
                 download_chromium()
             self.exec = str(chromium_excutable())
         self.cmd = [self.exec] + self.chrome_args
+
+    def _parse_args(self) -> None:
+        if isinstance(self.options.get('args'), list):
+            user_data_dir_arg = '--user-data-dir='
+            for index, arg in enumerate(self.options['args']):
+                if arg.startswith(user_data_dir_arg):
+                    self.user_data_dir = Path(arg.split(user_data_dir_arg)[1])
+                    break
+            self.chrome_args = self.chrome_args + self.options['args']
+        if not hasattr(self, 'user_data_dir'):
+            self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
+                                  str(BROWSER_ID))
+            self.chrome_args = self.chrome_args + [
+                '--user-data-dir=' + shlex.quote(str(self.user_data_dir)),
+                ]
 
     def launch(self) -> Browser:
         """Start chromium process."""
