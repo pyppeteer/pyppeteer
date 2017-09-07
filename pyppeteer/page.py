@@ -766,7 +766,7 @@ async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
                           {'override': True})
     page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
     await page.goto('about:blank')
-    # await page.setViewport({'width': 800, 'height': 600})
+    await page.setViewport({'width': 800, 'height': 600})
     return page
 
 
