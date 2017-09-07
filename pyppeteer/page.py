@@ -508,12 +508,13 @@ function(html) {
         screenshotType = None
         if 'path' in options:
             mimeType, _ = mimetypes.guess_type(options['path'])
-        if mimeType == 'image/png':
-            screenshotType = 'png'
-        elif mimeType == 'image/jpeg':
-            screenshotType = 'jpeg'
-        else:
-            raise PageError(f'Unsupported screenshot mime type: {mimeType}')
+            if mimeType == 'image/png':
+                screenshotType = 'png'
+            elif mimeType == 'image/jpeg':
+                screenshotType = 'jpeg'
+            else:
+                raise PageError('Unsupported screenshot '
+                                f'mime type: {mimeType}')
         if 'type' in options:
             screenshotType = options['type']
         if not screenshotType:
