@@ -80,6 +80,8 @@ class Launcher(object):
                     break
             self.chrome_args = self.chrome_args + self.options['args']
         if user_data_dir is None:
+            if not os.path.exists(pyppeteer_home):
+                os.mkdir(pyppeteer_home)
             if not os.path.exists(CHROME_PROFILIE_PATH):
                 os.mkdir(CHROME_PROFILIE_PATH)
             self._tmp_user_data_dir = tempfile.mkdtemp(
