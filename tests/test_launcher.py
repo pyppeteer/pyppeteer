@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import shutil
 import unittest
 
-from pyppeteer.launcher import Launcher, CHROME_PROFILIE_PATH
+from pyppeteer.launcher import Launcher
 from pyppeteer.chromium_downloader import chromium_excutable
 
 
@@ -16,11 +15,6 @@ class TestLauncher(unittest.TestCase):
             '--hide-scrollbars',
             '--mute-audio',
         ]
-
-    def tearDown(self):
-        if CHROME_PROFILIE_PATH.exists():
-            for _dir in CHROME_PROFILIE_PATH.iterdir():
-                shutil.rmtree(str(_dir))
 
     def check_default_args(self, launcher):
         for opt in self.headless_options:

@@ -80,10 +80,16 @@ class Launcher(object):
                     CHROME_PROFILIE_PATH.mkdir(parents=True)
                 self._tmp_user_data_dir = tempfile.mkdtemp(
                     dir=str(CHROME_PROFILIE_PATH))
+                # maybe better after register(self.killChrome)
+                atexit.register(self._cleanup_tmp_user_data_dir)
             self.chrome_args.append('--user-data-dir={}'.format(
                 self.options.get('userDataDir', self._tmp_user_data_dir)))
         if isinstance(self.options.get('args'), list):
             self.chrome_args.extend(self.options['args'])
+
+    def _cleanup_tmp_user_data_dir(self) -> None:
+        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            shutil.rmtree(self._tmp_user_data_dir)
 
     def launch(self) -> Browser:
         """Start chromium process."""
@@ -116,8 +122,6 @@ class Launcher(object):
         if self.proc.poll() is None:
             self.proc.terminate()
             self.proc.wait()
-        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
-            shutil.rmtree(self._tmp_user_data_dir)
 
     async def connect(self, browserWSEndpoint: str,
                       ignoreHTTPSErrors: bool = False) -> Browser:
