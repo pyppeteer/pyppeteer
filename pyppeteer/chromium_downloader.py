@@ -69,7 +69,7 @@ def extract_zip(data: bytes, path: Path) -> None:
         import shutil
         zip_path = path / 'chrome.zip'
         if not path.exists():
-            path.mkdir()
+            path.mkdir(parents=True)
         with zip_path.open('wb') as f:
             f.write(data)
         if not shutil.which('unzip'):
