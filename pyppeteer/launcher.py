@@ -16,6 +16,7 @@ from typing import Any, Dict, TYPE_CHECKING
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
+from pyppeteer.errors import BrowserError
 from pyppeteer.util import check_chromium, chromium_excutable
 from pyppeteer.util import download_chromium
 
@@ -100,18 +101,25 @@ class Launcher(object):
         )
         atexit.register(self.killChrome)
         import time
-        while True:
+        for _ in range(100):
+            # wait for DevTools port to open for at least 10sec
+            # setting timeout timer is bettter
             time.sleep(0.1)
+            if self.proc.poll() is not None:
+                raise BrowserError('Unexpectedly chrome process closed with '
+                                   f'return code: {self.proc.returncode}')
             msg = self.proc.stdout.readline().decode()
             if not msg:
                 continue
             m = re.match(r'DevTools listening on (ws://.*)$', msg)
             if m is not None:
                 break
+        else:
+            # This block called only when `for`-loop does not `break`
+            raise BrowserError('Failed to connect DevTools port.')
         logger.debug(m.group(0))
-        self.url = m.group(1).strip()
         connectionDelay = self.options.get('slowMo', 0)
-        connection = Connection(self.url, connectionDelay)
+        connection = Connection(m.group(1).strip(), connectionDelay)
         return Browser(connection,
                        self.options.get('ignoreHTTPSErrors', False),
                        self.killChrome)
