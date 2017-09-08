@@ -18,10 +18,10 @@ DOWNLOADS_FOLDER = Path.home() / '.pyppeteer' / 'local-chromium'
 BASE_URL = 'https://storage.googleapis.com/chromium-browser-snapshots'
 
 downloadURLs = {
-  'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
-  'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
-  'win32': f'{BASE_URL}/Win/{REVISION}/chrome-win32.zip',
-  'win64': f'{BASE_URL}/Win_x64/{REVISION}/chrome-win32.zip',
+    'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
+    'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
+    'win32': f'{BASE_URL}/Win/{REVISION}/chrome-win32.zip',
+    'win64': f'{BASE_URL}/Win_x64/{REVISION}/chrome-win32.zip',
 }
 
 chromiumExecutable = {
@@ -63,8 +63,24 @@ def download_zip(url: str) -> bytes:
 
 def extract_zip(data: bytes, path: Path) -> None:
     """Extract zipped data to path."""
-    with ZipFile(BytesIO(data)) as f:
-        f.extractall(str(path))
+    # On mac zipfile module cannot extract correctly, so use unzip instead.
+    if curret_platform() == 'mac':
+        import subprocess
+        import shutil
+        zip_path = path / 'chrome.zip'
+        if not path.exists():
+            path.mkdir(parents=True)
+        with zip_path.open('wb') as f:
+            f.write(data)
+        if not shutil.which('unzip'):
+            raise OSError('Failed to automatically extract chrome.zip.'
+                          f'Please unzip {zip_path} manually.')
+        subprocess.run(['unzip', str(zip_path)], cwd=str(path))
+        if chromium_excutable().exists() and zip_path.exists():
+            zip_path.unlink()
+    else:
+        with ZipFile(BytesIO(data)) as zf:
+            zf.extractall(str(path))
     exec_path = chromium_excutable()
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')

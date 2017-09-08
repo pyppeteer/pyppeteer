@@ -10,6 +10,7 @@ Tests for `pyppeteer` module.
 
 import asyncio
 from pathlib import Path
+import time
 import unittest
 
 from syncer import sync
@@ -27,6 +28,7 @@ class TestPyppeteer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
+        time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch()
@@ -104,6 +106,7 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_click(self):
         await self.page.click('#link1')
+        await asyncio.sleep(0.05)
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
         elm = await self.page.querySelector('h1#link1')
@@ -112,6 +115,7 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_tap(self):
         await self.page.tap('#link1')
+        await asyncio.sleep(0.05)
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(self.page.url, self.url + '1')
         self.assertEqual(await self.page.title(), 'link1')
@@ -131,6 +135,7 @@ class TestPyppeteer(unittest.TestCase):
             '  }, 200)'
             '}'
         )
+        await asyncio.sleep(0.05)
         await self.page.waitForFunction(
             '() => !!document.querySelector("section")'
         )
@@ -145,6 +150,7 @@ class TestPyppeteer(unittest.TestCase):
             '  }, 200)'
             '}'
         )
+        await asyncio.sleep(0.05)
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.querySelector('section'))
 
@@ -153,6 +159,7 @@ class TestPyppeteer(unittest.TestCase):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.click()
+        await asyncio.sleep(0.05)
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
 
@@ -161,6 +168,7 @@ class TestPyppeteer(unittest.TestCase):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
         await btn1.tap()
+        await asyncio.sleep(0.05)
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
 
@@ -257,6 +265,7 @@ class TestPage(unittest.TestCase):
         cls.port = get_free_port()
         cls.url = 'http://localhost:{}/'.format(cls.port)
         cls.app = get_application()
+        time.sleep(0.1)
         cls.server = cls.app.listen(cls.port)
         cls.browser = launch(headless=True)
 

@@ -1,0 +1,1 @@
+.. mdinclude:: ../CHANGES.md

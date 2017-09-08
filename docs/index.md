@@ -13,6 +13,7 @@ Contents
    installation
    usage
    reference
+   changes
 
 Indices and tables
 ==================

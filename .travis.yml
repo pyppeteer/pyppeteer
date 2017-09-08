@@ -1,9 +1,12 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
 
+sudo: false
+dist: trusty
+
 language: python
 python:
-  - 3.6
+  - "3.6"
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:

@@ -6,22 +6,27 @@
 import atexit
 import logging
 import os
+import os.path
 from pathlib import Path
 import re
-import shlex
+import shutil
 import subprocess
-from typing import Any, Dict
+import tempfile
+from typing import Any, Dict, TYPE_CHECKING
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
+from pyppeteer.errors import BrowserError
 from pyppeteer.util import check_chromium, chromium_excutable
 from pyppeteer.util import download_chromium
 
+if TYPE_CHECKING:
+    from typing import Optional  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
-rootdir = Path.home() / '.pyppeteer'
-CHROME_PROFILIE_PATH = rootdir / '.dev_profile'
-BROWSER_ID = 0
+pyppeteer_home = Path.home() / '.pyppeteer'
+CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 
 DEFAULT_ARGS = [
     '--disable-background-networking',
@@ -47,15 +52,11 @@ class Launcher(object):
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
-        global BROWSER_ID
-        BROWSER_ID += 1
         self.options = options or dict()
         self.options.update(kwargs)
-        self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
-                              str(BROWSER_ID))
-        self.chrome_args = DEFAULT_ARGS + [
-            '--user-data-dir=' + shlex.quote(str(self.user_data_dir)),
-        ]
+        self.chrome_args = DEFAULT_ARGS
+        self._tmp_user_data_dir: Optional[str] = None
+        self._parse_args()
         if 'headless' not in self.options or self.options.get('headless'):
             self.chrome_args = self.chrome_args + [
                 '--headless',
@@ -71,6 +72,26 @@ class Launcher(object):
             self.exec = str(chromium_excutable())
         self.cmd = [self.exec] + self.chrome_args
 
+    def _parse_args(self) -> None:
+        if (not isinstance(self.options.get('args'), list) or
+                not any(opt for opt in self.options['args']
+                        if opt.startswith('--user-data-dir'))):
+            if 'userDataDir' not in self.options:
+                if not CHROME_PROFILIE_PATH.exists():
+                    CHROME_PROFILIE_PATH.mkdir(parents=True)
+                self._tmp_user_data_dir = tempfile.mkdtemp(
+                    dir=str(CHROME_PROFILIE_PATH))
+                # maybe better after register(self.killChrome)
+                atexit.register(self._cleanup_tmp_user_data_dir)
+            self.chrome_args.append('--user-data-dir={}'.format(
+                self.options.get('userDataDir', self._tmp_user_data_dir)))
+        if isinstance(self.options.get('args'), list):
+            self.chrome_args.extend(self.options['args'])
+
+    def _cleanup_tmp_user_data_dir(self) -> None:
+        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            shutil.rmtree(self._tmp_user_data_dir)
+
     def launch(self) -> Browser:
         """Start chromium process."""
         self.proc = subprocess.Popen(
@@ -80,18 +101,25 @@ class Launcher(object):
         )
         atexit.register(self.killChrome)
         import time
-        while True:
+        for _ in range(100):
+            # wait for DevTools port to open for at least 10sec
+            # setting timeout timer is bettter
             time.sleep(0.1)
+            if self.proc.poll() is not None:
+                raise BrowserError('Unexpectedly chrome process closed with '
+                                   f'return code: {self.proc.returncode}')
             msg = self.proc.stdout.readline().decode()
             if not msg:
                 continue
             m = re.match(r'DevTools listening on (ws://.*)$', msg)
             if m is not None:
                 break
+        else:
+            # This block called only when `for`-loop does not `break`
+            raise BrowserError('Failed to connect DevTools port.')
         logger.debug(m.group(0))
-        self.url = m.group(1).strip()
         connectionDelay = self.options.get('slowMo', 0)
-        connection = Connection(self.url, connectionDelay)
+        connection = Connection(m.group(1).strip(), connectionDelay)
         return Browser(connection,
                        self.options.get('ignoreHTTPSErrors', False),
                        self.killChrome)
@@ -102,7 +130,6 @@ class Launcher(object):
         if self.proc.poll() is None:
             self.proc.terminate()
             self.proc.wait()
-            logger.debug('done.')
 
     async def connect(self, browserWSEndpoint: str,
                       ignoreHTTPSErrors: bool = False) -> Browser:

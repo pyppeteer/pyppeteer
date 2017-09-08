@@ -508,12 +508,13 @@ function(html) {
         screenshotType = None
         if 'path' in options:
             mimeType, _ = mimetypes.guess_type(options['path'])
-        if mimeType == 'image/png':
-            screenshotType = 'png'
-        elif mimeType == 'image/jpeg':
-            screenshotType = 'jpeg'
-        else:
-            raise PageError(f'Unsupported screenshot mime type: {mimeType}')
+            if mimeType == 'image/png':
+                screenshotType = 'png'
+            elif mimeType == 'image/jpeg':
+                screenshotType = 'jpeg'
+            else:
+                raise PageError('Unsupported screenshot '
+                                f'mime type: {mimeType}')
         if 'type' in options:
             screenshotType = options['type']
         if not screenshotType:
@@ -765,7 +766,7 @@ async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
                           {'override': True})
     page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
     await page.goto('about:blank')
-    # await page.setViewport({'width': 800, 'height': 600})
+    await page.setViewport({'width': 800, 'height': 600})
     return page
 
 

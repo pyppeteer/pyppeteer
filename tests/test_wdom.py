@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import time
 import unittest
 
 from syncer import sync
@@ -42,6 +43,7 @@ class TestBase(unittest.TestCase):
         stop_server(self.server)
         set_document(get_new_document())
         sync(self.page.goto('about:blank'))
+        time.sleep(0.1)
 
     async def wait(self, timeout=0.1):
         await asyncio.sleep(timeout)

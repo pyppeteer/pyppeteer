@@ -19,7 +19,8 @@ if (3, 6) > sys.version_info >= (3, 5):
         from py_backwards.compiler import compile_files
     in_dir = path.join(basedir, 'pyppeteer')
     out_dir = path.join(basedir, '.pyppeteer')
-    compile_files(in_dir, out_dir, (3, 5))
+    target = (sys.version_info[0], sys.version_info[1])
+    compile_files(in_dir, out_dir, target)
     packages = ['pyppeteer']
     package_dir = {'pyppeteer': '.pyppeteer'}
 else:
@@ -49,7 +50,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.8',
+    version='0.0.9',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,

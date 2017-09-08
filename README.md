@@ -26,10 +26,10 @@ Pyppeteer requires python 3.6+.
 Install by pip from PyPI:
 
 ```
-pytyon3 -m pip install pyppeteer
+python3 -m pip install pyppeteer
 ```
 
-Or install latest version from github:
+Or install latest version from [github](https://github.com/miyakogi/pyppeteer):
 
 ```
 python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
@@ -37,20 +37,49 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 
 ## Usage
 
-Below code open web page and take a screenshot.
+> **Note**: When you run pyppeteer first time, it downloads a recent version of Chromium (~100MB).
+
+**Example**: open web page and take a screenshot.
 
 ```py
 import asyncio
 from pyppeteer.launcher import launch
 
-async def main():
-    browser = launch()
+async def main(browser):
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
-    browser.close()
 
-asyncio.get_event_loop().run_until_complete(main())
+browser = launch()
+asyncio.get_event_loop().run_until_complete(main(browser))
+browser.close()
+```
+
+**Example**: evaluate script on the page.
+
+```py
+import asyncio
+from pyppeteer.launcher import launch
+
+async def main(browser):
+    page = await browser.newPage()
+    await page.goto('http://example.com')
+    await page.screenshot({'path': 'example.png'})
+
+    dimensions = await page.evaluate('''() => {
+        return {
+            width: document.documentElement.clientWidth,
+            height: document.documentElement.clientHeight,
+            deviceScaleFactor: window.devicePixelRatio,
+        }
+    }''')
+
+    print(dimensions)
+    # >>> {'width': 800, 'height': 600, 'deviceScaleFactor': 1}
+
+browser = launch()
+asyncio.get_event_loop().run_until_complete(main(browser))
+browser.close()
 ```
 
 Pyppeteer has almost same API as puppeteer.
@@ -103,10 +132,12 @@ element = await page.querySelector('h1')
 title = await element.evaluate('(element) => element.textContent')
 ```
 
-Credits
----------
+## Future Plan
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
+1. Catch up development of puppeteer
+    * Not intend to add original API which puppeteer does not have
+2. Add more tests and fix bugs
 
-.. _Cookiecutter: https://github.com/audreyr/cookiecutter
-.. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
+## Credits
+
+This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage) project template.
