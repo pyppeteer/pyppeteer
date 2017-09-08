@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.8 documentation</title>
+    <title>Welcome to Pyppeteer’s documentation! &#8212; Pyppeteer 0.0.9 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    './',
-        VERSION:     '0.0.8',
+        VERSION:     '0.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -73,28 +73,55 @@ chrome/chromium browser automation library.</p>
 <p>Pyppeteer requires python 3.6+.
 (experimentally supports python 3.5)</p>
 <p>Install by pip from PyPI:</p>
-<div class="highlight-guess"><div class="highlight"><pre><span></span>pytyon3 -m pip install pyppeteer
+<div class="highlight-guess"><div class="highlight"><pre><span></span>python3 -m pip install pyppeteer
 </pre></div>
 </div>
-<p>Or install latest version from github:</p>
+<p>Or install latest version from <a class="reference external" href="https://github.com/miyakogi/pyppeteer">github</a>:</p>
 <div class="highlight-guess"><div class="highlight"><pre><span></span>python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 </pre></div>
 </div>
 </div>
 <div class="section" id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
-<p>Below code open web page and take a screenshot.</p>
+<blockquote>
+<div><strong>Note</strong>: When you run pyppeteer first time, it downloads a recent version of Chromium (~100MB).</div></blockquote>
+<p><strong>Example</strong>: open web page and take a screenshot.</p>
 <div class="highlight-py"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.launcher</span> <span class="kn">import</span> <span class="n">launch</span>
 
-<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
+<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">browser</span><span class="p">):</span>
     <span class="n">page</span> <span class="o">=</span> <span class="n">await</span> <span class="n">browser</span><span class="o">.</span><span class="n">newPage</span><span class="p">()</span>
     <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;http://example.com&#39;</span><span class="p">)</span>
     <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">({</span><span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example.png&#39;</span><span class="p">})</span>
-    <span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+<span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">browser</span><span class="p">))</span>
+<span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Example</strong>: evaluate script on the page.</p>
+<div class="highlight-py"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.launcher</span> <span class="kn">import</span> <span class="n">launch</span>
+
+<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">browser</span><span class="p">):</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="n">await</span> <span class="n">browser</span><span class="o">.</span><span class="n">newPage</span><span class="p">()</span>
+    <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;http://example.com&#39;</span><span class="p">)</span>
+    <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">({</span><span class="s1">&#39;path&#39;</span><span class="p">:</span> <span class="s1">&#39;example.png&#39;</span><span class="p">})</span>
+
+    <span class="n">dimensions</span> <span class="o">=</span> <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;() =&gt; {</span>
+<span class="s1">        return {</span>
+<span class="s1">            width: document.documentElement.clientWidth,</span>
+<span class="s1">            height: document.documentElement.clientHeight,</span>
+<span class="s1">            deviceScaleFactor: window.devicePixelRatio,</span>
+<span class="s1">        }</span>
+<span class="s1">    }&#39;&#39;&#39;</span><span class="p">)</span>
+
+    <span class="k">print</span><span class="p">(</span><span class="n">dimensions</span><span class="p">)</span>
+    <span class="c1"># &gt;&gt;&gt; {&#39;width&#39;: 800, &#39;height&#39;: 600, &#39;deviceScaleFactor&#39;: 1}</span>
+
+<span class="n">browser</span> <span class="o">=</span> <span class="n">launch</span><span class="p">()</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">(</span><span class="n">browser</span><span class="p">))</span>
+<span class="n">browser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
 <p>Pyppeteer has almost same API as puppeteer.
@@ -139,9 +166,19 @@ pyppeteer takes string of JavaScript function.</p>
 </div>
 </div>
 </div>
+<div class="section" id="future-plan">
+<h2>Future Plan<a class="headerlink" href="#future-plan" title="Permalink to this headline">¶</a></h2>
+<ol class="arabic simple">
+<li>Catch up development of puppeteer<ul>
+<li>Not intend to add original API which puppeteer does not have</li>
+</ul>
+</li>
+<li>Add more tests and fix bugs</li>
+</ol>
+</div>
 <div class="section" id="credits">
 <h2>Credits<a class="headerlink" href="#credits" title="Permalink to this headline">¶</a></h2>
-<p>This package was created with Cookiecutter* and the <code class="docutils literal"><span class="pre">audreyr/cookiecutter-pypackage</span></code>* project template.</p>
+<p>This package was created with <a class="reference external" href="https://github.com/audreyr/cookiecutter">Cookiecutter</a> and the <a class="reference external" href="https://github.com/audreyr/cookiecutter-pypackage">audreyr/cookiecutter-pypackage</a> project template.</p>
 </div>
 <div class="section" id="contents">
 <h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
@@ -165,6 +202,15 @@ pyppeteer takes string of JavaScript function.</p>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#elementhandle">ElementHandle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#request">Request</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#response">Response</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-9-next-version">Version 0.0.9 (next version)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-8-2017-09-03">Version 0.0.8 (2017-09-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-7-2017-09-03">Version 0.0.7 (2017-09-03)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-6-2017-09-02">Version 0.0.6 (2017-09-02)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-5-2017-08-30">Version 0.0.5 (2017-08-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-4-2017-08-30">Version 0.0.4 (2017-08-30)</a></li>
 </ul>
 </li>
 </ul>
@@ -209,6 +255,7 @@ pyppeteer takes string of JavaScript function.</p>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changes.html">History</a></li>
 </ul>
 
 <div class="relations">

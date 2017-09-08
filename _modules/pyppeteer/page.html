@@ -5,13 +5,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.8 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.9 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '../../',
-        VERSION:     '0.0.8',
+        VERSION:     '0.0.9',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true,
@@ -557,12 +557,13 @@
         <span class="n">screenshotType</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="s1">&#39;path&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
             <span class="n">mimeType</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/png&#39;</span><span class="p">:</span>
-            <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;png&#39;</span>
-        <span class="k">elif</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/jpeg&#39;</span><span class="p">:</span>
-            <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;jpeg&#39;</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unsupported screenshot mime type: </span><span class="si">{mimeType}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/png&#39;</span><span class="p">:</span>
+                <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;png&#39;</span>
+            <span class="k">elif</span> <span class="n">mimeType</span> <span class="o">==</span> <span class="s1">&#39;image/jpeg&#39;</span><span class="p">:</span>
+                <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;jpeg&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;Unsupported screenshot &#39;</span>
+                                <span class="n">f</span><span class="s1">&#39;mime type: </span><span class="si">{mimeType}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
             <span class="n">screenshotType</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">screenshotType</span><span class="p">:</span>
@@ -814,7 +815,7 @@
                           <span class="p">{</span><span class="s1">&#39;override&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
     <span class="n">page</span> <span class="o">=</span> <span class="n">Page</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">,</span> <span class="n">screenshotTaskQueue</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;about:blank&#39;</span><span class="p">)</span>
-    <span class="c1"># await page.setViewport({&#39;width&#39;: 800, &#39;height&#39;: 600})</span>
+    <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">setViewport</span><span class="p">({</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">800</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">600</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">page</span>
 
 
@@ -850,6 +851,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">History</a></li>
 </ul>
 
 <div class="relations">
