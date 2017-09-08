@@ -1,6 +1,10 @@
 History
 =======
 
+### Version 0.0.9 (next version)
+
+* Delete temporary user data directory when browser closed
+
 ### Version 0.0.8 (2017-09-03)
 
 * Change chromium revision

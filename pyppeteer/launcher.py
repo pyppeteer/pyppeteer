@@ -5,23 +5,25 @@
 
 import atexit
 import logging
-import os
-from pathlib import Path
+import os.path
 import re
-import shlex
+import shutil
 import subprocess
-from typing import Any, Dict
+import tempfile
+from typing import Any, Dict, TYPE_CHECKING
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.util import check_chromium, chromium_excutable
 from pyppeteer.util import download_chromium
 
+if TYPE_CHECKING:
+    from typing import Optional  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
-rootdir = Path.home() / '.pyppeteer'
-CHROME_PROFILIE_PATH = rootdir / '.dev_profile'
-BROWSER_ID = 0
+pyppeteer_home = os.path.join(os.path.expanduser('~'), '.pyppeteer')
+CHROME_PROFILIE_PATH = os.path.join(pyppeteer_home, '.dev_profile')
 
 DEFAULT_ARGS = [
     '--disable-background-networking',
@@ -47,11 +49,10 @@ class Launcher(object):
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
-        global BROWSER_ID
-        BROWSER_ID += 1
         self.options = options or dict()
         self.options.update(kwargs)
         self.chrome_args = DEFAULT_ARGS
+        self._tmp_user_data_dir: Optional[str] = None
         self._parse_args()
         if 'headless' not in self.options or self.options.get('headless'):
             self.chrome_args = self.chrome_args + [
@@ -69,19 +70,20 @@ class Launcher(object):
         self.cmd = [self.exec] + self.chrome_args
 
     def _parse_args(self) -> None:
+        user_data_dir = None
         if isinstance(self.options.get('args'), list):
             user_data_dir_arg = '--user-data-dir='
             for index, arg in enumerate(self.options['args']):
                 if arg.startswith(user_data_dir_arg):
-                    self.user_data_dir = Path(arg.split(user_data_dir_arg)[1])
+                    user_data_dir = arg.split(user_data_dir_arg)[1]
                     break
             self.chrome_args = self.chrome_args + self.options['args']
-        if not hasattr(self, 'user_data_dir'):
-            self.user_data_dir = (CHROME_PROFILIE_PATH / str(os.getpid()) /
-                                  str(BROWSER_ID))
+        if user_data_dir is None:
+            self._tmp_user_data_dir = tempfile.mkdtemp(
+                dir=CHROME_PROFILIE_PATH)
             self.chrome_args = self.chrome_args + [
-                '--user-data-dir=' + shlex.quote(str(self.user_data_dir)),
-                ]
+                '--user-data-dir=' + self._tmp_user_data_dir,
+            ]
 
     def launch(self) -> Browser:
         """Start chromium process."""
@@ -115,6 +117,8 @@ class Launcher(object):
             self.proc.terminate()
             self.proc.wait()
             logger.debug('done.')
+        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            shutil.rmtree(self._tmp_user_data_dir)
 
     async def connect(self, browserWSEndpoint: str,
                       ignoreHTTPSErrors: bool = False) -> Browser:
