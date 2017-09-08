@@ -79,8 +79,8 @@ def extract_zip(data: bytes, path: Path) -> None:
         if chromium_excutable().exists() and zip_path.exists():
             zip_path.unlink()
     else:
-        with ZipFile(BytesIO(data)) as f:
-            f.extractall(str(path))
+        with ZipFile(BytesIO(data)) as zf:
+            zf.extractall(str(path))
     exec_path = chromium_excutable()
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
