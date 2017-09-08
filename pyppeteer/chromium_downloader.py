@@ -63,6 +63,7 @@ def download_zip(url: str) -> bytes:
 
 def extract_zip(data: bytes, path: Path) -> None:
     """Extract zipped data to path."""
+    # On mac zipfile module cannot extract correctly, so use unzip instead.
     if curret_platform() == 'mac':
         import subprocess
         import shutil
