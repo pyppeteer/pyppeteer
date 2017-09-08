@@ -7,6 +7,7 @@ import atexit
 import logging
 import os
 import os.path
+from pathlib import Path
 import re
 import shutil
 import subprocess
@@ -23,8 +24,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-pyppeteer_home = os.path.join(os.path.expanduser('~'), '.pyppeteer')
-CHROME_PROFILIE_PATH = os.path.join(pyppeteer_home, '.dev_profile')
+pyppeteer_home = Path.home() / '.pyppeteer'
+CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 
 DEFAULT_ARGS = [
     '--disable-background-networking',
@@ -71,24 +72,18 @@ class Launcher(object):
         self.cmd = [self.exec] + self.chrome_args
 
     def _parse_args(self) -> None:
-        user_data_dir = None
+        if (not isinstance(self.options.get('args'), list) or
+                not any(opt for opt in self.options['args']
+                        if opt.startswith('--user-data-dir'))):
+            if 'userDataDir' not in self.options:
+                if not CHROME_PROFILIE_PATH.exists():
+                    CHROME_PROFILIE_PATH.mkdir(parents=True)
+                self._tmp_user_data_dir = tempfile.mkdtemp(
+                    dir=str(CHROME_PROFILIE_PATH))
+            self.chrome_args.append('--user-data-dir={}'.format(
+                self.options.get('userDataDir', self._tmp_user_data_dir)))
         if isinstance(self.options.get('args'), list):
-            user_data_dir_arg = '--user-data-dir='
-            for index, arg in enumerate(self.options['args']):
-                if arg.startswith(user_data_dir_arg):
-                    user_data_dir = arg.split(user_data_dir_arg)[1]
-                    break
-            self.chrome_args = self.chrome_args + self.options['args']
-        if user_data_dir is None:
-            if not os.path.exists(pyppeteer_home):
-                os.mkdir(pyppeteer_home)
-            if not os.path.exists(CHROME_PROFILIE_PATH):
-                os.mkdir(CHROME_PROFILIE_PATH)
-            self._tmp_user_data_dir = tempfile.mkdtemp(
-                dir=CHROME_PROFILIE_PATH)
-            self.chrome_args = self.chrome_args + [
-                '--user-data-dir=' + self._tmp_user_data_dir,
-            ]
+            self.chrome_args.extend(self.options['args'])
 
     def launch(self) -> Browser:
         """Start chromium process."""
@@ -121,7 +116,6 @@ class Launcher(object):
         if self.proc.poll() is None:
             self.proc.terminate()
             self.proc.wait()
-            logger.debug('done.')
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             shutil.rmtree(self._tmp_user_data_dir)
 
