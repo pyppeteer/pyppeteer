@@ -5,6 +5,7 @@
 
 import atexit
 import logging
+import os
 import os.path
 import re
 import shutil
@@ -79,6 +80,8 @@ class Launcher(object):
                     break
             self.chrome_args = self.chrome_args + self.options['args']
         if user_data_dir is None:
+            if not os.path.exists(CHROME_PROFILIE_PATH):
+                os.mkdir(CHROME_PROFILIE_PATH)
             self._tmp_user_data_dir = tempfile.mkdtemp(
                 dir=CHROME_PROFILIE_PATH)
             self.chrome_args = self.chrome_args + [
