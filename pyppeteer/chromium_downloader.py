@@ -63,8 +63,23 @@ def download_zip(url: str) -> bytes:
 
 def extract_zip(data: bytes, path: Path) -> None:
     """Extract zipped data to path."""
-    with ZipFile(BytesIO(data)) as f:
-        f.extractall(str(path))
+    if curret_platform() == 'mac':
+        import subprocess
+        import shutil
+        zip_path = path / 'chrome.zip'
+        if not path.exists():
+            path.mkdir()
+        with zip_path.open('wb') as f:
+            f.write(data)
+        if not shutil.which('unzip'):
+            raise OSError('Failed to automatically extract chrome.zip.'
+                          f'Please unzip {zip_path} manually.')
+        subprocess.run(['unzip', str(zip_path)], cwd=str(path))
+        if chromium_excutable().exists() and zip_path.exists():
+            zip_path.unlink()
+    else:
+        with ZipFile(BytesIO(data)) as f:
+            f.extractall(str(path))
     exec_path = chromium_excutable()
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
