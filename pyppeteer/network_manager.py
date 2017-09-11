@@ -79,8 +79,9 @@ class NetworkManager(EventEmitter):
             event['request'].get('url')
         )
 
-        if event.get('redirectStatusCode'):
-            request = self._interceptionIdToRequest[event['interceptionId']]
+        if 'redirectStatusCode' in event:
+            request = self._interceptionIdToRequest.get(
+                event.get('interceptionId', ''))
             if not request:
                 raise NetworkError('INTERNAL ERROR: failed to find request '
                                    'for interception redirect.')
@@ -138,7 +139,7 @@ class NetworkManager(EventEmitter):
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
-            event.get('request', {}).get('resourceType', ''),
+            event.get('type', ''),
             event.get('request', {}),
         )
 
@@ -154,7 +155,7 @@ class NetworkManager(EventEmitter):
             requestId,
             interception.get('interceptionId', ''),
             request_obj.get('url', ''),
-            request_obj.get('resourceType'),
+            interception.get('resourceType'),
             request_obj,
         )
 
@@ -271,15 +272,15 @@ class Response(object):
     url: str
 
     def __init__(self, client: Session, request: Request, status: int,
-                 headers: dict) -> None:
+                 headers: Dict[str, str]) -> None:
         """Make new response."""
         self._client = client
         self._request = request
         self.status = status
-        self._headers = headers
         self._contentPromise = asyncio.get_event_loop().create_future()
         self.ok = 200 <= status <= 299
         self.url = request.url
+        self._headers = {k.lower(): v for k, v in headers.items()}
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {
