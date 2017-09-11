@@ -98,7 +98,7 @@ class Connection(EventEmitter):
         elif method == 'Target.detachedFromTarget':
             session = self._sessions.get(sessionId)
             if session:
-                session._onClosed()
+                session._on_closed()
                 del self._sessions[sessionId]
         else:
             self.emit(method, params)
