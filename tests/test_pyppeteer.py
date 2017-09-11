@@ -282,6 +282,11 @@ class TestPage(unittest.TestCase):
         cls.server.stop()
 
     @sync
+    async def test_close_page(self):
+        await self.page.close()
+        self.page = await self.browser.newPage()
+
+    @sync
     async def test_alert(self):
         def dialog_test(dialog):
             self.assertEqual(dialog.type, 'alert')
