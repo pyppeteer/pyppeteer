@@ -3,7 +3,6 @@
 
 """Browser module."""
 
-import asyncio
 from typing import Callable
 
 from pyppeteer.connection import Connection
@@ -29,7 +28,7 @@ class Browser(object):
         page = await create_page(client)
         return page
 
-    def close(self) -> None:
+    async def close(self) -> None:
         """Close connections and terminate browser process."""
-        asyncio.get_event_loop().run_until_complete(self._connection.dispose())
+        await self._connection.dispose()
         self._closeCallback()

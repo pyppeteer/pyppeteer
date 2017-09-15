@@ -36,7 +36,7 @@ class TestPyppeteer(unittest.TestCase):
 
     @classmethod
     def tearDownModule(cls):
-        cls.browser.close()
+        sync(cls.browser.close())
         cls.server.stop()
 
     def setUp(self):
@@ -278,7 +278,7 @@ class TestPage(unittest.TestCase):
 
     @classmethod
     def tearDownModule(cls):
-        cls.browser.close()
+        sync(cls.browser.close())
         cls.server.stop()
 
     @sync

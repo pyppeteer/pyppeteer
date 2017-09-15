@@ -23,7 +23,7 @@ def setUpModule():
 
 
 def tearDownModule():
-    browser.close()
+    sync(browser.close())
 
 
 class TestBase(unittest.TestCase):

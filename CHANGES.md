@@ -1,7 +1,12 @@
 History
 =======
 
-### Version 0.0.9 (next version)
+## Version 0.1.0 (next version)
+
+* Enable to import `launch` from package root
+* Change `browser.close` to coroutine function
+
+### Version 0.0.9 (2017-09-09)
 
 * Delete temporary user data directory when browser closed
 * Fix bug to fail extracting zip on mac
