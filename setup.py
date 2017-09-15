@@ -9,20 +9,24 @@ basedir = path.dirname(path.abspath(__file__))
 extra_args = {}
 
 if (3, 6) > sys.version_info >= (3, 5):
-    try:
-        from py_backwards.compiler import compile_files
-    except ImportError:
-        import subprocess
-        subprocess.run(
-            [sys.executable, '-m', 'pip', 'install', 'py-backwards']
-        )
-        from py_backwards.compiler import compile_files
     in_dir = path.join(basedir, 'pyppeteer')
     out_dir = path.join(basedir, '.pyppeteer')
-    target = (sys.version_info[0], sys.version_info[1])
-    compile_files(in_dir, out_dir, target)
     packages = ['pyppeteer']
     package_dir = {'pyppeteer': '.pyppeteer'}
+    if not path.exists(out_dir):
+        if path.exists(in_dir):
+            try:
+                from py_backwards.compiler import compile_files
+            except ImportError:
+                import subprocess
+                subprocess.run(
+                    [sys.executable, '-m', 'pip', 'install', 'py-backwards']
+                )
+                from py_backwards.compiler import compile_files
+            target = (sys.version_info[0], sys.version_info[1])
+            compile_files(in_dir, out_dir, target)
+        else:
+            raise Exception('Could not find package directory')
 else:
     packages = ['pyppeteer']
     package_dir = {'pyppeteer': 'pyppeteer'}
