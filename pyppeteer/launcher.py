@@ -149,3 +149,8 @@ def connect(options: dict = None) -> Browser:
     raise NotImplementedError('NotImplemented')
     # l = Launcher(options)
     # return l.connect()
+
+
+def executablePath() -> str:
+    """Get executable path of chromium."""
+    return str(chromium_excutable())

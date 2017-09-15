@@ -43,7 +43,7 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 async def main(browser):
     page = await browser.newPage()
@@ -59,7 +59,7 @@ browser.close()
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 async def main(browser):
     page = await browser.newPage()
