@@ -47,7 +47,7 @@ class TestScreenShot(TestCase):
     def tearDown(self):
         if self.target_path.exists():
             self.target_path.unlink()
-        self.browser.close()
+        sync(self.browser.close())
 
 
 class TestPDF(TestCase):
@@ -69,4 +69,4 @@ class TestPDF(TestCase):
     def tearDown(self):
         if self.target_path.exists:
             self.target_path.unlink()
-        self.browser.close()
+        sync(self.browser.close())

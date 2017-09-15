@@ -1,12 +1,15 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
 
-sudo: false
+sudo: true
 dist: trusty
 
 language: python
 python:
   - "3.6"
+
+before_install:
+  - sudo apt-get install -y python3.5
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
