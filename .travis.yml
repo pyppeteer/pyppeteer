@@ -1,23 +1,21 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
 
-sudo: true
+sudo: false
 dist: trusty
 
 language: python
 python:
+  - "3.5"
   - "3.6"
-
-before_install:
-  - sudo apt-get install -y python3.5
 
 # command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
-  - pip install codecov tox
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then pip install codecov tox; fi
 
 # command to run tests, e.g. python setup.py test
 script:
-  - tox
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then tox; fi
 
 after_success:
-  - codecov -b $TRAVIS_BRANCH
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6* ]]; then codecov -b $TRAVIS_BRANCH; fi
