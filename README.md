@@ -14,9 +14,7 @@ chrome/chromium browser automation library.
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
-## WORK IN PROGRESS
-
-Currently not all features are tested.
+**Note**: Currently not all features are tested and some APIs are unstable
 
 ## Installation
 

@@ -31,23 +31,16 @@ def docs(p: str) -> str:
 
 
 # Wtach documets
-server.watch(docs('*.rst'), cmd, delay=1)
-server.watch(docs('../*.rst'), cmd, delay=1)
 server.watch(docs('*.md'), cmd, delay=1)
-server.watch(docs('*/*.rst'), cmd, delay=1)
+server.watch(docs('../*.md'), cmd, delay=1)
+server.watch(docs('*.md'), cmd, delay=1)
 server.watch(docs('*/*.md'), cmd, delay=1)
-server.watch(docs('*/*/*.rst'), cmd, delay=1)
 server.watch(docs('*/*/*.md'), cmd, delay=1)
 
 # Watch template/style
 server.watch(docs('_templates/*.html'), cmd, delay=1)
 server.watch(docs('_static/*.css'), cmd, delay=1)
 server.watch(docs('_static/*.js'), cmd, delay=1)
-
-# Watch theme
-server.watch(docs('themes/slex/static/*.css_t'), cmd, delay=1)
-server.watch(docs('themes/slex/*.html'), cmd, delay=1)
-server.watch(docs('themes/slex/theme.conf'), cmd, delay=1)
 
 # Watch package
 server.watch(docs('../pyppeteer/*.py'), cmd, delay=1)
