@@ -79,10 +79,10 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
         elm2 = elms[1]
-        with self.assertLogs('pyppeteer', level='WARN') as cm:
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
             self.assertEqual(await elm1.attribute('id'), 'link1')
         self.assertIn('[DEPRECATED]', cm.output[0])
-        with self.assertLogs('pyppeteer', level='WARN') as cm:
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
             self.assertEqual(await elm2.attribute('id'), 'link2')
         self.assertIn('[DEPRECATED]', cm.output[0])
 
