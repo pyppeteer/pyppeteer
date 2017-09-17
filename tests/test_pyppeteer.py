@@ -70,7 +70,16 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.textContent')
+        text = await self.page.evaluate(
+            '(element) => element.textContent', elm)
+        self.assertEqual('Hello', text)
+
+    @sync
+    async def test_element_depr(self):
+        elm = await self.page.querySelector('h1')
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
+            text = await elm.evaluate('(element) => element.textContent')
+        self.assertIn('[DEPRECATED]', cm.output[0])
         self.assertEqual('Hello', text)
 
     @sync
@@ -89,13 +98,13 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_element_inner_html(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.innerHTML')
+        text = await self.page.evaluate('(element) => element.innerHTML', elm)
         self.assertEqual('Hello', text)
 
     @sync
     async def test_element_outer_html(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.outerHTML')
+        text = await self.page.evaluate('(element) => element.outerHTML', elm)
         self.assertEqual('<h1 id="hello">Hello</h1>', text)
 
     @sync

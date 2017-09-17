@@ -494,7 +494,7 @@ function(html) {
         """Get viewport."""
         return self._viewport
 
-    async def evaluate(self, pageFunction: str, *args: str) -> str:
+    async def evaluate(self, pageFunction: str, *args: Any) -> str:
         """Execute js-function on this page and get result."""
         frame = self._frameManager.mainFrame
         if frame is None:
@@ -676,7 +676,7 @@ function(html) {
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
-        await handle.evaluate('element => element.focus()')
+        await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
     async def type(self, text: str, options: dict = None, **kwargs: Any
