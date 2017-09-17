@@ -7,7 +7,7 @@ import asyncio
 import base64
 from collections import OrderedDict
 import json
-from urllib.parse import urldefrag, urlunparse
+from urllib.parse import urldefrag
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, TYPE_CHECKING
 
@@ -333,5 +333,5 @@ def generateRequestHash(request: dict) -> str:
 
 def removeURLHash(url: str) -> str:
     """Remove url hash."""
-    urlObject, _ = urldefrag(url)
-    return urlunparse(urlObject)
+    url, _ = urldefrag(url)
+    return url
