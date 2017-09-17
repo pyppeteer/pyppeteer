@@ -272,6 +272,14 @@ function addPageBinding(bindingName) {
             'returnByValue': True
         })
 
+    async def authenticate(self, credentials: Dict[str, str]) -> Any:
+        """Provide credentials for http authentication.
+
+        `credentials` should be `None` or dict which has `username` and
+        `password` in its keys.
+        """
+        return await self._networkManager.authenticate(credentials)
+
     async def setExtraHTTPHeaders(self, headers: Dict[str, str]):
         """Set extra http headers."""
         return await self._networkManager.setExtraHTTPHeaders(headers)

@@ -40,10 +40,25 @@ class RedirectHandler2(web.RequestHandler):
         self.write('<h1 id="red2">redirect2</h1>')
 
 
+class AuthHandler(web.RequestHandler):
+    def get(self) -> None:
+        print(self.request.headers, flush=True)
+
+
 def get_application() -> web.Application:
     return web.Application([
         ('/', MainHandler),
         ('/1', LinkHandler1),
         ('/redirect1', RedirectHandler1),
         ('/redirect2', RedirectHandler2),
+        ('/auth', AuthHandler),
     ], logging='error')
+
+
+if __name__ == '__main__':
+    import asyncio
+    from pyppeteer.util import install_asyncio
+    install_asyncio()
+    app = get_application()
+    app.listen(9000)
+    asyncio.get_event_loop().run_forever()

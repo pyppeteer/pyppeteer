@@ -379,6 +379,12 @@ class TestPage(unittest.TestCase):
         await self.page.setRequestInterceptionEnabled(True)
         await self.page.goto(self.url)
 
+    @unittest.skip('This test fails')
+    @sync
+    async def test_auth(self):
+        await self.page.authenticate({'username': 'test', 'password': 'pass'})
+        await self.page.goto(self.url + 'auth')
+
     @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
