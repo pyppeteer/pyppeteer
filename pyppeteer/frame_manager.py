@@ -74,7 +74,7 @@ class FrameManager(EventEmitter):
         if isMainFrame:
             frame = self._mainFrame
         else:
-            self._frames.get(framePayload.get('id', ''))
+            frame = self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
             raise PageError('We either navigate top level or have old version '
                             'of the navigated frame')
