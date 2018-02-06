@@ -79,7 +79,7 @@ class Connection(EventEmitter):
         return callback
 
     def _on_response(self, msg: dict) -> None:
-        callback = self._callbacks.pop(msg.get('id'))
+        callback = self._callbacks.pop(msg.get('id', -1))
         if 'error' in msg:
             error = msg['error']
             callback.set_exception(

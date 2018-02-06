@@ -129,7 +129,7 @@ class Page(EventEmitter):
         """Get touchscreen object."""
         return self._touchscreen
 
-    async def tap(self, selector: str):
+    async def tap(self, selector: str) -> None:
         """Tap the element which matches selector."""
         handle = await self.J(selector)
         if not handle:
@@ -224,14 +224,14 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, url: str):
+    async def addScriptTag(self, url: str) -> str:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return await frame.addScriptTag(url)
 
-    async def injectFile(self, filePath: str):
+    async def injectFile(self, filePath: str) -> str:
         """Inject file to this page."""
         frame = self.mainFrame
         if not frame:
@@ -280,11 +280,11 @@ function addPageBinding(bindingName) {
         """
         return await self._networkManager.authenticate(credentials)
 
-    async def setExtraHTTPHeaders(self, headers: Dict[str, str]):
+    async def setExtraHTTPHeaders(self, headers: Dict[str, str]) -> None:
         """Set extra http headers."""
         return await self._networkManager.setExtraHTTPHeaders(headers)
 
-    async def setUserAgent(self, userAgent: str):
+    async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
 
