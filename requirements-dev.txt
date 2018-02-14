@@ -1,9 +1,6 @@
 -r requirements-docs.txt
 -r requirements-test.txt
 
-pyee
-websockets
-
 livereload
 flake8
 mypy
