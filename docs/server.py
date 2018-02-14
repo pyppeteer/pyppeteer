@@ -5,6 +5,9 @@ from os import path
 import subprocess
 
 from livereload import Server
+from livereload import watcher
+
+watcher.pyinotify = None  # disable pyinotify
 
 docsdir = path.dirname(path.abspath(__file__))
 builddir = path.join(docsdir, '_build')
