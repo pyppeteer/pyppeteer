@@ -16,7 +16,7 @@ blank_pdf_path = root_path / 'blank.pdf'
 
 class TestScreenShot(TestCase):
     def setUp(self):
-        self.browser = launch()
+        self.browser = launch(args=['--no-sandbox'])
         self.target_path = Path(__file__).resolve().parent / 'test.png'
         if self.target_path.exists():
             self.target_path.unlink()
@@ -52,7 +52,7 @@ class TestScreenShot(TestCase):
 
 class TestPDF(TestCase):
     def setUp(self):
-        self.browser = launch()
+        self.browser = launch(args=['--no-sandbox'])
         self.target_path = Path(__file__).resolve().parent / 'test.pdf'
         if self.target_path.exists():
             self.target_path.unlink()

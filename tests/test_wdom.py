@@ -18,7 +18,7 @@ from pyppeteer.launcher import launch
 def setUpModule():
     suppress_logging()
     global browser, page
-    browser = launch({'headless': True})
+    browser = launch(args=['--no-sandbox'])
     page = sync(browser.newPage())
 
 
