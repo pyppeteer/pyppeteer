@@ -49,20 +49,13 @@ addons:
 language: python
 matrix:
   include:
-    - python: "3.5"
-      env: TOXENV="py35-{unittest,nose,pytest}"
-    - python: "3.6"
-      env: TOXENV="py36-{unittest,nose,pytest}"
-    - python: "3.6"
-      env: TOXENV="cov,flake8,mypy,pydocstyle,docs"
+    - python: 3.5
+      env: TOXENV=py35-{unittest,nose,pytest}
+    - python: 3.6
+      env: TOXENV=py36-{unittest,nose,pytest},cov,flake8,mypy,pydocstyle,docs,codecov
 
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
 install:
-  - pip install codecov tox
+  - pip install tox
 
-# command to run tests, e.g. python setup.py test
 script:
   - tox
-
-after_success:
-  - if [[ $TOXENV == cov* ]]; then codecov -b $TRAVIS_BRANCH; fi
