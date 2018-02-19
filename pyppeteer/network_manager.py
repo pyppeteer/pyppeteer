@@ -87,9 +87,16 @@ class NetworkManager(EventEmitter):
         if enabled == self._protocolRequestInterceptionEnabled:
             return
         self._protocolRequestInterceptionEnabled = enabled
-        await self._client.send(
-            'Network.setRequestInterceptionEnabled',
-            {'enabled': enabled},
+        patterns = [{'urlPattern': '*'}] if enabled else []
+        await asyncio.gather(
+            self._client.send(
+                'Network.setCacheDisabled',
+                {'cacheDisabled': enabled},
+            ),
+            self._client.send(
+                'Network.setRequestInterception',
+                {'patterns': patterns},
+            )
         )
 
     def _onRequestIntercepted(self, event: dict) -> None:

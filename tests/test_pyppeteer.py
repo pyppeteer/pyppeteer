@@ -388,11 +388,13 @@ class TestPage(unittest.TestCase):
         await self.page.setRequestInterceptionEnabled(True)
         await self.page.goto(self.url)
 
-    @unittest.skip('This test fails')
     @sync
     async def test_auth(self):
-        await self.page.authenticate({'username': 'test', 'password': 'pass'})
-        await self.page.goto(self.url + 'auth')
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 401)
+        await self.page.authenticate({'username': 'user', 'password': 'pass'})
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_no_await_check_just_call(self):
