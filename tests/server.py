@@ -68,7 +68,7 @@ def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
             if not auth_header.startswith('Basic '):
                 return _request_auth(handler)
 
-            auth_decoded = base64.decodestring(auth_header[6:].encode('utf-8'))
+            auth_decoded = base64.b64decode(auth_header[6:])
             username, password = auth_decoded.decode('utf-8').split(':', 2)
 
             if (auth(username, password)):
