@@ -385,7 +385,7 @@ class TestPage(unittest.TestCase):
     @unittest.skip('This test fails')
     @sync
     async def test_interception_enable(self):
-        await self.page.setRequestInterceptionEnabled(True)
+        await self.page.setRequestInterception(True)
         await self.page.goto(self.url)
 
     @sync

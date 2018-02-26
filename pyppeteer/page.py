@@ -147,9 +147,9 @@ class Page(EventEmitter):
         """Get frames."""
         return list(self._frames.values())
 
-    async def setRequestInterceptionEnabled(self, value: bool) -> None:
+    async def setRequestInterception(self, value: bool) -> None:
         """Enable request interception."""
-        return await self._networkManager.setRequestInterceptionEnabled(value)
+        return await self._networkManager.setRequestInterception(value)
 
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
