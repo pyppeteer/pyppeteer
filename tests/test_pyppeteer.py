@@ -31,7 +31,7 @@ class TestPyppeteer(unittest.TestCase):
         time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(headless=False, args=['--no-sandbox'])
+        cls.browser = launch(args=['--no-sandbox'])
         cls.page = sync(cls.browser.newPage())
 
     @classmethod
