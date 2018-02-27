@@ -18,6 +18,7 @@ from pyppeteer.input import Mouse, Touchscreen
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
+    from pyppeteer.page import Page
 
 
 class FrameManager(EventEmitter):
@@ -29,13 +30,12 @@ class FrameManager(EventEmitter):
         FrameDetached='framedetached'
     )
 
-    def __init__(self, client: Session, mouse: Mouse, touchscreen: Touchscreen
-                 ) -> None:
+    def __init__(self, client: Session, page: 'Page') -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
-        self._mouse = mouse
-        self._touchscreen = touchscreen
+        self._mouse = page.mouse
+        self._touchscreen = page.touchscreen
         self._frames: Dict[str, Frame] = dict()
         self._mainFrame: Optional[Frame] = None
 

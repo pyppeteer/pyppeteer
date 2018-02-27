@@ -89,7 +89,7 @@ class Page(EventEmitter):
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
-        self._frameManager = FrameManager(client, self._mouse, self._touchscreen)  # noqa: E501
+        self._frameManager = FrameManager(client, self)
         self._networkManager = NetworkManager(client)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
