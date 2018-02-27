@@ -58,11 +58,10 @@ class Page(EventEmitter):
         a5={'width': 5.83, 'height': 8.27},
     )
 
-
     @staticmethod
     async def create(client: Session, ignoreHTTPSErrors: bool = False,
-                        appMode: bool = False,
-                        screenshotTaskQueue: list = None) -> 'Page':
+                     appMode: bool = False,
+                     screenshotTaskQueue: list = None) -> 'Page':
         """Async function which make new page."""
         await client.send('Network.enable', {}),
         await client.send('Page.enable', {}),
@@ -71,13 +70,12 @@ class Page(EventEmitter):
         await client.send('Performance.enable', {}),
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
-                            {'override': True})
+                              {'override': True})
         page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
         await page.goto('about:blank')
         if not appMode:
             await page.setViewport({'width': 800, 'height': 600})
         return page
-
 
     def __init__(self, client: Session,
                  ignoreHTTPSErrors: bool = True,
@@ -174,7 +172,8 @@ class Page(EventEmitter):
         """Enable request interception."""
         return await self._networkManager.setRequestInterceptionEnabled(value)
 
-    def setOfflineMode(self, enabled: bool) -> None:
+    def setOfflineMode(self, enabled: bool) -> Awaitable[None]:
+        """Set offline mode enable/disable."""
         return self._networkManager.setOfflineMode(enabled)
 
     def _onCertificateError(self, event: Any) -> None:
@@ -322,7 +321,7 @@ function addPageBinding(bindingName) {
     def _emitMetrics(self, event: Dict) -> None:
         self.emit(Page.Events.Metrics, {
             'title': event['title'],
-            metrics: self._buildMetricsObject(event['metrics']),
+            'metrics': self._buildMetricsObject(event['metrics']),
         })
 
     def _buildMetricsObject(self, metrics: List) -> Dict[str, Any]:

@@ -18,7 +18,7 @@ from pyppeteer.input import Mouse, Touchscreen
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
-    from pyppeteer.page import Page
+    from pyppeteer.page import Page  # noqa: F401
 
 
 class FrameManager(EventEmitter):

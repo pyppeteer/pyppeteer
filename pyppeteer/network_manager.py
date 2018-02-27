@@ -74,6 +74,7 @@ class NetworkManager(EventEmitter):
         return dict(**self._extraHTTPHeaders)
 
     async def setOfflineMode(self, value: bool) -> None:
+        """Change offline mode enable/disable."""
         if self._offline == value:
             return
         self._offline = value
