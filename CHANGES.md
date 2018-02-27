@@ -5,7 +5,7 @@ History
 
 * Enable to import `launch` from package root
 * Change `browser.close` to coroutine function
-* Chatch up puppeteer v0.11.0
+* Catch up puppeteer v0.11.0
 
 ### Version 0.0.9 (2017-09-09)
 
