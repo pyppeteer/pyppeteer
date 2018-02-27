@@ -6,7 +6,7 @@
 from typing import Callable, Dict
 
 from pyppeteer.connection import Connection
-from pyppeteer.page import Page, create_page
+from pyppeteer.page import Page
 
 
 class Browser(object):
@@ -29,7 +29,7 @@ class Browser(object):
             'Target.createTarget',
             {'url': 'about:blank'})).get('targetId')
         client = await self._connection.createSession(targetId)
-        page = await create_page(client)
+        page = await Page.create(client)
         return page
 
     async def close(self) -> None:

@@ -58,6 +58,27 @@ class Page(EventEmitter):
         a5={'width': 5.83, 'height': 8.27},
     )
 
+
+    @staticmethod
+    async def create(client: Session, ignoreHTTPSErrors: bool = False,
+                        appMode: bool = False,
+                        screenshotTaskQueue: list = None) -> 'Page':
+        """Async function which make new page."""
+        await client.send('Network.enable', {}),
+        await client.send('Page.enable', {}),
+        await client.send('Runtime.enable', {}),
+        await client.send('Security.enable', {}),
+        await client.send('Performance.enable', {}),
+        if ignoreHTTPSErrors:
+            await client.send('Security.setOverrideCertificateErrors',
+                            {'override': True})
+        page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
+        await page.goto('about:blank')
+        if not appMode:
+            await page.setViewport({'width': 800, 'height': 600})
+        return page
+
+
     def __init__(self, client: Session,
                  ignoreHTTPSErrors: bool = True,
                  screenshotTaskQueue: list = None,
@@ -774,21 +795,5 @@ def convertPrintParameterToInches(parameter: Union[None, int, float, str]
     return pixels / 96
 
 
-async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
-                      screenshotTaskQueue: list = None) -> Page:
-    """Async function which make new page."""
-    await client.send('Network.enable', {}),
-    await client.send('Page.enable', {}),
-    await client.send('Runtime.enable', {}),
-    await client.send('Security.enable', {}),
-    if ignoreHTTPSErrors:
-        await client.send('Security.setOverrideCertificateErrors',
-                          {'override': True})
-    page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
-    await page.goto('about:blank')
-    await page.setViewport({'width': 800, 'height': 600})
-    return page
-
-
 #: alias to :func:`create_page()`
-craete = create_page
+craete = Page.create
