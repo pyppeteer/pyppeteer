@@ -397,6 +397,32 @@ class TestPage(unittest.TestCase):
         self.assertEqual(response.status, 200)
 
     @sync
+    async def test_metrics(self):
+        await self.page.goto('about:blank')
+        metrics = await self.page.getMetrics()
+        metrics_to_check = set([
+            'Timestamp',
+            'Documents',
+            'Frames',
+            'JSEventListeners',
+            'Nodes',
+            'LayoutCount',
+            'RecalcStyleCount',
+            'LayoutDuration',
+            'RecalcStyleDuration',
+            'ScriptDuration',
+            'TaskDuration',
+            'JSHeapUsedSize',
+            'JSHeapTotalSize',
+        ])
+        for name, value in metrics.items():
+            self.assertTrue(name in metrics_to_check)
+            self.assertTrue(value >= 0)
+            metrics_to_check.remove(name)
+        self.assertEqual(len(metrics_to_check), 0)
+
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501

@@ -131,6 +131,8 @@ class Page(EventEmitter):
                   lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
+        client.on('Performance.metrics',
+                  lambda event: self._emitMetrics(event))
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
@@ -308,6 +310,24 @@ function addPageBinding(bindingName) {
     async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
+
+    async def getMetrics(self) -> Dict[str, Any]:
+        """Get metrics."""
+        response = await self._client.send('Performance.getMetrics')
+        return self._buildMetricsObject(response['metrics'])
+
+    def _emitMetrics(self, event: Dict) -> None:
+        self.emit(Page.Events.Metrics, {
+            'title': event['title'],
+            metrics: self._buildMetricsObject(event['metrics']),
+        })
+
+    def _buildMetricsObject(self, metrics: List) -> Dict[str, Any]:
+        result = {}
+        for metric in metrics or []:
+            if metric['name'] in supportedMetrics:
+                result[metric['name']] = metric['value']
+        return result
 
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
@@ -759,6 +779,23 @@ function(html) {
         if not frame:
             raise PageError('no main frame.')
         return frame.waitForFunction(pageFunction, options, *args, **kwargs)
+
+
+supportedMetrics = (
+  'Timestamp',
+  'Documents',
+  'Frames',
+  'JSEventListeners',
+  'Nodes',
+  'LayoutCount',
+  'RecalcStyleCount',
+  'LayoutDuration',
+  'RecalcStyleDuration',
+  'ScriptDuration',
+  'TaskDuration',
+  'JSHeapUsedSize',
+  'JSHeapTotalSize',
+)
 
 
 unitToPixels = {
