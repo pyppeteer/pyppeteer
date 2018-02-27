@@ -15,7 +15,7 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 

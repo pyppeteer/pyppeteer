@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from syncer import sync
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 from pyppeteer.errors import PageError
 
 root_path = Path(__file__).resolve().parent

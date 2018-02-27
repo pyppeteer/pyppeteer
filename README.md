@@ -41,7 +41,7 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 async def main():
     browser = launch()
@@ -57,7 +57,7 @@ asyncio.get_event_loop().run_until_complete(main())
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 async def main():
     browser = launch()
