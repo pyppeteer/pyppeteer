@@ -4,19 +4,20 @@
 """Frame Manager module."""
 
 import asyncio
+import math
 from types import SimpleNamespace
-from typing import Any, Awaitable, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import BrowserError, PageError
 from pyppeteer.input import Mouse, Touchscreen
-from pyppeteer.element_handle import ElementHandle
 
 if TYPE_CHECKING:
-    from typing import Dict, Set  # noqa: F401
+    from typing import Set  # noqa: F401
 
 
 class FrameManager(EventEmitter):
@@ -73,7 +74,7 @@ class FrameManager(EventEmitter):
         if isMainFrame:
             frame = self._mainFrame
         else:
-            self._frames.get(framePayload.get('id', ''))
+            frame = self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
             raise PageError('We either navigate top level or have old version '
                             'of the navigated frame')
@@ -152,12 +153,12 @@ class Frame(object):
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-    async def evaluate(self, pageFunction: str, *args: str) -> str:
+    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
         """Evaluate pageFunction on this frame."""
         remoteObject = await self._rawEvaluate(pageFunction, *args)
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
-    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+    async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.
 
         If `selector` matches multiple elements, return first-matched element.
@@ -165,7 +166,7 @@ class Frame(object):
         remoteObject = await self._rawEvaluate(
             'selector => document.querySelector(selector)', selector)
         if remoteObject.get('subtype') == 'node':
-            return ElementHandle(self._client, remoteObject, self._mouse,
+            return ElementHandle(self, self._client, remoteObject, self._mouse,
                                  self._touchscreen)
         await helper.releaseObject(self._client, remoteObject)
         return None
@@ -178,11 +179,11 @@ class Frame(object):
             raise PageError(
                 f'Error: failed to find element matching selector "{selector}"'
             )
-        result = await elementHandle.evaluate(pageFunction, *args)
+        result = await self.evaluate(pageFunction, elementHandle, *args)
         await elementHandle.dispose()
         return result
 
-    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
         """Get all elelments which matches `selector`."""
         remoteObject = await self._rawEvaluate(
             'selector => Array.from(document.querySelectorAll(selector))',
@@ -198,8 +199,8 @@ class Frame(object):
         for prop in properties:
             value = prop.get('value', {})
             if prop.get('enumerable') and value.get('subtype') == 'node':
-                result.append(ElementHandle(self._client, value, self._mouse,
-                                            self._touchscreen))
+                result.append(ElementHandle(self, self._client, value,
+                                            self._mouse, self._touchscreen))
             else:
                 releasePromises.append(
                     helper.releaseObject(self._client, value))
@@ -211,15 +212,25 @@ class Frame(object):
     Jeval = querySelectorEval
     JJ = querySelectorAll
 
-    async def _rawEvaluate(self, pageFunction: str, *args: str) -> dict:
-        expression = helper.evaluationString(pageFunction, *args)
-        contextId = self._defaultContextId
-        obj = await self._client.send('Runtime.evaluate', {
-            'expression': expression,
-            'contextId': contextId,
-            'returnByValue': False,
-            'awaitPromise': True,
-        })
+    async def _rawEvaluate(self, pageFunction: str, *args: Any) -> dict:
+        if not args:
+            expression = helper.evaluationString(pageFunction, *args)
+            contextId = self._defaultContextId
+            obj = await self._client.send('Runtime.evaluate', {
+                'expression': expression,
+                'contextId': contextId,
+                'returnByValue': False,
+                'awaitPromise': True,
+            })
+        else:
+            obj = await self._client.send('Runtime.callFunctionOn', {
+                'functionDeclaration': pageFunction,
+                'executionContextId': self._defaultContextId,
+                'arguments': [self._convertArgument(arg) for arg in args],
+                'returnByValue': False,
+                'awaitPromise': True
+
+            })
         exceptionDetails = obj.get('exceptionDetails', dict())
         remoteObject = obj.get('result', dict())
         if exceptionDetails:
@@ -229,6 +240,25 @@ class Frame(object):
                 f'\npageFunction:\n{pageFunction}'
             )
         return remoteObject
+
+    def _convertArgument(self, arg: Any) -> Dict[str, str]:
+        if arg == -0:
+            return {'unserializableValue': '-0'}
+        if arg == math.inf:
+            return {'unserializableValue': 'Infinity'}
+        if arg == -math.inf:
+            return {'unserializableValue': '-Infinity'}
+        if isinstance(arg, ElementHandle):
+            if arg._frame != self:
+                raise ValueError(
+                    'ElementHandles passed as arguments should belong to the '
+                    'frame that does evaluation'
+                )
+            objectId = arg._remoteObjectId()
+            if not objectId:
+                raise PageError('ElementHandle is disposed!')
+            return {'objectId': objectId}
+        return {'value': arg}
 
     @property
     def name(self) -> str:
@@ -277,7 +307,7 @@ function addScriptTag(url) {
         return await self.evaluate(addScriptTag, url)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
@@ -295,7 +325,8 @@ function addScriptTag(url) {
             return fut
         if ('=>' in selectorOrFunctionOrTimeout or
                 selectorOrFunctionOrTimeout.strip().startswith('function')):
-            return self.waitForFunction(selectorOrFunctionOrTimeout, options)
+            return self.waitForFunction(
+                selectorOrFunctionOrTimeout, options, *args)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,

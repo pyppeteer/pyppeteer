@@ -12,18 +12,18 @@ from wdom.examples import data_binding, drag, rev_text
 from wdom.server import start_server, stop_server, server_config
 from wdom.util import suppress_logging
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 
 def setUpModule():
     suppress_logging()
     global browser, page
-    browser = launch({'headless': True})
+    browser = launch(args=['--no-sandbox'])
     page = sync(browser.newPage())
 
 
 def tearDownModule():
-    browser.close()
+    sync(browser.close())
 
 
 class TestBase(unittest.TestCase):

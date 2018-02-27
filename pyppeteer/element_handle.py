@@ -6,7 +6,7 @@
 import json
 import logging
 import os.path
-from typing import Any, Dict
+from typing import Any, Dict, Optional, TYPE_CHECKING
 import warnings
 
 from pyppeteer import helper
@@ -14,20 +14,28 @@ from pyppeteer.connection import Session
 from pyppeteer.errors import ElementHandleError, BrowserError
 from pyppeteer.input import Mouse, Touchscreen
 
+if TYPE_CHECKING:
+    from pyppeteer.frame_manager import Frame  # noqa: F401
+
+
 logger = logging.getLogger(__name__)
 
 
 class ElementHandle(object):
     """ElementHandle class."""
 
-    def __init__(self, client: Session, remoteObject: dict, mouse: Mouse,
-                 touchscreen: Touchscreen) -> None:
+    def __init__(self, frame: Any, client: Session, remoteObject: dict,
+                 mouse: Mouse, touchscreen: Touchscreen) -> None:
         """Make new element handle object."""
+        self._frame: Frame = frame
         self._client = client
         self._remoteObject = remoteObject
         self._mouse = mouse
         self._touchscreen = touchscreen
         self._disposed = False
+
+    def _remoteObjectId(self) -> Optional[str]:
+        return None if self._disposed else self._remoteObject['objectId']
 
     async def dispose(self) -> None:
         """Release element handle."""
@@ -37,7 +45,14 @@ class ElementHandle(object):
         await helper.releaseObject(self._client, self._remoteObject)
 
     async def evaluate(self, pageFunction: str, *args: Any) -> Any:
-        """Evaluate the pageFunction on browser."""
+        """[Deprecated] Evaluate the pageFunction on browser."""
+        deprecation_msg = (
+            'ElementHandle.evaluate is dropped in puppeteer. '
+            'Use Page.evaluate(..., ElementHandle) instead.'
+        )
+        logger.warning('[DEPRECATED] ' + deprecation_msg)
+        warnings.warn(deprecation_msg, DeprecationWarning)
+
         if self._disposed:
             raise ElementHandleError('ElementHandle is disposed!')
         _args = ['this']
@@ -65,7 +80,7 @@ function() {{ return ({pageFunction})({stringifiedArgs}) }}
         return await helper.serializeRemoteObject(self._client, remoteObject)
 
     async def _visibleCenter(self) -> Dict[str, int]:
-        center = await self.evaluate('''
+        center = await self._frame.evaluate('''
 element => {
     if (!element.ownerDocument.contains(element))
         return null;
@@ -76,7 +91,7 @@ element => {
         y: (Math.max(rect.top, 0) + Math.min(rect.bottom, window.innerHeight)) / 2
     };
 }
-        ''')  # noqa: E501
+        ''', self)  # noqa: E501
         if not center:
             # raise Exception('No node found for selector: ' + selector)
             raise BrowserError('No node found for selector: ')
@@ -110,14 +125,12 @@ element => {
 
     async def attribute(self, key: str) -> str:
         """[Deprecated] Get attribute value of the `key` of this element."""
-        logger.warning(
-            '[DEPRECATED] ElementHandle.attribute is dropped in puppeteer. '
+        deprecation_msg = (
+            'ElementHandle.attribute is dropped in puppeteer. '
             'Use Page.querySelectorEval or Page.Jeval instead.'
         )
-        warnings.warn(DeprecationWarning(
-            'ElementHandle.attribute is dropped in puppeteer.\n'
-            'Use Page.Jeval instead.'
-        ))
+        logger.warning('[DEPRECATED]' + deprecation_msg)
+        warnings.warn(deprecation_msg, DeprecationWarning)
         return await self.evaluate(
             '(element, key) => element.getAttribute(key)', key)
 

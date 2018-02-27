@@ -129,7 +129,7 @@ class Page(EventEmitter):
         """Get touchscreen object."""
         return self._touchscreen
 
-    async def tap(self, selector: str):
+    async def tap(self, selector: str) -> None:
         """Tap the element which matches selector."""
         handle = await self.J(selector)
         if not handle:
@@ -224,14 +224,14 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, url: str):
+    async def addScriptTag(self, url: str) -> str:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return await frame.addScriptTag(url)
 
-    async def injectFile(self, filePath: str):
+    async def injectFile(self, filePath: str) -> str:
         """Inject file to this page."""
         frame = self.mainFrame
         if not frame:
@@ -272,11 +272,19 @@ function addPageBinding(bindingName) {
             'returnByValue': True
         })
 
-    async def setExtraHTTPHeaders(self, headers: Dict[str, str]):
+    async def authenticate(self, credentials: Dict[str, str]) -> Any:
+        """Provide credentials for http authentication.
+
+        `credentials` should be `None` or dict which has `username` and
+        `password` in its keys.
+        """
+        return await self._networkManager.authenticate(credentials)
+
+    async def setExtraHTTPHeaders(self, headers: Dict[str, str]) -> None:
         """Set extra http headers."""
         return await self._networkManager.setExtraHTTPHeaders(headers)
 
-    async def setUserAgent(self, userAgent: str):
+    async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
 
@@ -379,7 +387,7 @@ function(html) {
             self._networkManager, NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        result = asyncio.ensure_future(watcher.waitForNavigation())
+        navigationPromise = watcher.waitForNavigation()
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
 
         try:
@@ -388,8 +396,10 @@ function(html) {
         except Exception:
             watcher.cancel()
             raise
-        await result
+        error = await navigationPromise
         helper.removeEventListeners([listener])
+        if error:
+            raise error
 
         if self._frameManager.isMainFrameLoadingFailed():
             raise PageError('Failed to navigate: ' + url)
@@ -401,8 +411,11 @@ function(html) {
         if options is None:
             options = dict()
         options.update(kwargs)
-        await self._client.send('Page.reload')
-        return await self.waitForNavigation(options)
+        response = (await asyncio.gather(
+            self.waitForNavigation(options),
+            self._client.send('Page.reload'),
+        ))[0]
+        return response
 
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
@@ -418,9 +431,12 @@ function(html) {
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
-        return responses.get(self.url)
+
+        error = await watcher.waitForNavigation()
+        if error:
+            raise error
+        return responses.get(self.url, None)
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
@@ -445,10 +461,13 @@ function(html) {
         if len(entries) < _count:
             return None
         entry = entries[_count]
-        await self._client.send('Page.navigateToHistoryEntry', {
-            'entryId': entry.get('id')
-        })
-        return await self.waitForNavigation(options)
+        response = (await asyncio.gather(
+            self.waitForNavigation(options),
+            self._client.send('Page.navigateToHistoryEntry', {
+                'entryId': entry.get('id')
+            })
+        ))[0]
+        return response
 
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
@@ -486,7 +505,7 @@ function(html) {
         """Get viewport."""
         return self._viewport
 
-    async def evaluate(self, pageFunction: str, *args: str) -> str:
+    async def evaluate(self, pageFunction: str, *args: Any) -> str:
         """Execute js-function on this page and get result."""
         frame = self._frameManager.mainFrame
         if frame is None:
@@ -668,7 +687,7 @@ function(html) {
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
-        await handle.evaluate('element => element.focus()')
+        await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
     async def type(self, text: str, options: dict = None, **kwargs: Any
@@ -696,12 +715,13 @@ function(html) {
         await self._keyboard.up(key)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait for function, timeout, or element which matches on page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.waitFor(selectorOrFunctionOrTimeout, options, **kwargs)
+        return frame.waitFor(
+            selectorOrFunctionOrTimeout, options, *args, **kwargs)
 
     def waitForSelector(self, selector: str, options: dict = None,
                         **kwargs: Any) -> Awaitable:

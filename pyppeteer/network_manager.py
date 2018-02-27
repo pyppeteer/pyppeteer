@@ -7,7 +7,7 @@ import asyncio
 import base64
 from collections import OrderedDict
 import json
-from urllib.parse import urldefrag, urlunparse
+from urllib.parse import urldefrag
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, TYPE_CHECKING
 
@@ -18,7 +18,7 @@ from pyppeteer.errors import NetworkError
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
-    from typing import Optional  # noqa: F401
+    from typing import Optional, Set  # noqa: F401
 
 
 class NetworkManager(EventEmitter):
@@ -38,7 +38,10 @@ class NetworkManager(EventEmitter):
         self._requestIdToRequest: Dict[str, Request] = dict()
         self._interceptionIdToRequest: Dict[str, Request] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
-        self._requestInterceptionEnabled = False
+        self._credentials: Optional[Dict[str, str]] = None
+        self._attemptedAuthentications: Set[str] = set()
+        self._userRequestInterceptionEnabled = False
+        self._protocolRequestInterceptionEnabled = False
         self._requestHashToRequestIds = Multimap()
         self._requestHashToInterceptions = Multimap()
 
@@ -48,39 +51,92 @@ class NetworkManager(EventEmitter):
         self._client.on('Network.loadingFinished', self._onLoadingFinished)
         self._client.on('Network.loadingFailed', self._onLoadingFailed)
 
+    async def authenticate(self, credentials: Dict[str, str]) -> None:
+        """Provide credentials for http auth."""
+        self._credentials = credentials
+        await self._updateProtocolRequestInterception()
+
     async def setExtraHTTPHeaders(self, extraHTTPHeaders: Dict[str, str]
                                   ) -> None:
         """Set extra http headers."""
         self._extraHTTPHeaders = OrderedDict()
-        headers = OrderedDict()  # type: Dict[str, str]
         for k, v in extraHTTPHeaders.items():
-            self._extraHTTPHeaders[k] = v
-            headers[k] = v
+            if not isinstance(v, str):
+                raise TypeError(f'Expected value of header {k} to be string, '
+                                'but {} is found.'.format(type(v)))
+            self._extraHTTPHeaders[k.lower()] = v
         await self._client.send('Network.setExtraHTTPHeaders',
-                                {'headers': headers})
+                                {'headers': self._extraHTTPHeaders})
 
     def extraHTTPHeaders(self) -> Dict[str, str]:
         """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
 
-    async def setUserAgent(self, userAgent: str) -> Any:
+    async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
-        return await self._client.send('Network.setUserAgentOverride',
-                                       {'userAgent': userAgent})
+        await self._client.send('Network.setUserAgentOverride',
+                                {'userAgent': userAgent})
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
         """Enable request intercetion."""
-        await self._client.send('Network.setRequestInterceptionEnabled',
-                                {'enabled': bool(value)})
-        self._requestInterceptionEnabled = value
+        self._userRequestInterceptionEnabled = value
+        await self._updateProtocolRequestInterception()
+
+    async def _updateProtocolRequestInterception(self) -> None:
+        enabled = (self._userRequestInterceptionEnabled or
+                   bool(self._credentials))
+        if enabled == self._protocolRequestInterceptionEnabled:
+            return
+        self._protocolRequestInterceptionEnabled = enabled
+        patterns = [{'urlPattern': '*'}] if enabled else []
+        await asyncio.gather(
+            self._client.send(
+                'Network.setCacheDisabled',
+                {'cacheDisabled': enabled},
+            ),
+            self._client.send(
+                'Network.setRequestInterception',
+                {'patterns': patterns},
+            )
+        )
 
     def _onRequestIntercepted(self, event: dict) -> None:
         event['request']['url'] = removeURLHash(
-            event['request'].get('url')
+            event['request'].get('url', '')
         )
 
-        if event.get('redirectStatusCode'):
-            request = self._interceptionIdToRequest[event['interceptionId']]
+        if event.get('authChallenge'):
+            response = 'Default'
+            if event['interceptionId'] in self._attemptedAuthentications:
+                response = 'CancelAuth'
+            elif self._credentials:
+                response = 'ProvideCredentials'
+                self._attemptedAuthentications.add(event['interceptionId'])
+            username = getattr(self, '_credentials', {}).get('username')
+            password = getattr(self, '_credentials', {}).get('password')
+            asyncio.ensure_future(self._client.send(
+                'Network.continueInterceptedRequest', {
+                    'interceptionId': event['interceptionId'],
+                    'authChallengeResponse': {
+                        'response': response,
+                        'username': username,
+                        'password': password,
+                    }
+                }
+            ))
+            return
+
+        if (not self._userRequestInterceptionEnabled and
+                self._protocolRequestInterceptionEnabled):
+            asyncio.ensure_future(self._client.send(
+                'Network.continueInterceptedRequest', {
+                    'interceptionId': event['interceptionId'],
+                }
+            ))
+
+        if 'redirectStatusCode' in event:
+            request = self._interceptionIdToRequest.get(
+                event.get('interceptionId', ''))
             if not request:
                 raise NetworkError('INTERNAL ERROR: failed to find request '
                                    'for interception redirect.')
@@ -104,20 +160,22 @@ class NetworkManager(EventEmitter):
         request._response = response
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
+        self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.Response, response)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _handleRequestStart(self, requestId: str, interceptionId: str,
                             url: str, resourceType: str, requestPayload: dict
                             ) -> None:
-        request = Request(self._client, requestId, interceptionId, url,
+        request = Request(self._client, requestId, interceptionId,
+                          self._userRequestInterceptionEnabled, url,
                           resourceType, requestPayload)
         self._requestIdToRequest[requestId] = request
         self._interceptionIdToRequest[interceptionId] = request
         self.emit(NetworkManager.Events.Request, request)
 
     def _onRequestWillBeSent(self, event: dict) -> None:
-        if (self._requestInterceptionEnabled and
+        if (self._protocolRequestInterceptionEnabled and
                 not event['request'].get('url', '').startswith('data:')):
             if event.get('redirectResponse'):
                 return
@@ -138,7 +196,7 @@ class NetworkManager(EventEmitter):
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
-            event.get('request', {}).get('resourceType', ''),
+            event.get('type', ''),
             event.get('request', {}),
         )
 
@@ -154,7 +212,7 @@ class NetworkManager(EventEmitter):
             requestId,
             interception.get('interceptionId', ''),
             request_obj.get('url', ''),
-            request_obj.get('resourceType'),
+            interception.get('resourceType'),
             request_obj,
         )
 
@@ -171,16 +229,15 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.Response, response)
 
     def _onLoadingFinished(self, event: dict) -> None:
-        requestId = event.get('requestId', '')
-        interceptionId = event.get('interceptionId', '')
-        request = self._requestIdToRequest.get(requestId)
+        request = self._requestIdToRequest.get(event.get('requestId', ''))
         # For certain requestIds we never receive requestWillBeSent event.
         # @see https://crbug.com/750469
         if not request:
             return
         request._completePromiseFulfill()
-        self._requestIdToRequest.pop(requestId, None)
-        self._interceptionIdToRequest.pop(interceptionId, None)
+        self._requestIdToRequest.pop(request._requestId, None)
+        self._interceptionIdToRequest.pop(request._interceptionId, None)
+        self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _onLoadingFailed(self, event: dict) -> None:
@@ -190,8 +247,9 @@ class NetworkManager(EventEmitter):
         if not request:
             return
         request._completePromiseFulfill()
-        self._requestIdToRequest.pop(event['requestId'], None)
-        self._interceptionIdToRequest.pop(event['interceptionId'], None)
+        self._requestIdToRequest.pop(request._requestId, None)
+        self._interceptionIdToRequest.pop(request._interceptionId, None)
+        self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.RequestFailed, request)
 
 
@@ -210,11 +268,13 @@ class Request(object):
     resourceType: str
 
     def __init__(self, client: Session, requestId: str, interceptionId: str,
-                 url: str, resourceType: str, payload: dict) -> None:
+                 allowInterception: bool, url: str, resourceType: str,
+                 payload: dict) -> None:
         """Make new request class."""
         self._client = client
         self._requestId = requestId
         self._interceptionId = interceptionId
+        self._allowInterception = allowInterception
         self._interceptionHandled = False
         self._response: Optional[Response] = None
         self._completePromise = asyncio.get_event_loop().create_future()
@@ -253,6 +313,10 @@ class Request(object):
         """Abort request."""
         if self.url.startswith('data:'):
             return
+        if not self._allowInterception:
+            raise NetworkError('Request intercetion is not enabled!')
+        if self._interceptionHandled:
+            raise NetworkError('Intercetion is already handled!')
         self._interceptionHandled = True
         await self._client.send('Network.continueInterceptedRequest', dict(
             interceptionId=self._interceptionId,
@@ -271,15 +335,15 @@ class Response(object):
     url: str
 
     def __init__(self, client: Session, request: Request, status: int,
-                 headers: dict) -> None:
+                 headers: Dict[str, str]) -> None:
         """Make new response."""
         self._client = client
         self._request = request
         self.status = status
-        self._headers = headers
         self._contentPromise = asyncio.get_event_loop().create_future()
         self.ok = 200 <= status <= 299
         self.url = request.url
+        self._headers = {k.lower(): v for k, v in headers.items()}
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {
@@ -332,5 +396,5 @@ def generateRequestHash(request: dict) -> str:
 
 def removeURLHash(url: str) -> str:
     """Remove url hash."""
-    urlObject, _ = urldefrag(url)
-    return urlunparse(urlObject)
+    url, _ = urldefrag(url)
+    return url

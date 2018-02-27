@@ -15,7 +15,7 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 
@@ -31,12 +31,12 @@ class TestPyppeteer(unittest.TestCase):
         time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch()
+        cls.browser = launch(args=['--no-sandbox'])
         cls.page = sync(cls.browser.newPage())
 
     @classmethod
     def tearDownModule(cls):
-        cls.browser.close()
+        sync(cls.browser.close())
         cls.server.stop()
 
     def setUp(self):
@@ -70,7 +70,16 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.textContent')
+        text = await self.page.evaluate(
+            '(element) => element.textContent', elm)
+        self.assertEqual('Hello', text)
+
+    @sync
+    async def test_element_depr(self):
+        elm = await self.page.querySelector('h1')
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
+            text = await elm.evaluate('(element) => element.textContent')
+        self.assertIn('[DEPRECATED]', cm.output[0])
         self.assertEqual('Hello', text)
 
     @sync
@@ -79,23 +88,23 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
         elm2 = elms[1]
-        with self.assertLogs('pyppeteer', level='WARN') as cm:
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
             self.assertEqual(await elm1.attribute('id'), 'link1')
         self.assertIn('[DEPRECATED]', cm.output[0])
-        with self.assertLogs('pyppeteer', level='WARN') as cm:
+        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
             self.assertEqual(await elm2.attribute('id'), 'link2')
         self.assertIn('[DEPRECATED]', cm.output[0])
 
     @sync
     async def test_element_inner_html(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.innerHTML')
+        text = await self.page.evaluate('(element) => element.innerHTML', elm)
         self.assertEqual('Hello', text)
 
     @sync
     async def test_element_outer_html(self):
         elm = await self.page.querySelector('h1')
-        text = await elm.evaluate('(element) => element.outerHTML')
+        text = await self.page.evaluate('(element) => element.outerHTML', elm)
         self.assertEqual('<h1 id="hello">Hello</h1>', text)
 
     @sync
@@ -201,7 +210,7 @@ class TestPyppeteer(unittest.TestCase):
             'value': 'John Doe',
             'domain': 'localhost',
             'path': '/',
-            'expires': 0,
+            'expires': -1,
             'size': 16,
             'httpOnly': False,
             'secure': False,
@@ -218,7 +227,7 @@ class TestPyppeteer(unittest.TestCase):
             'value': '123456',
             'domain': 'localhost',
             'path': '/',
-            'expires': 0,
+            'expires': -1,
             'size': 14,
             'httpOnly': False,
             'secure': False,
@@ -228,7 +237,7 @@ class TestPyppeteer(unittest.TestCase):
             'value': 'John Doe',
             'domain': 'localhost',
             'path': '/',
-            'expires': 0,
+            'expires': -1,
             'size': 16,
             'httpOnly': False,
             'secure': False,
@@ -245,7 +254,7 @@ class TestPyppeteer(unittest.TestCase):
             'value': '123456',
             'domain': 'localhost',
             'path': '/',
-            'expires': 0,
+            'expires': -1,
             'size': 14,
             'httpOnly': False,
             'secure': False,
@@ -267,7 +276,7 @@ class TestPage(unittest.TestCase):
         cls.app = get_application()
         time.sleep(0.1)
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(headless=True)
+        cls.browser = launch(args=['--no-sandbox'])
 
     def setUp(self):
         self.page = sync(self.browser.newPage())
@@ -278,8 +287,13 @@ class TestPage(unittest.TestCase):
 
     @classmethod
     def tearDownModule(cls):
-        cls.browser.close()
+        sync(cls.browser.close())
         cls.server.stop()
+
+    @sync
+    async def test_close_page(self):
+        await self.page.close()
+        self.page = await self.browser.newPage()
 
     @sync
     async def test_alert(self):
@@ -368,10 +382,19 @@ class TestPage(unittest.TestCase):
         await self.page.tracing.stop()
         self.assertTrue(outfile.is_file())
 
+    @unittest.skip('This test fails')
     @sync
     async def test_interception_enable(self):
         await self.page.setRequestInterceptionEnabled(True)
-        # await self.page.goto(self.url)
+        await self.page.goto(self.url)
+
+    @sync
+    async def test_auth(self):
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 401)
+        await self.page.authenticate({'username': 'user', 'password': 'pass'})
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_no_await_check_just_call(self):

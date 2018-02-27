@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from syncer import sync
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 from pyppeteer.errors import PageError
 
 root_path = Path(__file__).resolve().parent
@@ -16,7 +16,7 @@ blank_pdf_path = root_path / 'blank.pdf'
 
 class TestScreenShot(TestCase):
     def setUp(self):
-        self.browser = launch()
+        self.browser = launch(args=['--no-sandbox'])
         self.target_path = Path(__file__).resolve().parent / 'test.png'
         if self.target_path.exists():
             self.target_path.unlink()
@@ -47,12 +47,12 @@ class TestScreenShot(TestCase):
     def tearDown(self):
         if self.target_path.exists():
             self.target_path.unlink()
-        self.browser.close()
+        sync(self.browser.close())
 
 
 class TestPDF(TestCase):
     def setUp(self):
-        self.browser = launch()
+        self.browser = launch(args=['--no-sandbox'])
         self.target_path = Path(__file__).resolve().parent / 'test.pdf'
         if self.target_path.exists():
             self.target_path.unlink()
@@ -69,4 +69,4 @@ class TestPDF(TestCase):
     def tearDown(self):
         if self.target_path.exists:
             self.target_path.unlink()
-        self.browser.close()
+        sync(self.browser.close())

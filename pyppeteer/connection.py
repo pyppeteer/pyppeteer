@@ -79,7 +79,7 @@ class Connection(EventEmitter):
         return callback
 
     def _on_response(self, msg: dict) -> None:
-        callback = self._callbacks.pop(msg.get('id'))
+        callback = self._callbacks.pop(msg.get('id', -1))
         if 'error' in msg:
             error = msg['error']
             callback.set_exception(
@@ -98,7 +98,7 @@ class Connection(EventEmitter):
         elif method == 'Target.detachedFromTarget':
             session = self._sessions.get(sessionId)
             if session:
-                session._onClosed()
+                session._on_closed()
                 del self._sessions[sessionId]
         else:
             self.emit(method, params)

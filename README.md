@@ -14,9 +14,7 @@ chrome/chromium browser automation library.
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
-## WORK IN PROGRESS
-
-Currently not all features are tested.
+**Note**: Currently not all features are tested and some APIs are unstable
 
 ## Installation
 
@@ -43,25 +41,26 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
-async def main(browser):
+async def main():
+    browser = launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
+    await browser.close()
 
-browser = launch()
-asyncio.get_event_loop().run_until_complete(main(browser))
-browser.close()
+asyncio.get_event_loop().run_until_complete(main())
 ```
 
 **Example**: evaluate script on the page.
 
 ```py
 import asyncio
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
-async def main(browser):
+async def main():
+    browser = launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
@@ -76,10 +75,9 @@ async def main(browser):
 
     print(dimensions)
     # >>> {'width': 800, 'height': 600, 'deviceScaleFactor': 1}
+    await browser.close()
 
-browser = launch()
-asyncio.get_event_loop().run_until_complete(main(browser))
-browser.close()
+asyncio.get_event_loop().run_until_complete(main())
 ```
 
 Pyppeteer has almost same API as puppeteer.

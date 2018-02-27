@@ -33,10 +33,12 @@ DEFAULT_ARGS = [
     '--disable-background-timer-throttling',
     '--disable-client-side-phishing-detection',
     '--disable-default-apps',
+    '--disable-extensions',
     '--disable-hang-monitor',
     '--disable-popup-blocking',
     '--disable-prompt-on-repost',
     '--disable-sync',
+    '--disable-translate',
     '--enable-automation',
     '--metrics-recording-only',
     '--no-first-run',
@@ -149,3 +151,8 @@ def connect(options: dict = None) -> Browser:
     raise NotImplementedError('NotImplemented')
     # l = Launcher(options)
     # return l.connect()
+
+
+def executablePath() -> str:
+    """Get executable path of chromium."""
+    return str(chromium_excutable())

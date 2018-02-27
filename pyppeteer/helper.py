@@ -14,7 +14,9 @@ from pyppeteer.connection import Session
 
 def evaluationString(fun: str, *args: Any) -> str:
     """Convert function and arguments to str."""
-    _args = ', '.join([json.dumps(arg) for arg in args])
+    _args = ', '.join([
+        json.dumps('undefined' if arg is None else arg) for arg in args
+    ])
     expr = f'({fun})({_args})'
     return expr
 
@@ -88,7 +90,7 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
             'returnByValue': True,
         })
         return response.get('result', {}).get('value')
-    except:
+    except Exception:
         # Return description for unserializable object, e.g. 'window'.
         return remoteObject.get('description')
     finally:
@@ -104,7 +106,7 @@ async def releaseObject(client: Session, remoteObject: dict) -> None:
         await client.send('Runtime.releaseObject', {
             'objectId': objectId
         })
-    except:
+    except Exception:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
         pass
