@@ -3,6 +3,7 @@ History
 
 ## Version 0.0.11 (next version)
 
+* Add `getMetrics` method
 * Add `offlineMode`
 
 ## Version 0.0.10 (2018-02-27)
