@@ -12,7 +12,7 @@ from wdom.examples import data_binding, drag, rev_text
 from wdom.server import start_server, stop_server, server_config
 from wdom.util import suppress_logging
 
-from pyppeteer.launcher import launch
+from pyppeteer import launch
 
 
 def setUpModule():
