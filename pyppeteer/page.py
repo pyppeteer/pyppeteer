@@ -174,6 +174,9 @@ class Page(EventEmitter):
         """Enable request interception."""
         return await self._networkManager.setRequestInterceptionEnabled(value)
 
+    def setOfflineMode(self, enabled: bool) -> None:
+        return self._networkManager.setOfflineMode(enabled)
+
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return

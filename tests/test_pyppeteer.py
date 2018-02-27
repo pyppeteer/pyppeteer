@@ -16,6 +16,7 @@ import unittest
 from syncer import sync
 
 from pyppeteer import launch
+from pyppeteer.errors import PageError
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 
@@ -421,13 +422,21 @@ class TestPage(unittest.TestCase):
             metrics_to_check.remove(name)
         self.assertEqual(len(metrics_to_check), 0)
 
+    @sync
+    async def test_offline_mode(self):
+        await self.page.setOfflineMode(True)
+        with self.assertRaises(PageError):
+            await self.page.goto(self.url)
+        await self.page.setOfflineMode(False)
+        res = await self.page.reload()
+        self.assertEqual(res.status, 304)
+
 
     @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
         await self.page.setContent('')
-        await self.page.reload()
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()
         await self.page.evaluateOnNewDocument('() => 1 + 2')

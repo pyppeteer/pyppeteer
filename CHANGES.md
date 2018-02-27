@@ -1,6 +1,10 @@
 History
 =======
 
+## Version 0.0.11 (next version)
+
+* Add `offlineMode`
+
 ## Version 0.0.10 (2018-02-27)
 
 * Enable to import `launch` from package root
