@@ -4,27 +4,19 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Reference &#8212; Pyppeteer 0.0.9 documentation</title>
+    <title>API Reference &#8212; Pyppeteer 0.0.10 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.0.9',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="History" href="changes.html" />
-    <link rel="prev" title="Usage" href="usage.html" />
+    <link rel="prev" title="Pyppeteer" href="index.html" />
   <!-- font -->
   <link href='https://fonts.googleapis.com/css?family=Raleway:500' rel='stylesheet' type='text/css'>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,400italic' rel='stylesheet' type='text/css'>
@@ -39,8 +31,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
 
-  </head>
-  <body>
+  </head><body>
   
 
     <div class="document">
@@ -60,7 +51,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.browser.Browser" title="pyppeteer.browser.Browser"><code class="xref py py-class docutils literal"><span class="pre">Browser</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.browser.Browser" title="pyppeteer.browser.Browser"><code class="xref py py-class docutils literal notranslate"><span class="pre">Browser</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -74,7 +65,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.browser.Browser" title="pyppeteer.browser.Browser"><code class="xref py py-class docutils literal"><span class="pre">Browser</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.browser.Browser" title="pyppeteer.browser.Browser"><code class="xref py py-class docutils literal notranslate"><span class="pre">Browser</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -85,10 +76,24 @@
 <h2>Browser<a class="headerlink" href="#browser" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.browser.Browser">
-<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Browser</code><span class="sig-paren">(</span><em>connection: pyppeteer.connection.Connection, ignoreHTTPSErrors: bool, closeCallback: typing.Callable[NoneType]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/browser.html#Browser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Browser</code><span class="sig-paren">(</span><em>connection</em>, <em>ignoreHTTPSErrors</em>, <em>closeCallback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Browser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Browser class.</p>
 <p>Make new browser object.</p>
+<dl class="method">
+<dt id="pyppeteer.browser.Browser.close">
+<em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Browser.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close connections and terminate browser process.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="pyppeteer.browser.Browser.newPage">
 <em class="property">coroutine </em><code class="descname">newPage</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Browser.newPage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser.newPage" title="Permalink to this definition">¶</a></dt>
@@ -97,21 +102,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.page.Page" title="pyppeteer.page.Page"><code class="xref py py-class docutils literal"><span class="pre">Page</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.browser.Browser.close">
-<code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Browser.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>Close connections and terminate browser process.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.page.Page" title="pyppeteer.page.Page"><code class="xref py py-class docutils literal notranslate"><span class="pre">Page</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -125,285 +116,21 @@
 <dl class="class">
 <dt id="pyppeteer.page.Page">
 <em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">Page</code><span class="sig-paren">(</span><em>client</em>, <em>ignoreHTTPSErrors=True</em>, <em>screenshotTaskQueue=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">pyee.EventEmitter</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyee.EventEmitter</span></code></p>
 <p>Page class.</p>
 <p>Make new page object.</p>
-<dl class="method">
-<dt id="pyppeteer.page.Page.J">
-<em class="property">coroutine </em><code class="descname">J</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.J" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.JJ">
-<em class="property">coroutine </em><code class="descname">JJ</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.JJ" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.Jeval">
-<em class="property">coroutine </em><code class="descname">Jeval</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.Jeval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute function on element which matches selector.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal"><span class="pre">Any</span></code>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.addScriptTag">
-<em class="property">coroutine </em><code class="descname">addScriptTag</code><span class="sig-paren">(</span><em>self</em>, <em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.addScriptTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.addScriptTag" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add script tag to this page.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.click">
-<em class="property">coroutine </em><code class="descname">click</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.click"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.click" title="Permalink to this definition">¶</a></dt>
-<dd><p>Click element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.close">
-<em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>Close connection.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.content">
-<em class="property">coroutine </em><code class="descname">content</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.content" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the whole HTML contents of the page.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.cookies">
-<em class="property">coroutine </em><code class="descname">cookies</code><span class="sig-paren">(</span><em>self</em>, <em>*urls</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.cookies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.cookies" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get cookies.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">dict</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.deleteCookie">
-<em class="property">coroutine </em><code class="descname">deleteCookie</code><span class="sig-paren">(</span><em>self</em>, <em>*cookies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.deleteCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.deleteCookie" title="Permalink to this definition">¶</a></dt>
-<dd><p>Delete cookie.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.emulate">
-<em class="property">coroutine </em><code class="descname">emulate</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Emulate viewport and user agent.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.emulateMedia">
-<em class="property">coroutine </em><code class="descname">emulateMedia</code><span class="sig-paren">(</span><em>self</em>, <em>mediaType=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulateMedia"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulateMedia" title="Permalink to this definition">¶</a></dt>
-<dd><p>Emulate css media type of the page.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.evaluate">
-<em class="property">coroutine </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.evaluate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute js-function on this page and get result.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.evaluateOnNewDocument">
-<em class="property">coroutine </em><code class="descname">evaluateOnNewDocument</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.evaluateOnNewDocument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.evaluateOnNewDocument" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluate js-function on new document.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.exposeFunction">
-<em class="property">coroutine </em><code class="descname">exposeFunction</code><span class="sig-paren">(</span><em>self</em>, <em>name</em>, <em>puppeteerFunction</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.exposeFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.exposeFunction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute function on this page.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.focus">
-<em class="property">coroutine </em><code class="descname">focus</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.focus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.focus" title="Permalink to this definition">¶</a></dt>
-<dd><p>Focus the element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
 <dl class="attribute">
-<dt id="pyppeteer.page.Page.frames">
-<code class="descname">frames</code><a class="headerlink" href="#pyppeteer.page.Page.frames" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get frames.</p>
+<dt id="pyppeteer.page.Page.mainFrame">
+<code class="descname">mainFrame</code><a class="headerlink" href="#pyppeteer.page.Page.mainFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get main frame.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal"><span class="pre">Frame</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.goBack">
-<em class="property">coroutine </em><code class="descname">goBack</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goBack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goBack" title="Permalink to this definition">¶</a></dt>
-<dd><p>Go back history.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal"><span class="pre">Response</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.goForward">
-<em class="property">coroutine </em><code class="descname">goForward</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goForward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goForward" title="Permalink to this definition">¶</a></dt>
-<dd><p>Go forward history.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal"><span class="pre">Response</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.goto">
-<em class="property">coroutine </em><code class="descname">goto</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goto"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goto" title="Permalink to this definition">¶</a></dt>
-<dd><p>Got to url.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal"><span class="pre">Response</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.hover">
-<em class="property">coroutine </em><code class="descname">hover</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.hover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.hover" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mouse hover the element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.injectFile">
-<em class="property">coroutine </em><code class="descname">injectFile</code><span class="sig-paren">(</span><em>self</em>, <em>filePath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.injectFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.injectFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inject file to this page.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -414,249 +141,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.input.Keyboard" title="pyppeteer.input.Keyboard"><code class="xref py py-class docutils literal"><span class="pre">Keyboard</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.page.Page.mainFrame">
-<code class="descname">mainFrame</code><a class="headerlink" href="#pyppeteer.page.Page.mainFrame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get main frame.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal"><span class="pre">Frame</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.page.Page.mouse">
-<code class="descname">mouse</code><a class="headerlink" href="#pyppeteer.page.Page.mouse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get mouse object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.input.Mouse" title="pyppeteer.input.Mouse"><code class="xref py py-class docutils literal"><span class="pre">Mouse</span></code></a></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.pdf">
-<em class="property">coroutine </em><code class="descname">pdf</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.pdf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Not yet implemented.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">bytes</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.plainText">
-<em class="property">coroutine </em><code class="descname">plainText</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.plainText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.plainText" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get page content as plain text.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.press">
-<em class="property">coroutine </em><code class="descname">press</code><span class="sig-paren">(</span><em>self</em>, <em>key</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.press" title="Permalink to this definition">¶</a></dt>
-<dd><p>Press key.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.querySelector">
-<em class="property">coroutine </em><code class="descname">querySelector</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelector" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.querySelectorAll">
-<em class="property">coroutine </em><code class="descname">querySelectorAll</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelectorAll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelectorAll" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get Element which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.querySelectorEval">
-<em class="property">coroutine </em><code class="descname">querySelectorEval</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelectorEval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelectorEval" title="Permalink to this definition">¶</a></dt>
-<dd><p>Execute function on element which matches selector.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal"><span class="pre">Any</span></code>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.reload">
-<em class="property">coroutine </em><code class="descname">reload</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.reload" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reload this page.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal"><span class="pre">Response</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.screenshot">
-<em class="property">coroutine </em><code class="descname">screenshot</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.screenshot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.screenshot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Take screen shot.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">bytes</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setContent">
-<em class="property">coroutine </em><code class="descname">setContent</code><span class="sig-paren">(</span><em>self</em>, <em>html</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setContent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setContent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set content.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setCookie">
-<em class="property">coroutine </em><code class="descname">setCookie</code><span class="sig-paren">(</span><em>self</em>, <em>*cookies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setCookie" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set cookies.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setExtraHTTPHeaders">
-<em class="property">coroutine </em><code class="descname">setExtraHTTPHeaders</code><span class="sig-paren">(</span><em>self</em>, <em>headers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setExtraHTTPHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setExtraHTTPHeaders" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set extra http headers.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setJavaScriptEnabled">
-<em class="property">coroutine </em><code class="descname">setJavaScriptEnabled</code><span class="sig-paren">(</span><em>self</em>, <em>enabled</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setJavaScriptEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setJavaScriptEnabled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set JavaScript enabled/disabled.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setRequestInterceptionEnabled">
-<em class="property">coroutine </em><code class="descname">setRequestInterceptionEnabled</code><span class="sig-paren">(</span><em>self</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setRequestInterceptionEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setRequestInterceptionEnabled" title="Permalink to this definition">¶</a></dt>
-<dd><p>Enable request interception.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setUserAgent">
-<em class="property">coroutine </em><code class="descname">setUserAgent</code><span class="sig-paren">(</span><em>self</em>, <em>userAgent</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setUserAgent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setUserAgent" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set user agent.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.setViewport">
-<em class="property">coroutine </em><code class="descname">setViewport</code><span class="sig-paren">(</span><em>self</em>, <em>viewport</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setViewport"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setViewport" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set viewport.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.tap">
-<em class="property">coroutine </em><code class="descname">tap</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.tap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.tap" title="Permalink to this definition">¶</a></dt>
-<dd><p>Tap the element which matches selector.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.page.Page.title">
-<em class="property">coroutine </em><code class="descname">title</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.title" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get page title.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.input.Keyboard" title="pyppeteer.input.Keyboard"><code class="xref py py-class docutils literal notranslate"><span class="pre">Keyboard</span></code></a></td>
 </tr>
 </tbody>
 </table>
@@ -670,7 +155,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Touchscreen</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Touchscreen</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -684,21 +169,63 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.tracing.Tracing" title="pyppeteer.tracing.Tracing"><code class="xref py py-class docutils literal"><span class="pre">Tracing</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.tracing.Tracing" title="pyppeteer.tracing.Tracing"><code class="xref py py-class docutils literal notranslate"><span class="pre">Tracing</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.page.Page.frames">
+<code class="descname">frames</code><a class="headerlink" href="#pyppeteer.page.Page.frames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get frames.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="pyppeteer.page.Page.type">
-<em class="property">coroutine </em><code class="descname">type</code><span class="sig-paren">(</span><em>self</em>, <em>text</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.type" title="Permalink to this definition">¶</a></dt>
-<dd><p>Type text on the page.</p>
+<dt id="pyppeteer.page.Page.J">
+<em class="property">coroutine </em><code class="descname">J</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.J" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias to querySelector</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.Jeval">
+<em class="property">coroutine </em><code class="descname">Jeval</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.Jeval" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias to querySelectorEval</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.JJ">
+<em class="property">coroutine </em><code class="descname">JJ</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.page.Page.JJ" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias to querySelectorAll</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -712,7 +239,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -726,35 +253,513 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">dict</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="pyppeteer.page.Page.waitFor">
-<code class="descname">waitFor</code><span class="sig-paren">(</span><em>selectorOrFunctionOrTimeout</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitFor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitFor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait for function, timeout, or element which matches on page.</p>
+<dt id="pyppeteer.page.Page.addScriptTag">
+<em class="property">coroutine </em><code class="descname">addScriptTag</code><span class="sig-paren">(</span><em>self</em>, <em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.addScriptTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.addScriptTag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add script tag to this page.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="pyppeteer.page.Page.waitForFunction">
-<code class="descname">waitForFunction</code><span class="sig-paren">(</span><em>pageFunction</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitForFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitForFunction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait for function.</p>
+<dt id="pyppeteer.page.Page.authenticate">
+<em class="property">coroutine </em><code class="descname">authenticate</code><span class="sig-paren">(</span><em>self</em>, <em>credentials</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.authenticate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.authenticate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provide credentials for http authentication.</p>
+<p><cite>credentials</cite> should be <cite>None</cite> or dict which has <cite>username</cite> and
+<cite>password</cite> in its keys.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.click">
+<em class="property">coroutine </em><code class="descname">click</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.click"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.click" title="Permalink to this definition">¶</a></dt>
+<dd><p>Click element which matches <cite>selector</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.close">
+<em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close connection.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.content">
+<em class="property">coroutine </em><code class="descname">content</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.content" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the whole HTML contents of the page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.cookies">
+<em class="property">coroutine </em><code class="descname">cookies</code><span class="sig-paren">(</span><em>self</em>, <em>*urls</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.cookies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.cookies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get cookies.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.deleteCookie">
+<em class="property">coroutine </em><code class="descname">deleteCookie</code><span class="sig-paren">(</span><em>self</em>, <em>*cookies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.deleteCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.deleteCookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete cookie.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.emulate">
+<em class="property">coroutine </em><code class="descname">emulate</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emulate viewport and user agent.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.emulateMedia">
+<em class="property">coroutine </em><code class="descname">emulateMedia</code><span class="sig-paren">(</span><em>self</em>, <em>mediaType=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulateMedia"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulateMedia" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emulate css media type of the page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.evaluate">
+<em class="property">coroutine </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute js-function on this page and get result.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.evaluateOnNewDocument">
+<em class="property">coroutine </em><code class="descname">evaluateOnNewDocument</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.evaluateOnNewDocument"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.evaluateOnNewDocument" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate js-function on new document.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.exposeFunction">
+<em class="property">coroutine </em><code class="descname">exposeFunction</code><span class="sig-paren">(</span><em>self</em>, <em>name</em>, <em>puppeteerFunction</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.exposeFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.exposeFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute function on this page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.focus">
+<em class="property">coroutine </em><code class="descname">focus</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.focus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.focus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Focus the element which matches <cite>selector</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.goBack">
+<em class="property">coroutine </em><code class="descname">goBack</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goBack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goBack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Go back history.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.goForward">
+<em class="property">coroutine </em><code class="descname">goForward</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goForward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goForward" title="Permalink to this definition">¶</a></dt>
+<dd><p>Go forward history.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.goto">
+<em class="property">coroutine </em><code class="descname">goto</code><span class="sig-paren">(</span><em>self</em>, <em>url</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.goto"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goto" title="Permalink to this definition">¶</a></dt>
+<dd><p>Got to url.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.hover">
+<em class="property">coroutine </em><code class="descname">hover</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.hover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.hover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mouse hover the element which matches <cite>selector</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.injectFile">
+<em class="property">coroutine </em><code class="descname">injectFile</code><span class="sig-paren">(</span><em>self</em>, <em>filePath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.injectFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.injectFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inject file to this page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.pdf">
+<em class="property">coroutine </em><code class="descname">pdf</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.pdf"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.pdf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not yet implemented.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.plainText">
+<em class="property">coroutine </em><code class="descname">plainText</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.plainText"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.plainText" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get page content as plain text.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.press">
+<em class="property">coroutine </em><code class="descname">press</code><span class="sig-paren">(</span><em>self</em>, <em>key</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.press"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.press" title="Permalink to this definition">¶</a></dt>
+<dd><p>Press key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.querySelector">
+<em class="property">coroutine </em><code class="descname">querySelector</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Element which matches <cite>selector</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.querySelectorAll">
+<em class="property">coroutine </em><code class="descname">querySelectorAll</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelectorAll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelectorAll" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get Element which matches <cite>selector</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.querySelectorEval">
+<em class="property">coroutine </em><code class="descname">querySelectorEval</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.querySelectorEval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.querySelectorEval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute function on element which matches selector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.reload">
+<em class="property">coroutine </em><code class="descname">reload</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.reload"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.reload" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reload this page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.screenshot">
+<em class="property">coroutine </em><code class="descname">screenshot</code><span class="sig-paren">(</span><em>self</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.screenshot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.screenshot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Take screen shot.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setContent">
+<em class="property">coroutine </em><code class="descname">setContent</code><span class="sig-paren">(</span><em>self</em>, <em>html</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setContent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setContent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set content.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setCookie">
+<em class="property">coroutine </em><code class="descname">setCookie</code><span class="sig-paren">(</span><em>self</em>, <em>*cookies</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setCookie" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set cookies.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setExtraHTTPHeaders">
+<em class="property">coroutine </em><code class="descname">setExtraHTTPHeaders</code><span class="sig-paren">(</span><em>self</em>, <em>headers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setExtraHTTPHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setExtraHTTPHeaders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set extra http headers.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setJavaScriptEnabled">
+<em class="property">coroutine </em><code class="descname">setJavaScriptEnabled</code><span class="sig-paren">(</span><em>self</em>, <em>enabled</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setJavaScriptEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setJavaScriptEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set JavaScript enabled/disabled.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setRequestInterceptionEnabled">
+<em class="property">coroutine </em><code class="descname">setRequestInterceptionEnabled</code><span class="sig-paren">(</span><em>self</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setRequestInterceptionEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setRequestInterceptionEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable request interception.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setUserAgent">
+<em class="property">coroutine </em><code class="descname">setUserAgent</code><span class="sig-paren">(</span><em>self</em>, <em>userAgent</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setUserAgent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setUserAgent" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set user agent.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.setViewport">
+<em class="property">coroutine </em><code class="descname">setViewport</code><span class="sig-paren">(</span><em>self</em>, <em>viewport</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.setViewport"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setViewport" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set viewport.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.tap">
+<em class="property">coroutine </em><code class="descname">tap</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.tap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.tap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tap the element which matches selector.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.title">
+<em class="property">coroutine </em><code class="descname">title</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.title" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get page title.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.type">
+<em class="property">coroutine </em><code class="descname">type</code><span class="sig-paren">(</span><em>self</em>, <em>text</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type text on the page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -768,7 +773,35 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal"><span class="pre">Response</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.page.Page.mouse">
+<code class="descname">mouse</code><a class="headerlink" href="#pyppeteer.page.Page.mouse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get mouse object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.input.Mouse" title="pyppeteer.input.Mouse"><code class="xref py py-class docutils literal notranslate"><span class="pre">Mouse</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.waitFor">
+<code class="descname">waitFor</code><span class="sig-paren">(</span><em>selectorOrFunctionOrTimeout</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitFor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitFor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for function, timeout, or element which matches on page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
 </tr>
 </tbody>
 </table>
@@ -782,7 +815,21 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.page.Page.waitForFunction">
+<code class="descname">waitForFunction</code><span class="sig-paren">(</span><em>pageFunction</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitForFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitForFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
 </tr>
 </tbody>
 </table>
@@ -795,8 +842,8 @@
 <h2>Keyboard<a class="headerlink" href="#keyboard" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.input.Keyboard">
-<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Keyboard</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/input.html#Keyboard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Keyboard" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Keyboard</code><span class="sig-paren">(</span><em>client</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/input.html#Keyboard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Keyboard" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Keyboard class.</p>
 <p>Make new keyboard object.</p>
 <dl class="method">
@@ -807,7 +854,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -821,7 +868,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -835,7 +882,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -848,8 +895,8 @@
 <h2>Mouse<a class="headerlink" href="#mouse" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.input.Mouse">
-<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Mouse</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session</em>, <em>keyboard: pyppeteer.input.Keyboard</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/input.html#Mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Mouse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Mouse</code><span class="sig-paren">(</span><em>client</em>, <em>keyboard</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/input.html#Mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Mouse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Mouse class.</p>
 <p>Make new mouse object.</p>
 <dl class="method">
@@ -860,7 +907,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -874,7 +921,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -888,7 +935,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -902,7 +949,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -915,8 +962,8 @@
 <h2>Tracing<a class="headerlink" href="#tracing" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.tracing.Tracing">
-<em class="property">class </em><code class="descclassname">pyppeteer.tracing.</code><code class="descname">Tracing</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/tracing.html#Tracing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.tracing.Tracing" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.tracing.</code><code class="descname">Tracing</code><span class="sig-paren">(</span><em>client</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/tracing.html#Tracing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.tracing.Tracing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Tracing class.</p>
 <p>Make new tracing object.</p>
 <dl class="method">
@@ -927,7 +974,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -941,7 +988,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
 </tr>
 </tbody>
 </table>
@@ -954,8 +1001,8 @@
 <h2>Dialog<a class="headerlink" href="#dialog" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.dialog.Dialog">
-<em class="property">class </em><code class="descclassname">pyppeteer.dialog.</code><code class="descname">Dialog</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session</em>, <em>type: str</em>, <em>message: str</em>, <em>defaultValue: str = ‘’</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/dialog.html#Dialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.dialog.Dialog" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.dialog.</code><code class="descname">Dialog</code><span class="sig-paren">(</span><em>client</em>, <em>type</em>, <em>message</em>, <em>defaultValue=’‘</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/dialog.html#Dialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.dialog.Dialog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Dialog class.</p>
 <p>Make new dialog.</p>
 <dl class="method">
@@ -966,7 +1013,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -980,7 +1027,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -994,7 +1041,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1008,7 +1055,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1022,7 +1069,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1035,34 +1082,19 @@
 <h2>Frame<a class="headerlink" href="#frame" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.frame_manager.Frame">
-<em class="property">class </em><code class="descclassname">pyppeteer.frame_manager.</code><code class="descname">Frame</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session, mouse: pyppeteer.input.Mouse, touchscreen: pyppeteer.input.Touchscreen, parentFrame: typing.Union[_ForwardRef(‘Frame’), NoneType], frameId: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.frame_manager.</code><code class="descname">Frame</code><span class="sig-paren">(</span><em>client</em>, <em>mouse</em>, <em>touchscreen</em>, <em>parentFrame</em>, <em>frameId</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Frame class.</p>
 <p>Make new frame.</p>
 <dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.J">
 <em class="property">coroutine </em><code class="descname">J</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.frame_manager.Frame.J" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get element which matches <cite>selector</cite> string.</p>
-<p>If <cite>selector</cite> matches multiple elements, return first-matched element.</p>
+<dd><p>Alias to querySelector</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.JJ">
-<em class="property">coroutine </em><code class="descname">JJ</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.frame_manager.Frame.JJ" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get all elelments which matches <cite>selector</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -1076,77 +1108,21 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal"><span class="pre">Any</span></code>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
 </tr>
 </tbody>
 </table>
 </dd></dl>
 
 <dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.addScriptTag">
-<em class="property">coroutine </em><code class="descname">addScriptTag</code><span class="sig-paren">(</span><em>self</em>, <em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.addScriptTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.addScriptTag" title="Permalink to this definition">¶</a></dt>
-<dd><p>Add script tag to this frame.</p>
+<dt id="pyppeteer.frame_manager.Frame.JJ">
+<em class="property">coroutine </em><code class="descname">JJ</code><span class="sig-paren">(</span><em>self</em>, <em>selector</em><span class="sig-paren">)</span><a class="headerlink" href="#pyppeteer.frame_manager.Frame.JJ" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get all elelments which matches <cite>selector</cite>.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.frame_manager.Frame.childFrames">
-<code class="descname">childFrames</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.childFrames" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get child frames.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal"><span class="pre">Frame</span></code></a>]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.evaluate">
-<em class="property">coroutine </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.evaluate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluate pageFunction on this frame.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.injectFile">
-<em class="property">coroutine </em><code class="descname">injectFile</code><span class="sig-paren">(</span><em>self</em>, <em>filePath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.injectFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.injectFile" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inject file to the frame.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.frame_manager.Frame.isDetached">
-<code class="descname">isDetached</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.isDetached" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check if this frame is detached.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">bool</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -1160,7 +1136,21 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.frame_manager.Frame.url">
+<code class="descname">url</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.url" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get url.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1174,7 +1164,119 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal"><span class="pre">Frame</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.frame_manager.Frame.childFrames">
+<code class="descname">childFrames</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.childFrames" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get child frames.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.frame_manager.Frame" title="pyppeteer.frame_manager.Frame"><code class="xref py py-class docutils literal notranslate"><span class="pre">Frame</span></code></a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.frame_manager.Frame.isDetached">
+<code class="descname">isDetached</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.isDetached" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if this frame is detached.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.addScriptTag">
+<em class="property">coroutine </em><code class="descname">addScriptTag</code><span class="sig-paren">(</span><em>self</em>, <em>url</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.addScriptTag"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.addScriptTag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add script tag to this frame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.waitFor">
+<code class="descname">waitFor</code><span class="sig-paren">(</span><em>selectorOrFunctionOrTimeout</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitFor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitFor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait until <cite>selectorOrFunctionOrTimeout</cite>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.waitForSelector">
+<code class="descname">waitForSelector</code><span class="sig-paren">(</span><em>selector</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitForSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitForSelector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for selector matches element.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.waitForFunction">
+<code class="descname">waitForFunction</code><span class="sig-paren">(</span><em>pageFunction</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitForFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitForFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for js function return true.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.evaluate">
+<em class="property">coroutine </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.evaluate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate pageFunction on this frame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.injectFile">
+<em class="property">coroutine </em><code class="descname">injectFile</code><span class="sig-paren">(</span><em>self</em>, <em>filePath</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.injectFile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.injectFile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inject file to the frame.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1189,7 +1291,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -1203,7 +1305,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal"><span class="pre">ElementHandle</span></code></a>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<a class="reference internal" href="#pyppeteer.element_handle.ElementHandle" title="pyppeteer.element_handle.ElementHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">ElementHandle</span></code></a>]</td>
 </tr>
 </tbody>
 </table>
@@ -1217,7 +1319,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal"><span class="pre">Any</span></code>]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</td>
 </tr>
 </tbody>
 </table>
@@ -1231,63 +1333,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.frame_manager.Frame.url">
-<code class="descname">url</code><a class="headerlink" href="#pyppeteer.frame_manager.Frame.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get url.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.waitFor">
-<code class="descname">waitFor</code><span class="sig-paren">(</span><em>selectorOrFunctionOrTimeout</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitFor"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitFor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait until <cite>selectorOrFunctionOrTimeout</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.waitForFunction">
-<code class="descname">waitForFunction</code><span class="sig-paren">(</span><em>pageFunction</em>, <em>options=None</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitForFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitForFunction" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait for js function return true.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.frame_manager.Frame.waitForSelector">
-<code class="descname">waitForSelector</code><span class="sig-paren">(</span><em>selector</em>, <em>options=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitForSelector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitForSelector" title="Permalink to this definition">¶</a></dt>
-<dd><p>Wait for selector matches element.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1300,8 +1346,8 @@
 <h2>ElementHandle<a class="headerlink" href="#elementhandle" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.element_handle.ElementHandle">
-<em class="property">class </em><code class="descclassname">pyppeteer.element_handle.</code><code class="descname">ElementHandle</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.Session</em>, <em>remoteObject: dict</em>, <em>mouse: pyppeteer.input.Mouse</em>, <em>touchscreen: pyppeteer.input.Touchscreen</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.element_handle.</code><code class="descname">ElementHandle</code><span class="sig-paren">(</span><em>frame</em>, <em>client</em>, <em>remoteObject</em>, <em>mouse</em>, <em>touchscreen</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>ElementHandle class.</p>
 <p>Make new element handle object.</p>
 <dl class="method">
@@ -1312,7 +1358,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1326,7 +1372,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1340,7 +1386,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1349,12 +1395,12 @@
 <dl class="method">
 <dt id="pyppeteer.element_handle.ElementHandle.evaluate">
 <em class="property">coroutine </em><code class="descname">evaluate</code><span class="sig-paren">(</span><em>self</em>, <em>pageFunction</em>, <em>*args</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle.evaluate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.evaluate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Evaluate the pageFunction on browser.</p>
+<dd><p>[Deprecated] Evaluate the pageFunction on browser.</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Any</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1368,7 +1414,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1382,7 +1428,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1396,7 +1442,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">dict</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1409,10 +1455,24 @@
 <h2>Request<a class="headerlink" href="#request" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.network_manager.Request">
-<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Request</code><span class="sig-paren">(</span><em>client</em>, <em>requestId</em>, <em>interceptionId</em>, <em>url</em>, <em>resourceType</em>, <em>payload</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Request" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Request</code><span class="sig-paren">(</span><em>client</em>, <em>requestId</em>, <em>interceptionId</em>, <em>allowInterception</em>, <em>url</em>, <em>resourceType</em>, <em>payload</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Request" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Request class.</p>
 <p>Make new request class.</p>
+<dl class="attribute">
+<dt id="pyppeteer.network_manager.Request.response">
+<code class="descname">response</code><a class="headerlink" href="#pyppeteer.network_manager.Request.response" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get response.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
 <dl class="method">
 <dt id="pyppeteer.network_manager.Request.abort">
 <em class="property">coroutine </em><code class="descname">abort</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Request.abort"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Request.abort" title="Permalink to this definition">¶</a></dt>
@@ -1421,7 +1481,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1435,21 +1495,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="pyppeteer.network_manager.Request.response">
-<code class="descname">response</code><a class="headerlink" href="#pyppeteer.network_manager.Request.response" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get response.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-data docutils literal"><span class="pre">Any</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="docutils literal notranslate"><span class="pre">None</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1463,7 +1509,7 @@
 <dl class="class">
 <dt id="pyppeteer.network_manager.Response">
 <em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Response</code><span class="sig-paren">(</span><em>client</em>, <em>request</em>, <em>status</em>, <em>headers</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Response class.</p>
 <p>Make new response.</p>
 <dl class="method">
@@ -1474,21 +1520,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">Awaitable</span></code>[+T_co]</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="pyppeteer.network_manager.Response.json">
-<em class="property">coroutine </em><code class="descname">json</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response.json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response.json" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get content as json.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">dict</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code>[+T_co]</td>
 </tr>
 </tbody>
 </table>
@@ -1502,7 +1534,21 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.network_manager.Request" title="pyppeteer.network_manager.Request"><code class="xref py py-class docutils literal"><span class="pre">Request</span></code></a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyppeteer.network_manager.Request" title="pyppeteer.network_manager.Request"><code class="xref py py-class docutils literal notranslate"><span class="pre">Request</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.network_manager.Response.json">
+<em class="property">coroutine </em><code class="descname">json</code><span class="sig-paren">(</span><em>self</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response.json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response.json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get content as json.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1516,7 +1562,7 @@
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal"><span class="pre">str</span></code></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></td>
 </tr>
 </tbody>
 </table>
@@ -1554,8 +1600,6 @@
 
 <h3>Navigation</h3>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#launcher">Launcher</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#browser">Browser</a></li>
@@ -1577,19 +1621,21 @@
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="usage.html" title="previous chapter">Usage</a></li>
+      <li>Previous: <a href="index.html" title="previous chapter">Pyppeteer</a></li>
       <li>Next: <a href="changes.html" title="next chapter">History</a></li>
   </ul></li>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -1600,7 +1646,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |

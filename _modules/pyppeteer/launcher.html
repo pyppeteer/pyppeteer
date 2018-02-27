@@ -4,20 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.9 documentation</title>
+    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.10 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    '../../',
-        VERSION:     '0.0.9',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
@@ -37,8 +29,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
 
-  </head>
-  <body>
+  </head><body>
   
 
     <div class="document">
@@ -82,10 +73,12 @@
     <span class="s1">&#39;--disable-background-timer-throttling&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-client-side-phishing-detection&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-default-apps&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;--disable-extensions&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-hang-monitor&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-popup-blocking&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-prompt-on-repost&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--disable-sync&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;--disable-translate&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--enable-automation&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--metrics-recording-only&#39;</span><span class="p">,</span>
     <span class="s1">&#39;--no-first-run&#39;</span><span class="p">,</span>
@@ -189,15 +182,20 @@
 
 
 <div class="viewcode-block" id="launch"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.launch">[docs]</a><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Start chromium process and return `Browser` object.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="n">Launcher</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span></div>
+    <span class="sd">&quot;&quot;&quot;Start chromium process and return `Browser` object.&quot;&quot;&quot;</span></div>
+    <span class="k">return</span> <span class="n">Launcher</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">launch</span><span class="p">()</span>
 
 
 <div class="viewcode-block" id="connect"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.connect">[docs]</a><span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Not Implemented.&quot;&quot;&quot;</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;NotImplemented&#39;</span><span class="p">)</span></div>
+    <span class="sd">&quot;&quot;&quot;Not Implemented.&quot;&quot;&quot;</span></div>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;NotImplemented&#39;</span><span class="p">)</span>
     <span class="c1"># l = Launcher(options)</span>
     <span class="c1"># return l.connect()</span>
+
+
+<span class="k">def</span> <span class="nf">executablePath</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get executable path of chromium.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_excutable</span><span class="p">())</span>
 </pre></div>
 
           </div>
@@ -225,8 +223,6 @@
 
 <h3>Navigation</h3>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../reference.html">API Reference</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../changes.html">History</a></li>
 </ul>
@@ -242,12 +238,14 @@
 </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="../../search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -258,7 +256,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

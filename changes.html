@@ -4,20 +4,12 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.9 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.10 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript">
-      var DOCUMENTATION_OPTIONS = {
-        URL_ROOT:    './',
-        VERSION:     '0.0.9',
-        COLLAPSE_INDEX: false,
-        FILE_SUFFIX: '.html',
-        HAS_SOURCE:  true,
-        SOURCELINK_SUFFIX: '.txt'
-      };
-    </script>
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -38,8 +30,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
 
 
-  </head>
-  <body>
+  </head><body>
   
 
     <div class="document">
@@ -49,52 +40,60 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="version-0-0-9-next-version">
-<h2>Version 0.0.9 (next version)<a class="headerlink" href="#version-0-0-9-next-version" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="version-0-0-10-2018-02-27">
+<h2>Version 0.0.10 (2018-02-27)<a class="headerlink" href="#version-0-0-10-2018-02-27" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Enable to import <code class="docutils literal notranslate"><span class="pre">launch</span></code> from package root</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">browser.close</span></code> to coroutine function</li>
+<li>Chatch up puppeteer v0.11.0</li>
+</ul>
+<div class="section" id="version-0-0-9-2017-09-09">
+<h3>Version 0.0.9 (2017-09-09)<a class="headerlink" href="#version-0-0-9-2017-09-09" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Delete temporary user data directory when browser closed</li>
 <li>Fix bug to fail extracting zip on mac</li>
 </ul>
 </div>
 <div class="section" id="version-0-0-8-2017-09-03">
-<h2>Version 0.0.8 (2017-09-03)<a class="headerlink" href="#version-0-0-8-2017-09-03" title="Permalink to this headline">¶</a></h2>
+<h3>Version 0.0.8 (2017-09-03)<a class="headerlink" href="#version-0-0-8-2017-09-03" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Change chromium revision</li>
-<li>Support steps option of <code class="docutils literal"><span class="pre">Mouse.move()</span></code></li>
+<li>Support steps option of <code class="docutils literal notranslate"><span class="pre">Mouse.move()</span></code></li>
 <li>Experimentally supports python 3.5 by py-backwards</li>
 </ul>
 </div>
 <div class="section" id="version-0-0-7-2017-09-03">
-<h2>Version 0.0.7 (2017-09-03)<a class="headerlink" href="#version-0-0-7-2017-09-03" title="Permalink to this headline">¶</a></h2>
+<h3>Version 0.0.7 (2017-09-03)<a class="headerlink" href="#version-0-0-7-2017-09-03" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Catch up puppeteer v0.10.2<ul>
-<li>Add <code class="docutils literal"><span class="pre">Page.querySelectorEval</span></code> (<code class="docutils literal"><span class="pre">Page.$eval</span></code> in puppeteer)</li>
-<li>Deprecate <code class="docutils literal"><span class="pre">ElementHandle.attribute</span></code></li>
-<li>Add <code class="docutils literal"><span class="pre">Touchscreen</span></code> class and implement <code class="docutils literal"><span class="pre">Page.tap</span></code> and <code class="docutils literal"><span class="pre">ElementHandle.tap</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.querySelectorEval</span></code> (<code class="docutils literal notranslate"><span class="pre">Page.$eval</span></code> in puppeteer)</li>
+<li>Deprecate <code class="docutils literal notranslate"><span class="pre">ElementHandle.attribute</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Touchscreen</span></code> class and implement <code class="docutils literal notranslate"><span class="pre">Page.tap</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.tap</span></code></li>
 </ul>
 </li>
 </ul>
 </div>
 <div class="section" id="version-0-0-6-2017-09-02">
-<h2>Version 0.0.6 (2017-09-02)<a class="headerlink" href="#version-0-0-6-2017-09-02" title="Permalink to this headline">¶</a></h2>
+<h3>Version 0.0.6 (2017-09-02)<a class="headerlink" href="#version-0-0-6-2017-09-02" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Accept keyword arguments for options</li>
-<li>Faster polling on <code class="docutils literal"><span class="pre">waitFor*</span></code> functions</li>
+<li>Faster polling on <code class="docutils literal notranslate"><span class="pre">waitFor*</span></code> functions</li>
 <li>Fix bugs</li>
 </ul>
 </div>
 <div class="section" id="version-0-0-5-2017-08-30">
-<h2>Version 0.0.5 (2017-08-30)<a class="headerlink" href="#version-0-0-5-2017-08-30" title="Permalink to this headline">¶</a></h2>
+<h3>Version 0.0.5 (2017-08-30)<a class="headerlink" href="#version-0-0-5-2017-08-30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Implement pdf printing</li>
-<li>Implement <code class="docutils literal"><span class="pre">waitFor*</span></code> functions</li>
+<li>Implement <code class="docutils literal notranslate"><span class="pre">waitFor*</span></code> functions</li>
 </ul>
 </div>
 <div class="section" id="version-0-0-4-2017-08-30">
-<h2>Version 0.0.4 (2017-08-30)<a class="headerlink" href="#version-0-0-4-2017-08-30" title="Permalink to this headline">¶</a></h2>
+<h3>Version 0.0.4 (2017-08-30)<a class="headerlink" href="#version-0-0-4-2017-08-30" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li>Register PyPI</li>
 </ul>
+</div>
 </div>
 </div>
 
@@ -124,16 +123,9 @@
 
 <h3>Navigation</h3>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-9-next-version">Version 0.0.9 (next version)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-8-2017-09-03">Version 0.0.8 (2017-09-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-7-2017-09-03">Version 0.0.7 (2017-09-03)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-6-2017-09-02">Version 0.0.6 (2017-09-02)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-5-2017-08-30">Version 0.0.5 (2017-08-30)</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-4-2017-08-30">Version 0.0.4 (2017-08-30)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-10-2018-02-27">Version 0.0.10 (2018-02-27)</a></li>
 </ul>
 </li>
 </ul>
@@ -148,12 +140,14 @@
 </div>
 <div id="searchbox" style="display: none" role="search">
   <h3>Quick search</h3>
+    <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <div><input type="text" name="q" /></div>
-      <div><input type="submit" value="Go" /></div>
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
       <input type="hidden" name="check_keywords" value="yes" />
       <input type="hidden" name="area" value="default" />
     </form>
+    </div>
 </div>
 <script type="text/javascript">$('#searchbox').show(0);</script>
         </div>
@@ -164,7 +158,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |
