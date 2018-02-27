@@ -472,12 +472,13 @@ function(html) {
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
+        error = await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
 
-        error = await watcher.waitForNavigation()
         if error:
             raise error
-        return responses.get(self.url, None)
+        response = responses.get(self.url, None)
+        return response
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
