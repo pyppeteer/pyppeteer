@@ -60,21 +60,22 @@ class NetworkManager(EventEmitter):
                                   ) -> None:
         """Set extra http headers."""
         self._extraHTTPHeaders = OrderedDict()
-        headers = OrderedDict()  # type: Dict[str, str]
         for k, v in extraHTTPHeaders.items():
-            self._extraHTTPHeaders[k] = v
-            headers[k] = v
+            if not isinstance(v, str):
+                raise TypeError(f'Expected value of header {k} to be string, '
+                                'but {} is found.'.format(type(v)))
+            self._extraHTTPHeaders[k.lower()] = v
         await self._client.send('Network.setExtraHTTPHeaders',
-                                {'headers': headers})
+                                {'headers': self._extraHTTPHeaders})
 
     def extraHTTPHeaders(self) -> Dict[str, str]:
         """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
 
-    async def setUserAgent(self, userAgent: str) -> Any:
+    async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
-        return await self._client.send('Network.setUserAgentOverride',
-                                       {'userAgent': userAgent})
+        await self._client.send('Network.setUserAgentOverride',
+                                {'userAgent': userAgent})
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
         """Enable request intercetion."""
@@ -312,6 +313,10 @@ class Request(object):
         """Abort request."""
         if self.url.startswith('data:'):
             return
+        if not self._allowInterception:
+            raise NetworkError('Request intercetion is not enabled!')
+        if self._interceptionHandled:
+            raise NetworkError('Intercetion is already handled!')
         self._interceptionHandled = True
         await self._client.send('Network.continueInterceptedRequest', dict(
             interceptionId=self._interceptionId,

@@ -14,7 +14,9 @@ from pyppeteer.connection import Session
 
 def evaluationString(fun: str, *args: Any) -> str:
     """Convert function and arguments to str."""
-    _args = ', '.join([json.dumps(arg) for arg in args])
+    _args = ', '.join([
+        json.dumps('undefined' if arg is None else arg) for arg in args
+    ])
     expr = f'({fun})({_args})'
     return expr
 

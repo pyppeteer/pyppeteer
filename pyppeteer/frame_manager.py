@@ -307,7 +307,7 @@ function addScriptTag(url) {
         return await self.evaluate(addScriptTag, url)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
         if options is None:
             options = dict()
@@ -325,7 +325,8 @@ function addScriptTag(url) {
             return fut
         if ('=>' in selectorOrFunctionOrTimeout or
                 selectorOrFunctionOrTimeout.strip().startswith('function')):
-            return self.waitForFunction(selectorOrFunctionOrTimeout, options)
+            return self.waitForFunction(
+                selectorOrFunctionOrTimeout, options, *args)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,

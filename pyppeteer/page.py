@@ -387,7 +387,7 @@ function(html) {
             self._networkManager, NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        result = asyncio.ensure_future(watcher.waitForNavigation())
+        navigationPromise = watcher.waitForNavigation()
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
 
         try:
@@ -396,8 +396,10 @@ function(html) {
         except Exception:
             watcher.cancel()
             raise
-        await result
+        error = await navigationPromise
         helper.removeEventListeners([listener])
+        if error:
+            raise error
 
         if self._frameManager.isMainFrameLoadingFailed():
             raise PageError('Failed to navigate: ' + url)
@@ -409,8 +411,11 @@ function(html) {
         if options is None:
             options = dict()
         options.update(kwargs)
-        await self._client.send('Page.reload')
-        return await self.waitForNavigation(options)
+        response = (await asyncio.gather(
+            self.waitForNavigation(options),
+            self._client.send('Page.reload'),
+        ))[0]
+        return response
 
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
@@ -426,9 +431,12 @@ function(html) {
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
-        return responses.get(self.url)
+
+        error = await watcher.waitForNavigation()
+        if error:
+            raise error
+        return responses.get(self.url, None)
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
@@ -453,10 +461,13 @@ function(html) {
         if len(entries) < _count:
             return None
         entry = entries[_count]
-        await self._client.send('Page.navigateToHistoryEntry', {
-            'entryId': entry.get('id')
-        })
-        return await self.waitForNavigation(options)
+        response = (await asyncio.gather(
+            self.waitForNavigation(options),
+            self._client.send('Page.navigateToHistoryEntry', {
+                'entryId': entry.get('id')
+            })
+        ))[0]
+        return response
 
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
@@ -704,12 +715,13 @@ function(html) {
         await self._keyboard.up(key)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait for function, timeout, or element which matches on page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return frame.waitFor(selectorOrFunctionOrTimeout, options, **kwargs)
+        return frame.waitFor(
+            selectorOrFunctionOrTimeout, options, *args, **kwargs)
 
     def waitForSelector(self, selector: str, options: dict = None,
                         **kwargs: Any) -> Awaitable:
