@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List
 from pyee import EventEmitter
 
 from pyppeteer.connection import Session
+from pyppeteer.errors import ElementHandleError
 
 
 def evaluationString(fun: str, *args: Any) -> str:
@@ -95,6 +96,26 @@ async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
         return remoteObject.get('description')
     finally:
         await releaseObject(client, remoteObject)
+
+
+def valueFromRemoteObject(remoteObject: Dict) -> Any:
+    """Serialize value of remote object."""
+    if remoteObject.get('objectId'):
+        raise ElementHandleError('Cannot extract value when objectId is given')
+    value = remoteObject.get('unserializableValue')
+    if value:
+        if value == '-0':
+            return -0
+        elif value == 'NaN':
+            return None
+        elif value == 'Infinity':
+            return math.inf
+        elif value == '-Infinity':
+            return -math.inf
+        else:
+            raise ElementHandleError(
+                'Unsupported unserializable value: {}'.format(value))
+    return remoteObject.get('value')
 
 
 async def releaseObject(client: Session, remoteObject: dict) -> None:

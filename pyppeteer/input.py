@@ -4,7 +4,7 @@
 """Keyboard and Mouse module."""
 
 import asyncio
-from typing import Any, TYPE_CHECKING
+from typing import Any, Dict, TYPE_CHECKING
 
 from pyppeteer.connection import Session
 
@@ -76,6 +76,23 @@ class Keyboard(object):
             'unmodifiedText': char,
         })
 
+    async def type(self, text: str, options: Dict) -> None:
+        """Type characters."""
+        delay = 0
+        if options and options.get('delay'):
+            delay = options['delay']
+        for char in text:
+            await self.press(char, {'text': char, 'delay': delay})
+            if delay:
+                await asyncio.sleep(delay / 1000)
+
+    async def press(self, key: str, options: Dict) -> None:
+        """Press key."""
+        await self.down(key, options)
+        if options and options.get('delay'):
+            await asyncio.sleep(options['delay'] / 1000)
+        await self.up(key)
+
 
 class Mouse(object):
     """Mouse class."""
@@ -84,12 +101,12 @@ class Mouse(object):
         """Make new mouse object."""
         self._client = client
         self._keyboard = keyboard
-        self._x = 0
-        self._y = 0
+        self._x = 0.0
+        self._y = 0.0
         self._button = 'none'
 
-    async def move(self, x: int, y: int, options: dict = None, **kwargs: Any
-                   ) -> None:
+    async def move(self, x: float, y: float, options: dict = None,
+                   **kwargs: Any) -> None:
         """Move cursor."""
         options = options or dict()
         options.update(kwargs)
@@ -109,8 +126,8 @@ class Mouse(object):
                 'modifiers': self._keyboard._modifiers,
             })
 
-    async def click(self, x: int, y: int, options: dict = None, **kwargs: Any
-                    ) -> None:
+    async def click(self, x: float, y: float, options: dict = None,
+                    **kwargs: Any) -> None:
         """Click button at (x, y)."""
         if options is None:
             options = dict()

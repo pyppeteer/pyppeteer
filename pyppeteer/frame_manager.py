@@ -4,17 +4,16 @@
 """Frame Manager module."""
 
 import asyncio
-import math
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
-from pyppeteer import helper
+# from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.element_handle import ElementHandle
-from pyppeteer.errors import BrowserError, PageError
-from pyppeteer.input import Mouse, Touchscreen
+from pyppeteer.execution_context import ExecutionContext, JSHandle
+from pyppeteer.errors import BrowserError, PageError, ElementHandleError
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
@@ -34,10 +33,10 @@ class FrameManager(EventEmitter):
         """Make new frame manager."""
         super().__init__()
         self._client = client
-        self._mouse = page.mouse
-        self._touchscreen = page.touchscreen
+        self._page = page
         self._frames: Dict[str, Frame] = dict()
         self._mainFrame: Optional[Frame] = None
+        self._contextIdToContext: Dict[str, ExecutionContext] = dict()
 
         client.on('Page.frameAttached',
                   lambda event: self._onFrameAttached(
@@ -64,8 +63,7 @@ class FrameManager(EventEmitter):
         if frameId in self._frames:
             return
         parentFrame = self._frames.get(parentFrameId)
-        frame = Frame(self._client, self._mouse, self._touchscreen,
-                      parentFrame, frameId)
+        frame = Frame(self._client, self._page, parentFrame, frameId)
         self._frames[frameId] = frame
         self.emit(FrameManager.Events.FrameAttached, frame)
 
@@ -93,8 +91,7 @@ class FrameManager(EventEmitter):
                 frame._id = _id
             else:
                 # Initial main frame navigation.
-                frame = Frame(self._client, self._mouse, self._touchscreen,
-                              None, _id)
+                frame = Frame(self._client, self._page, None, _id)
             self._frames[_id] = frame
             self._mainFrame = frame
 
@@ -107,17 +104,40 @@ class FrameManager(EventEmitter):
         if frame:
             self._removeFramesRecursively(frame)
 
-    def _onExecutionContextCreated(self, context: dict) -> None:
-        auxData = context.get('auxData')
+    def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
+        context = ExecutionContext(
+            self._client,
+            contextPayload['id'],
+            lambda obj: self.createJSHandle(contextPayload['id'], obj),
+        )
+        self._contextIdToContext[contextPayload['id']] = context
+
+        auxData = contextPayload.get('auxData')
         frameId = (auxData.get('frameId')
                    if auxData and auxData.get('isDefault')
                    else None)
         frame = self._frames.get(frameId)
         if not frame:
             return
-        frame._defaultContextId = context.get('id', '')
+        frame._context = context
         for waitTask in frame._waitTasks:
             asyncio.ensure_future(waitTask.rerun())
+
+    def _onExecutionContextDestroyed(self, contextPayload: Dict) -> None:
+        del self._contextIdToContext[contextPayload['id']]
+
+    def createJSHandle(self, contextId: str, remoteObject: Dict = None
+                       ) -> 'JSHandle':
+        """Create JS handle associated to the context id and remote object."""
+        if remoteObject is None:
+            remoteObject = dict()
+        context = self._contextIdToContext.get(contextId)
+        if not context:
+            raise ElementHandleError(f'missing context with id = {contextId}')
+        if remoteObject.get('subtype') == 'node':
+            return ElementHandle(context, self._client, remoteObject,
+                                 self._page)
+        return JSHandle(context, self._client, remoteObject)
 
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
         for child in frame.childFrames:
@@ -137,38 +157,45 @@ class FrameManager(EventEmitter):
 class Frame(object):
     """Frame class."""
 
-    def __init__(self, client: Session, mouse: Mouse, touchscreen: Touchscreen,
+    def __init__(self, client: Session, page: 'Page',
                  parentFrame: Optional['Frame'], frameId: str) -> None:
         """Make new frame."""
         self._client = client
-        self._mouse = mouse
-        self._touchscreen = touchscreen
+        self._page = page
         self._parentFrame = parentFrame
         self._url = ''
         self._detached = False
         self._id = frameId
-        self._defaultContextId = '<not-initialized>'
+        self._context: Optional[ExecutionContext] = None
         self._waitTasks: Set[WaitTask] = set()  # maybe list
         self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
+    @property
+    def executionContext(self) -> Optional[ExecutionContext]:
+        """Return execution context of this frame."""
+        return self._context
+
     async def evaluate(self, pageFunction: str, *args: Any) -> Any:
         """Evaluate pageFunction on this frame."""
-        remoteObject = await self._rawEvaluate(pageFunction, *args)
-        return await helper.serializeRemoteObject(self._client, remoteObject)
+        if self._context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+        return await self._context.evaluate(pageFunction, *args)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.
 
         If `selector` matches multiple elements, return first-matched element.
         """
-        remoteObject = await self._rawEvaluate(
+        if self._context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+        handle = await self._context.evaluateHandle(
             'selector => document.querySelector(selector)', selector)
-        if remoteObject.get('subtype') == 'node':
-            return ElementHandle(self, self._client, remoteObject, self._mouse,
-                                 self._touchscreen)
-        await helper.releaseObject(self._client, remoteObject)
+        element = handle.asElement()
+        if element:
+            return element
+        await handle.dispose()
         return None
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
@@ -183,82 +210,41 @@ class Frame(object):
         await elementHandle.dispose()
         return result
 
-    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
-        """Get all elelments which matches `selector`."""
-        remoteObject = await self._rawEvaluate(
+    async def querySelectorAllEval(self, selector: str, pageFunction: str,
+                                   *args: Any) -> Optional[Dict]:
+        """Execute function on all elements which matches selector."""
+        if self._context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+        arrayHandle = await self._context.evaluateHandle(
             'selector => Array.from(document.querySelectorAll(selector))',
             selector,
         )
-        response = await self._client.send('Runtime.getProperties', {
-            'objectId': remoteObject.get('objectId', ''),
-            'ownProperties': True,
-        })
-        properties = response.get('result', {})
-        result: List[ElementHandle] = []
-        releasePromises = [helper.releaseObject(self._client, remoteObject)]
-        for prop in properties:
-            value = prop.get('value', {})
-            if prop.get('enumerable') and value.get('subtype') == 'node':
-                result.append(ElementHandle(self, self._client, value,
-                                            self._mouse, self._touchscreen))
-            else:
-                releasePromises.append(
-                    helper.releaseObject(self._client, value))
-        await asyncio.gather(*releasePromises)
+        result = await self.evaluate(pageFunction, arrayHandle, *args)
+        await arrayHandle.dispose()
+        return result
+
+    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
+        """Get all elelments which matches `selector`."""
+        if self._context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+        arrayHandle = await self._context.evaluateHandle(
+            'selector => document.querySelectorAll(selector)',
+            selector,
+        )
+        properties = await arrayHandle.getProperties()
+        await arrayHandle.dispose()
+        result = []
+        for prop in properties.values():
+            elementHandle = prop.asElement()
+            if elementHandle:
+                result.append(elementHandle)
         return result
 
     #: Alias to querySelector
     J = querySelector
     Jeval = querySelectorEval
     JJ = querySelectorAll
-
-    async def _rawEvaluate(self, pageFunction: str, *args: Any) -> dict:
-        if not args:
-            expression = helper.evaluationString(pageFunction, *args)
-            contextId = self._defaultContextId
-            obj = await self._client.send('Runtime.evaluate', {
-                'expression': expression,
-                'contextId': contextId,
-                'returnByValue': False,
-                'awaitPromise': True,
-            })
-        else:
-            obj = await self._client.send('Runtime.callFunctionOn', {
-                'functionDeclaration': pageFunction,
-                'executionContextId': self._defaultContextId,
-                'arguments': [self._convertArgument(arg) for arg in args],
-                'returnByValue': False,
-                'awaitPromise': True
-
-            })
-        exceptionDetails = obj.get('exceptionDetails', dict())
-        remoteObject = obj.get('result', dict())
-        if exceptionDetails:
-            raise BrowserError(
-                'Evaluation failed: ' +
-                helper.getExceptionMessage(exceptionDetails) +
-                f'\npageFunction:\n{pageFunction}'
-            )
-        return remoteObject
-
-    def _convertArgument(self, arg: Any) -> Dict[str, str]:
-        if arg == -0:
-            return {'unserializableValue': '-0'}
-        if arg == math.inf:
-            return {'unserializableValue': 'Infinity'}
-        if arg == -math.inf:
-            return {'unserializableValue': '-Infinity'}
-        if isinstance(arg, ElementHandle):
-            if arg._frame != self:
-                raise ValueError(
-                    'ElementHandles passed as arguments should belong to the '
-                    'frame that does evaluation'
-                )
-            objectId = arg._remoteObjectId()
-            if not objectId:
-                raise PageError('ElementHandle is disposed!')
-            return {'objectId': objectId}
-        return {'value': arg}
+    JJeval = querySelectorAllEval
 
     @property
     def name(self) -> str:

@@ -10,6 +10,8 @@ import math
 import mimetypes
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING
+import warnings
 
 from pyee import EventEmitter
 
@@ -25,6 +27,9 @@ from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
+
+if TYPE_CHECKING:
+    from pyppeteer.execution_context import JSHandle  # noqa: F401
 
 
 class Page(EventEmitter):
@@ -193,6 +198,25 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelector(selector)
 
+    async def evaluateHandle(self, pageFunction: str, *args: Any
+                             ) -> 'JSHandle':
+        """Execute function on this page."""
+        if not self.mainFrame:
+            raise PageError('no main frame.')
+        if not self.mainFrame.executionContext:
+            raise PageError('No context.')
+        return await self.mainFrame.executionContext.evaluateHandle(
+            pageFunction, *args)
+
+    async def queryObject(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
+        """Send query to the object."""  # need better doc
+        if not self.mainFrame:
+            raise PageError('no main frame.')
+        if not self.mainFrame.executionContext:
+            raise PageError('No context.')
+        return await self.mainFrame.executionContext.queryObject(
+            prototypeHandle)
+
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:
         """Execute function on element which matches selector."""
@@ -201,8 +225,15 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str
-                               ) -> List['ElementHandle']:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str,
+                                   *args) -> List['ElementHandle']:
+        """Get Element which matches `selector`."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.querySelectorAllEval(selector, pageFunction, *args)
+
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
@@ -215,6 +246,8 @@ class Page(EventEmitter):
     Jeval = querySelectorEval
     #: alias to querySelectorAll
     JJ = querySelectorAll
+    #: alias to querySelectorAllEval
+    JJeval = querySelectorAllEval
 
     async def cookies(self, *urls: str) -> dict:
         """Get cookies."""
@@ -438,6 +471,7 @@ function(html) {
                                     dict(url=url, referrer=referrer))
         except Exception:
             watcher.cancel()
+            helper.removeEventListeners([listener])
             raise
         error = await navigationPromise
         helper.removeEventListeners([listener])
@@ -687,7 +721,8 @@ function(html) {
         return buffer
 
     async def plainText(self) -> str:
-        """Get page content as plain text."""
+        """[Deprecated] Get page content as plain text."""
+        warnings.warn('page.plainText is deprecated.', DeprecationWarning)
         return await self.evaluate('() => document.body.innerText')
 
     async def title(self) -> str:
@@ -734,29 +769,33 @@ function(html) {
         await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
-    async def type(self, text: str, options: dict = None, **kwargs: Any
-                   ) -> None:
-        """Type text on the page."""
-        options = options or dict()
-        options.update(kwargs)
-        delay = options.get('delay', 0)
-        last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
-        for char in text:
-            last = asyncio.ensure_future(
-                self.press(char, {'text': char, 'delay': delay})
-            )
-            await asyncio.sleep(delay)
-        await last
+    async def select(self, selector: str, *values: Any) -> None:
+        await self.querySelectorEval(selector, '''
+(element, values) => {
+    if (element.nodeName.toLowerCase() !== 'select')
+        throw new Error('Element is not a <select> element.');
 
-    async def press(self, key: str, options: dict = None, **kwargs: Any
-                    ) -> None:
-        """Press key."""
+    const options = Array.from(element.options);
+
+    if (element.multiple) {
+        for (const option of options)
+            option.selected = values.includes(option.value);
+    } else {
+        element.value = values.shift();
+    }
+    element.dispatchEvent(new Event('input', { 'bubbles': true }));
+    element.dispatchEvent(new Event('change', { 'bubbles': true }));
+}
+        ''', values)
+
+    async def type(self, selector: str, text: str, options: dict = None,
+                   **kwargs: Any) -> None:
+        """Type text on the selected element."""
         options = options or dict()
         options.update(kwargs)
-        delay = options.get('delay', 0)
-        await self._keyboard.down(key, options)
-        await asyncio.sleep(delay)
-        await self._keyboard.up(key)
+        handle = await self.querySelector(selector)
+        await handle.type(text, options)
+        await handle.dispose()
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
@@ -833,6 +872,13 @@ def convertPrintParameterToInches(parameter: Union[None, int, float, str]
         raise TypeError('page.pdf() Cannot handle parameter type: ' +
                         str(type(parameter)))
     return pixels / 96
+
+
+class ConsoleMessage(object):
+    def __init__(self, type:str, text: str, args: List) -> None:
+        self.type = type
+        self.text = text
+        self.args = args
 
 
 #: alias to :func:`create_page()`

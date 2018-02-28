@@ -59,8 +59,9 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(self.page.url, 'https://example.com/')
 
     @sync
-    async def test_plain_text(self):
-        text = await self.page.plainText()
+    async def test_plain_text_depr(self):
+        with self.assertWarns(DeprecationWarning):
+            text = await self.page.plainText()
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
@@ -76,25 +77,19 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual('Hello', text)
 
     @sync
-    async def test_element_depr(self):
-        elm = await self.page.querySelector('h1')
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            text = await elm.evaluate('(element) => element.textContent')
-        self.assertIn('[DEPRECATED]', cm.output[0])
-        self.assertEqual('Hello', text)
-
-    @sync
     async def test_elements(self):
         elms = await self.page.querySelectorAll('a')
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
         elm2 = elms[1]
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            self.assertEqual(await elm1.attribute('id'), 'link1')
-        self.assertIn('[DEPRECATED]', cm.output[0])
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            self.assertEqual(await elm2.attribute('id'), 'link2')
-        self.assertIn('[DEPRECATED]', cm.output[0])
+        func = 'elm => elm.id'
+        self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
+        self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
+
+    @sync
+    async def test_elements_eval(self):
+        ln = await self.page.querySelectorAllEval('a', 'nodes => nodes.length')
+        self.assertEqual(ln, 2)
 
     @sync
     async def test_element_inner_html(self):
@@ -266,7 +261,8 @@ class TestPyppeteer(unittest.TestCase):
     async def test_redirect(self):
         await self.page.goto(self.url + 'redirect1')
         await self.page.waitForSelector('h1#red2')
-        self.assertEqual(await self.page.plainText(), 'redirect2')
+        text = await self.page.evaluate('() => document.body.innerText')
+        self.assertEqual(text, 'redirect2')
 
 
 class TestPage(unittest.TestCase):
