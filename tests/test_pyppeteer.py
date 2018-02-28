@@ -16,6 +16,7 @@ import unittest
 from syncer import sync
 
 from pyppeteer import launch
+from pyppeteer.errors import PageError
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 
@@ -58,8 +59,9 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(self.page.url, 'https://example.com/')
 
     @sync
-    async def test_plain_text(self):
-        text = await self.page.plainText()
+    async def test_plain_text_depr(self):
+        with self.assertWarns(DeprecationWarning):
+            text = await self.page.plainText()
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
@@ -75,25 +77,19 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual('Hello', text)
 
     @sync
-    async def test_element_depr(self):
-        elm = await self.page.querySelector('h1')
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            text = await elm.evaluate('(element) => element.textContent')
-        self.assertIn('[DEPRECATED]', cm.output[0])
-        self.assertEqual('Hello', text)
-
-    @sync
     async def test_elements(self):
         elms = await self.page.querySelectorAll('a')
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
         elm2 = elms[1]
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            self.assertEqual(await elm1.attribute('id'), 'link1')
-        self.assertIn('[DEPRECATED]', cm.output[0])
-        with self.assertLogs('pyppeteer', level='WARN') as cm, self.assertWarns(DeprecationWarning):  # noqa
-            self.assertEqual(await elm2.attribute('id'), 'link2')
-        self.assertIn('[DEPRECATED]', cm.output[0])
+        func = 'elm => elm.id'
+        self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
+        self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
+
+    @sync
+    async def test_elements_eval(self):
+        ln = await self.page.querySelectorAllEval('a', 'nodes => nodes.length')
+        self.assertEqual(ln, 2)
 
     @sync
     async def test_element_inner_html(self):
@@ -265,7 +261,66 @@ class TestPyppeteer(unittest.TestCase):
     async def test_redirect(self):
         await self.page.goto(self.url + 'redirect1')
         await self.page.waitForSelector('h1#red2')
-        self.assertEqual(await self.page.plainText(), 'redirect2')
+        text = await self.page.evaluate('() => document.body.innerText')
+        self.assertEqual(text, 'redirect2')
+
+    @sync
+    async def test_script_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(AttributeError):
+            await self.page.addScriptTag('/static/injectedfile.js')
+
+    @sync
+    async def test_script_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(url='/static/injectedfile.js')
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedfile.js')
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(path=path)
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(content='window.__injected = 35;')
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
+
+    @sync
+    async def test_style_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(AttributeError):
+            await self.page.addStyleTag('/static/injectedstyle.css')
+
+    async def get_bgcolor(self):
+        return await self.page.evaluate('() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")')  # noqa: E501
+
+    @sync
+    async def test_style_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(url='/static/injectedstyle.css')
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedstyle.css')
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(path=path)
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(content=' body {background-color: green;}')
+        self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
 
 
 class TestPage(unittest.TestCase):
@@ -359,13 +414,14 @@ class TestPage(unittest.TestCase):
         ))
 
     @sync
-    async def test_inject_file(self):
+    async def test_inject_file(self):  # deprecated
         tmp_file = Path('tmp.js')
         with tmp_file.open('w') as f:
             f.write('''
 () => document.body.appendChild(document.createElement("section"))
             '''.strip())
-        await self.page.injectFile(str(tmp_file))
+        with self.assertWarns(DeprecationWarning):
+            await self.page.injectFile(str(tmp_file))
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()
@@ -397,11 +453,43 @@ class TestPage(unittest.TestCase):
         self.assertEqual(response.status, 200)
 
     @sync
+    async def test_metrics(self):
+        await self.page.goto('about:blank')
+        metrics = await self.page.getMetrics()
+        metrics_to_check = set([
+            'Timestamp',
+            'Documents',
+            'Frames',
+            'JSEventListeners',
+            'Nodes',
+            'LayoutCount',
+            'RecalcStyleCount',
+            'LayoutDuration',
+            'RecalcStyleDuration',
+            'ScriptDuration',
+            'TaskDuration',
+            'JSHeapUsedSize',
+            'JSHeapTotalSize',
+        ])
+        for name, value in metrics.items():
+            self.assertTrue(name in metrics_to_check)
+            self.assertTrue(value >= 0)
+            metrics_to_check.remove(name)
+        self.assertEqual(len(metrics_to_check), 0)
+
+    @sync
+    async def test_offline_mode(self):
+        await self.page.setOfflineMode(True)
+        with self.assertRaises(PageError):
+            await self.page.goto(self.url)
+        await self.page.setOfflineMode(False)
+        res = await self.page.reload()
+        self.assertEqual(res.status, 304)
+
+    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
-        await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
         await self.page.setContent('')
-        await self.page.reload()
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()
         await self.page.evaluateOnNewDocument('() => 1 + 2')

@@ -54,7 +54,7 @@ class TestClick(TestBase):
 
     @sync
     async def test_click(self):
-        text = await self.page.plainText()
+        text = await self.page.evaluate('() => document.body.innerText')
         self.assertEqual(text.strip(), 'Click!')
         await self.page.click('h1')
         await self.page.waitForFunction(
@@ -85,8 +85,8 @@ class TestInput(TestBase):
     async def test_page_type(self):
         text = await self.page.plainText()
         self.assertEqual(text.strip(), 'Hello!')
-        await self.page.focus('input')
-        await self.page.type('abc', {})
+        elm = await self.page.querySelector('input')
+        await elm.type('abc', {'delay': 100})
         await self.page.waitForFunction(
             '() => document.body.textContent.indexOf("abc") >= 0',
             {'timeout': 1000},

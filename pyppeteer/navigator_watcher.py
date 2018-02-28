@@ -52,11 +52,12 @@ class NavigatorWatcher:
                     self._timeout)
             ))
 
-        watchdog: asyncio.Future = asyncio.ensure_future(
-            asyncio.sleep(self._timeout / 1000))
-        self._maximumTimer = watchdog
-        watchdog.add_done_callback(watchdog_cb)
-        navigationPromises.append(watchdog)
+        if self._timeout:
+            watchdog: asyncio.Future = asyncio.ensure_future(
+                asyncio.sleep(self._timeout / 1000))
+            self._maximumTimer = watchdog
+            watchdog.add_done_callback(watchdog_cb)
+            navigationPromises.append(watchdog)
 
         if not self._ignoreHTTPSErrors:
             certificateError = loop.create_future()

@@ -1,6 +1,18 @@
 History
 =======
 
+## Version 0.0.11 (next version)
+
+* Remove `ElementHandle.evaluate`
+* Remove `ElementHandle.attribute`
+* Deprecate `Page.plainText`
+* Add `Page.querySelectorAllEval`
+* Add `Page.select` and `Page.type`
+* Add `ElementHandle.boudingBox` and `ElementHandle.screenshot`
+* Add `ElementHandle.focus`, `ElementHandle.type`, and `ElementHandle.press`
+* Add `getMetrics` method
+* Add `offlineMode`
+
 ## Version 0.0.10 (2018-02-27)
 
 * Enable to import `launch` from package root
