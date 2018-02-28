@@ -4,6 +4,7 @@
 """Frame Manager module."""
 
 import asyncio
+import re
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 
@@ -279,18 +280,75 @@ class Frame(object):
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
         return await self.evaluate(contents)
 
-    async def addScriptTag(self, url: str) -> str:
+    async def addScriptTag(self, options: Dict) -> str:
         """Add script tag to this frame."""
-        addScriptTag = '''
-function addScriptTag(url) {
-  let script = document.createElement('script');
-  script.src = url;
-  let promise = new Promise(x => script.onload = x);
-  document.head.appendChild(script);
-  return promise;
-}
-        '''
-        return await self.evaluate(addScriptTag, url)
+        addScriptUrl = '''
+        function addScriptUrl(url) {
+            const script = document.createElement('script');
+            script.src = url;
+            const promise = new Promise(x => script.onload = x);
+            document.head.appendChild(script);
+            return promise;
+        }'''
+
+        addScriptContent = '''
+        function addScriptContent(content) {
+            const script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.text = content;
+            document.head.appendChild(script);
+        }'''
+
+        if isinstance(options.get('url'), str):
+            return await self.evaluate(addScriptUrl, options['url'])
+
+        if isinstance(options.get('path'), str):
+            with open(options['path']) as f:
+                contents = f.read()
+            contents = contents + '//# sourceURL={}'.format(
+                re.sub(options['path'], '\n', ''))
+            return await self.evaluate(addScriptContent, contents)
+
+        if isinstance(options.get('content'), str):
+            return await self.evaluate(addScriptContent, options['content'])
+
+        raise ValueError(
+            'Provide an object with a `url`, `path` or `content` property')
+
+    async def addStyleTag(self, options: Dict) -> str:
+        """Add style tag to this frame."""
+        addStyleUrl = '''
+        function (url) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = url;
+            const promise = new Promise(x => link.onload = x);
+            document.head.appendChild(link);
+            return promise;
+        }'''
+
+        addStyleContent = '''
+        function (content) {
+            const style = document.createElement('style');
+            style.type = 'text/css';
+            style.appendChild(document.createTextNode(content));
+            document.head.appendChild(style);
+        }'''
+
+        if isinstance(options.get('url'), str):
+            return await self.evaluate(addStyleUrl, options['url'])
+
+        if isinstance(options.get('path'), str):
+            with open(options['path']) as f:
+                contents = f.read()
+            contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
+            return await self.evaluate(addStyleContent, contents)
+
+        if isinstance(options.get('content'), str):
+            return await self.evaluate(addStyleContent, options['content'])
+
+        raise ValueError(
+            'Provide an object with a `url`, `path` or `content` property')
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:

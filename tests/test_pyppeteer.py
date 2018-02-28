@@ -264,6 +264,64 @@ class TestPyppeteer(unittest.TestCase):
         text = await self.page.evaluate('() => document.body.innerText')
         self.assertEqual(text, 'redirect2')
 
+    @sync
+    async def test_script_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(AttributeError):
+            await self.page.addScriptTag('/static/injectedfile.js')
+
+    @sync
+    async def test_script_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(url='/static/injectedfile.js')
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedfile.js')
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(path=path)
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(content='window.__injected = 35;')
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
+
+    @sync
+    async def test_style_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(AttributeError):
+            await self.page.addStyleTag('/static/injectedstyle.css')
+
+    async def get_bgcolor(self):
+        return await self.page.evaluate('() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")')  # noqa: E501
+
+    @sync
+    async def test_style_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(url='/static/injectedstyle.css')
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedstyle.css')
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(path=path)
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        await self.page.addStyleTag(content=' body {background-color: green;}')
+        self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
+
 
 class TestPage(unittest.TestCase):
     @classmethod
@@ -356,13 +414,14 @@ class TestPage(unittest.TestCase):
         ))
 
     @sync
-    async def test_inject_file(self):
+    async def test_inject_file(self):  # deprecated
         tmp_file = Path('tmp.js')
         with tmp_file.open('w') as f:
             f.write('''
 () => document.body.appendChild(document.createElement("section"))
             '''.strip())
-        await self.page.injectFile(str(tmp_file))
+        with self.assertWarns(DeprecationWarning):
+            await self.page.injectFile(str(tmp_file))
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()
@@ -427,11 +486,9 @@ class TestPage(unittest.TestCase):
         res = await self.page.reload()
         self.assertEqual(res.status, 304)
 
-
     @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
-        await self.page.addScriptTag('https://code.jquery.com/jquery-3.2.1.slim.min.js')  # noqa: E501
         await self.page.setContent('')
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()

@@ -3,6 +3,7 @@
 
 import base64
 import functools
+import os
 from typing import Any, Callable
 
 from tornado import web
@@ -23,6 +24,11 @@ BASE_HTML = '''
 class MainHandler(web.RequestHandler):
     def get(self) -> None:
         self.write(BASE_HTML)
+
+
+class EmptyHandler(web.RequestHandler):
+    def get(self) -> None:
+        self.write('')
 
 
 class LinkHandler1(web.RequestHandler):
@@ -87,13 +93,16 @@ class AuthHandler(web.RequestHandler):
 
 
 def get_application() -> web.Application:
+    static_path = os.path.join(os.path.dirname(__file__), 'static')
     return web.Application([
         ('/', MainHandler),
         ('/1', LinkHandler1),
         ('/redirect1', RedirectHandler1),
         ('/redirect2', RedirectHandler2),
         ('/auth', AuthHandler),
-    ], logging='error')
+        ('/empty', EmptyHandler),
+        ('/static', web.StaticFileHandler, dict(path=static_path)),
+    ], logging='error', static_path=static_path)
 
 
 if __name__ == '__main__':

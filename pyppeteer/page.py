@@ -10,7 +10,6 @@ import math
 import mimetypes
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
-from typing import TYPE_CHECKING
 import warnings
 
 from pyee import EventEmitter
@@ -280,15 +279,29 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, url: str) -> str:
+    async def addScriptTag(self, options: Dict = None, **kwargs: str) -> str:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return await frame.addScriptTag(url)
+        if options is None:
+            options = {}
+        options.update(kwargs)
+        return await frame.addScriptTag(options)
+
+    async def addStyleTag(self, options: Dict = None, **kwargs: str) -> str:
+        """Add script tag to this page."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        if options is None:
+            options = {}
+        options.update(kwargs)
+        return await frame.addStyleTag(options)
 
     async def injectFile(self, filePath: str) -> str:
-        """Inject file to this page."""
+        """[Deprecated] Inject file to this page."""
+        warnings.warn('Page.injectFile is deprecated.', DeprecationWarning)
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
