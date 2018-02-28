@@ -9,7 +9,7 @@ __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
 __version__ = '0.0.10'
 __chromimum_revision__ = '533271'
-__base_puppeteer_version__ = 'v0.11.0'
+__base_puppeteer_version__ = 'v0.12.0'
 
 # Setup root logger
 logger = logging.getLogger('pyppeteer')
