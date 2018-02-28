@@ -293,6 +293,7 @@ class Request(object):
         self._completePromise = asyncio.get_event_loop().create_future()
 
         self.url = url
+        self.resourceType = resourceType.lower()
         self.method = payload.get('method', '')
         self.postData = payload.get('postData', '')
         self.headers = payload.get('headers', {})
