@@ -17,7 +17,7 @@ from pyppeteer.errors import BrowserError, PageError, ElementHandleError
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
-    from pyppeteer.page import Page  # noqa: F401
+    # from pyppeteer.page import Page  # noqa: F401
 
 
 class FrameManager(EventEmitter):
@@ -29,7 +29,7 @@ class FrameManager(EventEmitter):
         FrameDetached='framedetached'
     )
 
-    def __init__(self, client: Session, page: 'Page') -> None:
+    def __init__(self, client: Session, page: Any) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
@@ -157,7 +157,7 @@ class FrameManager(EventEmitter):
 class Frame(object):
     """Frame class."""
 
-    def __init__(self, client: Session, page: 'Page',
+    def __init__(self, client: Session, page: Any,
                  parentFrame: Optional['Frame'], frameId: str) -> None:
         """Make new frame."""
         self._client = client

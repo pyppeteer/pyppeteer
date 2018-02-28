@@ -21,15 +21,13 @@ from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
+from pyppeteer.execution_context import JSHandle  # noqa: F401
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
-
-if TYPE_CHECKING:
-    from pyppeteer.execution_context import JSHandle  # noqa: F401
 
 
 class Page(EventEmitter):
@@ -199,7 +197,7 @@ class Page(EventEmitter):
         return await frame.querySelector(selector)
 
     async def evaluateHandle(self, pageFunction: str, *args: Any
-                             ) -> 'JSHandle':
+                             ) -> JSHandle:
         """Execute function on this page."""
         if not self.mainFrame:
             raise PageError('no main frame.')
@@ -208,7 +206,7 @@ class Page(EventEmitter):
         return await self.mainFrame.executionContext.evaluateHandle(
             pageFunction, *args)
 
-    async def queryObject(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
+    async def queryObject(self, prototypeHandle: JSHandle) -> JSHandle:
         """Send query to the object."""  # need better doc
         if not self.mainFrame:
             raise PageError('no main frame.')
@@ -226,7 +224,7 @@ class Page(EventEmitter):
         return await frame.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args) -> List['ElementHandle']:
+                                   *args: Any) -> Optional[Any]:
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
@@ -770,6 +768,7 @@ function(html) {
         await handle.dispose()
 
     async def select(self, selector: str, *values: Any) -> None:
+        """Select option(s)."""
         await self.querySelectorEval(selector, '''
 (element, values) => {
     if (element.nodeName.toLowerCase() !== 'select')
@@ -794,6 +793,8 @@ function(html) {
         options = options or dict()
         options.update(kwargs)
         handle = await self.querySelector(selector)
+        if handle is None:
+            raise PageError('Cannot find {} on this page'.format(selector))
         await handle.type(text, options)
         await handle.dispose()
 
@@ -875,7 +876,9 @@ def convertPrintParameterToInches(parameter: Union[None, int, float, str]
 
 
 class ConsoleMessage(object):
-    def __init__(self, type:str, text: str, args: List) -> None:
+    """Console message class."""
+
+    def __init__(self, type: str, text: str, args: List) -> None:
         self.type = type
         self.text = text
         self.args = args

@@ -14,7 +14,7 @@ from pyppeteer.errors import ElementHandleError
 
 if TYPE_CHECKING:
     from pyppeteer.frame_manager import Frame  # noqa: F401
-    from pyppeteer.page import Page  # noqa: F401
+    # from pyppeteer.page import Page  # noqa: F401
 
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class ElementHandle(JSHandle):
     """ElementHandle class."""
 
     def __init__(self, context: ExecutionContext, client: Session,
-                 remoteObject: dict, page: 'Page') -> None:
+                 remoteObject: dict, page: Any) -> None:
         """Make new element handle object."""
         super().__init__(context, client, remoteObject)
         self._client = client
@@ -96,10 +96,16 @@ class ElementHandle(JSHandle):
             'element => element.focus()', self)
 
     async def type(self, text: str, options: Dict = None) -> None:
+        """Type characters on this element."""
+        if options is None:
+            options = {}
         await self.focus()
         await self._page.keyboard.type(text, options)
 
     async def press(self, key: str, options: Dict = None) -> None:
+        """Type key on this element."""
+        if options is None:
+            options = {}
         await self.focus()
         await self._page.keyboard.press(key, options)
 
@@ -119,7 +125,10 @@ class ElementHandle(JSHandle):
         height = max(quad[1], quad[3], quad[5], quad[7]) - y
         return {'x': x, 'y': y, 'width': width, 'height': height}
 
-    async def screenshot(options: Dict = None) -> Dict:
+    async def screenshot(self, options: Dict = None) -> bytes:
+        """Take a screenshot of this element."""
+        if options is None:
+            options = {}
         await self._scrollIntoViewIfNeeded()
         boundingBox = await self.boundingBox()
         opt = {'clip': boundingBox}
