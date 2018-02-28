@@ -65,39 +65,6 @@ unserializableValueMap = {
 }
 
 
-async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
-    """Serialize remote object."""
-    if 'unserializableValue' in remoteObject:
-        unserializableValue = remoteObject.get('unserializableValue')
-        if unserializableValue in unserializableValueMap:
-            return unserializableValueMap[unserializableValue]
-        else:
-            # BrowserError may be better
-            raise ValueError(
-                'Unsupported unserializable value: ' + str(unserializableValue)
-            )
-
-    objectId = remoteObject.get('objectId')
-    if not objectId:
-        return remoteObject.get('value')
-
-    subtype = remoteObject.get('subtype')
-    if subtype == 'promise':
-        return remoteObject.get('description')
-    try:
-        response = await client.send('Runtime.callFunctionOn', {
-            'objectId': objectId,
-            'functionDeclaration': 'function() { return this; }',
-            'returnByValue': True,
-        })
-        return response.get('result', {}).get('value')
-    except Exception:
-        # Return description for unserializable object, e.g. 'window'.
-        return remoteObject.get('description')
-    finally:
-        await releaseObject(client, remoteObject)
-
-
 def valueFromRemoteObject(remoteObject: Dict) -> Any:
     """Serialize value of remote object."""
     if remoteObject.get('objectId'):

@@ -410,7 +410,7 @@ function deliverResult(name, seq, result) {
         _values = []
         for arg in _args:
             _values.append(asyncio.ensure_future(
-                helper.serializeRemoteObject(self._client, arg)))
+                helper.valueFromRemoteObject(arg)))
         values = await asyncio.gather(*_values)
         self.emit(Page.Events.Console, *values)
 
