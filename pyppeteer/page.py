@@ -690,6 +690,8 @@ function(html) {
         options.update(kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
+        headerTemplate = options.get('headerTemplate', '')
+        footerTemplate = options.get('footerTemplate', '')
         printBackground = bool(options.get('printBackground'))
         landscape = bool(options.get('landscape'))
         pageRanges = options.get('pageRanges', '')
@@ -715,6 +717,8 @@ function(html) {
         result = await self._client.send('Page.printToPDF', dict(
             landscape=landscape,
             displayHeaderFooter=displayHeaderFooter,
+            headerTemplate=headerTemplate,
+            footerTemplate=footerTemplate,
             printBackground=printBackground,
             scale=scale,
             paperWidth=paperWidth,
