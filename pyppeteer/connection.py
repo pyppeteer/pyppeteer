@@ -113,7 +113,6 @@ class Connection(EventEmitter):
 
     async def _on_close(self) -> None:
         if not self._recv_fut.done():
-            self._recv_fut.cancel()
             await self.connection.close()
         for cb in self._callbacks.values():
             cb.set_exception(NetworkError('connection closed'))
