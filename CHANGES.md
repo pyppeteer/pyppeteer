@@ -3,9 +3,12 @@ History
 
 ## Version 0.0.11 (next version)
 
+Catch up puppeteer v0.12.0
+
 * Remove `ElementHandle.evaluate`
 * Remove `ElementHandle.attribute`
 * Deprecate `Page.plainText`
+* Deprecate `Page.injectFile`
 * Add `Page.querySelectorAllEval`
 * Add `Page.select` and `Page.type`
 * Add `ElementHandle.boudingBox` and `ElementHandle.screenshot`
