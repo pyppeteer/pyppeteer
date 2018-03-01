@@ -400,7 +400,7 @@ a + b
     @sync
     async def test_script_tag_content(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')
+        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')  # noqa: E501
         self.assertIsNotNone(scriptHandle.asElement())
         self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
 
@@ -417,7 +417,7 @@ a + b
     async def test_style_tag_url(self):
         await self.page.goto(self.url + 'empty')
         self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        styleHandle = await self.page.addStyleTag(url='/static/injectedstyle.css')
+        styleHandle = await self.page.addStyleTag(url='/static/injectedstyle.css')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
 
@@ -435,7 +435,7 @@ a + b
     async def test_style_tag_content(self):
         await self.page.goto(self.url + 'empty')
         self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')
+        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
 

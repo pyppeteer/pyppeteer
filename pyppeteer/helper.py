@@ -114,7 +114,7 @@ def get_positive_int(obj: dict, name: str) -> int:
 
 def is_jsfunc(func: str) -> bool:  # not in puppeteer
     """Huristically check function or expression."""
-    fucn = func.strip()
+    func = func.strip()
     if func.startswith('function') or func.startswith('async '):
         return True
     elif '=>' in func:

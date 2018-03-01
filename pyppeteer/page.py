@@ -279,7 +279,8 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, options: Dict = None, **kwargs: str) -> str:
+    async def addScriptTag(self, options: Dict = None, **kwargs: str
+                           ) -> ElementHandle:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
@@ -289,7 +290,8 @@ class Page(EventEmitter):
         options.update(kwargs)
         return await frame.addScriptTag(options)
 
-    async def addStyleTag(self, options: Dict = None, **kwargs: str) -> str:
+    async def addStyleTag(self, options: Dict = None, **kwargs: str
+                          ) -> ElementHandle:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:

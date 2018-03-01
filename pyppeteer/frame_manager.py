@@ -316,7 +316,7 @@ class Frame(object):
                 addScriptContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(
+            return await self._context.evaluateHandle(  # type: ignore
                 addScriptContent, options['content'])
 
         raise ValueError(
@@ -344,18 +344,18 @@ class Frame(object):
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self._context.evaluateHandle(
+            return await self._context.evaluateHandle(  # type: ignore
                 addStyleUrl, options['url'])
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
-            return await self._context.evaluateHandle(
+            return await self._context.evaluateHandle(  # type: ignore
                 addStyleContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(
+            return await self._context.evaluateHandle(  # type: ignore
                 addStyleContent, options['content'])
 
         raise ValueError(
