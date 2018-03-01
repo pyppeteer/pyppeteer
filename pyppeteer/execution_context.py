@@ -33,22 +33,20 @@ class ExecutionContext(object):
     async def evaluateHandle(self, pageFunction: str, *args: Any
                              ) -> 'JSHandle':
         """Execute `pageFunction` on this context."""
-        # if not args:
-        #     _obj = await self._client.send('Runtime.evaluate', {
-        #         'expression': pageFunction,
-        #         'contextId': self._contextId,
-        #         'returnByValue': False,
-        #         'awaitPromiss': True,
-        #     })
-        #     exceptionDetails = _obj.get('exceptionDetails')
-        #     if exceptionDetails:
-        #         raise ElementHandleError(
-        #             'Evaluation failed: {}'.format(
-        #                 helper.getExceptionMessage(exceptionDetails)))
-        #     print(_obj, flush=True)
-        #     remoteObject = _obj.get('result')
-        #     print(remoteObject, flush=True)
-        #     return self._objectHandleFactory(remoteObject)
+        if not args and not helper.is_jsfunc(pageFunction):
+            _obj = await self._client.send('Runtime.evaluate', {
+                'expression': pageFunction,
+                'contextId': self._contextId,
+                'returnByValue': False,
+                'awaitPromiss': True,
+            })
+            exceptionDetails = _obj.get('exceptionDetails')
+            if exceptionDetails:
+                raise ElementHandleError(
+                    'Evaluation failed: {}'.format(
+                        helper.getExceptionMessage(exceptionDetails)))
+            remoteObject = _obj.get('result')
+            return self._objectHandleFactory(remoteObject)
 
         _obj = await self._client.send('Runtime.callFunctionOn', {
             'functionDeclaration': pageFunction,

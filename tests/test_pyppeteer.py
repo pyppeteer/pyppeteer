@@ -9,14 +9,16 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
+import math
 from pathlib import Path
+import sys
 import time
 import unittest
 
 from syncer import sync
 
 from pyppeteer import launch
-from pyppeteer.errors import PageError
+from pyppeteer.errors import PageError, ElementHandleError
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 
@@ -70,6 +72,104 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
 
     @sync
+    async def test_evaluate(self):
+        await self.page.evaluate('window.__injected = 12;')
+        injected = await self.page.evaluate('() => window.__injected')
+        self.assertEqual(injected, 12)
+
+    @sync
+    async def test_evaluate_return_value(self):
+        result = await self.page.evaluate('1 + 2')
+        self.assertEqual(result, 3)
+
+    @sync
+    async def test_evaluate_return_value_with_semicolon(self):
+        result = await self.page.evaluate('1 + 5;')
+        self.assertEqual(result, 6)
+
+    @sync
+    async def test_evaluate_return_value_with_comment(self):
+        result = await self.page.evaluate('2 + 5;\n//some comment')
+        self.assertEqual(result, 7)
+
+    @sync
+    async def test_evaluate_multi_expression(self):
+        result = await self.page.evaluate('''
+let a = 2;
+let b = 3;
+a + b
+        ''')
+        self.assertEqual(result, 5)
+
+    @sync
+    async def test_evaluate_error(self):
+        with self.assertRaises(ElementHandleError):
+            await self.page.evaluate('not.existing.object')
+
+    @sync
+    async def test_evaluate_func(self):
+        result = await self.page.evaluate('() => 3 * 7')
+        self.assertEqual(result, 21)
+
+    @unittest.skip('Promise is not awaited')
+    @sync
+    async def test_evaluate_func_promise(self):
+        result = await self.page.evaluate('() => Promise.resolve(8 * 7)')
+        self.assertEqual(result, 56)
+
+    @sync
+    async def test_evaluate_func_args(self):
+        result = await self.page.evaluate('(a, b) => a * b', 9, 3)
+        self.assertEqual(result, 27)
+
+    @sync
+    async def test_evaluate_func_complex_object(self):
+        obj = {'a': 1, 'b': 'b'}
+        result = await self.page.evaluate('(a) => a', obj)
+        self.assertEqual(result, obj)
+
+    @sync
+    async def test_evaluate_func_return_none(self):
+        result = await self.page.evaluate('() => NaN')
+        self.assertIs(result, None)
+
+    @sync
+    async def test_evaluate_func_return_minus_zero(self):
+        result = await self.page.evaluate('() => -0')
+        self.assertEqual(result, -0)
+
+    @sync
+    async def test_evaluate_func_return_inf(self):
+        result = await self.page.evaluate('() => Infinity')
+        self.assertEqual(result, math.inf)
+
+    @sync
+    async def test_evaluate_func_return_inf_minus(self):
+        result = await self.page.evaluate('() => -Infinity')
+        self.assertEqual(result, -math.inf)
+
+    @sync
+    async def test_evaluate_func_return_undefined(self):
+        result = await self.page.evaluate('() => undefined')
+        self.assertEqual(result, None)
+
+    @sync
+    async def test_evaluate_func_return_null(self):
+        result = await self.page.evaluate('() => null')
+        self.assertEqual(result, None)
+
+    @sync
+    async def test_evaluate_func_error(self):
+        with self.assertRaises(ElementHandleError):
+            await self.page.evaluate('() => not.existing.object')
+
+    @sync
+    async def test_primitive_handle(self):
+        handle = await self.page.evaluateHandle('() => 5')
+        is_five = await self.page.evaluate('(a) => Object.is(a, 5)', handle)
+        self.assertTrue(is_five)
+
+    @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
         text = await self.page.evaluate(
@@ -83,8 +183,10 @@ class TestPyppeteer(unittest.TestCase):
         elm1 = elms[0]
         elm2 = elms[1]
         func = 'elm => elm.id'
-        self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
-        self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
+        # 3.5 does not keep node order.
+        if sys.version_info >= (3, 6):
+            self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
+            self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
 
     @sync
     async def test_elements_eval(self):
@@ -198,7 +300,7 @@ class TestPyppeteer(unittest.TestCase):
         cookies = await self.page.cookies()
         self.assertEqual(cookies, [])
         await self.page.evaluate(
-            '() => {document.cookie = "username=John Doe"}'
+            'document.cookie = "username=John Doe"'
         )
         cookies = await self.page.cookies()
         self.assertEqual(cookies, [{
