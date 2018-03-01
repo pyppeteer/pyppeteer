@@ -110,3 +110,12 @@ def get_positive_int(obj: dict, name: str) -> int:
         raise ValueError(
             f'{name} must be positive integer: {value}')
     return value
+
+
+def is_jsfunc(func: str) -> bool:  # not in puppeteer
+    """Huristically check function or expression."""
+    if func.strip().startswith('function'):
+        return True
+    elif '=>' in func:
+        return True
+    return False
