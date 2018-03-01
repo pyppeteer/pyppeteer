@@ -11,6 +11,7 @@ Tests for `pyppeteer` module.
 import asyncio
 import math
 from pathlib import Path
+import sys
 import time
 import unittest
 
@@ -173,8 +174,10 @@ class TestPyppeteer(unittest.TestCase):
         elm1 = elms[0]
         elm2 = elms[1]
         func = 'elm => elm.id'
-        self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
-        self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
+        # 3.5 does not keep node order.
+        if sys.version_info >= (3, 6):
+            self.assertEqual(await self.page.evaluate(func, elm1), 'link1')
+            self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
 
     @sync
     async def test_elements_eval(self):
