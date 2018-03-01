@@ -280,15 +280,18 @@ class Frame(object):
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
         return await self.evaluate(contents)
 
-    async def addScriptTag(self, options: Dict) -> str:
+    async def addScriptTag(self, options: Dict) -> ElementHandle:
         """Add script tag to this frame."""
+        if self._context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+
         addScriptUrl = '''
-        function addScriptUrl(url) {
+        async function addScriptUrl(url) {
             const script = document.createElement('script');
             script.src = url;
-            const promise = new Promise(x => script.onload = x);
             document.head.appendChild(script);
-            return promise;
+            await new Promise(x => script.onload = x);
+            return script;
         }'''
 
         addScriptContent = '''
@@ -297,34 +300,38 @@ class Frame(object):
             script.type = 'text/javascript';
             script.text = content;
             document.head.appendChild(script);
+            return script;
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self.evaluate(addScriptUrl, options['url'])
+            return await self._context.evaluateHandle(  # type: ignore
+                addScriptUrl, options['url'])
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
                 re.sub(options['path'], '\n', ''))
-            return await self.evaluate(addScriptContent, contents)
+            return await self._context.evaluateHandle(  # type: ignore
+                addScriptContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self.evaluate(addScriptContent, options['content'])
+            return await self._context.evaluateHandle(
+                addScriptContent, options['content'])
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
 
-    async def addStyleTag(self, options: Dict) -> str:
+    async def addStyleTag(self, options: Dict) -> ElementHandle:
         """Add style tag to this frame."""
         addStyleUrl = '''
-        function (url) {
+        async function (url) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = url;
-            const promise = new Promise(x => link.onload = x);
             document.head.appendChild(link);
-            return promise;
+            await new Promise(x => link.onload = x);
+            return link;
         }'''
 
         addStyleContent = '''
@@ -333,19 +340,23 @@ class Frame(object):
             style.type = 'text/css';
             style.appendChild(document.createTextNode(content));
             document.head.appendChild(style);
+            return style;
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self.evaluate(addStyleUrl, options['url'])
+            return await self._context.evaluateHandle(
+                addStyleUrl, options['url'])
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
-            return await self.evaluate(addStyleContent, contents)
+            return await self._context.evaluateHandle(
+                addStyleContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self.evaluate(addStyleContent, options['content'])
+            return await self._context.evaluateHandle(
+                addStyleContent, options['content'])
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')

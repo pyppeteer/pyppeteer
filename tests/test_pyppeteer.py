@@ -384,7 +384,8 @@ a + b
     @sync
     async def test_script_tag_url(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(url='/static/injectedfile.js')
+        scriptHandle = await self.page.addScriptTag(url='/static/injectedfile.js')  # noqa: E501
+        self.assertIsNotNone(scriptHandle.asElement())
         self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
 
     @sync
@@ -392,13 +393,15 @@ a + b
         curdir = Path(__file__).parent
         path = str(curdir / 'static' / 'injectedfile.js')
         await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(path=path)
+        scriptHanlde = await self.page.addScriptTag(path=path)
+        self.assertIsNotNone(scriptHanlde.asElement())
         self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
 
     @sync
     async def test_script_tag_content(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(content='window.__injected = 35;')
+        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')
+        self.assertIsNotNone(scriptHandle.asElement())
         self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
 
     @sync
@@ -414,7 +417,8 @@ a + b
     async def test_style_tag_url(self):
         await self.page.goto(self.url + 'empty')
         self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        await self.page.addStyleTag(url='/static/injectedstyle.css')
+        styleHandle = await self.page.addStyleTag(url='/static/injectedstyle.css')
+        self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
 
     @sync
@@ -423,14 +427,16 @@ a + b
         path = str(curdir / 'static' / 'injectedstyle.css')
         await self.page.goto(self.url + 'empty')
         self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        await self.page.addStyleTag(path=path)
+        styleHandle = await self.page.addStyleTag(path=path)
+        self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
 
     @sync
     async def test_style_tag_content(self):
         await self.page.goto(self.url + 'empty')
         self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        await self.page.addStyleTag(content=' body {background-color: green;}')
+        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')
+        self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
 
 
