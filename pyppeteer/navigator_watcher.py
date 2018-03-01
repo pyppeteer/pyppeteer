@@ -95,7 +95,7 @@ class NavigatorWatcher:
 
         await asyncio.wait(navigationPromises,
                            return_when=concurrent.futures.FIRST_COMPLETED)
-        if not watchdog.done():
+        if self._timeout and not watchdog.done():
             watchdog.remove_done_callback(watchdog_cb)
         self._cleanup()
 
