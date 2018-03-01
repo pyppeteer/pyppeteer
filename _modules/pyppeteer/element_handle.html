@@ -6,7 +6,7 @@
   <head>
         <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.10 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.11 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -43,106 +43,66 @@
 
 <span class="sd">&quot;&quot;&quot;Element handle module.&quot;&quot;&quot;</span>
 
-<span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">os.path</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
-<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
 
-<span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
+<span class="c1"># from pyppeteer import helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span><span class="p">,</span> <span class="n">BrowserError</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.input</span> <span class="k">import</span> <span class="n">Mouse</span><span class="p">,</span> <span class="n">Touchscreen</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.execution_context</span> <span class="k">import</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">JSHandle</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">Frame</span>  <span class="c1"># noqa: F401</span>
+    <span class="c1"># from pyppeteer.page import Page  # noqa: F401</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ElementHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle">[docs]</a><span class="k">class</span> <span class="nc">ElementHandle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="ElementHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle">[docs]</a><span class="k">class</span> <span class="nc">ElementHandle</span><span class="p">(</span><span class="n">JSHandle</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;ElementHandle class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-                 <span class="n">mouse</span><span class="p">:</span> <span class="n">Mouse</span><span class="p">,</span> <span class="n">touchscreen</span><span class="p">:</span> <span class="n">Touchscreen</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                 <span class="n">remoteObject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Make new element handle object.&quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="p">:</span> <span class="n">Frame</span> <span class="o">=</span> <span class="n">frame</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span> <span class="o">=</span> <span class="n">remoteObject</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span> <span class="o">=</span> <span class="n">mouse</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span> <span class="o">=</span> <span class="n">touchscreen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_page</span> <span class="o">=</span> <span class="n">page</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">_remoteObjectId</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">[</span><span class="s1">&#39;objectId&#39;</span><span class="p">]</span>
+<div class="viewcode-block" id="ElementHandle.asElement"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.asElement">[docs]</a>    <span class="k">def</span> <span class="nf">asElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ElementHandle&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return as an element handle.&quot;&quot;&quot;</span></div>
+        <span class="k">return</span> <span class="bp">self</span>
 
-<div class="viewcode-block" id="ElementHandle.dispose"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.dispose">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">dispose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Release element handle.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span><span class="p">:</span>
-            <span class="k">return</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">True</span></div>
-        <span class="k">await</span> <span class="n">helper</span><span class="o">.</span><span class="n">releaseObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_scrollIntoViewIfNeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+            <span class="sd">&#39;&#39;&#39;element =&gt; {</span>
+<span class="sd">                if (!element.ownerDocument.contains(element))</span>
+<span class="sd">                    return &#39;Node is detached from document&#39;;</span>
+<span class="sd">                if (element.nodeType !== Node.ELEMENT_NODE)</span>
+<span class="sd">                    return &#39;Node is not of type HTMLElement&#39;;</span>
+<span class="sd">                element.scrollIntoViewIfNeeded();</span>
+<span class="sd">                return false;</span>
+<span class="sd">            }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ElementHandle.evaluate"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.evaluate">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;[Deprecated] Evaluate the pageFunction on browser.&quot;&quot;&quot;</span>
-        <span class="n">deprecation_msg</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s1">&#39;ElementHandle.evaluate is dropped in puppeteer. &#39;</span>
-            <span class="s1">&#39;Use Page.evaluate(..., ElementHandle) instead.&#39;</span>
-        <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;[DEPRECATED] &#39;</span> <span class="o">+</span> <span class="n">deprecation_msg</span><span class="p">)</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">deprecation_msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;ElementHandle is disposed!&#39;</span><span class="p">)</span>
-        <span class="n">_args</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;this&#39;</span><span class="p">]</span>
-        <span class="n">_args</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">args</span><span class="p">)</span>
-        <span class="n">stringifiedArgs</span> <span class="o">=</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_args</span><span class="p">)</span>
-        <span class="n">functionDeclaration</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">function() {{ return (</span><span class="si">{pageFunction}</span><span class="s1">)(</span><span class="si">{stringifiedArgs}</span><span class="s1">) }}</span>
-<span class="s1">&#39;&#39;&#39;</span>
-        <span class="n">objectId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">)</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
-            <span class="s1">&#39;Runtime.callFunctionOn&#39;</span><span class="p">,</span> <span class="p">{</span>
-                <span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectId</span><span class="p">,</span>
-                <span class="s1">&#39;functionDeclaration&#39;</span><span class="p">:</span> <span class="n">functionDeclaration</span><span class="p">,</span>
-                <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="p">}</span>
-        <span class="p">)</span>
-        <span class="n">exceptionDetails</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
-        <span class="n">remoteObject</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="nb">dict</span><span class="p">())</span>
-        <span class="k">if</span> <span class="n">exceptionDetails</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span>
-                <span class="s1">&#39;Evaluation failed: &#39;</span> <span class="o">+</span>
-                <span class="n">helper</span><span class="o">.</span><span class="n">getExceptionMessage</span><span class="p">(</span><span class="n">exceptionDetails</span><span class="p">)</span>
-            <span class="p">)</span></div>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">helper</span><span class="o">.</span><span class="n">serializeRemoteObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_visibleCenter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-        <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">element =&gt; {</span>
-<span class="s1">    if (!element.ownerDocument.contains(element))</span>
-<span class="s1">        return null;</span>
-<span class="s1">    element.scrollIntoViewIfNeeded();</span>
-<span class="s1">    let rect = element.getBoundingClientRect();</span>
-<span class="s1">    return {</span>
-<span class="s1">        x: (Math.max(rect.left, 0) + Math.min(rect.right, window.innerWidth)) / 2,</span>
-<span class="s1">        y: (Math.max(rect.top, 0) + Math.min(rect.bottom, window.innerHeight)) / 2</span>
-<span class="s1">    };</span>
-<span class="s1">}</span>
-<span class="s1">        &#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">center</span><span class="p">:</span>
-            <span class="c1"># raise Exception(&#39;No node found for selector: &#39; + selector)</span>
-            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;No node found for selector: &#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">center</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_visibleCenter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">box</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingBox</span><span class="p">()</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+            <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="p">}</span>
 
 <div class="viewcode-block" id="ElementHandle.hover"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.hover">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">hover</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Move mouse over this element.&quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ElementHandle.click"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.click">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Click this element.&quot;&quot;&quot;</span>
@@ -152,7 +112,7 @@
         <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mouse</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
 
 <div class="viewcode-block" id="ElementHandle.uploadFile"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.uploadFile">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">uploadFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">filePaths</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Upload files.&quot;&quot;&quot;</span>
@@ -163,23 +123,57 @@
             <span class="p">{</span><span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectId</span><span class="p">,</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="n">files</span><span class="p">}</span></div>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="ElementHandle.attribute"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.attribute">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;[Deprecated] Get attribute value of the `key` of this element.&quot;&quot;&quot;</span>
-        <span class="n">deprecation_msg</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s1">&#39;ElementHandle.attribute is dropped in puppeteer. &#39;</span>
-            <span class="s1">&#39;Use Page.querySelectorEval or Page.Jeval instead.&#39;</span>
-        <span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;[DEPRECATED]&#39;</span> <span class="o">+</span> <span class="n">deprecation_msg</span><span class="p">)</span>
-        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="n">deprecation_msg</span><span class="p">,</span> <span class="ne">DeprecationWarning</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span></div>
-            <span class="s1">&#39;(element, key) =&gt; element.getAttribute(key)&#39;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
-
 <div class="viewcode-block" id="ElementHandle.tap"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.tap">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">tap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Tap this element.&quot;&quot;&quot;</span>
         <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ElementHandle.focus"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.focus">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">focus</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Focus this element.&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span></div>
+            <span class="s1">&#39;element =&gt; element.focus()&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ElementHandle.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.type">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Type characters on this element.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ElementHandle.press"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.press">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Type key on this element.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="ElementHandle.boundingBox"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.boundingBox">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">boundingBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return bounding box size of this node.&quot;&quot;&quot;</span>
+        <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;DOM.getBoxModel&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">),</span>
+        <span class="p">})</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;model&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;node is detached from document&#39;</span><span class="p">)</span>
+
+        <span class="n">quad</span> <span class="o">=</span> <span class="n">model</span><span class="p">[</span><span class="s1">&#39;border&#39;</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span> <span class="o">-</span> <span class="n">x</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span> <span class="o">-</span> <span class="n">y</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">}</span>
+
+<div class="viewcode-block" id="ElementHandle.screenshot"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.screenshot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Take a screenshot of this element.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">options</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">boundingBox</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingBox</span><span class="p">()</span>
+        <span class="n">opt</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;clip&#39;</span><span class="p">:</span> <span class="n">boundingBox</span><span class="p">}</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
 </pre></div>
 
           </div>
