@@ -93,6 +93,15 @@ class TestPyppeteer(unittest.TestCase):
         self.assertEqual(result, 7)
 
     @sync
+    async def test_evaluate_multi_expression(self):
+        result = await self.page.evaluate('''
+let a = 2;
+let b = 3;
+a + b
+        ''')
+        self.assertEqual(result, 5)
+
+    @sync
     async def test_evaluate_error(self):
         with self.assertRaises(ElementHandleError):
             await self.page.evaluate('not.existing.object')
