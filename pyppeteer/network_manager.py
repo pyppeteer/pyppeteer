@@ -38,6 +38,7 @@ class NetworkManager(EventEmitter):
         self._requestIdToRequest: Dict[str, Request] = dict()
         self._interceptionIdToRequest: Dict[str, Request] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
+        self._offline: bool = False
         self._credentials: Optional[Dict[str, str]] = None
         self._attemptedAuthentications: Set[str] = set()
         self._userRequestInterceptionEnabled = False
@@ -71,6 +72,18 @@ class NetworkManager(EventEmitter):
     def extraHTTPHeaders(self) -> Dict[str, str]:
         """Get extra http headers."""
         return dict(**self._extraHTTPHeaders)
+
+    async def setOfflineMode(self, value: bool) -> None:
+        """Change offline mode enable/disable."""
+        if self._offline == value:
+            return
+        self._offline = value
+        await self._client.send('Network.emulateNetworkConditions', {
+            'offline': self._offline,
+            'latency': 0,
+            'downloadThroughput': -1,
+            'uploadThroughput': -1,
+        })
 
     async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
@@ -280,6 +293,7 @@ class Request(object):
         self._completePromise = asyncio.get_event_loop().create_future()
 
         self.url = url
+        self.resourceType = resourceType.lower()
         self.method = payload.get('method', '')
         self.postData = payload.get('postData', '')
         self.headers = payload.get('headers', {})

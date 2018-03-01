@@ -114,11 +114,10 @@ browser = launch(headless=True)
 ### Element selector method name (`$` -> `querySelector`)
 
 In python, `$` is not usable for method name.
-So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and
-`ElementHandle.querySelector()` instead of `ElementHandle.$()`.
-Pyppeteer has shorthand of this method, `Page.J()` and `ElementHandle.J()`.
+So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and `Page.querySelectorAll()` instead of `Page.$$()`.
+Pyppeteer has shorthands for these methods, `Page.J()` and `Page.JJ()`.
 
-### Argument of `Page.evaluate()` / `ElementHandle.evaluate()`
+### Argument of `Page.evaluate()` and `Page.querySelectorEval()`
 
 Puppeteer's version of `evaluate()` takes JavaScript raw function, but
 pyppeteer takes string of JavaScript function.
@@ -127,7 +126,7 @@ Example to get element's inner text:
 
 ```python
 element = await page.querySelector('h1')
-title = await element.evaluate('(element) => element.textContent')
+title = await page.evaluate('(element) => element.textContent', element)
 ```
 
 ## Future Plan

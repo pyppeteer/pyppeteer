@@ -10,6 +10,7 @@ from typing import Any, Callable, Dict, List
 from pyee import EventEmitter
 
 from pyppeteer.connection import Session
+from pyppeteer.errors import ElementHandleError
 
 
 def evaluationString(fun: str, *args: Any) -> str:
@@ -64,37 +65,24 @@ unserializableValueMap = {
 }
 
 
-async def serializeRemoteObject(client: Session, remoteObject: dict) -> Any:
-    """Serialize remote object."""
-    if 'unserializableValue' in remoteObject:
-        unserializableValue = remoteObject.get('unserializableValue')
-        if unserializableValue in unserializableValueMap:
-            return unserializableValueMap[unserializableValue]
+def valueFromRemoteObject(remoteObject: Dict) -> Any:
+    """Serialize value of remote object."""
+    if remoteObject.get('objectId'):
+        raise ElementHandleError('Cannot extract value when objectId is given')
+    value = remoteObject.get('unserializableValue')
+    if value:
+        if value == '-0':
+            return -0
+        elif value == 'NaN':
+            return None
+        elif value == 'Infinity':
+            return math.inf
+        elif value == '-Infinity':
+            return -math.inf
         else:
-            # BrowserError may be better
-            raise ValueError(
-                'Unsupported unserializable value: ' + str(unserializableValue)
-            )
-
-    objectId = remoteObject.get('objectId')
-    if not objectId:
-        return remoteObject.get('value')
-
-    subtype = remoteObject.get('subtype')
-    if subtype == 'promise':
-        return remoteObject.get('description')
-    try:
-        response = await client.send('Runtime.callFunctionOn', {
-            'objectId': objectId,
-            'functionDeclaration': 'function() { return this; }',
-            'returnByValue': True,
-        })
-        return response.get('result', {}).get('value')
-    except Exception:
-        # Return description for unserializable object, e.g. 'window'.
-        return remoteObject.get('description')
-    finally:
-        await releaseObject(client, remoteObject)
+            raise ElementHandleError(
+                'Unsupported unserializable value: {}'.format(value))
+    return remoteObject.get('value')
 
 
 async def releaseObject(client: Session, remoteObject: dict) -> None:
@@ -122,3 +110,12 @@ def get_positive_int(obj: dict, name: str) -> int:
         raise ValueError(
             f'{name} must be positive integer: {value}')
     return value
+
+
+def is_jsfunc(func: str) -> bool:  # not in puppeteer
+    """Huristically check function or expression."""
+    if func.strip().startswith('function'):
+        return True
+    elif '=>' in func:
+        return True
+    return False

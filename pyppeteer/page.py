@@ -10,6 +10,7 @@ import math
 import mimetypes
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+import warnings
 
 from pyee import EventEmitter
 
@@ -19,6 +20,7 @@ from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
+from pyppeteer.execution_context import JSHandle  # noqa: F401
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
@@ -58,6 +60,25 @@ class Page(EventEmitter):
         a5={'width': 5.83, 'height': 8.27},
     )
 
+    @staticmethod
+    async def create(client: Session, ignoreHTTPSErrors: bool = False,
+                     appMode: bool = False,
+                     screenshotTaskQueue: list = None) -> 'Page':
+        """Async function which make new page."""
+        await client.send('Network.enable', {}),
+        await client.send('Page.enable', {}),
+        await client.send('Runtime.enable', {}),
+        await client.send('Security.enable', {}),
+        await client.send('Performance.enable', {}),
+        if ignoreHTTPSErrors:
+            await client.send('Security.setOverrideCertificateErrors',
+                              {'override': True})
+        page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
+        await page.goto('about:blank')
+        if not appMode:
+            await page.setViewport({'width': 800, 'height': 600})
+        return page
+
     def __init__(self, client: Session,
                  ignoreHTTPSErrors: bool = True,
                  screenshotTaskQueue: list = None,
@@ -68,7 +89,7 @@ class Page(EventEmitter):
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
-        self._frameManager = FrameManager(client, self._mouse, self._touchscreen)  # noqa: E501
+        self._frameManager = FrameManager(client, self)
         self._networkManager = NetworkManager(client)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
@@ -110,6 +131,8 @@ class Page(EventEmitter):
                   lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
+        client.on('Performance.metrics',
+                  lambda event: self._emitMetrics(event))
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
@@ -151,6 +174,10 @@ class Page(EventEmitter):
         """Enable request interception."""
         return await self._networkManager.setRequestInterceptionEnabled(value)
 
+    def setOfflineMode(self, enabled: bool) -> Awaitable[None]:
+        """Set offline mode enable/disable."""
+        return self._networkManager.setOfflineMode(enabled)
+
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
@@ -168,6 +195,25 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelector(selector)
 
+    async def evaluateHandle(self, pageFunction: str, *args: Any
+                             ) -> JSHandle:
+        """Execute function on this page."""
+        if not self.mainFrame:
+            raise PageError('no main frame.')
+        if not self.mainFrame.executionContext:
+            raise PageError('No context.')
+        return await self.mainFrame.executionContext.evaluateHandle(
+            pageFunction, *args)
+
+    async def queryObject(self, prototypeHandle: JSHandle) -> JSHandle:
+        """Send query to the object."""  # need better doc
+        if not self.mainFrame:
+            raise PageError('no main frame.')
+        if not self.mainFrame.executionContext:
+            raise PageError('No context.')
+        return await self.mainFrame.executionContext.queryObject(
+            prototypeHandle)
+
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:
         """Execute function on element which matches selector."""
@@ -176,8 +222,15 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str
-                               ) -> List['ElementHandle']:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str,
+                                   *args: Any) -> Optional[Any]:
+        """Get Element which matches `selector`."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.querySelectorAllEval(selector, pageFunction, *args)
+
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
         """Get Element which matches `selector`."""
         frame = self.mainFrame
         if not frame:
@@ -190,6 +243,8 @@ class Page(EventEmitter):
     Jeval = querySelectorEval
     #: alias to querySelectorAll
     JJ = querySelectorAll
+    #: alias to querySelectorAllEval
+    JJeval = querySelectorAllEval
 
     async def cookies(self, *urls: str) -> dict:
         """Get cookies."""
@@ -224,15 +279,29 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, url: str) -> str:
+    async def addScriptTag(self, options: Dict = None, **kwargs: str) -> str:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        return await frame.addScriptTag(url)
+        if options is None:
+            options = {}
+        options.update(kwargs)
+        return await frame.addScriptTag(options)
+
+    async def addStyleTag(self, options: Dict = None, **kwargs: str) -> str:
+        """Add script tag to this page."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        if options is None:
+            options = {}
+        options.update(kwargs)
+        return await frame.addStyleTag(options)
 
     async def injectFile(self, filePath: str) -> str:
-        """Inject file to this page."""
+        """[Deprecated] Inject file to this page."""
+        warnings.warn('Page.injectFile is deprecated.', DeprecationWarning)
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -288,6 +357,24 @@ function addPageBinding(bindingName) {
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
 
+    async def getMetrics(self) -> Dict[str, Any]:
+        """Get metrics."""
+        response = await self._client.send('Performance.getMetrics')
+        return self._buildMetricsObject(response['metrics'])
+
+    def _emitMetrics(self, event: Dict) -> None:
+        self.emit(Page.Events.Metrics, {
+            'title': event['title'],
+            'metrics': self._buildMetricsObject(event['metrics']),
+        })
+
+    def _buildMetricsObject(self, metrics: List) -> Dict[str, Any]:
+        result = {}
+        for metric in metrics or []:
+            if metric['name'] in supportedMetrics:
+                result[metric['name']] = metric['value']
+        return result
+
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
         self.emit(Page.Events.PageError, PageError(message))
@@ -323,7 +410,7 @@ function deliverResult(name, seq, result) {
         _values = []
         for arg in _args:
             _values.append(asyncio.ensure_future(
-                helper.serializeRemoteObject(self._client, arg)))
+                helper.valueFromRemoteObject(arg)))
         values = await asyncio.gather(*_values)
         self.emit(Page.Events.Console, *values)
 
@@ -395,6 +482,7 @@ function(html) {
                                     dict(url=url, referrer=referrer))
         except Exception:
             watcher.cancel()
+            helper.removeEventListeners([listener])
             raise
         error = await navigationPromise
         helper.removeEventListeners([listener])
@@ -431,12 +519,13 @@ function(html) {
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
+        error = await watcher.waitForNavigation()
         helper.removeEventListeners([listener])
 
-        error = await watcher.waitForNavigation()
         if error:
             raise error
-        return responses.get(self.url, None)
+        response = responses.get(self.url, None)
+        return response
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
@@ -643,7 +732,8 @@ function(html) {
         return buffer
 
     async def plainText(self) -> str:
-        """Get page content as plain text."""
+        """[Deprecated] Get page content as plain text."""
+        warnings.warn('page.plainText is deprecated.', DeprecationWarning)
         return await self.evaluate('() => document.body.innerText')
 
     async def title(self) -> str:
@@ -690,29 +780,36 @@ function(html) {
         await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
-    async def type(self, text: str, options: dict = None, **kwargs: Any
-                   ) -> None:
-        """Type text on the page."""
-        options = options or dict()
-        options.update(kwargs)
-        delay = options.get('delay', 0)
-        last: asyncio.Future = asyncio.ensure_future(asyncio.sleep(0))
-        for char in text:
-            last = asyncio.ensure_future(
-                self.press(char, {'text': char, 'delay': delay})
-            )
-            await asyncio.sleep(delay)
-        await last
+    async def select(self, selector: str, *values: Any) -> None:
+        """Select option(s)."""
+        await self.querySelectorEval(selector, '''
+(element, values) => {
+    if (element.nodeName.toLowerCase() !== 'select')
+        throw new Error('Element is not a <select> element.');
 
-    async def press(self, key: str, options: dict = None, **kwargs: Any
-                    ) -> None:
-        """Press key."""
+    const options = Array.from(element.options);
+
+    if (element.multiple) {
+        for (const option of options)
+            option.selected = values.includes(option.value);
+    } else {
+        element.value = values.shift();
+    }
+    element.dispatchEvent(new Event('input', { 'bubbles': true }));
+    element.dispatchEvent(new Event('change', { 'bubbles': true }));
+}
+        ''', values)
+
+    async def type(self, selector: str, text: str, options: dict = None,
+                   **kwargs: Any) -> None:
+        """Type text on the selected element."""
         options = options or dict()
         options.update(kwargs)
-        delay = options.get('delay', 0)
-        await self._keyboard.down(key, options)
-        await asyncio.sleep(delay)
-        await self._keyboard.up(key)
+        handle = await self.querySelector(selector)
+        if handle is None:
+            raise PageError('Cannot find {} on this page'.format(selector))
+        await handle.type(text, options)
+        await handle.dispose()
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
@@ -738,6 +835,23 @@ function(html) {
         if not frame:
             raise PageError('no main frame.')
         return frame.waitForFunction(pageFunction, options, *args, **kwargs)
+
+
+supportedMetrics = (
+  'Timestamp',
+  'Documents',
+  'Frames',
+  'JSEventListeners',
+  'Nodes',
+  'LayoutCount',
+  'RecalcStyleCount',
+  'LayoutDuration',
+  'RecalcStyleDuration',
+  'ScriptDuration',
+  'TaskDuration',
+  'JSHeapUsedSize',
+  'JSHeapTotalSize',
+)
 
 
 unitToPixels = {
@@ -774,21 +888,14 @@ def convertPrintParameterToInches(parameter: Union[None, int, float, str]
     return pixels / 96
 
 
-async def create_page(client: Session, ignoreHTTPSErrors: bool = False,
-                      screenshotTaskQueue: list = None) -> Page:
-    """Async function which make new page."""
-    await client.send('Network.enable', {}),
-    await client.send('Page.enable', {}),
-    await client.send('Runtime.enable', {}),
-    await client.send('Security.enable', {}),
-    if ignoreHTTPSErrors:
-        await client.send('Security.setOverrideCertificateErrors',
-                          {'override': True})
-    page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
-    await page.goto('about:blank')
-    await page.setViewport({'width': 800, 'height': 600})
-    return page
+class ConsoleMessage(object):
+    """Console message class."""
+
+    def __init__(self, type: str, text: str, args: List) -> None:
+        self.type = type
+        self.text = text
+        self.args = args
 
 
 #: alias to :func:`create_page()`
-craete = create_page
+craete = Page.create

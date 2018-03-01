@@ -3,20 +3,24 @@
 
 """Browser module."""
 
-from typing import Callable
+from typing import Callable, Dict
 
 from pyppeteer.connection import Connection
-from pyppeteer.page import Page, create_page
+from pyppeteer.page import Page
 
 
 class Browser(object):
     """Browser class."""
 
-    def __init__(self, connection: Connection, ignoreHTTPSErrors: bool,
-                 closeCallback: Callable[[], None]) -> None:
+    def __init__(self, connection: Connection, options: Dict = None,
+                 closeCallback: Callable[[], None] = None) -> None:
         """Make new browser object."""
+        if options is None:
+            options = {}
         self._connection = connection
-        self._ignoreHTTPSErrors = ignoreHTTPSErrors
+        self._ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
+        if closeCallback is None:
+            raise TypeError('`closeCallback` is required.')
         self._closeCallback = closeCallback
 
     async def newPage(self) -> Page:
@@ -25,7 +29,7 @@ class Browser(object):
             'Target.createTarget',
             {'url': 'about:blank'})).get('targetId')
         client = await self._connection.createSession(targetId)
-        page = await create_page(client)
+        page = await Page.create(client)
         return page
 
     async def close(self) -> None:

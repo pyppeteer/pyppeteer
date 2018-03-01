@@ -31,6 +31,7 @@ CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 DEFAULT_ARGS = [
     '--disable-background-networking',
     '--disable-background-timer-throttling',
+    '--disable-browser-side-navigation',
     '--disable-client-side-phishing-detection',
     '--disable-default-apps',
     '--disable-extensions',
@@ -39,12 +40,15 @@ DEFAULT_ARGS = [
     '--disable-prompt-on-repost',
     '--disable-sync',
     '--disable-translate',
-    '--enable-automation',
     '--metrics-recording-only',
     '--no-first-run',
-    '--password-store=basic',
     '--remote-debugging-port=0',
     '--safebrowsing-disable-auto-update',
+]
+
+AUTOMATION_ARGS = [
+    '--enable-automation',
+    '--password-store=basic',
     '--use-mock-keychain',
 ]
 
@@ -57,8 +61,18 @@ class Launcher(object):
         self.options = options or dict()
         self.options.update(kwargs)
         self.chrome_args = DEFAULT_ARGS
+        if self.options.get('appMode', False):
+            self.options['headless'] = False
+        else:
+            self.chrome_args.extend(AUTOMATION_ARGS)
+
         self._tmp_user_data_dir: Optional[str] = None
         self._parse_args()
+
+        if self.options.get('devtools'):
+            self.chrome_args.append('--auto-open-devtools-for-tabs')
+            self.options['headless'] = False
+
         if 'headless' not in self.options or self.options.get('headless'):
             self.chrome_args = self.chrome_args + [
                 '--headless',
@@ -96,10 +110,12 @@ class Launcher(object):
 
     def launch(self) -> Browser:
         """Start chromium process."""
+        env = self.options.get('env', {})
         self.proc = subprocess.Popen(
             self.cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            env=env,
         )
         atexit.register(self.killChrome)
         import time
@@ -122,9 +138,7 @@ class Launcher(object):
         logger.debug(m.group(0))
         connectionDelay = self.options.get('slowMo', 0)
         connection = Connection(m.group(1).strip(), connectionDelay)
-        return Browser(connection,
-                       self.options.get('ignoreHTTPSErrors', False),
-                       self.killChrome)
+        return Browser(connection, self.options, self.killChrome)
 
     def killChrome(self) -> None:
         """Terminate chromium process."""
@@ -133,12 +147,13 @@ class Launcher(object):
             self.proc.terminate()
             self.proc.wait()
 
-    async def connect(self, browserWSEndpoint: str,
-                      ignoreHTTPSErrors: bool = False) -> Browser:
+    async def connect(self, options: Dict = None) -> Browser:
         """Not Implemented."""
         raise NotImplementedError('NotImplemented')
+        # if options is None:
+        #     options = {}
         # connection = await Connection.create(browserWSEndpoint)
-        # return Browser(connection, bool(ignoreHTTPSErrors), self.killChrome)
+        # return Browser(connection, options)
 
 
 def launch(options: dict = None, **kwargs: Any) -> Browser:
