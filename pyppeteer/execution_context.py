@@ -38,7 +38,7 @@ class ExecutionContext(object):
                 'expression': pageFunction,
                 'contextId': self._contextId,
                 'returnByValue': False,
-                'awaitPromiss': True,
+                'awaitPromise': True,
             })
             exceptionDetails = _obj.get('exceptionDetails')
             if exceptionDetails:
@@ -53,7 +53,7 @@ class ExecutionContext(object):
             'executionContextId': self._contextId,
             'arguments': [self._convertArgument(arg) for arg in args],
             'returnByValue': False,
-            'awaitPromiss': True,
+            'awaitPromise': True,
         })
         exceptionDetails = _obj.get('exceptionDetails')
         if exceptionDetails:
