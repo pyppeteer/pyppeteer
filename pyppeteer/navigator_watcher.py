@@ -6,11 +6,11 @@
 import asyncio
 import concurrent.futures
 
-from typing import Any, Awaitable, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
-from pyppeteer.errors import NetworkError
+from pyppeteer.errors import NetworkError, TimeoutError
 
 if TYPE_CHECKING:
     from typing import Callable, List, Set  # noqa: F401
@@ -46,19 +46,6 @@ class NavigatorWatcher:
         navigationPromises = list()
         loop = asyncio.get_event_loop()
 
-        def watchdog_cb(fut: Awaitable) -> None:
-            self._raise_error(asyncio.TimeoutError(
-                'Navigation Timeout Exceeded: {} ms exceeded'.format(
-                    self._timeout)
-            ))
-
-        if self._timeout:
-            watchdog: asyncio.Future = asyncio.ensure_future(
-                asyncio.sleep(self._timeout / 1000))
-            self._maximumTimer = watchdog
-            watchdog.add_done_callback(watchdog_cb)
-            navigationPromises.append(watchdog)
-
         if not self._ignoreHTTPSErrors:
             certificateError = loop.create_future()
             self._eventListeners.append(
@@ -83,21 +70,24 @@ class NavigatorWatcher:
             navigationPromises.append(loadEventFired)
         else:
             self._eventListeners.extend((
-                helper.addEventListener(self._client, 'Network.requestWillBeSent', self._onLoadingStarted),  # noqa
-                helper.addEventListener(self._client, 'Network.loadingFinished', self._onLoadingCompleted),  # noqa
-                helper.addEventListener(self._client, 'Network.loadingFailed', self._onLoadingCompleted),  # noqa
-                helper.addEventListener(self._client, 'Network.webSocketCreated', self._onLoadingStarted),  # noqa
-                helper.addEventListener(self._client, 'Network.webSocketClosed', self._onLoadingCompleted),  # noqa
+                helper.addEventListener(self._client, 'Network.requestWillBeSent', self._onLoadingStarted),  # noqa: E501
+                helper.addEventListener(self._client, 'Network.loadingFinished', self._onLoadingCompleted),  # noqa: E501
+                helper.addEventListener(self._client, 'Network.loadingFailed', self._onLoadingCompleted),  # noqa: E501
+                helper.addEventListener(self._client, 'Network.webSocketCreated', self._onLoadingStarted),  # noqa: E501
+                helper.addEventListener(self._client, 'Network.webSocketClosed', self._onLoadingCompleted),  # noqa: E501
             ))
             networkIdle = loop.create_future()
             self._networkIdleCallback = lambda f: networkIdle.set_result(None)
             navigationPromises.append(networkIdle)
 
-        await asyncio.wait(navigationPromises,
-                           return_when=concurrent.futures.FIRST_COMPLETED)
-        if self._timeout and not watchdog.done():
-            watchdog.remove_done_callback(watchdog_cb)
+        done, pending = await asyncio.wait(
+            navigationPromises,
+            timeout=self._timeout / 1000 if self._timeout else None,
+            return_when=concurrent.futures.FIRST_COMPLETED,
+        )
         self._cleanup()
+        if not done:
+            raise TimeoutError(f'Navigation Timeout Exceeded: {self._timeout} ms exceeded')  # noqa: E501
 
     def cancel(self) -> None:
         """Cancel navigation."""
@@ -120,7 +110,6 @@ class NavigatorWatcher:
     def _cleanup(self, ) -> None:
         helper.removeEventListeners(self._eventListeners)
         clearTimeout(self._idleTimer)
-        clearTimeout(self._maximumTimer)
 
 
 def clearTimeout(fut: Optional[Union[asyncio.Future, asyncio.Handle]]) -> None:

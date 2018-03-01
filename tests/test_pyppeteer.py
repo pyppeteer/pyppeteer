@@ -18,7 +18,7 @@ import unittest
 from syncer import sync
 
 from pyppeteer import launch
-from pyppeteer.errors import PageError, ElementHandleError
+from pyppeteer.errors import PageError, ElementHandleError, TimeoutError
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
 
@@ -54,6 +54,15 @@ class TestPyppeteer(unittest.TestCase):
         self.assertTrue(self.elm)
         await self.page.goto('about:blank')
         self.assertEqual(self.page.url, 'about:blank')
+
+    @sync
+    async def test_timeout(self):
+        with self.assertRaises(TimeoutError):
+            await self.page.goto('http://example.com', timeout=1)
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto('http://example.com', timeout=0)
 
     @sync
     async def test_get_https(self):

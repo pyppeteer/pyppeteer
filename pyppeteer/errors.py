@@ -3,6 +3,8 @@
 
 """Exceptions for pyppeteer package."""
 
+import asyncio
+
 
 class PyppeteerError(Exception):  # noqa: D204
     """Base exception for pyppeteer."""
@@ -26,4 +28,9 @@ class NetworkError(PyppeteerError):  # noqa: D204
 
 class PageError(PyppeteerError):  # noqa: D204
     """Page/Frame related exception."""
+    pass
+
+
+class TimeoutError(asyncio.TimeoutError):  # noqa: D204
+    """Timeout Error class."""
     pass
