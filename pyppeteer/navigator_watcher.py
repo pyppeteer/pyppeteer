@@ -40,7 +40,7 @@ class NavigatorWatcher:
         raise error
 
     async def waitForNavigation(self) -> None:
-        """Wait until navigatoin completes."""
+        """Wait until navigation completes."""
         self._requestIds: Set[str] = set()
         self._eventListeners: List[dict] = list()
         navigationPromises = list()
