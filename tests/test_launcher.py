@@ -3,6 +3,9 @@
 
 import unittest
 
+from syncer import sync
+
+from pyppeteer import launch
 from pyppeteer.launcher import Launcher
 from pyppeteer.chromium_downloader import chromium_excutable
 
@@ -46,3 +49,9 @@ class TestLauncher(unittest.TestCase):
         self.check_default_args(launcher)
         self.assertIn('--user-data-dir=/path/to/profile', launcher.chrome_args)
         self.assertIsNone(launcher._tmp_user_data_dir)
+
+    @sync
+    async def test_close_no_connection(self):
+        browser = launch(args=['--no-sandbox'])
+        await browser.close()
+
