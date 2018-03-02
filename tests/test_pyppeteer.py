@@ -332,7 +332,7 @@ a + b
         html = await self.page.J('html')
         elements = await html.JJ('div')
         self.assertEqual(len(elements), 2)
-        if sys.version_info > (3, 5):
+        if sys.version_info >=  (3, 6):
             result = []
             for elm in elements:
                 result.append(
