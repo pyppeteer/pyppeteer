@@ -95,17 +95,21 @@ class ElementHandle(JSHandle):
         await self.executionContext.evaluate(
             'element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None) -> None:
+    async def type(self, text: str, options: Dict = None, **kwargs: Any
+                   ) -> None:
         """Type characters on this element."""
         if options is None:
             options = {}
+        options.update(kwargs)
         await self.focus()
         await self._page.keyboard.type(text, options)
 
-    async def press(self, key: str, options: Dict = None) -> None:
+    async def press(self, key: str, options: Dict = None, **kwargs: Any
+                    ) -> None:
         """Type key on this element."""
         if options is None:
             options = {}
+        options.update(kwargs)
         await self.focus()
         await self._page.keyboard.press(key, options)
 
@@ -125,10 +129,11 @@ class ElementHandle(JSHandle):
         height = max(quad[1], quad[3], quad[5], quad[7]) - y
         return {'x': x, 'y': y, 'width': width, 'height': height}
 
-    async def screenshot(self, options: Dict = None) -> bytes:
+    async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
         """Take a screenshot of this element."""
         if options is None:
             options = {}
+        options.update(kwargs)
         await self._scrollIntoViewIfNeeded()
         boundingBox = await self.boundingBox()
         opt = {'clip': boundingBox}
