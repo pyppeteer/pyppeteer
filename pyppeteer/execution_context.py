@@ -125,7 +125,7 @@ class JSHandle(object):
         """Get all properties."""
         response = await self._client.send('Runtime.getProperties', {
             'objectId': self._remoteObject.get('objectId', ''),
-            'ownProperties': True
+            'ownProperties': True,
         })
         result = dict()
         for prop in response['result']:

@@ -180,6 +180,28 @@ a + b
         self.assertTrue(is_five)
 
     @sync
+    async def test_jshandle_json(self) -> None:
+        handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
+        json = await handle1.jsonValue()
+        self.assertEqual(json, {'foo': 'bar'})
+
+    @sync
+    async def test_jshandle_get_property(self) -> None:
+        handle1 = await self.page.evaluateHandle(
+            '() => ({one: 1, two: 2, three: 3})'
+        )
+        handle2 = await handle1.getProperty('two')
+        self.assertEqual(await handle2.jsonValue(), 2)
+
+    @sync
+    async def test_jshandle_get_properties(self) -> None:
+        handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
+        properties = await handle1.getProperties()
+        foo = properties.get('foo')
+        self.assertTrue(foo)
+        self.assertEqual(await foo.jsonValue(), 'bar')
+
+    @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
         text = await self.page.evaluate(
@@ -219,6 +241,50 @@ a + b
     async def test_element_attr(self):
         _id = await self.page.querySelectorEval('h1', ('(elm) => elm.id'))
         self.assertEqual('hello', _id)
+
+    @sync
+    async def test_element_handle_J(self):
+        await self.page.setContent('''
+<html><body><div class="second"><div class="inner">A</div></div></body></html>
+        ''')
+        html = await self.page.J('html')
+        second = await html.J('.second')
+        inner = await second.J('.inner')
+        content = await self.page.evaluate('e => e.textContent', inner)
+        self.assertEqual(content, 'A')
+
+    @sync
+    async def test_element_handle_J_none(self):
+        await self.page.setContent('''
+<html><body><div class="second"><div class="inner">A</div></div></body></html>
+        ''')
+        html = await self.page.J('html')
+        second = await html.J('.third')
+        self.assertIsNone(second)
+
+    @sync
+    async def test_element_handle_JJ(self):
+        await self.page.setContent('''
+<html><body><div>A</div><br/><div>B</div></body></html>
+        ''')
+        html = await self.page.J('html')
+        elements = await html.JJ('div')
+        self.assertEqual(len(elements), 2)
+        result = []
+        for elm in elements:
+            result.append(
+                await self.page.evaluate('(e) => e.textContent', elm)
+            )
+        self.assertEqual(result, ['A', 'B'])
+
+    @sync
+    async def test_element_handle_JJ_empty(self):
+        await self.page.setContent('''
+<html><body><span>A</span><br/><span>B</span></body></html>
+        ''')
+        html = await self.page.J('html')
+        elements = await html.JJ('div')
+        self.assertEqual(len(elements), 0)
 
     @sync
     async def test_click(self):

@@ -5,7 +5,7 @@
 
 import logging
 import os.path
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 # from pyppeteer import helper
 from pyppeteer.connection import Session
@@ -139,3 +139,35 @@ class ElementHandle(JSHandle):
         opt = {'clip': boundingBox}
         opt.update(options)
         return await self._page.screenshot(opt)
+
+    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+        """Return first element which matches `selector`."""
+        handle = await self.executionContext.evaluateHandle(
+            '(element, selector) => element.querySelector(selector)',
+            self, selector,
+        )
+        element = handle.asElement()
+        if element:
+            return element
+        await handle.dispose()
+        return None
+
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+        """Return all elements which match `selector`."""
+        arrayHandle = await self.executionContext.evaluateHandle(
+            '(element, selector) => element.querySelectorAll(selector)',
+            self, selector,
+        )
+        properties = await arrayHandle.getProperties()
+        await arrayHandle.dispose()
+        result = []
+        for prop in properties.values():
+            elementHandle = prop.asElement()
+            if elementHandle:
+                result.append(elementHandle)
+        return result  # type: ignore
+
+    #: alias to querySelector
+    J = querySelector
+    #: alias to querySelectorAll
+    JJ = querySelectorAll
