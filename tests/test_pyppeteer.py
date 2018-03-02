@@ -439,6 +439,35 @@ a + b
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
 
+    @sync
+    async def test_select_error(self):
+        await self.page.goto(self.url + 'static/select.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.select('body', '')
+
+    @sync
+    async def test_select_no_match(self):
+        await self.page.goto(self.url + 'static/select.html')
+        result = await self.page.select('select', '42', 'abc')
+        self.assertEqual(result, [])
+
+    @sync
+    async def test_select_match(self):
+        await self.page.goto(self.url + 'static/select.html')
+        result = await self.page.select('select', 'blue', 'black', 'magenta')
+        self.assertEqual(result, ['magenta'])
+
+    @sync
+    async def test_select_match_deselect(self):
+        await self.page.goto(self.url + 'static/select.html')
+        await self.page.select('select', 'blue', 'black', 'magenta')
+        await self.page.select('select')
+        result = await self.page.Jeval(
+            'select',
+            'select => Array.from(select.options).every(option => !option.selected)',  # noqa: E501
+        )
+        self.assertTrue(result)
+
 
 class TestPage(unittest.TestCase):
     @classmethod
