@@ -507,7 +507,7 @@ a + b
     @sync
     async def test_script_tag_error(self):
         await self.page.goto(self.url + 'empty')
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             await self.page.addScriptTag('/static/injectedfile.js')
 
     @sync
@@ -536,7 +536,7 @@ a + b
     @sync
     async def test_style_tag_error(self):
         await self.page.goto(self.url + 'empty')
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             await self.page.addStyleTag('/static/injectedstyle.css')
 
     async def get_bgcolor(self):

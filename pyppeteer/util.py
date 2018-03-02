@@ -5,6 +5,7 @@
 
 import gc
 import socket
+from typing import Dict, Optional
 
 from pyppeteer.chromium_downloader import check_chromium, chromium_excutable
 from pyppeteer.chromium_downloader import download_chromium
@@ -38,3 +39,12 @@ def get_free_port() -> int:
     del sock
     gc.collect()
     return port
+
+
+def merge_dict(dict1: Optional[Dict], dict2: Optional[Dict]) -> Dict:
+    new_dict = {}
+    if dict1:
+        new_dict.update(dict1)
+    if dict2:
+        new_dict.update(dict2)
+    return new_dict

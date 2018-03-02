@@ -11,6 +11,7 @@ from typing import Any, Optional, TYPE_CHECKING, Union
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.errors import NetworkError, TimeoutError
+from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from typing import Callable, List, Set  # noqa: F401
@@ -22,9 +23,7 @@ class NavigatorWatcher:
     def __init__(self, client: Session, ignoreHTTPSErrors: Any,
                  options: dict = None, **kwargs: Any) -> None:
         """Make new navigator watcher."""
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         self._client = client
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._timeout = options.get('timeout', 3000)

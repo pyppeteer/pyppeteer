@@ -4,6 +4,7 @@ History
 ## Version 0.0.12 (next version)
 
 * Implement `connect` function
+* Do not change original options dictionary
 
 ## Version 0.0.12 (2018-03-01)
 

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from pyppeteer.connection import Session
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError
+from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from pyppeteer.frame_manager import Frame  # noqa: F401
@@ -66,12 +67,10 @@ class ElementHandle(JSHandle):
 
     async def click(self, options: dict = None, **kwargs: Any) -> None:
         """Click this element."""
+        options = merge_dict(options, kwargs)
         obj = await self._visibleCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
-        if options is None:
-            options = dict()
-        options.update(kwargs)
         await self._page.mouse.click(x, y, options)
 
     async def uploadFile(self, *filePaths: str) -> dict:
@@ -98,18 +97,14 @@ class ElementHandle(JSHandle):
     async def type(self, text: str, options: Dict = None, **kwargs: Any
                    ) -> None:
         """Type characters on this element."""
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self.focus()
         await self._page.keyboard.type(text, options)
 
     async def press(self, key: str, options: Dict = None, **kwargs: Any
                     ) -> None:
         """Type key on this element."""
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self.focus()
         await self._page.keyboard.press(key, options)
 
@@ -131,9 +126,7 @@ class ElementHandle(JSHandle):
 
     async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
         """Take a screenshot of this element."""
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self._scrollIntoViewIfNeeded()
         boundingBox = await self.boundingBox()
         opt = {'clip': boundingBox}

@@ -15,6 +15,7 @@ from pyppeteer.connection import Session
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import BrowserError, PageError, ElementHandleError
+from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
@@ -383,9 +384,7 @@ class Frame(object):
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
                 asyncio.sleep(selectorOrFunctionOrTimeout))
@@ -406,9 +405,7 @@ class Frame(object):
     def waitForSelector(self, selector: str, options: dict = None,
                         **kwargs: Any) -> Awaitable:
         """Wait for selector matches element."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         timeout = options.get('timeout', 30_000)  # msec
         interval = options.get('interval', 0)  # msec
         return WaitTask(self, 'selector', selector, timeout, interval=interval)
@@ -416,9 +413,7 @@ class Frame(object):
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:
         """Wait for js function return true."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30_000)  # msec
         interval = options.get('interval', 0)  # msec
         return WaitTask(self, 'function', pageFunction, timeout, *args,

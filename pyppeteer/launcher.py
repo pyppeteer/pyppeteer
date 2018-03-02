@@ -4,7 +4,7 @@
 """Chromium process launcher module."""
 
 import asyncio
-import atexit
+# import atexit
 import logging
 import os
 import os.path
@@ -19,7 +19,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.util import check_chromium, chromium_excutable
-from pyppeteer.util import download_chromium
+from pyppeteer.util import download_chromium, merge_dict
 
 if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
@@ -59,10 +59,7 @@ class Launcher(object):
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
-        self.options: Dict = {}
-        if options:
-            self.options.update(options)
-        self.options.update(kwargs)
+        self.options = merge_dict(options, kwargs)
         self.chrome_args = DEFAULT_ARGS
         self.chromeClosed = True
         if self.options.get('appMode', False):
@@ -123,10 +120,11 @@ class Launcher(object):
         )
 
         def _close_process() -> None:
-            asyncio.get_event_loop().run_until_complete(self.killChrome())
+            if not self.chromeClosed:
+                asyncio.get_event_loop().run_until_complete(self.killChrome())
 
         # dont forget to close browser process
-        atexit.register(_close_process)
+        # atexit.register(_close_process)
 
         import time
         for _ in range(100):
@@ -177,9 +175,7 @@ def launch(options: dict = None, **kwargs: Any) -> Browser:
 
 def connect(options: dict = None, **kwargs: Any) -> Browser:
     """Connect to existing chrome."""
-    if options is None:
-        options = {}
-    options.update(kwargs)
+    options = merge_dict(options, kwargs)
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')

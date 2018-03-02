@@ -27,6 +27,7 @@ from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.tracing import Tracing
+from pyppeteer.util import merge_dict
 
 
 class Page(EventEmitter):
@@ -285,9 +286,7 @@ class Page(EventEmitter):
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await frame.addScriptTag(options)
 
     async def addStyleTag(self, options: Dict = None, **kwargs: str
@@ -296,9 +295,7 @@ class Page(EventEmitter):
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await frame.addStyleTag(options)
 
     async def injectFile(self, filePath: str) -> str:
@@ -466,9 +463,7 @@ function(html) {
     async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
         """Got to url."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
                                    options)
         responses: Dict[str, Response] = dict()
@@ -498,9 +493,7 @@ function(html) {
     async def reload(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
         """Reload this page."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         response = (await asyncio.gather(
             self.waitForNavigation(options),
             self._client.send('Page.reload'),
@@ -510,9 +503,7 @@ function(html) {
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
         """Wait navigation completes."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
                                    options)
         responses: Dict[str, Response] = dict()
@@ -532,17 +523,13 @@ function(html) {
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
         """Go back history."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await self._go(-1, options)
 
     async def goForward(self, options: dict = None, **kwargs: Any
                         ) -> Optional[Response]:
         """Go forward history."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await self._go(+1, options)
 
     async def _go(self, delta: int, options: dict) -> Optional[Response]:
@@ -562,9 +549,7 @@ function(html) {
 
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', ''))
 
@@ -613,8 +598,7 @@ function(html) {
 
     async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
         """Take screen shot."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         screenshotType = None
         if 'path' in options:
             mimeType, _ = mimetypes.guess_type(options['path'])
@@ -687,9 +671,7 @@ function(html) {
 
     async def pdf(self, options: dict = None, **kwargs: Any) -> bytes:
         """Not yet implemented."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
         printBackground = bool(options.get('printBackground'))
@@ -757,9 +739,7 @@ function(html) {
     async def click(self, selector: str, options: dict = None, **kwargs: Any
                     ) -> None:
         """Click element which matches `selector`."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -792,8 +772,7 @@ function(html) {
     async def type(self, selector: str, text: str, options: dict = None,
                    **kwargs: Any) -> None:
         """Type text on the selected element."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         handle = await self.querySelector(selector)
         if handle is None:
             raise PageError('Cannot find {} on this page'.format(selector))

@@ -9,6 +9,7 @@ from typing import Any, Dict, TYPE_CHECKING
 from pyppeteer.connection import Session
 from pyppeteer.errors import PyppeteerError
 from pyppeteer.us_keyboard_layout import keyDefinitions
+from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
@@ -26,8 +27,7 @@ class Keyboard(object):
     async def down(self, key: str, options: dict = None, **kwargs: Any
                    ) -> None:
         """Press key down."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
 
         description = self._keyDescriptionForString(key)
         autoRepeat = description['key'] in self._pressedKeys
@@ -133,8 +133,7 @@ class Keyboard(object):
     async def type(self, text: str, options: Dict = None, **kwargs: Any
                    ) -> None:
         """Type characters."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
 
         delay = 0
         if options and options.get('delay'):
@@ -150,8 +149,7 @@ class Keyboard(object):
     async def press(self, key: str, options: Dict = None, **kwargs: Any
                     ) -> None:
         """Press key."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
 
         await self.down(key, options)
         if options and options.get('delay'):
@@ -173,8 +171,7 @@ class Mouse(object):
     async def move(self, x: float, y: float, options: dict = None,
                    **kwargs: Any) -> None:
         """Move cursor."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         fromX = self._x
         fromY = self._y
         self._x = x
@@ -194,9 +191,7 @@ class Mouse(object):
     async def click(self, x: float, y: float, options: dict = None,
                     **kwargs: Any) -> None:
         """Click button at (x, y)."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self.move(x, y)
         await self.down(options)
         if options and options.get('delay'):
@@ -205,9 +200,7 @@ class Mouse(object):
 
     async def down(self, options: dict = None, **kwargs: Any) -> None:
         """Press down button."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         self._button = options.get('button', 'left')
         await self._client.send('Input.dispatchMouseEvent', {
             'type': 'mousePressed',
@@ -220,9 +213,7 @@ class Mouse(object):
 
     async def up(self, options: dict = None, **kwargs: Any) -> None:
         """Up pressed button."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         self._button = 'none'
         await self._client.send('Input.dispatchMouseEvent', {
             'type': 'mouseReleased',
