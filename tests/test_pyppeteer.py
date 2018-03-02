@@ -572,7 +572,7 @@ class TestPage(unittest.TestCase):
     @sync
     async def test_metrics(self):
         await self.page.goto('about:blank')
-        metrics = await self.page.getMetrics()
+        metrics = await self.page.metrics()
         metrics_to_check = set([
             'Timestamp',
             'Documents',

@@ -359,7 +359,7 @@ function addPageBinding(bindingName) {
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
 
-    async def getMetrics(self) -> Dict[str, Any]:
+    async def metrics(self) -> Dict[str, Any]:
         """Get metrics."""
         response = await self._client.send('Performance.getMetrics')
         return self._buildMetricsObject(response['metrics'])
