@@ -1,6 +1,10 @@
 History
 =======
 
+## Version 0.0.12 (next version)
+
+* Implement `connect` function
+
 ## Version 0.0.12 (2018-03-01)
 
 * BugFix (#33)

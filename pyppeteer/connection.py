@@ -62,8 +62,10 @@ class Connection(EventEmitter):
             await asyncio.sleep(self._delay)
         await self.connection.send(msg)
 
-    def send(self, method: str, params: dict) -> Awaitable:
+    def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message via the connection."""
+        if params is None:
+            params = dict()
         self._lastId += 1
         _id = self._lastId
         msg = json.dumps(dict(

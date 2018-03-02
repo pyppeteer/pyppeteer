@@ -18,14 +18,76 @@ import unittest
 from syncer import sync
 
 from pyppeteer import launch
-from pyppeteer.errors import ElementHandleError, PageError, PyppeteerError
-from pyppeteer.errors import TimeoutError
+from pyppeteer.errors import ElementHandleError, NetworkError, PageError
+from pyppeteer.errors import TimeoutError, PyppeteerError
+from pyppeteer.launcher import connect
 from pyppeteer.util import install_asyncio, get_free_port
 from server import get_application, BASE_HTML
+
+DEFAULT_OPTIONS = {'args': ['--no-sandbox']}
 
 
 def setUpModule():
     install_asyncio()
+
+
+class TestLauncher(unittest.TestCase):
+    @sync
+    async def test_launch(self):
+        browser = launch(DEFAULT_OPTIONS)
+        await browser.newPage()
+        await browser.close()
+
+    @unittest.skip('should fix ignoreHTTPSErrors.')
+    @sync
+    async def test_ignore_https_errors(self):
+        browser = launch(DEFAULT_OPTIONS, ignoreHTTPSErrors=True)
+        page = await browser.newPage()
+        port = get_free_port()
+        time.sleep(0.1)
+        app = get_application()
+        server = app.listen(port)
+        response = await page.goto('https://localhost:{}'.format(port))
+        self.assertTrue(response.ok)
+        await browser.close()
+        server.stop()
+
+    @sync
+    async def test_await_after_close(self):
+        browser = launch(DEFAULT_OPTIONS)
+        page = await browser.newPage()
+        promise = page.evaluate('() => new Promise(r => {})')
+        await browser.close()
+        with self.assertRaises(NetworkError):
+            await promise
+
+    @sync
+    async def test_invalid_executable_path(self) -> None:
+        with self.assertRaises(FileNotFoundError):
+            launch(DEFAULT_OPTIONS, executablePath='not-a-path')
+
+    @sync
+    async def test_connect(self) -> None:
+        browser = launch(DEFAULT_OPTIONS)
+        browser2 = connect(browserWSEndpoint=browser.wsEndpoint)
+        page = await browser2.newPage()
+        self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
+
+        await browser2.disconnect()
+        page2 = await browser.newPage()
+        self.assertEqual(await page2.evaluate('() => 7 * 6'), 42)
+        await browser.close()
+
+    @sync
+    async def test_reconnect(self) -> None:
+        browser = launch(DEFAULT_OPTIONS)
+        browserWSEndpoint = browser.wsEndpoint
+        await browser.disconnect()
+
+        browser2 = connect(browserWSEndpoint=browserWSEndpoint)
+        page = await browser2.newPage()
+        self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
+        await browser.close()
 
 
 class TestPyppeteer(unittest.TestCase):
@@ -35,7 +97,7 @@ class TestPyppeteer(unittest.TestCase):
         time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(args=['--no-sandbox'])
+        cls.browser = launch(DEFAULT_OPTIONS)
         cls.page = sync(cls.browser.newPage())
 
     @classmethod
@@ -698,7 +760,7 @@ class TestPage(unittest.TestCase):
         cls.app = get_application()
         time.sleep(0.1)
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(args=['--no-sandbox'])
+        cls.browser = launch(DEFAULT_OPTIONS)
 
     def setUp(self):
         self.page = sync(self.browser.newPage())

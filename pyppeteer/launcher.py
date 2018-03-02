@@ -3,6 +3,7 @@
 
 """Chromium process launcher module."""
 
+import asyncio
 import atexit
 import logging
 import os
@@ -58,9 +59,12 @@ class Launcher(object):
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
-        self.options = options or dict()
+        self.options: Dict = {}
+        if options:
+            self.options.update(options)
         self.options.update(kwargs)
         self.chrome_args = DEFAULT_ARGS
+        self.chromeClosed = True
         if self.options.get('appMode', False):
             self.options['headless'] = False
         else:
@@ -97,8 +101,6 @@ class Launcher(object):
                     CHROME_PROFILIE_PATH.mkdir(parents=True)
                 self._tmp_user_data_dir = tempfile.mkdtemp(
                     dir=str(CHROME_PROFILIE_PATH))
-                # maybe better after register(self.killChrome)
-                atexit.register(self._cleanup_tmp_user_data_dir)
             self.chrome_args.append('--user-data-dir={}'.format(
                 self.options.get('userDataDir', self._tmp_user_data_dir)))
         if isinstance(self.options.get('args'), list):
@@ -111,19 +113,28 @@ class Launcher(object):
     def launch(self) -> Browser:
         """Start chromium process."""
         env = self.options.get('env', {})
+        self.chromeClosed = False
+        self.connection: Optional[Connection] = None
         self.proc = subprocess.Popen(
             self.cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=env,
         )
-        atexit.register(self.killChrome)
+
+        def _close_process() -> None:
+            asyncio.get_event_loop().run_until_complete(self.killChrome())
+
+        # dont forget to close browser process
+        atexit.register(_close_process)
+
         import time
         for _ in range(100):
             # wait for DevTools port to open for at least 10sec
             # setting timeout timer is bettter
             time.sleep(0.1)
             if self.proc.poll() is not None:
+                self._cleanup_tmp_user_data_dir()
                 raise BrowserError('Unexpectedly chrome process closed with '
                                    f'return code: {self.proc.returncode}')
             msg = self.proc.stdout.readline().decode()
@@ -137,23 +148,26 @@ class Launcher(object):
             raise BrowserError('Failed to connect DevTools port.')
         logger.debug(m.group(0))
         connectionDelay = self.options.get('slowMo', 0)
-        connection = Connection(m.group(1).strip(), connectionDelay)
-        return Browser(connection, self.options, self.killChrome)
+        self.browserWSEndpoint = m.group(1).strip()
+        self.connection = Connection(self.browserWSEndpoint, connectionDelay)
+        return Browser(self.connection, self.options, self.killChrome)
 
-    def killChrome(self) -> None:
-        """Terminate chromium process."""
-        logger.debug('terminate chrome process...')
-        if self.proc.poll() is None:
+    def waitForChromeToClose(self) -> None:
+        """Terminate chrome."""
+        if self.proc.poll() is None and not self.chromeClosed:
+            self.chromeClosed = True
             self.proc.terminate()
             self.proc.wait()
+            self._cleanup_tmp_user_data_dir()
 
-    async def connect(self, options: Dict = None) -> Browser:
-        """Not Implemented."""
-        raise NotImplementedError('NotImplemented')
-        # if options is None:
-        #     options = {}
-        # connection = await Connection.create(browserWSEndpoint)
-        # return Browser(connection, options)
+    async def killChrome(self) -> None:
+        """Terminate chromium process."""
+        logger.debug('terminate chrome process...')
+        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            self.waitForChromeToClose()
+        else:
+            if self.connection:
+                await self.connection.send('Browser.close')
 
 
 def launch(options: dict = None, **kwargs: Any) -> Browser:
@@ -161,11 +175,17 @@ def launch(options: dict = None, **kwargs: Any) -> Browser:
     return Launcher(options, **kwargs).launch()
 
 
-def connect(options: dict = None) -> Browser:
-    """Not Implemented."""
-    raise NotImplementedError('NotImplemented')
-    # l = Launcher(options)
-    # return l.connect()
+def connect(options: dict = None, **kwargs: Any) -> Browser:
+    """Connect to existing chrome."""
+    if options is None:
+        options = {}
+    options.update(kwargs)
+    browserWSEndpoint = options.get('browserWSEndpoint')
+    if not browserWSEndpoint:
+        raise BrowserError('Need `browserWSEndpoint` option.')
+    connection = Connection(browserWSEndpoint)
+    return Browser(
+        connection, options, lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:

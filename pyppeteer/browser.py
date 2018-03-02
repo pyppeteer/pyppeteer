@@ -3,7 +3,7 @@
 
 """Browser module."""
 
-from typing import Callable, Dict
+from typing import Awaitable, Callable, Dict
 
 from pyppeteer.connection import Connection
 from pyppeteer.page import Page
@@ -13,7 +13,7 @@ class Browser(object):
     """Browser class."""
 
     def __init__(self, connection: Connection, options: Dict = None,
-                 closeCallback: Callable[[], None] = None) -> None:
+                 closeCallback: Callable[[], Awaitable[None]] = None) -> None:
         """Make new browser object."""
         if options is None:
             options = {}
@@ -22,6 +22,11 @@ class Browser(object):
         if closeCallback is None:
             raise TypeError('`closeCallback` is required.')
         self._closeCallback = closeCallback
+
+    @property
+    def wsEndpoint(self) -> str:
+        """Retrun websocket endpoint url."""
+        return self._connection.url
 
     async def newPage(self) -> Page:
         """Make new page on browser and return it."""
@@ -34,5 +39,9 @@ class Browser(object):
 
     async def close(self) -> None:
         """Close connections and terminate browser process."""
+        await self._closeCallback()
+        await self.disconnect()
+
+    async def disconnect(self) -> None:
+        """Disconnect browser."""
         await self._connection.dispose()
-        self._closeCallback()
