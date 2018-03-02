@@ -332,12 +332,13 @@ a + b
         html = await self.page.J('html')
         elements = await html.JJ('div')
         self.assertEqual(len(elements), 2)
-        result = []
-        for elm in elements:
-            result.append(
-                await self.page.evaluate('(e) => e.textContent', elm)
-            )
-        self.assertEqual(result, ['A', 'B'])
+        if sys.version_info > (3, 5):
+            result = []
+            for elm in elements:
+                result.append(
+                    await self.page.evaluate('(e) => e.textContent', elm)
+                )
+            self.assertEqual(result, ['A', 'B'])
 
     @sync
     async def test_element_handle_JJ_empty(self):
