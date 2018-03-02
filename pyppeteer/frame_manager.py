@@ -361,6 +361,25 @@ class Frame(object):
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
 
+    async def select(self, selector: str, *values: str) -> List[str]:
+        """Select options and return selected values."""
+        return await self.querySelectorEval(  # type: ignore
+            selector, '''
+(element, values) => {
+    if (element.nodeName.toLowerCase() !== 'select')
+        throw new Error('Element is not a <select> element.');
+
+    const options = Array.from(element.options);
+    element.value = undefined;
+    for (const option of options)
+        option.selected = values.includes(option.value);
+
+    element.dispatchEvent(new Event('input', { 'bubbles': true }));
+    element.dispatchEvent(new Event('change', { 'bubbles': true }));
+    return options.filter(option => option.selected).map(options => options.value)
+}
+        ''', values)  # noqa: E501
+
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
         """Wait until `selectorOrFunctionOrTimeout`."""

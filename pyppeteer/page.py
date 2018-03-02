@@ -782,24 +782,12 @@ function(html) {
         await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
-    async def select(self, selector: str, *values: Any) -> List[str]:
-        """Select option(s)."""
-        return await self.querySelectorEval(  # type: ignore
-            selector, '''
-(element, values) => {
-    if (element.nodeName.toLowerCase() !== 'select')
-        throw new Error('Element is not a <select> element.');
-
-    const options = Array.from(element.options);
-    element.value = undefined;
-    for (const option of options)
-        option.selected = values.includes(option.value);
-
-    element.dispatchEvent(new Event('input', { 'bubbles': true }));
-    element.dispatchEvent(new Event('change', { 'bubbles': true }));
-    return options.filter(option => option.selected).map(options => options.value)
-}
-        ''', values)  # noqa: E501
+    async def select(self, selector: str, *values: str) -> List[str]:
+        """Select options and return selected values."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.select(selector, *values)
 
     async def type(self, selector: str, text: str, options: dict = None,
                    **kwargs: Any) -> None:
