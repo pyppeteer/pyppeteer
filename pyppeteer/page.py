@@ -25,7 +25,7 @@ from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
-from pyppeteer.network_manager import NetworkManager, Response
+from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
 
@@ -66,22 +66,27 @@ class Page(EventEmitter):
                      appMode: bool = False,
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which make new page."""
-        await client.send('Network.enable', {}),
-        await client.send('Page.enable', {}),
-        await client.send('Runtime.enable', {}),
-        await client.send('Security.enable', {}),
-        await client.send('Performance.enable', {}),
+        await client.send('Page.enable'),
+        frameTree = (await client.send('Page.getFrameTree'))['frameTree']
+        page = Page(client, frameTree, ignoreHTTPSErrors, screenshotTaskQueue)
+
+        await asyncio.wait([
+            client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
+            client.send('Network.enable', {}),
+            client.send('Runtime.enable', {}),
+            client.send('Security.enable', {}),
+            client.send('Performance.enable', {}),
+        ])
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
-        page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
-        await page.goto('about:blank')
         if not appMode:
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
     def __init__(self, client: Session,
-                 ignoreHTTPSErrors: bool = True,
+                 frameTree: Dict,
+                 ignoreHTTPSErrors: bool = False,
                  screenshotTaskQueue: list = None,
                  ) -> None:
         """Make new page object."""
@@ -90,7 +95,7 @@ class Page(EventEmitter):
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
-        self._frameManager = FrameManager(client, self)
+        self._frameManager = FrameManager(client, frameTree, self)
         self._networkManager = NetworkManager(client)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
@@ -464,31 +469,37 @@ function(html) {
                    ) -> Optional[Response]:
         """Got to url."""
         options = merge_dict(options, kwargs)
-        watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
-                                   options)
-        responses: Dict[str, Response] = dict()
-        listener = helper.addEventListener(
-            self._networkManager, NetworkManager.Events.Response,
-            lambda response: responses.__setitem__(response.url, response)
-        )
-        navigationPromise = watcher.waitForNavigation()
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
+        requests: Dict[str, Request] = dict()
+        eventListeners = [helper.addEventListener(
+            self._networkManager, NetworkManager.Events.Request,
+            lambda request: requests.__setitem__(request.url, request)
+        )]
 
-        try:
-            await self._client.send('Page.navigate',
-                                    dict(url=url, referrer=referrer))
-        except Exception:
-            watcher.cancel()
-            helper.removeEventListeners([listener])
-            raise
-        error = await navigationPromise
-        helper.removeEventListeners([listener])
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
+
+        result = await self._navigate(url, referrer)
+        if result is not None:
+            raise PageError(result)
+        result = await watcher.navigationPromise()
+        watcher.cancel()
+        helper.removeEventListeners(eventListeners)
+        error = result[0].pop().exception()  # type: ignore
         if error:
             raise error
 
-        if self._frameManager.isMainFrameLoadingFailed():
-            raise PageError('Failed to navigate: ' + url)
-        return responses.get(self.url)
+        request = requests.get(mainFrame.url)
+        return request.response if request else None
+
+    async def _navigate(self, url: str, referrer: str) -> Optional[str]:
+        response = await self._client.send(
+            'Page.navigate', {'url': url, 'referrer': referrer})
+        if response.get('errorText'):
+            return response['errorText']
+        return None
 
     async def reload(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
@@ -504,19 +515,22 @@ function(html) {
                                 ) -> Optional[Response]:
         """Wait navigation completes."""
         options = merge_dict(options, kwargs)
-        watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
-                                   options)
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
         responses: Dict[str, Response] = dict()
         listener = helper.addEventListener(
             self._networkManager,
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        error = await watcher.waitForNavigation()
+        result = await watcher.navigationPromise()
         helper.removeEventListeners([listener])
-
+        error = result[0].pop().exception()
         if error:
             raise error
+
         response = responses.get(self.url, None)
         return response
 

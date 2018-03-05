@@ -110,6 +110,49 @@ class TestPyppeteer(unittest.TestCase):
         sync(self.page.goto(self.url))
 
     @sync
+    async def test_get_http(self):
+        response = await self.page.goto('http://example.com/')
+        self.assertEqual(response.status, 200)
+
+    @sync
+    async def test_goto_blank(self):
+        response = await self.page.goto('about:blank')
+        self.assertIsNone(response)
+
+    @sync
+    async def test_goto_documentloaded(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='documentloaded')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_goto_networkidle(self):
+        with self.assertRaises(ValueError):
+            await self.page.goto(self.url + 'empty', waitUntil='networkidle')
+
+    @sync
+    async def test_nav_networkidle0(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='networkidle0')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_nav_networkidle2(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='networkidle2')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_goto_bad_url(self):
+        with self.assertRaises(NetworkError):
+            await self.page.goto('asdf')
+
+    @sync
+    async def test_goto_bad_resource(self):
+        with self.assertRaises(PageError):
+            await self.page.goto('http://localhost:44123')
+
+    @sync
     async def test_get(self):
         self.assertEqual(await self.page.title(), 'main')
         self.assertEqual(self.page.url, self.url)
@@ -121,11 +164,11 @@ class TestPyppeteer(unittest.TestCase):
     @sync
     async def test_timeout(self):
         with self.assertRaises(TimeoutError):
-            await self.page.goto('http://example.com', timeout=1)
+            await self.page.goto(self.url + 'long', timeout=100)
 
     @sync
     async def test_no_timeout(self):
-        await self.page.goto('http://example.com', timeout=0)
+        await self.page.goto(self.url + 'long', timeout=0)
 
     @sync
     async def test_get_https(self):
@@ -374,6 +417,7 @@ a + b
 
     @sync
     async def test_wait_for_function(self):
+        await self.page.goto(self.url + 'empty')
         await self.page.evaluate(
             '() => {'
             '  setTimeout(() => {'
@@ -381,7 +425,6 @@ a + b
             '  }, 200)'
             '}'
         )
-        await asyncio.sleep(0.05)
         await self.page.waitForFunction(
             '() => !!document.querySelector("section")'
         )
@@ -389,6 +432,7 @@ a + b
 
     @sync
     async def test_wait_for_selector(self):
+        await self.page.goto(self.url + 'empty')
         await self.page.evaluate(
             '() => {'
             '  setTimeout(() => {'
@@ -396,7 +440,6 @@ a + b
             '  }, 200)'
             '}'
         )
-        await asyncio.sleep(0.05)
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.querySelector('section'))
 
@@ -880,7 +923,7 @@ class TestPage(unittest.TestCase):
         self.assertEqual(response.status, 401)
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
-        self.assertEqual(response.status, 200)
+        self.assertIn(response.status, [200, 304])
 
     @sync
     async def test_metrics(self):

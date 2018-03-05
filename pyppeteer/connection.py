@@ -117,8 +117,9 @@ class Connection(EventEmitter):
         if not self._recv_fut.done():
             if hasattr(self, 'connection'):  # may not have connection
                 await self.connection.close()
+            self._recv_fut.cancel()
         for cb in self._callbacks.values():
-            cb.set_exception(NetworkError('connection closed'))
+            cb.cancel()
         self._callbacks.clear()
         for session in self._sessions.values():
             session._on_closed()
@@ -205,6 +206,6 @@ class Session(EventEmitter):
 
     def _on_closed(self) -> None:
         for cb in self._callbacks.values():
-            cb.set_exception(NetworkError('connection closed'))
+            cb.cancel()
         self._callbacks.clear()
         self._connection = None

@@ -4,7 +4,7 @@
 """Chromium process launcher module."""
 
 import asyncio
-# import atexit
+import atexit
 import logging
 import os
 import os.path
@@ -124,7 +124,7 @@ class Launcher(object):
                 asyncio.get_event_loop().run_until_complete(self.killChrome())
 
         # dont forget to close browser process
-        # atexit.register(_close_process)
+        atexit.register(_close_process)
 
         import time
         for _ in range(100):

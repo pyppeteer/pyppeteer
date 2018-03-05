@@ -1,10 +1,12 @@
 History
 =======
 
-## Version 0.0.12 (next version)
+## Version 0.0.13 (next version)
 
 * Implement `connect` function
-* Do not change original options dictionary
+* Refactor NavigatoinWatcher
+    * add `documentloaded`, `networkidle0`, and `networkidle2` options
+* Fix: Do not change original options dictionary
 
 ## Version 0.0.12 (2018-03-01)
 

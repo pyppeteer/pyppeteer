@@ -28,10 +28,11 @@ class FrameManager(EventEmitter):
     Events = SimpleNamespace(
         FrameAttached='frameattached',
         FrameNavigated='framenavigated',
-        FrameDetached='framedetached'
+        FrameDetached='framedetached',
+        LifecycleEvent='lifecycleevent',
     )
 
-    def __init__(self, client: Session, page: Any) -> None:
+    def __init__(self, client: Session, frameTree: Dict, page: Any) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
@@ -51,6 +52,30 @@ class FrameManager(EventEmitter):
         client.on('Runtime.executionContextCreated',
                   lambda event: self._onExecutionContextCreated(
                       event.get('context')))
+        client.on('Page.lifecycleEvent',
+                  lambda event: self._onLifecycleEvent(event))
+
+        self._handleFrameTree(frameTree)
+
+    def _onLifecycleEvent(self, event: Dict) -> None:
+        frame = self._frames.get(event['frameId'])
+        if not frame:
+            return
+        frame._onLifecycleEvent(event['loaderId'], event['name'])
+        self.emit(FrameManager.Events.LifecycleEvent, frame)
+
+    def _handleFrameTree(self, frameTree: Dict) -> None:
+        frame = frameTree['frame']
+        if 'parentId' in frame:
+            self._onFrameAttached(
+                frame['id'],
+                frame['parentId'],
+            )
+        self._onFrameNavigated(frame)
+        if 'childFrames' not in frameTree:
+            return
+        for child in frameTree['childFrames']:
+            self._handleFrameTree(child)
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -148,12 +173,12 @@ class FrameManager(EventEmitter):
         self._frames.pop(frame._id, None)
         self.emit(FrameManager.Events.FrameDetached, frame)
 
-    def isMainFrameLoadingFailed(self) -> bool:
-        """Check if main frame is laoded correctly."""
-        mainFrame = self._mainFrame
-        if not mainFrame:
-            return True
-        return bool(mainFrame._loadingFailed)
+    # def isMainFrameLoadingFailed(self) -> bool:
+    #     """Check if main frame is laoded correctly."""
+    #     mainFrame = self._mainFrame
+    #     if not mainFrame:
+    #         return True
+    #     return bool(mainFrame._loadingFailed)
 
 
 class Frame(object):
@@ -170,6 +195,8 @@ class Frame(object):
         self._id = frameId
         self._context: Optional[ExecutionContext] = None
         self._waitTasks: Set[WaitTask] = set()  # maybe list
+        self._loaderId = ''
+        self._lifecycleEvents: Set[str] = set()
         self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
@@ -406,7 +433,7 @@ class Frame(object):
                         **kwargs: Any) -> Awaitable:
         """Wait for selector matches element."""
         options = merge_dict(options, kwargs)
-        timeout = options.get('timeout', 30_000)  # msec
+        timeout = options.get('timeout', 30000)  # msec
         interval = options.get('interval', 0)  # msec
         return WaitTask(self, 'selector', selector, timeout, interval=interval)
 
@@ -414,7 +441,7 @@ class Frame(object):
                         *args: str, **kwargs: Any) -> Awaitable:
         """Wait for js function return true."""
         options = merge_dict(options, kwargs)
-        timeout = options.get('timeout',  30_000)  # msec
+        timeout = options.get('timeout',  30000)  # msec
         interval = options.get('interval', 0)  # msec
         return WaitTask(self, 'function', pageFunction, timeout, *args,
                         interval=interval)
@@ -426,7 +453,13 @@ class Frame(object):
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
         self._url = framePayload.get('url', '')
-        self._loadingFailed = bool(framePayload.get('unreachableUrl'))
+
+    def _onLifecycleEvent(self, loaderId: str, name: str) -> None:
+        if name == 'init':
+            self._loaderId = loaderId
+            self._lifecycleEvents.clear()
+        else:
+            self._lifecycleEvents.add(name)
 
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
