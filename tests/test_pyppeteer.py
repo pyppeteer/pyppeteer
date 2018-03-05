@@ -21,14 +21,10 @@ from pyppeteer import launch
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError, PyppeteerError
 from pyppeteer.launcher import connect
-from pyppeteer.util import install_asyncio, get_free_port
+from pyppeteer.util import get_free_port
 from server import get_application, BASE_HTML
 
 DEFAULT_OPTIONS = {'args': ['--no-sandbox']}
-
-
-def setUpModule():
-    install_asyncio()
 
 
 class TestLauncher(unittest.TestCase):

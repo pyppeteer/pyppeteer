@@ -14,20 +14,8 @@ __all__ = [
     'check_chromium',
     'chromium_excutable',
     'download_chromium',
-    'install_asyncio',
     'get_free_port',
 ]
-
-
-def install_asyncio() -> None:
-    """Install tornado's loop to asyncio."""
-    try:
-        from tornado.ioloop import IOLoop
-        from tornado.platform.asyncio import AsyncIOMainLoop
-        if not IOLoop.initialized():
-            AsyncIOMainLoop().install()
-    except ImportError:
-        pass
 
 
 def get_free_port() -> int:

@@ -115,8 +115,6 @@ def get_application() -> web.Application:
 
 
 if __name__ == '__main__':
-    from pyppeteer.util import install_asyncio
-    install_asyncio()
     app = get_application()
     app.listen(9000)
     asyncio.get_event_loop().run_forever()
