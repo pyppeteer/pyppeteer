@@ -44,7 +44,7 @@ import asyncio
 from pyppeteer import launch
 
 async def main():
-    browser = launch()
+    browser = await launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
@@ -60,7 +60,7 @@ import asyncio
 from pyppeteer import launch
 
 async def main():
-    browser = launch()
+    browser = await launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
@@ -102,13 +102,13 @@ Pyppeteer accepts both dictionary and keyword argument for options.
 Dictionary style option (similar to puppeteer):
 
 ```python
-browser = launch({'headless': True})
+browser = await launch({'headless': True})
 ```
 
 Keyword argument style option (more pythonic, isn't it?):
 
 ```python
-browser = launch(headless=True)
+browser = await launch(headless=True)
 ```
 
 ### Element selector method name (`$` -> `querySelector`)

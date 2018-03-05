@@ -6,7 +6,7 @@
 import asyncio
 import json
 import logging
-from typing import Awaitable, TYPE_CHECKING
+from typing import Awaitable, Callable, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
@@ -14,7 +14,7 @@ import websockets
 from pyppeteer.errors import NetworkError
 
 if TYPE_CHECKING:
-    from typing import Callable, Dict, Optional  # noqa: F401
+    from typing import Dict, Optional  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ class Connection(EventEmitter):
         self._connected = False
         self._ws = websockets.client.connect(self._url)
         self._recv_fut = asyncio.ensure_future(self._recv_loop())
+        self._closeCallback: Optional[Callable[[], None]] = None
 
     @property
     def url(self) -> str:
@@ -105,6 +106,10 @@ class Connection(EventEmitter):
         else:
             self.emit(method, params)
 
+    def setClosedCallback(self, callback: Callable[[], None]) -> None:
+        """Set closed callback."""
+        self._closeCallback = callback
+
     def _on_message(self, message: str) -> None:
         logger.debug(f'◀RECV: {message}')
         msg = json.loads(message)
@@ -114,6 +119,10 @@ class Connection(EventEmitter):
             self._on_query(msg)
 
     async def _on_close(self) -> None:
+        if self._closeCallback:
+            self._closeCallback()
+            self._closeCallback = None
+
         if not self._recv_fut.done():
             if hasattr(self, 'connection'):  # may not have connection
                 await self.connection.close()

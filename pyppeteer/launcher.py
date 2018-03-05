@@ -107,7 +107,7 @@ class Launcher(object):
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             shutil.rmtree(self._tmp_user_data_dir)
 
-    def launch(self) -> Browser:
+    async def launch(self) -> Browser:
         """Start chromium process."""
         env = self.options.get('env', {})
         self.chromeClosed = False
@@ -148,7 +148,8 @@ class Launcher(object):
         connectionDelay = self.options.get('slowMo', 0)
         self.browserWSEndpoint = m.group(1).strip()
         self.connection = Connection(self.browserWSEndpoint, connectionDelay)
-        return Browser(self.connection, self.options, self.killChrome)
+        return await Browser.create(
+            self.connection, self.options, self.killChrome)
 
     def waitForChromeToClose(self) -> None:
         """Terminate chrome."""
@@ -168,19 +169,19 @@ class Launcher(object):
                 await self.connection.send('Browser.close')
 
 
-def launch(options: dict = None, **kwargs: Any) -> Browser:
+async def launch(options: dict = None, **kwargs: Any) -> Browser:
     """Start chromium process and return `Browser` object."""
-    return Launcher(options, **kwargs).launch()
+    return await Launcher(options, **kwargs).launch()
 
 
-def connect(options: dict = None, **kwargs: Any) -> Browser:
+async def connect(options: dict = None, **kwargs: Any) -> Browser:
     """Connect to existing chrome."""
     options = merge_dict(options, kwargs)
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')
     connection = Connection(browserWSEndpoint)
-    return Browser(
+    return await Browser.create(
         connection, options, lambda: connection.send('Browser.close'))
 
 

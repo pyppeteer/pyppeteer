@@ -3,7 +3,10 @@ History
 
 ## Version 0.0.13 (next version)
 
+* **`launch` is now coroutine** (breaking change)
 * Implement `connect` function
+* Implement `Browser.pages` to acccess all pages
+    * Add `Target` class and some new method on Browser
 * Refactor NavigatoinWatcher
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
 * Fix: Do not change original options dictionary

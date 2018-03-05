@@ -34,14 +34,14 @@ def setUpModule():
 class TestLauncher(unittest.TestCase):
     @sync
     async def test_launch(self):
-        browser = launch(DEFAULT_OPTIONS)
+        browser = await launch(DEFAULT_OPTIONS)
         await browser.newPage()
         await browser.close()
 
     @unittest.skip('should fix ignoreHTTPSErrors.')
     @sync
     async def test_ignore_https_errors(self):
-        browser = launch(DEFAULT_OPTIONS, ignoreHTTPSErrors=True)
+        browser = await launch(DEFAULT_OPTIONS, ignoreHTTPSErrors=True)
         page = await browser.newPage()
         port = get_free_port()
         time.sleep(0.1)
@@ -54,7 +54,7 @@ class TestLauncher(unittest.TestCase):
 
     @sync
     async def test_await_after_close(self):
-        browser = launch(DEFAULT_OPTIONS)
+        browser = await launch(DEFAULT_OPTIONS)
         page = await browser.newPage()
         promise = page.evaluate('() => new Promise(r => {})')
         await browser.close()
@@ -62,14 +62,14 @@ class TestLauncher(unittest.TestCase):
             await promise
 
     @sync
-    async def test_invalid_executable_path(self) -> None:
+    async def test_invalid_executable_path(self):
         with self.assertRaises(FileNotFoundError):
-            launch(DEFAULT_OPTIONS, executablePath='not-a-path')
+            await launch(DEFAULT_OPTIONS, executablePath='not-a-path')
 
     @sync
-    async def test_connect(self) -> None:
-        browser = launch(DEFAULT_OPTIONS)
-        browser2 = connect(browserWSEndpoint=browser.wsEndpoint)
+    async def test_connect(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        browser2 = await connect(browserWSEndpoint=browser.wsEndpoint)
         page = await browser2.newPage()
         self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
 
@@ -79,15 +79,22 @@ class TestLauncher(unittest.TestCase):
         await browser.close()
 
     @sync
-    async def test_reconnect(self) -> None:
-        browser = launch(DEFAULT_OPTIONS)
+    async def test_reconnect(self):
+        browser = await launch(DEFAULT_OPTIONS)
         browserWSEndpoint = browser.wsEndpoint
         await browser.disconnect()
 
-        browser2 = connect(browserWSEndpoint=browserWSEndpoint)
+        browser2 = await connect(browserWSEndpoint=browserWSEndpoint)
         page = await browser2.newPage()
         self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
         await browser.close()
+
+    @sync
+    async def test_version(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        version = await browser.version()
+        self.assertTrue(len(version) > 0)
+        self.assertTrue(version.startswith('Headless'))
 
 
 class TestPyppeteer(unittest.TestCase):
@@ -97,7 +104,7 @@ class TestPyppeteer(unittest.TestCase):
         time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(DEFAULT_OPTIONS)
+        cls.browser = sync(launch(DEFAULT_OPTIONS))
         cls.page = sync(cls.browser.newPage())
 
     @classmethod
@@ -286,13 +293,13 @@ a + b
         self.assertTrue(is_five)
 
     @sync
-    async def test_jshandle_json(self) -> None:
+    async def test_jshandle_json(self):
         handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
         json = await handle1.jsonValue()
         self.assertEqual(json, {'foo': 'bar'})
 
     @sync
-    async def test_jshandle_get_property(self) -> None:
+    async def test_jshandle_get_property(self):
         handle1 = await self.page.evaluateHandle(
             '() => ({one: 1, two: 2, three: 3})'
         )
@@ -300,7 +307,7 @@ a + b
         self.assertEqual(await handle2.jsonValue(), 2)
 
     @sync
-    async def test_jshandle_get_properties(self) -> None:
+    async def test_jshandle_get_properties(self):
         handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
         properties = await handle1.getProperties()
         foo = properties.get('foo')
@@ -643,7 +650,7 @@ a + b
         self.assertTrue(result)
 
     @sync
-    async def test_key_type(self) -> None:
+    async def test_key_type(self):
         await self.page.goto(self.url + 'static/textarea.html')
         textarea = await self.page.J('textarea')
         text = 'Type in this text!'
@@ -656,7 +663,7 @@ a + b
         self.assertEqual(result, text)
 
     @sync
-    async def test_key_arrowkey(self) -> None:
+    async def test_key_arrowkey(self):
         await self.page.goto(self.url + 'static/textarea.html')
         await self.page.type('textarea', 'Hello World!')
         for char in 'World!':
@@ -678,7 +685,7 @@ a + b
         self.assertEqual(result, 'Hello World!')
 
     @sync
-    async def test_key_press_element_handle(self) -> None:
+    async def test_key_press_element_handle(self):
         await self.page.goto(self.url + 'static/textarea.html')
         textarea = await self.page.J('textarea')
         await textarea.press('a', text='f')
@@ -694,7 +701,7 @@ a + b
         self.assertEqual(result, 'f')
 
     @sync
-    async def test_key_send_char(self) -> None:
+    async def test_key_send_char(self):
         await self.page.goto(self.url + 'static/textarea.html')
         await self.page.focus('textarea')
         await self.page.keyboard.sendCharacter('朝')
@@ -713,7 +720,7 @@ a + b
         self.assertEqual(result, '朝a')
 
     @sync
-    async def test_key_modifiers(self) -> None:
+    async def test_key_modifiers(self):
         keyboard = self.page.keyboard
         self.assertEqual(keyboard._modifiers, 0)
         await keyboard.down('Shift')
@@ -726,7 +733,7 @@ a + b
         self.assertEqual(keyboard._modifiers, 0)
 
     @sync
-    async def test_resize_textarea(self) -> None:
+    async def test_resize_textarea(self):
         await self.page.goto(self.url + 'static/textarea.html')
         get_dimensions = '''
     function () {
@@ -755,7 +762,7 @@ a + b
         self.assertEqual(new_dimensions['height'], height + 104)
 
     @sync
-    async def test_key_type_long(self) -> None:
+    async def test_key_type_long(self):
         await self.page.goto(self.url + 'static/textarea.html')
         textarea = await self.page.J('textarea')
         text = 'This text is two lines.\\nThis is character 朝.'
@@ -768,7 +775,7 @@ a + b
         self.assertEqual(result, text)
 
     @sync
-    async def test_key_location(self) -> None:
+    async def test_key_location(self):
         await self.page.goto(self.url + 'static/textarea.html')
         textarea = await self.page.J('textarea')
         await self.page.evaluate(
@@ -788,13 +795,38 @@ a + b
         self.assertEqual(await self.page.evaluate('keyLocation'), 3)
 
     @sync
-    async def test_key_unknown(self) -> None:
+    async def test_key_unknown(self):
         with self.assertRaises(PyppeteerError):
             await self.page.keyboard.press('NotARealKey')
         with self.assertRaises(PyppeteerError):
             await self.page.keyboard.press('ё')
         with self.assertRaises(PyppeteerError):
             await self.page.keyboard.press('😊')
+
+    @sync
+    async def test_targets(self):
+        targets = self.browser.targets()
+        _list = [target for target in targets
+                 if target.type() == 'page' and target.url() == 'about:blank']
+        self.assertTrue(any(_list))
+
+    @sync
+    async def test_all_pages(self):
+        pages = await self.browser.pages()
+        self.assertEqual(len(pages), 2)
+        self.assertIn(self.page, pages)
+        self.assertNotEqual(pages[0], pages[1])
+
+    @sync
+    async def test_original_page(self):
+        pages = await self.browser.pages()
+        originalPage = None
+        for page in pages:
+            if page != self.page:
+                originalPage = page
+                break
+        self.assertEqual(await originalPage.evaluate('() => 1 + 2'), 3)
+        self.assertTrue(await originalPage.J('body'))
 
 
 class TestPage(unittest.TestCase):
@@ -805,7 +837,7 @@ class TestPage(unittest.TestCase):
         cls.app = get_application()
         time.sleep(0.1)
         cls.server = cls.app.listen(cls.port)
-        cls.browser = launch(DEFAULT_OPTIONS)
+        cls.browser = sync(launch(DEFAULT_OPTIONS))
 
     def setUp(self):
         self.page = sync(self.browser.newPage())

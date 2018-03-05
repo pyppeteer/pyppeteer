@@ -18,7 +18,7 @@ from pyppeteer import launch
 def setUpModule():
     suppress_logging()
     global browser, page
-    browser = launch(args=['--no-sandbox'])
+    browser = sync(launch(args=['--no-sandbox']))
     page = sync(browser.newPage())
 
 
