@@ -97,7 +97,7 @@ class TestLauncher(unittest.TestCase):
         self.assertTrue(version.startswith('Headless'))
 
 
-class TestPyppeteer(unittest.TestCase):
+class BaseTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
@@ -116,6 +116,11 @@ class TestPyppeteer(unittest.TestCase):
         self.url = 'http://localhost:{}/'.format(self.port)
         sync(self.page.goto(self.url))
 
+    def tearDown(self):
+        sync(self.page.goto('about:blank'))
+
+
+class TestPyppeteer(BaseTestCase):
     @sync
     async def test_get_http(self):
         response = await self.page.goto('http://example.com/')
@@ -827,6 +832,163 @@ a + b
                 break
         self.assertEqual(await originalPage.evaluate('() => 1 + 2'), 3)
         self.assertTrue(await originalPage.J('body'))
+
+
+class TestWaitForSelector(BaseTestCase):
+    addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
+
+    @sync
+    async def test_wait_for_selector_immediate(self):
+        await self.page.goto(self.url + 'empty')
+        frame = self.page.mainFrame
+        result = []
+        fut = asyncio.ensure_future(frame.waitForSelector('*', interval=50))
+        fut.add_done_callback(lambda fut: result.append(True))
+        await asyncio.sleep(0.1)
+        self.assertTrue(result)
+
+        result.clear()
+        await frame.evaluate(self.addElement, 'div')
+        fut = asyncio.ensure_future(frame.waitForSelector('div', interval=50))
+        fut.add_done_callback(lambda fut: result.append(True))
+        await asyncio.sleep(0.1)
+        self.assertTrue(result)
+
+    @sync
+    async def test_wait_for_selector_after_node_appear(self):
+        await self.page.goto(self.url + 'empty')
+        frame = self.page.mainFrame
+
+        result = []
+        fut = asyncio.ensure_future(frame.waitForSelector('div', interval=50))
+        fut.add_done_callback(lambda fut: result.append(True))
+        self.assertEqual(await frame.evaluate('() => 42'), 42)
+        await asyncio.sleep(0.1)
+        self.assertFalse(result)
+        await frame.evaluate(self.addElement, 'br')
+        await asyncio.sleep(0.1)
+        self.assertFalse(result)
+        await frame.evaluate(self.addElement, 'div')
+        await asyncio.sleep(0.1)
+        self.assertTrue(result)
+
+    @sync
+    async def test_wait_for_selector_inner_html(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        fut = asyncio.ensure_future(self.page.waitForSelector('h3 div'))
+        await self.page.evaluate(self.addElement, 'span')
+        await self.page.evaluate('() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"')  # noqa: E501
+        await fut
+
+    @sync
+    async def test_wait_for_selector_fail(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('() => document.querySelector = null')  # noqa: E501
+        with self.assertRaises(ElementHandleError):
+            await self.page.waitForSelector('*')
+
+    @sync
+    async def test_wait_for_selector_visible(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('div', visible=True, interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await self.page.setContent(
+            '<div style="display: none; visibility: hidden;">1</div>'
+        )
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.removeProperty("display")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.removeProperty("visibility")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_visible_ininer(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('div#inner', visible=True, interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await self.page.setContent(
+            '<div style="display: none; visibility: hidden;">'
+            '<div id="inner">hi</div></div>'
+        )
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.removeProperty("display")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.removeProperty("visibility")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_hidden(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        await self.page.setContent('<div style="display: block;"></div>')
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('div', hidden=True, interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.setProperty("visibility", "hidden")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_display_none(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        await self.page.setContent('<div style="display: block;"></div>')
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('div', hidden=True, interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").style.setProperty("display", "none")')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_remove(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        await self.page.setContent('<div></div>')
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('div', hidden=True, interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate('() => document.querySelector("div").remove()')  # noqa: E501
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_timeout(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(TimeoutError):
+            await self.page.waitForSelector('div', timeout=10)
+
+    @sync
+    async def test_wait_for_selector_node_mutation(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        div = []
+        fut = asyncio.ensure_future(
+            self.page.waitForSelector('.cls', interval=50))
+        fut.add_done_callback(lambda fut: div.append(True))
+        await self.page.setContent('<div class="noCls"></div>')
+        await asyncio.sleep(0.1)
+        self.assertFalse(div)
+        await self.page.evaluate(
+            '() => document.querySelector("div").className="cls"'
+        )
+        await asyncio.sleep(0.1)
+        self.assertTrue(div)
 
 
 class TestPage(unittest.TestCase):

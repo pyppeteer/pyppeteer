@@ -14,7 +14,7 @@ from pyee import EventEmitter
 from pyppeteer.connection import Session
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.execution_context import ExecutionContext, JSHandle
-from pyppeteer.errors import BrowserError, PageError, ElementHandleError
+from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
@@ -433,18 +433,35 @@ class Frame(object):
                         **kwargs: Any) -> Awaitable:
         """Wait for selector matches element."""
         options = merge_dict(options, kwargs)
-        timeout = options.get('timeout', 30000)  # msec
-        interval = options.get('interval', 0)  # msec
-        return WaitTask(self, 'selector', selector, timeout, interval=interval)
+        waitForVisible = bool(options.get('visible'))
+        waitForHidden = bool(options.get('hidden'))
+        pageFunction = '''
+(selector, waitForVisible, waitForHidden) => {
+    const node = document.querySelector(selector);
+    if (!node)
+        return waitForHidden;
+    if (!waitForVisible && !waitForHidden)
+        return true;
+    const style = window.getComputedStyle(node);
+    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
+    return (waitForVisible === isVisible || waitForHidden === !isVisible);
+
+    function hasVisibleBoundingBox() {
+        const rect = node.getBoundingClientRect();
+        return !!(rect.top || rect.bottom || rect.width || rect.height);
+    }
+}
+        '''  # noqa: E501
+        return self.waitForFunction(
+            pageFunction, options, selector, waitForVisible, waitForHidden)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: str, **kwargs: Any) -> Awaitable:
+                        *args: Any, **kwargs: Any) -> Awaitable:
         """Wait for js function return true."""
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
         interval = options.get('interval', 0)  # msec
-        return WaitTask(self, 'function', pageFunction, timeout, *args,
-                        interval=interval)
+        return WaitTask(self, pageFunction, timeout, *args, interval=interval)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -474,19 +491,17 @@ class Frame(object):
 class WaitTask(asyncio.Future):
     """WaitTask class."""
 
-    def __init__(self, frame: Frame, _type: str, expr: str, timeout: float,
+    def __init__(self, frame: Frame, expr: str, timeout: float,
                  *args: Any, interval: float = 0) -> None:
         """Make new wait task.
 
         :arg float timeout: msec to wait for task [default 30_000 [msec]].
         :arg float interval: msec to poll for task [default timeout / 1000].
         """
-        if _type not in ['function', 'selector']:
-            raise ValueError('Unsupported type for WaitTask: ' + _type)
         super().__init__()
         self.__frame: Frame = frame
-        self.__type = _type
         self.expr = expr
+        self.args = args
         self.__timeout = timeout / 1000  # sec
         self.__interval = interval / 1000 or self.__timeout / 100  # sec
         self.__runCount: int = 0
@@ -499,7 +514,7 @@ class WaitTask(asyncio.Future):
         self.__timeoutTimer = self.__loop.call_later(
             self.__timeout,
             lambda: self.terminate(
-                BrowserError(f'waiting failed: timeout {timeout}ms exceeded')
+                TimeoutError(f'waiting failed: timeout {timeout}ms exceeded')
             )
         )
         asyncio.ensure_future(self.rerun(True))
@@ -519,10 +534,7 @@ class WaitTask(asyncio.Future):
         success = False
         error = None
         try:
-            if self.__type == 'selector':
-                success = bool(await self.__frame.J(self.expr))
-            else:
-                success = bool(await self.__frame.evaluate(self.expr))
+            success = bool(await self.__frame.evaluate(self.expr, *self.args))
         except Exception as e:
             error = e
 
