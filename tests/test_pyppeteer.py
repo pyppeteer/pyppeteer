@@ -113,6 +113,7 @@ class TestPyppeteer(unittest.TestCase):
     async def test_get_http(self):
         response = await self.page.goto('http://example.com/')
         self.assertEqual(response.status, 200)
+        self.assertEqual(self.page.url, 'http://example.com/')
 
     @sync
     async def test_goto_blank(self):
