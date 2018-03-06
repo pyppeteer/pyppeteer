@@ -40,7 +40,7 @@ class ElementHandle(JSHandle):
     async def _scrollIntoViewIfNeeded(self) -> None:
         error = await self.executionContext.evaluate(
             '''element => {
-                if (!element.ownerDocument.contains(element))
+                if (!element.isConnected)
                     return 'Node is detached from document';
                 if (element.nodeType !== Node.ELEMENT_NODE)
                     return 'Node is not of type HTMLElement';
@@ -53,6 +53,8 @@ class ElementHandle(JSHandle):
     async def _visibleCenter(self) -> Dict[str, float]:
         await self._scrollIntoViewIfNeeded()
         box = await self.boundingBox()
+        if not box:
+            raise ElementHandleError('Node is not visible.')
         return {
             'x': box['x'] + box['width'] / 2,
             'y': box['y'] + box['height'] / 2,
@@ -108,16 +110,15 @@ class ElementHandle(JSHandle):
         await self.focus()
         await self._page.keyboard.press(key, options)
 
-    async def boundingBox(self) -> Dict[str, float]:
+    async def boundingBox(self) -> Optional[Dict[str, float]]:
         """Return bounding box size of this node."""
-        _obj = await self._client.send('DOM.getBoxModel', {
+        result = await self._client.send('DOM.getBoxModel', {
             'objectId': self._remoteObject.get('objectId'),
         })
-        model = _obj.get('model')
-        if not model:
-            raise ElementHandleError('node is detached from document')
+        if not result:
+            return None
 
-        quad = model['border']
+        quad = result['model']['border']
         x = min(quad[0], quad[2], quad[4], quad[6])
         y = min(quad[1], quad[3], quad[5], quad[7])
         width = max(quad[0], quad[2], quad[4], quad[6]) - x
@@ -128,8 +129,17 @@ class ElementHandle(JSHandle):
         """Take a screenshot of this element."""
         options = merge_dict(options, kwargs)
         await self._scrollIntoViewIfNeeded()
-        boundingBox = await self.boundingBox()
-        opt = {'clip': boundingBox}
+        _obj = await self._client.send('Page.getLayoutMetrics')
+        pageX = _obj['layoutViewport']['pageX']
+        pageY = _obj['layoutViewport']['pageY']
+
+        clip = await self.boundingBox()
+        if not clip:
+            raise ElementHandleError('Node is not visible.')
+
+        clip['x'] = clip['x'] + pageX
+        clip['y'] = clip['y'] + pageY
+        opt = {'clip': clip}
         opt.update(options)
         return await self._page.screenshot(opt)
 
