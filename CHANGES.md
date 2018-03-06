@@ -11,7 +11,8 @@ History
     * Add `Target` class and some new method on Browser
 * Refactor NavigatoinWatcher
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
-* `Request.abort` accepts error code.
+* `Request.abort` accepts error code
+* Add `force_expr` option to `evaluate` method
 * BugFix: Do not change original options dictionary
 
 ## Version 0.0.12 (2018-03-01)

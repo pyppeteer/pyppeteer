@@ -199,11 +199,13 @@ class Frame(object):
         """Return execution context of this frame."""
         return self._context
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+    async def evaluate(self, pageFunction: str, *args: Any,
+                       force_expr: bool = False) -> Any:
         """Evaluate pageFunction on this frame."""
         if self._context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await self._context.evaluate(pageFunction, *args)
+        return await self._context.evaluate(
+            pageFunction, *args, force_expr=force_expr)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.

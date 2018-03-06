@@ -101,7 +101,7 @@ class BaseTestCase(unittest.TestCase):
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = sync(launch(DEFAULT_OPTIONS))
-        cls.page = sync(cls.browser.newPage())
+        cls.url = 'http://localhost:{}/'.format(cls.port)
 
     @classmethod
     def tearDownClass(cls):
@@ -109,11 +109,11 @@ class BaseTestCase(unittest.TestCase):
         cls.server.stop()
 
     def setUp(self):
-        self.url = 'http://localhost:{}/'.format(self.port)
+        self.page = sync(self.browser.newPage())
         sync(self.page.goto(self.url))
 
     def tearDown(self):
-        sync(self.page.goto('about:blank'))
+        sync(self.page.close())
 
 
 class TestPyppeteer(BaseTestCase):
@@ -204,6 +204,12 @@ class TestPyppeteer(BaseTestCase):
     @sync
     async def test_evaluate_return_value(self):
         result = await self.page.evaluate('1 + 2')
+        self.assertEqual(result, 3)
+
+    @sync
+    async def test_evaluate_force_expression(self):
+        result = await self.page.evaluate(
+            '() => null;\n1 + 2;', force_expr=True)
         self.assertEqual(result, 3)
 
     @sync
@@ -828,6 +834,20 @@ a + b
                 break
         self.assertEqual(await originalPage.evaluate('() => 1 + 2'), 3)
         self.assertTrue(await originalPage.J('body'))
+
+    @sync
+    async def test_expose_function(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
+        self.assertEqual(result, 36)
+
+    @sync
+    async def test_expose_function_other_page(self):
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        await self.page.goto(self.url + 'empty')
+        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
+        self.assertEqual(result, 36)
 
 
 class TestWaitForSelector(BaseTestCase):

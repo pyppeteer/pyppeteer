@@ -23,17 +23,19 @@ class ExecutionContext(object):
         self._contextId = contextId
         self._objectHandleFactory = objectHandleFactory
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+    async def evaluate(self, pageFunction: str, *args: Any,
+                       force_expr: bool = False) -> Any:
         """Execute `pageFunction` on this context."""
-        handle = await self.evaluateHandle(pageFunction, *args)
+        handle = await self.evaluateHandle(
+            pageFunction, *args, force_expr=force_expr)
         result = await handle.jsonValue()
         await handle.dispose()
         return result
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any
-                             ) -> 'JSHandle':
+    async def evaluateHandle(self, pageFunction: str, *args: Any,
+                             force_expr: bool = False) -> 'JSHandle':
         """Execute `pageFunction` on this context."""
-        if not args and not helper.is_jsfunc(pageFunction):
+        if force_expr or (not args and not helper.is_jsfunc(pageFunction)):
             _obj = await self._client.send('Runtime.evaluate', {
                 'expression': pageFunction,
                 'contextId': self._contextId,

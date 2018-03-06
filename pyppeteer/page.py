@@ -311,13 +311,16 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.injectFile(filePath)
 
-    async def exposeFunction(self, name: str, puppeteerFunction: Callable
+    async def exposeFunction(self, name: str, pyppeteerFunction: Callable
                              ) -> None:
-        """Execute function on this page."""
+        """Register python function to chrome as `name`.
+
+        Registered function can be called from chrome process.
+        """
         if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '
-                            'window["{name}"] already exists!')
-        self._pageBindings[name] = puppeteerFunction
+                            f'window["{name}"] already exists!')
+        self._pageBindings[name] = pyppeteerFunction
 
         addPageBinding = '''
 function addPageBinding(bindingName) {
@@ -341,7 +344,8 @@ function addPageBinding(bindingName) {
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
         await asyncio.wait([
-            frame.evaluate(expression) for frame in self.frames
+            frame.evaluate(expression, force_expr=True)
+            for frame in self.frames
         ])
 
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
@@ -382,7 +386,7 @@ function addPageBinding(bindingName) {
         message = helper.getExceptionMessage(exceptionDetails)
         self.emit(Page.Events.PageError, PageError(message))
 
-    async def _onConsoleAPI(self, event: dict) -> None:
+    def _onConsoleAPI(self, event: dict) -> None:
         _args = event.get('args', [])
         if (event.get('type') == 'debug' and _args and
                 _args[0]['value'] == 'driver:page-binding'):
@@ -390,32 +394,32 @@ function addPageBinding(bindingName) {
             name = obj.get('name')
             seq = obj.get('seq')
             args = obj.get('args')
-            result = await self._pageBindings[name](*args)
+            result = self._pageBindings[name](*args)
 
             deliverResult = '''
 function deliverResult(name, seq, result) {
-  window[name]['callbacks'].get(seq)(result)
-  window[name]['callbacks'].delete(seq)
+  window[name]['callbacks'].get(seq)(result);
+  window[name]['callbacks'].delete(seq);
 }
             '''
-            expression = helper.evaluationString(deliverResult, name, seq,
-                                                 result)
-            await self._client.send('Runtime.evaluate', {
+            expression = helper.evaluationString(
+                deliverResult, name, seq, result)
+            asyncio.ensure_future(self._client.send('Runtime.evaluate', {
                 'expression': expression,
                 'contextId': event['executionContextId'],
-            })
+            }))
             return
 
         if not self.listeners(Page.Events.Console):
             for arg in _args:
-                await helper.releaseObject(self._client, arg)
+                asyncio.ensure_future(helper.releaseObject(self._client, arg))
             return
 
         _values = []
         for arg in _args:
             _values.append(asyncio.ensure_future(
                 helper.valueFromRemoteObject(arg)))
-        values = await asyncio.gather(*_values)
+        values = asyncio.ensure_future((asyncio.gather(*_values)))
         self.emit(Page.Events.Console, *values)
 
     def _onDialog(self, event: Any) -> None:
@@ -599,12 +603,20 @@ function(html) {
         """Get viewport."""
         return self._viewport
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> str:
-        """Execute js-function on this page and get result."""
+    async def evaluate(self, pageFunction: str, *args: Any,
+                       force_expr: bool = False) -> str:
+        """Execute js-function or js-expression on browser and get result.
+
+        :arg str pageFunction: String of js-function/expression to be executed
+                               on the browser.
+        :arg bool force_expr: If True, evaluate `pageFunction` as expression.
+                              If False (default), try to automatically detect
+                              function of expression.
+        """
         frame = self._frameManager.mainFrame
         if frame is None:
             raise PageError('No main frame.')
-        return await frame.evaluate(pageFunction, *args)
+        return await frame.evaluate(pageFunction, *args, force_expr=force_expr)
 
     async def evaluateOnNewDocument(self, pageFunction: str, *args: str
                                     ) -> None:
