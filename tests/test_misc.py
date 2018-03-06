@@ -5,13 +5,6 @@ import unittest
 
 from pyppeteer.helper import get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
-from pyppeteer.network_manager import removeURLHash
-
-
-class TestURLHash(unittest.TestCase):
-    def test_remove_url_hash(self):
-        url = 'http://example.com/'
-        self.assertEqual(removeURLHash(url), url)
 
 
 class TestToInches(unittest.TestCase):
