@@ -174,7 +174,7 @@ class Page(EventEmitter):
     @property
     def frames(self) -> List['Frame']:
         """Get frames."""
-        return list(self._frames.values())
+        return list(self._frameManager.frames())
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
         """Enable request interception."""
@@ -314,7 +314,7 @@ class Page(EventEmitter):
     async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
         """Execute function on this page."""
-        if self._pageBindings[name]:
+        if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '
                             'window["{name}"] already exists!')
         self._pageBindings[name] = puppeteerFunction
@@ -340,10 +340,9 @@ function addPageBinding(bindingName) {
         expression = helper.evaluationString(addPageBinding, name)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
-        await self._client.send('Runtime.evaluate', {
-            'expression': expression,
-            'returnByValue': True
-        })
+        await asyncio.wait([
+            frame.evaluate(expression) for frame in self.frames
+        ])
 
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
         """Provide credentials for http authentication.
@@ -402,7 +401,8 @@ function deliverResult(name, seq, result) {
             expression = helper.evaluationString(deliverResult, name, seq,
                                                  result)
             await self._client.send('Runtime.evaluate', {
-                'expression': expression
+                'expression': expression,
+                'contextId': event['executionContextId'],
             })
             return
 

@@ -173,13 +173,6 @@ class FrameManager(EventEmitter):
         self._frames.pop(frame._id, None)
         self.emit(FrameManager.Events.FrameDetached, frame)
 
-    # def isMainFrameLoadingFailed(self) -> bool:
-    #     """Check if main frame is laoded correctly."""
-    #     mainFrame = self._mainFrame
-    #     if not mainFrame:
-    #         return True
-    #     return bool(mainFrame._loadingFailed)
-
 
 class Frame(object):
     """Frame class."""
@@ -318,7 +311,10 @@ class Frame(object):
             const script = document.createElement('script');
             script.src = url;
             document.head.appendChild(script);
-            await new Promise(x => script.onload = x);
+            await new Promise((res, rej) => {
+                script.onload = res;
+                script.onerror = rej;
+            });
             return script;
         }'''
 
@@ -358,7 +354,10 @@ class Frame(object):
             link.rel = 'stylesheet';
             link.href = url;
             document.head.appendChild(link);
-            await new Promise(x => link.onload = x);
+            await new Promise((res, rej) => {
+                link.onload = res;
+                link.onerror = rej;
+            });
             return link;
         }'''
 
