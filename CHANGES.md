@@ -5,12 +5,13 @@ History
 
 * **`launch` is now coroutine** (breaking change)
 * Implement `connect` function
+* `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to downlaod chromium
 * Implement `Browser.pages` to acccess all pages
     * Add `Target` class and some new method on Browser
 * Refactor NavigatoinWatcher
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
 * `Request.abort` accepts error code.
-* Fix: Do not change original options dictionary
+* BugFix: Do not change original options dictionary
 
 ## Version 0.0.12 (2018-03-01)
 
