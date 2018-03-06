@@ -6,6 +6,7 @@ History
 * **`launch` is now coroutine** (breaking change)
 * Implement `connect` function
 * `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to downlaod chromium
+* Rename `setRequestInterceptionEnable` to `setRequestInterception`
 * Implement `Browser.pages` to acccess all pages
     * Add `Target` class and some new method on Browser
 * Refactor NavigatoinWatcher

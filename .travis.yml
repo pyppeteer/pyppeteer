@@ -8,9 +8,9 @@ language: python
 matrix:
   include:
     - python: 3.5
-      env: TOXENV="py35-{unittest,nose,pytest}"
+      env: TOXENV="py35"
     - python: 3.6
-      env: TOXENV="py36-{unittest,nose,pytest},cov,flake8,mypy,pydocstyle,docs,codecov"
+      env: TOXENV="py36,flake8,mypy,pydocstyle,docs,codecov"
 
 install:
   - pip install tox
