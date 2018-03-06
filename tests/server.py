@@ -8,6 +8,7 @@ import os
 from typing import Any, Callable
 
 from tornado import web
+from tornado.log import access_log
 
 
 BASE_HTML = '''
@@ -100,9 +101,18 @@ class AuthHandler(web.RequestHandler):
         self.write('ok')
 
 
+def log_handler(handler: Any) -> None:
+    """Override tornado's logging."""
+    # log only errors (status >= 500)
+    if handler.get_status() >= 500:
+        access_log.error(
+            '{} {}'.format(handler.get_status(), handler._request_summary())
+        )
+
+
 def get_application() -> web.Application:
     static_path = os.path.join(os.path.dirname(__file__), 'static')
-    return web.Application([
+    handlers = [
         ('/', MainHandler),
         ('/1', LinkHandler1),
         ('/redirect1', RedirectHandler1),
@@ -111,7 +121,12 @@ def get_application() -> web.Application:
         ('/empty', EmptyHandler),
         ('/long', LongHandler),
         ('/static', web.StaticFileHandler, dict(path=static_path)),
-    ], logging='error', static_path=static_path)
+    ]
+    return web.Application(
+        handlers,
+        log_function=log_handler,
+        static_path=static_path,
+    )
 
 
 if __name__ == '__main__':
