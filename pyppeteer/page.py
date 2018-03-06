@@ -561,6 +561,10 @@ function(html) {
         ))[0]
         return response
 
+    async def bringToFront(self) -> None:
+        """Bring page to front (activate tab)."""
+        await self._client.send('Page.bringToFront')
+
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
         options = merge_dict(options, kwargs)
