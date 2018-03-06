@@ -90,7 +90,7 @@ class NetworkManager(EventEmitter):
         await self._client.send('Network.setUserAgentOverride',
                                 {'userAgent': userAgent})
 
-    async def setRequestInterceptionEnabled(self, value: bool) -> None:
+    async def setRequestInterception(self, value: bool) -> None:
         """Enable request intercetion."""
         self._userRequestInterceptionEnabled = value
         await self._updateProtocolRequestInterception()

@@ -176,9 +176,9 @@ class Page(EventEmitter):
         """Get frames."""
         return list(self._frameManager.frames())
 
-    async def setRequestInterceptionEnabled(self, value: bool) -> None:
+    async def setRequestInterception(self, value: bool) -> None:
         """Enable request interception."""
-        return await self._networkManager.setRequestInterceptionEnabled(value)
+        return await self._networkManager.setRequestInterception(value)
 
     def setOfflineMode(self, enabled: bool) -> Awaitable[None]:
         """Set offline mode enable/disable."""
