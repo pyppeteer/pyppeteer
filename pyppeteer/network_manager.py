@@ -315,20 +315,20 @@ class Request(object):
             return None
         return {'errorText': self._failureText}
 
-    async def continue_(self, overrides: dict) -> None:
+    async def continue_(self, overrides: Dict = None) -> None:
         """Continue request."""
+        if overrides is None:
+            overrides = {}
+
+        if not self._allowInterception:
+            raise NetworkError('Request interception is not enabled.')
+        if self._interceptionHandled:
+            raise NetworkError('Request is already handled.')
+
         self._interceptionHandled = True
-        if 'headers' in overrides:
-            headers = dict()
-            for entry in overrides['headers']:
-                headers[entry[0]] = entry[1]
-        await self._client.send('Network.continueInterceptedRequest', dict(
-            interceptionId=self._interceptionId,
-            url=overrides.get('url'),
-            method=overrides.get('method'),
-            postData=overrides.get('postData'),
-            headers=headers,
-        ))
+        opt = {'interceptionId': self._interceptionId}
+        opt.update(overrides)
+        await self._client.send('Network.continueInterceptedRequest', opt)
 
     async def respond(self, response: Dict) -> None:  # noqa: C901
         """Fulfills request with given response."""
@@ -361,15 +361,16 @@ class Request(object):
         CRLF = '\r\n'
         text = statusLine + CRLF
         for header in responseHeaders:
-            text = text + header + ': ' + responseHeaders[header] + CRLF
+            text = f'{text}{header}: {responseHeaders[header]}{CRLF}'
         text = text + CRLF
         responseBuffer = text.encode('utf-8')
         if responseBody:
             responseBuffer = responseBuffer + responseBody
 
+        rawResponse = base64.b64encode(responseBuffer).decode('ascii')
         await self._client.send('Network.continueInterceptedRequest', {
             'interceptionId': self._interceptionId,
-            'rawResponse': base64.b64encode(responseBuffer),
+            'rawResponse': rawResponse,
         })
 
     async def abort(self, errorCode: str = 'failed') -> None:
@@ -423,7 +424,7 @@ class Response(object):
         self._contentPromise = asyncio.get_event_loop().create_future()
         self.ok = 200 <= status <= 299
         self.url = request.url
-        self._headers = {k.lower(): v for k, v in headers.items()}
+        self.headers = {k.lower(): v for k, v in headers.items()}
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {

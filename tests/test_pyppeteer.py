@@ -885,6 +885,116 @@ a + b
         result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
         self.assertEqual(result, 36)
 
+    @sync
+    async def test_request_interception(self) -> None:
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertIn('empty', req.url)
+            self.assertEqual(req.method, 'GET')
+            self.assertTrue(req.headers.get('User-Agent'))
+            self.assertEqual(req.resourceType, 'document')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_stop(self) -> None:
+        await self.page.setRequestInterception(True)
+        self.page.once('request',
+                       lambda req: asyncio.ensure_future(req.continue_()))
+        await self.page.goto(self.url + 'empty')
+        await self.page.setRequestInterception(False)
+        await self.page.goto(self.url + 'empty')
+
+    @sync
+    async def test_request_interception_custom_header(self):
+        await self.page.setExtraHTTPHeaders({'foo': 'bar'})
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertEqual(req.headers['foo'], 'bar')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_abort_main(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            await req.abort()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto(self.url + 'empty')
+        self.assertEqual(str(cm.exception), 'net::ERR_FAILED')
+
+    @sync
+    async def test_request_interception_abort(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            if req.url.endswith('.css'):
+                await req.abort()
+            else:
+                await req.continue_()
+
+        failedRequests = []
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('requestfailed', lambda e: failedRequests.append(e))
+        res = await self.page.goto(self.url + 'static/one-style.html')
+        self.assertTrue(res.ok)
+        self.assertIsNone(res.request.failure())
+        self.assertEqual(len(failedRequests), 1)
+
+    @sync
+    async def test_request_interception_custom_error_code(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            await req.abort('internetdisconnected')
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        failedRequests = []
+        self.page.on('requestfailed', lambda req: failedRequests.append(req))
+        with self.assertRaises(PageError):
+            await self.page.goto(self.url + 'empty')
+        self.assertEqual(len(failedRequests), 1)
+        failedRequest = failedRequests[0]
+        self.assertEqual(
+            failedRequest.failure()['errorText'],
+            'net::ERR_INTERNET_DISCONNECTED',
+        )
+
+    @sync
+    async def test_request_respond(self) -> None:
+        await self.page.setRequestInterception(True)
+
+        async def interception(req):
+            await req.respond({
+                'status': 201,
+                'headers': {'foo': 'bar'},
+                'body': 'intercepted',
+            })
+
+        self.page.on(
+            'request', lambda req: asyncio.ensure_future(interception(req)))
+        response = await self.page.goto(self.url + 'empty')
+        self.assertEqual(response.status, 201)
+        self.assertEqual(response.headers['foo'], 'bar')
+        body = await self.page.evaluate('() => document.body.textContent')
+        self.assertEqual(body, 'intercepted')
+
 
 class TestWaitForSelector(BaseTestCase):
     addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
