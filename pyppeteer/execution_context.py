@@ -82,14 +82,14 @@ class ExecutionContext(object):
             return {'objectId': objectHandle._remoteObject.get('objectId')}
         return {'value': arg}
 
-    async def queryObject(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
+    async def queryObjects(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
         """Send query to the object."""
         if prototypeHandle._disposed:
             raise ElementHandleError('Prototype JSHandle is disposed!')
         if not prototypeHandle._remoteObject.get('objectId'):
             raise ElementHandleError(
                 'Prototype JSHandle must not be referencing primitive value')
-        response = await self._client.send('Runtime.queryObject', {
+        response = await self._client.send('Runtime.queryObjects', {
             'prototypeObjectId': prototypeHandle._remoteObject['objectId'],
         })
         return self._objectHandleFactory(response.get('objects'))

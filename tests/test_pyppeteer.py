@@ -322,6 +322,42 @@ a + b
         self.assertEqual(await foo.jsonValue(), 'bar')
 
     @sync
+    async def test_query_objects(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate(
+            '() => window.set = new Set(["hello", "world"])'
+        )
+        prototypeHandle = await self.page.evaluateHandle('() => Set.prototype')
+        objectsHandle = await self.page.queryObjects(prototypeHandle)
+        count = await self.page.evaluate(
+            'objects => objects.length',
+            objectsHandle,
+        )
+        self.assertEqual(count, 1)
+        values = await self.page.evaluate(
+            'objects => Array.from(objects[0].values())',
+            objectsHandle,
+        )
+        self.assertEqual(values, ['hello', 'world'])
+
+    @sync
+    async def test_query_objects_disposed(self):
+        await self.page.goto(self.url + 'empty')
+        prototypeHandle = await self.page.evaluateHandle(
+            '() => HTMLBodyElement.prototype'
+        )
+        await prototypeHandle.dispose()
+        with self.assertRaises(ElementHandleError):
+            await self.page.queryObjects(prototypeHandle)
+
+    @sync
+    async def test_query_objects_primitive_value_error(self):
+        await self.page.goto(self.url + 'empty')
+        prototypeHandle = await self.page.evaluateHandle('() => 42')
+        with self.assertRaises(ElementHandleError):
+            await self.page.queryObjects(prototypeHandle)
+
+    @sync
     async def test_element(self):
         elm = await self.page.querySelector('h1')
         text = await self.page.evaluate(
