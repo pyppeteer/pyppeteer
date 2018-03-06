@@ -3,8 +3,22 @@
 
 import unittest
 
+import pyppeteer
 from pyppeteer.helper import get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
+
+
+class TestVersion(unittest.TestCase):
+    def test_version(self):
+        version = pyppeteer.version
+        self.assertTrue(isinstance(version, str))
+        self.assertEqual(version.count('.'), 2)
+
+    def test_version_info(self):
+        vinfo = pyppeteer.version_info
+        self.assertEqual(len(vinfo), 3)
+        for i in vinfo:
+            self.assertTrue(isinstance(i, int))
 
 
 class TestToInches(unittest.TestCase):

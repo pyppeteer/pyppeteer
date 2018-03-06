@@ -13,6 +13,7 @@ History
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
 * `Request.abort` accepts error code
 * Add `force_expr` option to `evaluate` method
+* Add `pyppeteer.version` and `pyppeteer.version_info`
 * BugFix: Do not change original options dictionary
 
 ## Version 0.0.12 (2018-03-01)

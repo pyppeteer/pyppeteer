@@ -12,17 +12,24 @@ __chromimum_revision__ = '533271'
 __base_puppeteer_version__ = 'v0.13.0'
 
 # Setup root logger
-logger = logging.getLogger('pyppeteer')
+_logger = logging.getLogger('pyppeteer')
 _log_handler = logging.StreamHandler()
-# fmt = '%(color)s[%(levelname)1.1s:%(name)s]%(end_color)s '
-fmt = '[{levelname[0]}:{name}] {msg}'
-formatter = logging.Formatter(fmt=fmt, style='{')
-_log_handler.setFormatter(formatter)
+_fmt = '[{levelname[0]}:{name}] {msg}'
+_formatter = logging.Formatter(fmt=_fmt, style='{')
+_log_handler.setFormatter(_formatter)
 _log_handler.setLevel(logging.DEBUG)
-logger.addHandler(_log_handler)
-logger.propagate = False
+_logger.addHandler(_log_handler)
+_logger.propagate = False
 # logger.setLevel(logging.DEBUG)
 
 from pyppeteer.launcher import launch, executablePath  # noqa: E402
 
-__all__ = ['launch', 'executablePath']
+version = __version__
+version_info = tuple(int(i) for i in version.split('.'))
+
+__all__ = [
+    'launch',
+    'executablePath',
+    'version',
+    'version_info',
+]
