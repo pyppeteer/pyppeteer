@@ -52,5 +52,5 @@ class TestLauncher(unittest.TestCase):
 
     @sync
     async def test_close_no_connection(self):
-        browser = launch(args=['--no-sandbox'])
+        browser = await launch(args=['--no-sandbox'])
         await browser.close()

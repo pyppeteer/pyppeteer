@@ -25,8 +25,9 @@ from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
-from pyppeteer.network_manager import NetworkManager, Response
+from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
+from pyppeteer.util import merge_dict
 
 
 class Page(EventEmitter):
@@ -65,22 +66,27 @@ class Page(EventEmitter):
                      appMode: bool = False,
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which make new page."""
-        await client.send('Network.enable', {}),
-        await client.send('Page.enable', {}),
-        await client.send('Runtime.enable', {}),
-        await client.send('Security.enable', {}),
-        await client.send('Performance.enable', {}),
+        await client.send('Page.enable'),
+        frameTree = (await client.send('Page.getFrameTree'))['frameTree']
+        page = Page(client, frameTree, ignoreHTTPSErrors, screenshotTaskQueue)
+
+        await asyncio.wait([
+            client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
+            client.send('Network.enable', {}),
+            client.send('Runtime.enable', {}),
+            client.send('Security.enable', {}),
+            client.send('Performance.enable', {}),
+        ])
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
-        page = Page(client, ignoreHTTPSErrors, screenshotTaskQueue)
-        await page.goto('about:blank')
         if not appMode:
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
     def __init__(self, client: Session,
-                 ignoreHTTPSErrors: bool = True,
+                 frameTree: Dict,
+                 ignoreHTTPSErrors: bool = False,
                  screenshotTaskQueue: list = None,
                  ) -> None:
         """Make new page object."""
@@ -89,7 +95,7 @@ class Page(EventEmitter):
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
-        self._frameManager = FrameManager(client, self)
+        self._frameManager = FrameManager(client, frameTree, self)
         self._networkManager = NetworkManager(client)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
@@ -168,7 +174,7 @@ class Page(EventEmitter):
     @property
     def frames(self) -> List['Frame']:
         """Get frames."""
-        return list(self._frames.values())
+        return list(self._frameManager.frames())
 
     async def setRequestInterceptionEnabled(self, value: bool) -> None:
         """Enable request interception."""
@@ -279,24 +285,22 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, options: Dict = None, **kwargs: str) -> str:
+    async def addScriptTag(self, options: Dict = None, **kwargs: str
+                           ) -> ElementHandle:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await frame.addScriptTag(options)
 
-    async def addStyleTag(self, options: Dict = None, **kwargs: str) -> str:
+    async def addStyleTag(self, options: Dict = None, **kwargs: str
+                          ) -> ElementHandle:
         """Add script tag to this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
-        if options is None:
-            options = {}
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await frame.addStyleTag(options)
 
     async def injectFile(self, filePath: str) -> str:
@@ -310,7 +314,7 @@ class Page(EventEmitter):
     async def exposeFunction(self, name: str, puppeteerFunction: Callable
                              ) -> None:
         """Execute function on this page."""
-        if self._pageBindings[name]:
+        if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '
                             'window["{name}"] already exists!')
         self._pageBindings[name] = puppeteerFunction
@@ -336,10 +340,9 @@ function addPageBinding(bindingName) {
         expression = helper.evaluationString(addPageBinding, name)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
-        await self._client.send('Runtime.evaluate', {
-            'expression': expression,
-            'returnByValue': True
-        })
+        await asyncio.wait([
+            frame.evaluate(expression) for frame in self.frames
+        ])
 
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
         """Provide credentials for http authentication.
@@ -357,7 +360,7 @@ function addPageBinding(bindingName) {
         """Set user agent."""
         return await self._networkManager.setUserAgent(userAgent)
 
-    async def getMetrics(self) -> Dict[str, Any]:
+    async def metrics(self) -> Dict[str, Any]:
         """Get metrics."""
         response = await self._client.send('Performance.getMetrics')
         return self._buildMetricsObject(response['metrics'])
@@ -398,7 +401,8 @@ function deliverResult(name, seq, result) {
             expression = helper.evaluationString(deliverResult, name, seq,
                                                  result)
             await self._client.send('Runtime.evaluate', {
-                'expression': expression
+                'expression': expression,
+                'contextId': event['executionContextId'],
             })
             return
 
@@ -464,41 +468,43 @@ function(html) {
     async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
         """Got to url."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
-        watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
-                                   options)
-        responses: Dict[str, Response] = dict()
-        listener = helper.addEventListener(
-            self._networkManager, NetworkManager.Events.Response,
-            lambda response: responses.__setitem__(response.url, response)
-        )
-        navigationPromise = watcher.waitForNavigation()
+        options = merge_dict(options, kwargs)
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
+        requests: Dict[str, Request] = dict()
+        eventListeners = [helper.addEventListener(
+            self._networkManager, NetworkManager.Events.Request,
+            lambda request: requests.__setitem__(request.url, request)
+        )]
 
-        try:
-            await self._client.send('Page.navigate',
-                                    dict(url=url, referrer=referrer))
-        except Exception:
-            watcher.cancel()
-            helper.removeEventListeners([listener])
-            raise
-        error = await navigationPromise
-        helper.removeEventListeners([listener])
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
+
+        result = await self._navigate(url, referrer)
+        if result is not None:
+            raise PageError(result)
+        result = await watcher.navigationPromise()
+        watcher.cancel()
+        helper.removeEventListeners(eventListeners)
+        error = result[0].pop().exception()  # type: ignore
         if error:
             raise error
 
-        if self._frameManager.isMainFrameLoadingFailed():
-            raise PageError('Failed to navigate: ' + url)
-        return responses.get(self.url)
+        request = requests.get(mainFrame.url)
+        return request.response if request else None
+
+    async def _navigate(self, url: str, referrer: str) -> Optional[str]:
+        response = await self._client.send(
+            'Page.navigate', {'url': url, 'referrer': referrer})
+        if response.get('errorText'):
+            return response['errorText']
+        return None
 
     async def reload(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
         """Reload this page."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         response = (await asyncio.gather(
             self.waitForNavigation(options),
             self._client.send('Page.reload'),
@@ -508,39 +514,36 @@ function(html) {
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
         """Wait navigation completes."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
-        watcher = NavigatorWatcher(self._client, self._ignoreHTTPSErrors,
-                                   options)
+        options = merge_dict(options, kwargs)
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
         responses: Dict[str, Response] = dict()
         listener = helper.addEventListener(
             self._networkManager,
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        error = await watcher.waitForNavigation()
+        result = await watcher.navigationPromise()
         helper.removeEventListeners([listener])
-
+        error = result[0].pop().exception()
         if error:
             raise error
+
         response = responses.get(self.url, None)
         return response
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
         """Go back history."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await self._go(-1, options)
 
     async def goForward(self, options: dict = None, **kwargs: Any
                         ) -> Optional[Response]:
         """Go forward history."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         return await self._go(+1, options)
 
     async def _go(self, delta: int, options: dict) -> Optional[Response]:
@@ -558,11 +561,13 @@ function(html) {
         ))[0]
         return response
 
+    async def bringToFront(self) -> None:
+        """Bring page to front (activate tab)."""
+        await self._client.send('Page.bringToFront')
+
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', ''))
 
@@ -611,8 +616,7 @@ function(html) {
 
     async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
         """Take screen shot."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         screenshotType = None
         if 'path' in options:
             mimeType, _ = mimetypes.guess_type(options['path'])
@@ -685,9 +689,7 @@ function(html) {
 
     async def pdf(self, options: dict = None, **kwargs: Any) -> bytes:
         """Not yet implemented."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
         headerTemplate = options.get('headerTemplate', '')
@@ -759,9 +761,7 @@ function(html) {
     async def click(self, selector: str, options: dict = None, **kwargs: Any
                     ) -> None:
         """Click element which matches `selector`."""
-        if options is None:
-            options = dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -784,31 +784,17 @@ function(html) {
         await self.evaluate('element => element.focus()', handle)
         await handle.dispose()
 
-    async def select(self, selector: str, *values: Any) -> None:
-        """Select option(s)."""
-        await self.querySelectorEval(selector, '''
-(element, values) => {
-    if (element.nodeName.toLowerCase() !== 'select')
-        throw new Error('Element is not a <select> element.');
-
-    const options = Array.from(element.options);
-
-    if (element.multiple) {
-        for (const option of options)
-            option.selected = values.includes(option.value);
-    } else {
-        element.value = values.shift();
-    }
-    element.dispatchEvent(new Event('input', { 'bubbles': true }));
-    element.dispatchEvent(new Event('change', { 'bubbles': true }));
-}
-        ''', values)
+    async def select(self, selector: str, *values: str) -> List[str]:
+        """Select options and return selected values."""
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.select(selector, *values)
 
     async def type(self, selector: str, text: str, options: dict = None,
                    **kwargs: Any) -> None:
         """Type text on the selected element."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         handle = await self.querySelector(selector)
         if handle is None:
             raise PageError('Cannot find {} on this page'.format(selector))

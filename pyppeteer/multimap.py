@@ -4,7 +4,7 @@
 """Multimap module."""
 
 from collections import OrderedDict
-from typing import Any, List, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from typing import Dict  # noqa: F401
@@ -16,9 +16,9 @@ class Multimap(object):
     def __init__(self) -> None:
         """Make new multimap."""
         # maybe defaultdict(set) is better
-        self._map: OrderedDict[str, List[Any]] = OrderedDict()
+        self._map: OrderedDict[Optional[str], List[Any]] = OrderedDict()
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: Optional[str], value: Any) -> None:
         """Set value."""
         _set = self._map.get(key)
         if not _set:
@@ -27,15 +27,15 @@ class Multimap(object):
         if value not in _set:
             _set.append(value)
 
-    def get(self, key: str) -> List[Any]:
+    def get(self, key: Optional[str]) -> List[Any]:
         """Get values."""
         return self._map.get(key, list())
 
-    def has(self, key: str) -> bool:
+    def has(self, key: Optional[str]) -> bool:
         """Check key is in this map."""
         return key in self._map
 
-    def hasValue(self, key: str, value: Any) -> bool:
+    def hasValue(self, key: Optional[str], value: Any) -> bool:
         """Chekc value is in this map."""
         _set = self._map.get(key, list())
         return value in _set
@@ -44,7 +44,7 @@ class Multimap(object):
         """Length of this map."""
         return len(self._map)
 
-    def delete(self, key: str, value: Any) -> bool:
+    def delete(self, key: Optional[str], value: Any) -> bool:
         """Delete value from key."""
         values = self.get(key)
         result = value in values
@@ -54,18 +54,18 @@ class Multimap(object):
             self._map.pop(key)
         return result
 
-    def deleteAll(self, key: str) -> None:
+    def deleteAll(self, key: Optional[str]) -> None:
         """Delete all value of the key."""
         self._map.pop(key, None)
 
-    def firstValue(self, key: str) -> Any:
+    def firstValue(self, key: Optional[str]) -> Any:
         """Get first value of the key."""
         _set = self._map.get(key)
         if not _set:
             return None
         return _set[0]
 
-    def firstKey(self) -> str:
+    def firstKey(self) -> Optional[str]:
         """Get first key."""
         return next(iter(self._map.keys()))
 

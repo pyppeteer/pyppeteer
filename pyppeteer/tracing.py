@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Awaitable
 
 from pyppeteer.connection import Session
+from pyppeteer.util import merge_dict
 
 
 class Tracing(object):
@@ -21,8 +22,7 @@ class Tracing(object):
 
     async def start(self, options: dict = None, **kwargs: Any) -> None:
         """Start."""
-        options = options or dict()
-        options.update(kwargs)
+        options = merge_dict(options, kwargs)
         categoriesArray = [
             '-*', 'devtools.timeline', 'v8.execute',
             'disabled-by-default-devtools.timeline',

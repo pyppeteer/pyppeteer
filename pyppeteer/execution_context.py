@@ -38,7 +38,7 @@ class ExecutionContext(object):
                 'expression': pageFunction,
                 'contextId': self._contextId,
                 'returnByValue': False,
-                'awaitPromiss': True,
+                'awaitPromise': True,
             })
             exceptionDetails = _obj.get('exceptionDetails')
             if exceptionDetails:
@@ -53,7 +53,7 @@ class ExecutionContext(object):
             'executionContextId': self._contextId,
             'arguments': [self._convertArgument(arg) for arg in args],
             'returnByValue': False,
-            'awaitPromiss': True,
+            'awaitPromise': True,
         })
         exceptionDetails = _obj.get('exceptionDetails')
         if exceptionDetails:
@@ -125,7 +125,7 @@ class JSHandle(object):
         """Get all properties."""
         response = await self._client.send('Runtime.getProperties', {
             'objectId': self._remoteObject.get('objectId', ''),
-            'ownProperties': True
+            'ownProperties': True,
         })
         result = dict()
         for prop in response['result']:

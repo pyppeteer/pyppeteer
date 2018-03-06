@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
 import base64
 import functools
 import os
@@ -31,8 +32,15 @@ class EmptyHandler(web.RequestHandler):
         self.write('')
 
 
+class LongHandler(web.RequestHandler):
+    async def get(self) -> None:
+        await asyncio.sleep(1)
+        self.write('')
+
+
 class LinkHandler1(web.RequestHandler):
     def get(self) -> None:
+        self.set_status(200)
         self.write('''
 <head><title>link1</title></head>
 <h1 id="link1">Link1</h1>
@@ -101,14 +109,12 @@ def get_application() -> web.Application:
         ('/redirect2', RedirectHandler2),
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
+        ('/long', LongHandler),
         ('/static', web.StaticFileHandler, dict(path=static_path)),
     ], logging='error', static_path=static_path)
 
 
 if __name__ == '__main__':
-    import asyncio
-    from pyppeteer.util import install_asyncio
-    install_asyncio()
     app = get_application()
     app.listen(9000)
     asyncio.get_event_loop().run_forever()

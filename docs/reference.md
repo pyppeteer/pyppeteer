@@ -13,6 +13,9 @@ Browser
 .. autoclass:: pyppeteer.browser.Browser
    :members:
 
+.. autoclass:: pyppeteer.browser.Target
+   :members:
+
 
 Page
 ----
