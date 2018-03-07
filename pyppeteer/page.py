@@ -415,12 +415,20 @@ function deliverResult(name, seq, result) {
                 asyncio.ensure_future(helper.releaseObject(self._client, arg))
             return
 
-        _values = []
+        _id = event['executionContextId']
+        values = []
         for arg in _args:
-            _values.append(asyncio.ensure_future(
-                helper.valueFromRemoteObject(arg)))
-        values = asyncio.ensure_future((asyncio.gather(*_values)))
-        self.emit(Page.Events.Console, *values)
+            values.append(self._frameManager.createJSHandle(_id, arg))
+
+        textTokens = []
+        for arg, value in zip(_args, values):
+            if arg.get('objectId'):
+                textTokens.append(value.toString())
+            else:
+                textTokens.append(str(helper.valueFromRemoteObject(arg)))
+
+        message = ConsoleMessage(event['type'], ' '.join(textTokens), values)
+        self.emit(Page.Events.Console, message)
 
     def _onDialog(self, event: Any) -> None:
         dialogType = ''
