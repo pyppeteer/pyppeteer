@@ -42,9 +42,16 @@ def task_docs():
     }
 
 
+def task_readme():
+    """Check long description for package."""
+    return {
+        'actions': ['python setup.py check -r -s'],
+    }
+
+
 def task_check():
     """Run flake8/mypy/pydocstyle/docs tasks."""
     return {
         'actions': None,
-        'task_dep': ['flake8', 'mypy', 'pydocstyle', 'docs']
+        'task_dep': ['flake8', 'mypy', 'pydocstyle', 'docs', 'readme']
     }
