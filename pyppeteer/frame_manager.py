@@ -4,6 +4,7 @@
 """Frame Manager module."""
 
 import asyncio
+from collections import OrderedDict
 import re
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
@@ -37,7 +38,7 @@ class FrameManager(EventEmitter):
         super().__init__()
         self._client = client
         self._page = page
-        self._frames: Dict[str, Frame] = dict()
+        self._frames: OrderedDict[str, Frame] = OrderedDict()
         self._mainFrame: Optional[Frame] = None
         self._contextIdToContext: Dict[str, ExecutionContext] = dict()
 

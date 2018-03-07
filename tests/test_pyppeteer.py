@@ -22,7 +22,10 @@ from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError, PyppeteerError
 from pyppeteer.launcher import connect
 from pyppeteer.util import get_free_port
+
 from server import get_application, BASE_HTML
+from frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
+
 
 DEFAULT_OPTIONS = {'args': ['--no-sandbox']}
 
@@ -1151,6 +1154,156 @@ class TestWaitForSelector(BaseTestCase):
         )
         await asyncio.sleep(0.1)
         self.assertTrue(div)
+
+
+class TestFrames(BaseTestCase):
+    @sync
+    async def test_frame_context(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        self.assertEqual(len(self.page.frames), 2)
+        frame1 = self.page.frames[0]
+        frame2 = self.page.frames[1]
+        self.assertTrue(frame1.executionContext)
+        self.assertTrue(frame2.executionContext)
+
+        await frame1.executionContext.evaluate('() => window.a = 1')
+        await frame2.executionContext.evaluate('() => window.a = 2')
+        a1 = await frame1.executionContext.evaluate('() => window.a')
+        a2 = await frame2.executionContext.evaluate('() => window.a')
+        self.assertEqual(a1, 1)
+        self.assertEqual(a2, 2)
+
+    @sync
+    async def test_frame_evaluate(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        self.assertEqual(len(self.page.frames), 2)
+        frame1 = self.page.frames[0]
+        frame2 = self.page.frames[1]
+        await frame1.evaluate('() => window.a = 1')
+        await frame2.evaluate('() => window.a = 2')
+        a1 = await frame1.evaluate('window.a')
+        a2 = await frame2.evaluate('window.a')
+        self.assertEqual(a1, 1)
+        self.assertEqual(a2, 2)
+
+    @sync
+    async def test_frame_cross_site(self):
+        await self.page.goto(self.url + 'empty')
+        mainFrame = self.page.mainFrame
+        loc = await mainFrame.evaluate('window.location.href')
+        self.assertIn('localhost', loc)
+        await self.page.goto('http://127.0.0.1:{}/empty'.format(self.port))
+        loc = await mainFrame.evaluate('window.location.href')
+        self.assertIn('127.0.0.1', loc)
+
+    @sync
+    async def test_frame_nested(self) -> None:
+        await self.page.goto(self.url + 'static/nested-frames.html')
+        dumped_frames = dumpFrames(self.page.mainFrame)
+        try:
+            self.assertEqual(
+                dumped_frames, '''
+http://localhost:{port}/static/nested-frames.html
+    http://localhost:{port}/static/two-frames.html
+        http://localhost:{port}/static/frame.html
+        http://localhost:{port}/static/frame.html
+    http://localhost:{port}/static/frame.html
+                '''.format(port=self.port).strip()
+            )
+        except AssertionError:
+            print('\n== Nested frame test failed, which is unstable ==')
+            print(dumpFrames(self.page.mainFrame))
+
+    @sync
+    async def test_frame_events(self) -> None:
+        await self.page.goto(self.url + 'empty')
+        attachedFrames = []
+        self.page.on('frameattached', lambda f: attachedFrames.append(f))
+        await attachFrame(self.page, 'frame1', './static/frame.html')
+        self.assertEqual(len(attachedFrames), 1)
+        self.assertIn('static/frame.html', attachedFrames[0].url)
+
+        navigatedFrames = []
+        self.page.on('framenavigated', lambda f: navigatedFrames.append(f))
+        await navigateFrame(self.page, 'frame1', '/empty')
+        self.assertEqual(len(navigatedFrames), 1)
+        self.assertIn('empty', navigatedFrames[0].url)
+
+        detachedFrames = []
+        self.page.on('framedetached', lambda f: detachedFrames.append(f))
+        await detachFrame(self.page, 'frame1')
+        self.assertEqual(len(detachedFrames), 1)
+        self.assertTrue(detachedFrames[0].isDetached)
+
+    @sync
+    async def test_frame_events_main(self) -> None:
+        # no attach/detach events should be emitted on main frame
+        events = []
+        navigatedFrames = []
+        self.page.on('frameattached', lambda f: events.append(f))
+        self.page.on('framedetached', lambda f: events.append(f))
+        self.page.on('framenavigated', lambda f: navigatedFrames.append(f))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(events)
+        self.assertEqual(len(navigatedFrames), 1)
+
+    @sync
+    async def test_frame_events_child(self) -> None:
+        attachedFrames = []
+        detachedFrames = []
+        navigatedFrames = []
+        self.page.on('frameattached', lambda f: attachedFrames.append(f))
+        self.page.on('framedetached', lambda f: detachedFrames.append(f))
+        self.page.on('framenavigated', lambda f: navigatedFrames.append(f))
+        await self.page.goto(self.url + 'static/nested-frames.html')
+        self.assertEqual(len(attachedFrames), 4)
+        self.assertEqual(len(detachedFrames), 0)
+        self.assertEqual(len(navigatedFrames), 5)
+
+        attachedFrames.clear()
+        detachedFrames.clear()
+        navigatedFrames.clear()
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(len(attachedFrames), 0)
+        self.assertEqual(len(detachedFrames), 4)
+        self.assertEqual(len(navigatedFrames), 1)
+
+    @sync
+    async def test_frame_name(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'FrameId', self.url + 'empty')
+        await asyncio.sleep(0.1)
+        await self.page.evaluate(
+            '''(url) => {
+                const frame = document.createElement('iframe');
+                frame.name = 'FrameName';
+                frame.src = url;
+                document.body.appendChild(frame);
+                return new Promise(x => frame.onload = x);
+            }''', self.url + 'empty')
+        await asyncio.sleep(0.1)
+
+        frame1 = self.page.frames[0]
+        frame2 = self.page.frames[1]
+        frame3 = self.page.frames[2]
+        self.assertEqual(frame1.name, '')
+        self.assertEqual(frame2.name, 'FrameId')
+        self.assertEqual(frame3.name, 'FrameName')
+
+    @sync
+    async def test_frame_parent(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        await attachFrame(self.page, 'frame2', self.url + 'empty')
+        frame1 = self.page.frames[0]
+        frame2 = self.page.frames[1]
+        frame3 = self.page.frames[2]
+        self.assertEqual(frame1, self.page.mainFrame)
+        self.assertEqual(frame1.parentFrame, None)
+        self.assertEqual(frame2.parentFrame, frame1)
+        self.assertEqual(frame3.parentFrame, frame1)
 
 
 class TestPage(unittest.TestCase):
