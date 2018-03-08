@@ -1235,7 +1235,7 @@ http://localhost:{port}/static/nested-frames.html
         self.page.on('framedetached', lambda f: detachedFrames.append(f))
         await detachFrame(self.page, 'frame1')
         self.assertEqual(len(detachedFrames), 1)
-        self.assertTrue(detachedFrames[0].isDetached)
+        self.assertTrue(detachedFrames[0].isDetached())
 
     @sync
     async def test_frame_events_main(self) -> None:
