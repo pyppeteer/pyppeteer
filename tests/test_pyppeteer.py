@@ -361,14 +361,19 @@ a + b
             await self.page.queryObjects(prototypeHandle)
 
     @sync
-    async def test_element(self):
+    async def test_query_elector(self):
         elm = await self.page.querySelector('h1')
         text = await self.page.evaluate(
             '(element) => element.textContent', elm)
         self.assertEqual('Hello', text)
 
     @sync
-    async def test_elements(self):
+    async def test_query_elector_not_found(self):
+        elm = await self.page.querySelector('span')
+        self.assertIsNone(elm)
+
+    @sync
+    async def test_query_selector_all(self):
         elms = await self.page.querySelectorAll('a')
         self.assertEqual(len(elms), 2)
         elm1 = elms[0]
@@ -380,9 +385,31 @@ a + b
             self.assertEqual(await self.page.evaluate(func, elm2), 'link2')
 
     @sync
-    async def test_elements_eval(self):
+    async def test_query_selector_all_not_found(self):
+        elms = await self.page.querySelectorAll('span')
+        self.assertEqual(elms, [])
+
+    @sync
+    async def test_query_elector_eval(self):
+        result = await self.page.querySelectorEval(
+            'h1', '(elm) => elm.textContent')
+        self.assertEqual(result, 'Hello')
+
+    @sync
+    async def test_query_elector_eval_not_found(self):
+        with self.assertRaises(PageError):
+            await self.page.querySelectorEval('span', '(elm) => elm')
+
+    @sync
+    async def test_query_selector_all_eval(self):
         ln = await self.page.querySelectorAllEval('a', 'nodes => nodes.length')
         self.assertEqual(ln, 2)
+
+    @sync
+    async def test_query_selector_all_eval_not_fount(self):
+        ln = await self.page.querySelectorAllEval(
+            'span', 'nodes => nodes.length')
+        self.assertEqual(ln, 0)
 
     @sync
     async def test_element_inner_html(self):
@@ -398,7 +425,7 @@ a + b
 
     @sync
     async def test_element_attr(self):
-        _id = await self.page.querySelectorEval('h1', ('(elm) => elm.id'))
+        _id = await self.page.querySelectorEval('h1', '(elm) => elm.id')
         self.assertEqual('hello', _id)
 
     @sync
@@ -447,6 +474,26 @@ a + b
         self.assertEqual(len(elements), 0)
 
     @sync
+    async def test_hover(self) -> None:
+        await self.page.hover('a#link1')
+        _id = await self.page.evaluate('document.querySelector("a:hover").id')
+        self.assertEqual(_id, 'link1')
+
+        await self.page.hover('a#link2')
+        _id = await self.page.evaluate('document.querySelector("a:hover").id')
+        self.assertEqual(_id, 'link2')
+
+    @sync
+    async def test_hover_not_found(self) -> None:
+        with self.assertRaises(PageError):
+            await self.page.hover('#no-such-element')
+
+    @sync
+    async def test_focus_not_found(self) -> None:
+        with self.assertRaises(PageError):
+            await self.page.focus('#no-such-element')
+
+    @sync
     async def test_click(self):
         await self.page.click('#link1')
         await asyncio.sleep(0.05)
@@ -462,6 +509,85 @@ a + b
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(self.page.url, self.url + '1')
         self.assertEqual(await self.page.title(), 'link1')
+
+    @sync
+    async def test_select(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        value = await self.page.select('select', 'blue')
+        self.assertEqual(value, ['blue'])
+        _input = await self.page.evaluate('result.onInput')
+        self.assertEqual(_input, ['blue'])
+        change = await self.page.evaluate('result.onChange')
+        self.assertEqual(change, ['blue'])
+
+        _input = await self.page.evaluate('result.onBubblingInput')
+        self.assertEqual(_input, ['blue'])
+        change = await self.page.evaluate('result.onBubblingChange')
+        self.assertEqual(change, ['blue'])
+
+    @sync
+    async def test_select_multiple(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        await self.page.evaluate('makeMultiple();')
+        values = await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(values, ['blue', 'green', 'red'])
+        _input = await self.page.evaluate('result.onInput')
+        self.assertEqual(_input, ['blue', 'green', 'red'])
+        change = await self.page.evaluate('result.onChange')
+        self.assertEqual(change, ['blue', 'green', 'red'])
+
+    @sync
+    async def test_select_not_select_element(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.select('body', '')
+
+    @sync
+    async def test_select_no_match(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        values = await self.page.select('select', 'abc', 'def')
+        self.assertEqual(values, [])
+
+    @sync
+    async def test_select_not_multiple(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        values = await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(len(values), 1)
+
+    @sync
+    async def test_select_no_value(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        values = await self.page.select('select')
+        self.assertEqual(values, [])
+
+    @sync
+    async def test_select_deselect(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        await self.page.select('select', 'blue', 'green', 'red')
+        await self.page.select('select')
+        result = await self.page.Jeval(
+            'select',
+            'elm => Array.from(elm.options).every(option => !option.selected)'
+        )
+        self.assertTrue(result)
+
+    @sync
+    async def test_select_deselect_multiple(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        await self.page.evaluate('makeMultiple();')
+        await self.page.select('select', 'blue', 'green', 'red')
+        await self.page.select('select')
+        result = await self.page.Jeval(
+            'select',
+            'elm => Array.from(elm.options).every(option => !option.selected)'
+        )
+        self.assertTrue(result)
+
+    @sync
+    async def test_select_nonstring(self) -> None:
+        await self.page.goto(self.url + 'static/select.html')
+        with self.assertRaises(TypeError):
+            await self.page.select('select', 12)
 
     @sync
     async def test_wait_for_timeout(self):
@@ -665,35 +791,6 @@ a + b
         styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
-
-    @sync
-    async def test_select_error(self):
-        await self.page.goto(self.url + 'static/select.html')
-        with self.assertRaises(ElementHandleError):
-            await self.page.select('body', '')
-
-    @sync
-    async def test_select_no_match(self):
-        await self.page.goto(self.url + 'static/select.html')
-        result = await self.page.select('select', '42', 'abc')
-        self.assertEqual(result, [])
-
-    @sync
-    async def test_select_match(self):
-        await self.page.goto(self.url + 'static/select.html')
-        result = await self.page.select('select', 'blue', 'black', 'magenta')
-        self.assertEqual(result, ['magenta'])
-
-    @sync
-    async def test_select_match_deselect(self):
-        await self.page.goto(self.url + 'static/select.html')
-        await self.page.select('select', 'blue', 'black', 'magenta')
-        await self.page.select('select')
-        result = await self.page.Jeval(
-            'select',
-            'select => Array.from(select.options).every(option => !option.selected)',  # noqa: E501
-        )
-        self.assertTrue(result)
 
     @sync
     async def test_key_type(self):
