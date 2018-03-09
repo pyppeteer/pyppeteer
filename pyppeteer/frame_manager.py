@@ -392,6 +392,12 @@ class Frame(object):
 
     async def select(self, selector: str, *values: str) -> List[str]:
         """Select options and return selected values."""
+        for value in values:
+            if not isinstance(value, str):
+                raise TypeError(
+                    'Values must be string. '
+                    f'Found {value} of type {type(value)}'
+                )
         return await self.querySelectorEval(  # type: ignore
             selector, '''
 (element, values) => {
