@@ -186,8 +186,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       amount of milliseconds.
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
-    * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
-      is dangerous option; use with care.
+    * ``ignoreDefaultArgs`` (bool): [not implemented yet] Do not use
+      pyppeteer's default args. This is dangerous option; use with care.
     * ``userDataDir`` (str): Path to a user data directory.
     * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
       If this option is ``True``, the ``headless`` option will be set
