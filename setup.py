@@ -48,13 +48,13 @@ requirements = [
 
 test_requirements = [
     'syncer',
-    'tornado',
+    'tornado>=5',
     'wdom',
 ]
 
 setup(
     name='pyppeteer',
-    version='0.0.12',
+    version='0.0.13',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,

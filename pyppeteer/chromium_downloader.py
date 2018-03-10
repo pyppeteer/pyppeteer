@@ -5,6 +5,7 @@
 
 from io import BytesIO
 import logging
+import os
 from pathlib import Path
 import stat
 import sys
@@ -15,7 +16,10 @@ from pyppeteer import __chromimum_revision__ as REVISION
 
 logger = logging.getLogger(__name__)
 DOWNLOADS_FOLDER = Path.home() / '.pyppeteer' / 'local-chromium'
-BASE_URL = 'https://storage.googleapis.com/chromium-browser-snapshots'
+DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
+DOWNLOAD_HOST = os.environ.get(
+    'PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
+BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
 
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',

@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
 import base64
 import functools
 import os
 from typing import Any, Callable
 
 from tornado import web
+from tornado.log import access_log
 
 
 BASE_HTML = '''
@@ -31,8 +33,15 @@ class EmptyHandler(web.RequestHandler):
         self.write('')
 
 
+class LongHandler(web.RequestHandler):
+    async def get(self) -> None:
+        await asyncio.sleep(1)
+        self.write('')
+
+
 class LinkHandler1(web.RequestHandler):
     def get(self) -> None:
+        self.set_status(200)
         self.write('''
 <head><title>link1</title></head>
 <h1 id="link1">Link1</h1>
@@ -92,23 +101,35 @@ class AuthHandler(web.RequestHandler):
         self.write('ok')
 
 
+def log_handler(handler: Any) -> None:
+    """Override tornado's logging."""
+    # log only errors (status >= 500)
+    if handler.get_status() >= 500:
+        access_log.error(
+            '{} {}'.format(handler.get_status(), handler._request_summary())
+        )
+
+
 def get_application() -> web.Application:
     static_path = os.path.join(os.path.dirname(__file__), 'static')
-    return web.Application([
+    handlers = [
         ('/', MainHandler),
         ('/1', LinkHandler1),
         ('/redirect1', RedirectHandler1),
         ('/redirect2', RedirectHandler2),
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
+        ('/long', LongHandler),
         ('/static', web.StaticFileHandler, dict(path=static_path)),
-    ], logging='error', static_path=static_path)
+    ]
+    return web.Application(
+        handlers,
+        log_function=log_handler,
+        static_path=static_path,
+    )
 
 
 if __name__ == '__main__':
-    import asyncio
-    from pyppeteer.util import install_asyncio
-    install_asyncio()
     app = get_application()
     app.listen(9000)
     asyncio.get_event_loop().run_forever()

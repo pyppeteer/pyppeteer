@@ -44,7 +44,7 @@ import asyncio
 from pyppeteer import launch
 
 async def main():
-    browser = launch()
+    browser = await launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
@@ -60,7 +60,7 @@ import asyncio
 from pyppeteer import launch
 
 async def main():
-    browser = launch()
+    browser = await launch()
     page = await browser.newPage()
     await page.goto('http://example.com')
     await page.screenshot({'path': 'example.png'})
@@ -96,31 +96,43 @@ These are differences between puppeteer and pyppeteer.
 
 ### Keyword argument for options
 
-Puppeteer uses object (dictionary in python) for passing options to functions/methods.
-Pyppeteer accepts both dictionary and keyword argument for options.
+Puppeteer uses object (dictionary in python) for passing options to
+functions/methods. Pyppeteer accepts both dictionary and keyword argument for
+options.
 
 Dictionary style option (similar to puppeteer):
 
 ```python
-browser = launch({'headless': True})
+browser = await launch({'headless': True})
 ```
 
 Keyword argument style option (more pythonic, isn't it?):
 
 ```python
-browser = launch(headless=True)
+browser = await launch(headless=True)
 ```
 
 ### Element selector method name (`$` -> `querySelector`)
 
 In python, `$` is not usable for method name.
-So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and `Page.querySelectorAll()` instead of `Page.$$()`.
+So pyppeteer uses `Page.querySelector()` instead of `Page.$()`, and
+`Page.querySelectorAll()` instead of `Page.$$()`.
 Pyppeteer has shorthands for these methods, `Page.J()` and `Page.JJ()`.
 
 ### Argument of `Page.evaluate()` and `Page.querySelectorEval()`
 
-Puppeteer's version of `evaluate()` takes JavaScript raw function, but
-pyppeteer takes string of JavaScript function.
+Puppeteer's version of `evaluate()` takes JavaScript raw function or string of
+JavaScript expression, but pyppeteer takes string of JavaScript. JavaScript
+strings can be function or expression. Pyppeteer tries to automatically detect
+the string is function or expression, but sometimes fails. If expression string
+is treated as function, and raise error, add `force_expr=True` option, which
+force pyppeteer to treat the string as expression.
+
+Example to get page content:
+
+```python
+content = await page.evaluate('document.body.textContent', force_expr=True)
+```
 
 Example to get element's inner text:
 

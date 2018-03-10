@@ -8,21 +8,30 @@ from pathlib import Path
 from typing import Any, Awaitable
 
 from pyppeteer.connection import Session
+from pyppeteer.util import merge_dict
 
 
 class Tracing(object):
     """Tracing class."""
 
     def __init__(self, client: Session) -> None:
-        """Make new tracing object."""
         self._client = client
         self._recording = False
         self._path = ''
 
     async def start(self, options: dict = None, **kwargs: Any) -> None:
-        """Start."""
-        options = options or dict()
-        options.update(kwargs)
+        """Start tracing.
+
+        Only one trace can be active at a time per browser.
+
+        This method accepts the following options:
+
+        * ``path`` (str): A path to write the trace file to. **required**
+        * ``screenshots`` (bool): Capture screenshots in the trace.
+        * ``categories`` (List[str]): Specify custom categories to use instead
+          of default.
+        """
+        options = merge_dict(options, kwargs)
         categoriesArray = [
             '-*', 'devtools.timeline', 'v8.execute',
             'disabled-by-default-devtools.timeline',
@@ -43,7 +52,7 @@ class Tracing(object):
         })
 
     async def stop(self) -> Awaitable:
-        """Stop."""
+        """Stop tracing."""
         contentPromise = asyncio.get_event_loop().create_future()
         self._client.once(
             'Tracing.tracingComplete',

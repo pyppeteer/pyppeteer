@@ -23,22 +23,30 @@ class ExecutionContext(object):
         self._contextId = contextId
         self._objectHandleFactory = objectHandleFactory
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
-        """Execute `pageFunction` on this context."""
-        handle = await self.evaluateHandle(pageFunction, *args)
+    async def evaluate(self, pageFunction: str, *args: Any,
+                       force_expr: bool = False) -> Any:
+        """Execute ``pageFunction`` on this context.
+
+        Details see :meth:`pyppeteer.page.Page.evaluate`.
+        """
+        handle = await self.evaluateHandle(
+            pageFunction, *args, force_expr=force_expr)
         result = await handle.jsonValue()
         await handle.dispose()
         return result
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any
-                             ) -> 'JSHandle':
-        """Execute `pageFunction` on this context."""
-        if not args and not helper.is_jsfunc(pageFunction):
+    async def evaluateHandle(self, pageFunction: str, *args: Any,
+                             force_expr: bool = False) -> 'JSHandle':
+        """Execute ``pageFunction`` on this context.
+
+        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
+        """
+        if force_expr or (not args and not helper.is_jsfunc(pageFunction)):
             _obj = await self._client.send('Runtime.evaluate', {
                 'expression': pageFunction,
                 'contextId': self._contextId,
                 'returnByValue': False,
-                'awaitPromiss': True,
+                'awaitPromise': True,
             })
             exceptionDetails = _obj.get('exceptionDetails')
             if exceptionDetails:
@@ -53,7 +61,7 @@ class ExecutionContext(object):
             'executionContextId': self._contextId,
             'arguments': [self._convertArgument(arg) for arg in args],
             'returnByValue': False,
-            'awaitPromiss': True,
+            'awaitPromise': True,
         })
         exceptionDetails = _obj.get('exceptionDetails')
         if exceptionDetails:
@@ -80,21 +88,28 @@ class ExecutionContext(object):
             return {'objectId': objectHandle._remoteObject.get('objectId')}
         return {'value': arg}
 
-    async def queryObject(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
-        """Send query to the object."""
+    async def queryObjects(self, prototypeHandle: 'JSHandle') -> 'JSHandle':
+        """Send query.
+
+        Details see :meth:`pyppeteer.page.Page.queryObjects`.
+        """
         if prototypeHandle._disposed:
             raise ElementHandleError('Prototype JSHandle is disposed!')
         if not prototypeHandle._remoteObject.get('objectId'):
             raise ElementHandleError(
                 'Prototype JSHandle must not be referencing primitive value')
-        response = await self._client.send('Runtime.queryObject', {
+        response = await self._client.send('Runtime.queryObjects', {
             'prototypeObjectId': prototypeHandle._remoteObject['objectId'],
         })
         return self._objectHandleFactory(response.get('objects'))
 
 
 class JSHandle(object):
-    """JS Handle class."""
+    """JSHandle class.
+
+    JSHandle represents an in-page JavaScript object. JSHandle can be created
+    with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.
+    """
 
     def __init__(self, context: ExecutionContext, client: Session,
                  remoteObject: Dict) -> None:
@@ -109,7 +124,7 @@ class JSHandle(object):
         return self._context
 
     async def getProperty(self, propertyName: str) -> 'JSHandle':
-        """Get property value of `propertyName`."""
+        """Get property value of ``propertyName``."""
         objectHandle = await self._context.evaluateHandle(
             '''(object, propertyName) => {
                 const result = {__proto__: null};
@@ -122,10 +137,10 @@ class JSHandle(object):
         return result
 
     async def getProperties(self) -> Dict[str, 'JSHandle']:
-        """Get all properties."""
+        """Get all properties of this handle."""
         response = await self._client.send('Runtime.getProperties', {
             'objectId': self._remoteObject.get('objectId', ''),
-            'ownProperties': True
+            'ownProperties': True,
         })
         result = dict()
         for prop in response['result']:
@@ -136,7 +151,7 @@ class JSHandle(object):
         return result
 
     async def jsonValue(self) -> Dict:
-        """Get Jsonized value."""
+        """Get Jsonized value of this object."""
         objectId = self._remoteObject.get('objectId')
         if objectId:
             response = await self._client.send('Runtime.callFunctionOn', {
@@ -149,11 +164,11 @@ class JSHandle(object):
         return helper.valueFromRemoteObject(self._remoteObject)
 
     def asElement(self) -> Optional['ElementHandle']:
-        """Get as element."""
+        """Return either null or the object handle itself."""
         return None
 
     async def dispose(self) -> None:
-        """Dispose this handle."""
+        """Stop referencing the handle."""
         if self._disposed:
             return
         self._disposed = True

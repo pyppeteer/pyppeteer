@@ -1,3 +1,2 @@
 syncer
-tornado
-wdom
+tornado>=5

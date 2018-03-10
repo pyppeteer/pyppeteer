@@ -3,6 +3,7 @@
 
 """Chromium process launcher module."""
 
+import asyncio
 import atexit
 import logging
 import os
@@ -18,7 +19,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.util import check_chromium, chromium_excutable
-from pyppeteer.util import download_chromium
+from pyppeteer.util import download_chromium, merge_dict
 
 if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
@@ -54,13 +55,13 @@ AUTOMATION_ARGS = [
 
 
 class Launcher(object):
-    """Chromium parocess launcher class."""
+    """Chrome parocess launcher class."""
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
-        self.options = options or dict()
-        self.options.update(kwargs)
+        self.options = merge_dict(options, kwargs)
         self.chrome_args = DEFAULT_ARGS
+        self.chromeClosed = True
         if self.options.get('appMode', False):
             self.options['headless'] = False
         else:
@@ -97,8 +98,6 @@ class Launcher(object):
                     CHROME_PROFILIE_PATH.mkdir(parents=True)
                 self._tmp_user_data_dir = tempfile.mkdtemp(
                     dir=str(CHROME_PROFILIE_PATH))
-                # maybe better after register(self.killChrome)
-                atexit.register(self._cleanup_tmp_user_data_dir)
             self.chrome_args.append('--user-data-dir={}'.format(
                 self.options.get('userDataDir', self._tmp_user_data_dir)))
         if isinstance(self.options.get('args'), list):
@@ -108,22 +107,32 @@ class Launcher(object):
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             shutil.rmtree(self._tmp_user_data_dir)
 
-    def launch(self) -> Browser:
-        """Start chromium process."""
+    async def launch(self) -> Browser:
+        """Start chrome process and return `Browser` object."""
         env = self.options.get('env', {})
+        self.chromeClosed = False
+        self.connection: Optional[Connection] = None
         self.proc = subprocess.Popen(
             self.cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             env=env,
         )
-        atexit.register(self.killChrome)
+
+        def _close_process() -> None:
+            if not self.chromeClosed:
+                asyncio.get_event_loop().run_until_complete(self.killChrome())
+
+        # dont forget to close browser process
+        atexit.register(_close_process)
+
         import time
         for _ in range(100):
             # wait for DevTools port to open for at least 10sec
             # setting timeout timer is bettter
             time.sleep(0.1)
             if self.proc.poll() is not None:
+                self._cleanup_tmp_user_data_dir()
                 raise BrowserError('Unexpectedly chrome process closed with '
                                    f'return code: {self.proc.returncode}')
             msg = self.proc.stdout.readline().decode()
@@ -137,37 +146,88 @@ class Launcher(object):
             raise BrowserError('Failed to connect DevTools port.')
         logger.debug(m.group(0))
         connectionDelay = self.options.get('slowMo', 0)
-        connection = Connection(m.group(1).strip(), connectionDelay)
-        return Browser(connection, self.options, self.killChrome)
+        self.browserWSEndpoint = m.group(1).strip()
+        self.connection = Connection(self.browserWSEndpoint, connectionDelay)
+        return await Browser.create(
+            self.connection, self.options, self.killChrome)
 
-    def killChrome(self) -> None:
-        """Terminate chromium process."""
-        logger.debug('terminate chrome process...')
-        if self.proc.poll() is None:
+    def waitForChromeToClose(self) -> None:
+        """Terminate chrome."""
+        if self.proc.poll() is None and not self.chromeClosed:
+            self.chromeClosed = True
             self.proc.terminate()
             self.proc.wait()
+            self._cleanup_tmp_user_data_dir()
 
-    async def connect(self, options: Dict = None) -> Browser:
-        """Not Implemented."""
-        raise NotImplementedError('NotImplemented')
-        # if options is None:
-        #     options = {}
-        # connection = await Connection.create(browserWSEndpoint)
-        # return Browser(connection, options)
-
-
-def launch(options: dict = None, **kwargs: Any) -> Browser:
-    """Start chromium process and return `Browser` object."""
-    return Launcher(options, **kwargs).launch()
+    async def killChrome(self) -> None:
+        """Terminate chromium process."""
+        logger.debug('terminate chrome process...')
+        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            self.waitForChromeToClose()
+        else:
+            if self.connection:
+                await self.connection.send('Browser.close')
 
 
-def connect(options: dict = None) -> Browser:
-    """Not Implemented."""
-    raise NotImplementedError('NotImplemented')
-    # l = Launcher(options)
-    # return l.connect()
+async def launch(options: dict = None, **kwargs: Any) -> Browser:
+    """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
+
+    This function is a shotcut to :meth:`Launcher(options, **kwargs).launch`.
+
+    Available options are:
+
+    * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
+      ``False``.
+    * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
+      ``True`` unless ``appMode`` or ``devtools`` options is ``True``.
+    * ``executablePath`` (str): Path to a Chromium or Chrome executable to run
+      instead of default bundled Chromium.
+    * ``slowMo`` (int|float): Sles down pyppeteer operations by the specified
+      amount of milliseconds.
+    * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
+      process.
+    * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
+      is dangerous option; use with care.
+    * ``userDataDir`` (str): Path to a user data directory.
+    * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
+      If this option is ``True``, the ``headless`` option will be set
+      ``False``.
+    * ``appMode`` (bool): Deprecated.
+
+    .. note::
+        Pyppeteer can also be used to control the Chrome browser, but it works
+        best with the version of Chromium it is bundled with. There is no
+        guarantee it will work with any other version. Use ``executablePath``
+        option with extreme caution.
+    """
+    return await Launcher(options, **kwargs).launch()
+
+
+async def connect(options: dict = None, **kwargs: Any) -> Browser:
+    """Connect to the existing chrome.
+
+    ``browserWSEndpoint`` option is necessary to connect to the chrome. The
+    format is ``ws://${host}:${port}/devtools/browser/<id>``. This value can
+    get by :attr:`~pyppeteer.browser.Browser.wsEndpoint`.
+
+    Available options are:
+
+    * ``browserWSEndpoint`` (str): A browser websocket endpoint to connect to.
+      (**required**)
+    * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
+      ``False``.
+    * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
+      milliseconds.
+    """
+    options = merge_dict(options, kwargs)
+    browserWSEndpoint = options.get('browserWSEndpoint')
+    if not browserWSEndpoint:
+        raise BrowserError('Need `browserWSEndpoint` option.')
+    connection = Connection(browserWSEndpoint)
+    return await Browser.create(
+        connection, options, lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:
-    """Get executable path of chromium."""
+    """Get executable path of default chrome."""
     return str(chromium_excutable())

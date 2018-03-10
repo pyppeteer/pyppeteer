@@ -16,10 +16,15 @@ blank_pdf_path = root_path / 'blank.pdf'
 
 class TestScreenShot(TestCase):
     def setUp(self):
-        self.browser = launch(args=['--no-sandbox'])
+        self.browser = sync(launch(args=['--no-sandbox']))
         self.target_path = Path(__file__).resolve().parent / 'test.png'
         if self.target_path.exists():
             self.target_path.unlink()
+
+    def tearDown(self):
+        if self.target_path.exists():
+            self.target_path.unlink()
+        sync(self.browser.close())
 
     @sync
     async def test_screenshot(self):
@@ -37,6 +42,16 @@ class TestScreenShot(TestCase):
         self.assertEqual(result, sample)
 
     @sync
+    async def test_screenshot_element(self):
+        page = await self.browser.newPage()
+        await page.goto('http://example.com')
+        element = await page.J('h1')
+        options = {'path': str(self.target_path)}
+        self.assertFalse(self.target_path.exists())
+        await element.screenshot(options)
+        self.assertTrue(self.target_path.exists())
+
+    @sync
     async def test_unresolved_mimetype(self):
         page = await self.browser.newPage()
         await page.goto('about:blank')
@@ -44,15 +59,10 @@ class TestScreenShot(TestCase):
         with self.assertRaises(PageError, msg='mime type: unsupported'):
             await page.screenshot(options)
 
-    def tearDown(self):
-        if self.target_path.exists():
-            self.target_path.unlink()
-        sync(self.browser.close())
-
 
 class TestPDF(TestCase):
     def setUp(self):
-        self.browser = launch(args=['--no-sandbox'])
+        self.browser = sync(launch(args=['--no-sandbox']))
         self.target_path = Path(__file__).resolve().parent / 'test.pdf'
         if self.target_path.exists():
             self.target_path.unlink()
