@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.13 (next version)
+## Version 0.0.13 (2018-03-10)
 
 * `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function
