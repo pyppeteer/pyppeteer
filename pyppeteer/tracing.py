@@ -15,13 +15,22 @@ class Tracing(object):
     """Tracing class."""
 
     def __init__(self, client: Session) -> None:
-        """Make new tracing object."""
         self._client = client
         self._recording = False
         self._path = ''
 
     async def start(self, options: dict = None, **kwargs: Any) -> None:
-        """Start."""
+        """Start tracing.
+
+        Only one trace can be active at a time per browser.
+
+        This method accepts the following options:
+
+        * ``path`` (str): A path to write the trace file to. **required**
+        * ``screenshots`` (bool): Capture screenshots in the trace.
+        * ``categories`` (List[str]): Specify custom categories to use instead
+          of default.
+        """
         options = merge_dict(options, kwargs)
         categoriesArray = [
             '-*', 'devtools.timeline', 'v8.execute',
@@ -43,7 +52,7 @@ class Tracing(object):
         })
 
     async def stop(self) -> Awaitable:
-        """Stop."""
+        """Stop tracing."""
         contentPromise = asyncio.get_event_loop().create_future()
         self._client.once(
             'Tracing.tracingComplete',

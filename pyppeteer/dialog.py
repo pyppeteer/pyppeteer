@@ -8,7 +8,10 @@ from pyppeteer.connection import Session
 
 
 class Dialog(object):
-    """Dialog class."""
+    """Dialog class.
+
+    Dialog objects are dispatched by page via the ``dialog`` event.
+    """
 
     Type = SimpleNamespace(
         Alert='alert',
@@ -19,7 +22,6 @@ class Dialog(object):
 
     def __init__(self, client: Session, type: str, message: str,
                  defaultValue: str = '') -> None:
-        """Make new dialog."""
         self._client = client
         self._type = type
         self._message = message
@@ -28,7 +30,10 @@ class Dialog(object):
 
     @property
     def type(self) -> str:
-        """Get dialog type."""
+        """Get dialog type.
+
+        One of ``alert``, ``beforeunload``, ``confirm``, or ``prompt``.
+        """
         return self._type
 
     def message(self) -> str:
@@ -36,11 +41,18 @@ class Dialog(object):
         return self._message
 
     def defaultValue(self) -> str:
-        """Get default selected dialog value."""
+        """If dialog is prompt, get default prompt value.
+
+        If dialog is not prompt, return empty string (``''``).
+        """
         return self._defalutValue
 
     async def accept(self, promptText: str = '') -> None:
-        """Accept the dialog."""
+        """Accept the dialog.
+
+        * ``promptText`` (str): A text to enter in prompt. If the dialog's type
+          is not prompt, this does not cause any effect.
+        """
         self._handled = True
         await self._client.send('Page.handleJavaScriptDialog', {
             'accept': True,

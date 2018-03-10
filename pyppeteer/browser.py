@@ -16,7 +16,12 @@ from pyppeteer.util import merge_dict
 
 
 class Browser(EventEmitter):
-    """Browser class."""
+    """Browser class.
+
+    A Broser object is created when pyppeteer connects to chrome, either
+    through :func:`~pyppeteer.launcer.launch` or
+    :func:`~pyppeteer.launcer.connect`.
+    """
 
     Events = SimpleNamespace(
         TargetCreated='targetcreated',
@@ -28,7 +33,6 @@ class Browser(EventEmitter):
     def __init__(self, connection: Connection, options: Dict = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
-        """Make new browser object."""
         super().__init__()
         options = merge_dict(options, kwargs)
         self._ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
@@ -86,11 +90,11 @@ class Browser(EventEmitter):
 
     @property
     def wsEndpoint(self) -> str:
-        """Retrun websocket endpoint url."""
+        """Retrun websocket end point url."""
         return self._connection.url
 
     async def newPage(self) -> Page:
-        """Make new page on browser and return it."""
+        """Make new page on this browser and return its object."""
         targetId = (await self._connection.send(
             'Target.createTarget',
             {'url': 'about:blank'})).get('targetId')

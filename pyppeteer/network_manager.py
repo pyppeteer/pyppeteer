@@ -9,7 +9,7 @@ from collections import OrderedDict
 import json
 from urllib.parse import unquote
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, Optional, TYPE_CHECKING
+from typing import Awaitable, Dict, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -285,7 +285,6 @@ class Request(object):
     def __init__(self, client: Session, requestId: Optional[str],
                  interceptionId: str, allowInterception: bool, url: str,
                  resourceType: str, payload: dict) -> None:
-        """Make new request class."""
         self._client = client
         self._requestId = requestId
         self._interceptionId = interceptionId
@@ -305,18 +304,41 @@ class Request(object):
         self._completePromise.set_result(None)
 
     @property
-    def response(self) -> Any:
-        """Get response."""
+    def response(self) -> Optional['Response']:
+        """Return matching :class:`Response` object, or ``None``.
+
+        If the response has not been recieved, return ``None``.
+        """
         return self._response
 
     def failure(self) -> Optional[Dict]:
-        """Return error text."""
+        """Return error text.
+
+        Return ``None`` unless this request was failed, as reported by
+        ``requestfailed`` event.
+
+        When request failed, this method return dictionary which has a
+        ``errorText`` field, which contains human-readable error message, e.g.
+        ``'net::ERR_RAILED'``.
+        """
         if not self._failureText:
             return None
         return {'errorText': self._failureText}
 
     async def continue_(self, overrides: Dict = None) -> None:
-        """Continue request."""
+        """Continue request with optional request overrides.
+
+        To use this method, request interception should be enabled by
+        :meth:`pyppeteer.page.Page.setRequestInterception`. If request
+        interception is not enabled, raise ``NetworkError``.
+
+        ``overrides`` can have the following fields:
+
+        * ``url`` (str): If set, the request url will be changed.
+        * ``method`` (str): If set, change the request method (e.g. ``GET``).
+        * ``postData`` (str): If set, change the post data or request.
+        * ``headers`` (dict): If set, change the request HTTP header.
+        """
         if overrides is None:
             overrides = {}
 
@@ -331,7 +353,20 @@ class Request(object):
         await self._client.send('Network.continueInterceptedRequest', opt)
 
     async def respond(self, response: Dict) -> None:  # noqa: C901
-        """Fulfills request with given response."""
+        """Fulfills request with given response.
+
+        To use this, request interception shuold by enabled by
+        :meth:`pyppeteer.page.Page.setRequestInterception`. Requst interception
+        is not enabled, raise ``NetworkError``.
+
+        ``response`` is a dictinary which can have the following fields:
+
+        * ``status`` (int): Response status code, defaults to 200.
+        * ``headers`` (dict): Optional response headers.
+        * ``contentType`` (str): If set, euqals to setting ``Content-Type``
+          response header.
+        * ``body`` (str|bytes): Optional response body.
+        """
         if self.url.startswith('data:'):
             return
         if not self._allowInterception:
@@ -374,7 +409,18 @@ class Request(object):
         })
 
     async def abort(self, errorCode: str = 'failed') -> None:
-        """Abort request."""
+        """Abort request.
+
+        To use this, request interception should be enabled by
+        :meth:`pyppeteer.page.Page.setRequestInterception`.
+        If request interception is not enabled, raise ``NetworkError``.
+
+        ``errorCode`` is an optional error code string. Defaults to ``failed``,
+        could be one of the following: ``aborted``, ``accesdenied``,
+        ``addressunreachable``, ``connectionaborted``, ``connectionclosed``,
+        ``connectionfailed``, ``connnectionrefused``, ``connectionreset``,
+        ``internetdisconnected``, ``namenotresolved``, ``timedout``, ``failed``
+        """
         errorReason = errorReasons[errorCode]
         if not errorReason:
             raise NetworkError('Unknown error code: {}'.format(errorCode))
@@ -406,7 +452,7 @@ errorReasons = {
 
 
 class Response(object):
-    """Response class."""
+    """Response class represents responses which are recieved by ``Page``."""
 
     #: whether the repoonse succeeded or not.
     ok: bool
@@ -417,7 +463,6 @@ class Response(object):
 
     def __init__(self, client: Session, request: Request, status: int,
                  headers: Dict[str, str]) -> None:
-        """Make new response."""
         self._client = client
         self._request = request
         self.status = status
@@ -435,25 +480,25 @@ class Response(object):
             return base64.b64decode(body)
         return body
 
-    def buffer(self) -> Awaitable:
-        """Get buffer."""
+    def buffer(self) -> Awaitable[bytes]:
+        """Retrun awaitable which resolves to bytes with response body."""
         if not self._contentPromise.done():
             return asyncio.ensure_future(self._bufread())
         return self._contentPromise
 
     async def text(self) -> str:
-        """Get content as text."""
+        """Get text representation of response body."""
         content = await self.buffer()
         return content.decode('utf-8')
 
     async def json(self) -> dict:
-        """Get content as json."""
+        """Get JSON representation of response body."""
         content = await self.text()
         return json.loads(content)
 
     @property
     def request(self) -> Request:
-        """Get request."""
+        """Get matching :class:`Request` object."""
         return self._request
 
 

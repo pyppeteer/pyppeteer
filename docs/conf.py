@@ -44,16 +44,16 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.githubpages',
     'sphinx.ext.viewcode',
-    'sphinx_autodoc_typehints',
+    # 'sphinx_autodoc_typehints',
     'sphinxcontrib.asyncio',
     'm2r',
 ]
 
 primary_domain = 'py'
 default_rale = 'py:obj'
-autodoc_member_order = 'bysource'
+# autodoc_member_order = 'bysource'
 # include class' and __init__'s docstring
-autoclass_content = 'both'
+# autoclass_content = 'both'
 # autodoc_docstring_signature = False
 autodoc_default_flags = ['show-inheritance']
 
@@ -74,8 +74,8 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Pyppeteer'
-copyright = u"2017, Hiroyuki Takagi"
+project = 'Pyppeteer'
+copyright = "2017, Hiroyuki Takagi"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -248,8 +248,8 @@ latex_elements = {
 # [howto/manual]).
 latex_documents = [
     ('index', 'pyppeteer.tex',
-     u'pyppeteer Documentation',
-     u'Hiroyuki Takagi', 'manual'),
+     'pyppeteer Documentation',
+     'Hiroyuki Takagi', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -279,8 +279,8 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'pyppeteer',
-     u'pyppeteer Documentation',
-     [u'Hiroyuki Takagi'], 1)
+     'pyppeteer Documentation',
+     ['Hiroyuki Takagi'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -294,8 +294,8 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     ('index', 'pyppeteer',
-     u'pyppeteer Documentation',
-     u'Hiroyuki Takagi',
+     'pyppeteer Documentation',
+     'Hiroyuki Takagi',
      'pyppeteer',
      'One line description of project.',
      'Miscellaneous'),

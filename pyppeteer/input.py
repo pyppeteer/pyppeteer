@@ -19,14 +19,27 @@ class Keyboard(object):
     """Keyboard class."""
 
     def __init__(self, client: Session) -> None:
-        """Make new keyboard object."""
         self._client = client
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
     async def down(self, key: str, options: dict = None, **kwargs: Any
                    ) -> None:
-        """Press key down."""
+        """Dispatches a ``keydown`` event with ``key``.
+
+        If ``key`` is a single character and no modifier keys besides ``shift``
+        are being held down, and a ``keyparess``/``input`` event will also
+        generated. The ``text`` option can be specified to force an ``input``
+        event to be generated.
+
+        If ``key`` is a modifier key, like ``Shift``, ``Meta``, or ``Alt``,
+        subsequent key presses will be sent with that modifier active. To
+        release the modifier key, use :meth:`up` method.
+
+        :arg str key: Name of key to press, such as ``ArrowLeft``.
+        :arg dict options: Option can have ``text`` field, and if this option
+            spedified, generate an input event with this text.
+        """
         options = merge_dict(options, kwargs)
 
         description = self._keyDescriptionForString(key)
@@ -106,7 +119,10 @@ class Keyboard(object):
         return description
 
     async def up(self, key: str) -> None:
-        """Up pressed key."""
+        """Dispatches a ``keyup`` event of the ``key``.
+
+        :arg str key: Name of key to release, such as ``ArrowLeft``.
+        """
         description = self._keyDescriptionForString(key)
 
         self._modifiers &= ~self._modifierBit(description['key'])
@@ -121,7 +137,10 @@ class Keyboard(object):
         })
 
     async def sendCharacter(self, char: str) -> None:
-        """Send character."""
+        """Dispatches a ``keypress`` and ``input`` event.
+
+        This does not send a ``keydown`` or ``keyup`` event.
+        """
         await self._client.send('Input.dispatchKeyEvent', {
             'type': 'char',
             'modifiers': self._modifiers,
@@ -132,7 +151,19 @@ class Keyboard(object):
 
     async def type(self, text: str, options: Dict = None, **kwargs: Any
                    ) -> None:
-        """Type characters."""
+        """Type characters.
+
+        This method sends ``keydown``, ``keypress``/``input``, and ``keyup``
+        event for each character in the ``text``.
+
+        To press a special key, like ``Control`` or ``ArrowDown``, use
+        :meth:`press` method.
+
+        :arg str text: Text to type into this element.
+        :arg dict options: Options can have ``delay`` (int|float) field, which
+          specifies time to wait between key presses in milliseconds. Defaults
+          to 0.
+        """
         options = merge_dict(options, kwargs)
 
         delay = 0
@@ -148,7 +179,22 @@ class Keyboard(object):
 
     async def press(self, key: str, options: Dict = None, **kwargs: Any
                     ) -> None:
-        """Press key."""
+        """Press ``key``.
+
+        If ``key`` is a single character and no modifier keys besides
+        ``Shift`` are being held down, a ``keypress``/``input`` event will also
+        generated. The ``text`` option can be specified to force an input event
+        to be generated.
+
+        :arg str key: Name of key to press, such as ``ArrowLeft``.
+
+        This method accepts the following options:
+
+        * ``text`` (str): If specified, generates an input event with this
+          text.
+        * ``delay`` (int|float): Time to wait between ``keydown`` and
+          ``keyup``. Defaults to 0.
+        """
         options = merge_dict(options, kwargs)
 
         await self.down(key, options)
@@ -161,7 +207,6 @@ class Mouse(object):
     """Mouse class."""
 
     def __init__(self, client: Session, keyboard: Keyboard) -> None:
-        """Make new mouse object."""
         self._client = client
         self._keyboard = keyboard
         self._x = 0.0
@@ -170,7 +215,11 @@ class Mouse(object):
 
     async def move(self, x: float, y: float, options: dict = None,
                    **kwargs: Any) -> None:
-        """Move cursor."""
+        """Move mouse cursor (dispatches a ``mousemove`` event).
+
+        Options can accepts ``steps`` (int) field. If this ``steps`` option
+        specified, Sends intermediate ``mousemove`` events. Defaults to 1.
+        """
         options = merge_dict(options, kwargs)
         fromX = self._x
         fromY = self._y
@@ -190,7 +239,18 @@ class Mouse(object):
 
     async def click(self, x: float, y: float, options: dict = None,
                     **kwargs: Any) -> None:
-        """Click button at (x, y)."""
+        """Click button at (``x``, ``y``).
+
+        Shortcut to :meth:`move`, :meth:`down`, and :meth:`up`.
+
+        This method accepts the following options:
+
+        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
+          ``left``.
+        * ``clickCount`` (int): defaults to 1.
+        * ``delay`` (int|float): Time to wait between ``mousedown`` and
+          ``mouseup`` in milliseconds. Defaults to 0.
+        """
         options = merge_dict(options, kwargs)
         await self.move(x, y)
         await self.down(options)
@@ -199,7 +259,14 @@ class Mouse(object):
         await self.up(options)
 
     async def down(self, options: dict = None, **kwargs: Any) -> None:
-        """Press down button."""
+        """Press down button (dispatches ``mousedown`` event).
+
+        This method accepts the following options:
+
+        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
+          ``left``.
+        * ``clickCount`` (int): defaults to 1.
+        """
         options = merge_dict(options, kwargs)
         self._button = options.get('button', 'left')
         await self._client.send('Input.dispatchMouseEvent', {
@@ -212,7 +279,14 @@ class Mouse(object):
         })
 
     async def up(self, options: dict = None, **kwargs: Any) -> None:
-        """Up pressed button."""
+        """Release pressed button (dispatches ``mouseup`` event).
+
+        This method accepts the following options:
+
+        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
+          ``left``.
+        * ``clickCount`` (int): defaults to 1.
+        """
         options = merge_dict(options, kwargs)
         self._button = 'none'
         await self._client.send('Input.dispatchMouseEvent', {
@@ -234,7 +308,10 @@ class Touchscreen(object):
         self._keyboard = keyboard
 
     async def tap(self, x: float, y: float) -> None:
-        """Tap (x, y)."""
+        """Tap (``x``, ``y``).
+
+        Dispatches a ``touchstart`` and ``touchend`` event.
+        """
         touchPoints = [{'x': round(x), 'y': round(y)}]
         await self._client.send('Input.dispatchTouchEvent', {
             'type': 'touchStart',

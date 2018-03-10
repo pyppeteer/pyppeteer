@@ -31,8 +31,17 @@ from pyppeteer.util import merge_dict
 
 
 class Page(EventEmitter):
-    """Page class."""
+    """Page class.
 
+    This class provides methods to interact with a single tab of chrome. One
+    :class:`~pyppeteer.browser.Browser` object might have multiple Page object.
+
+    The :class:`Page` class emits various :attr:`~Page.Events` which can be
+    handled by using ``on`` or ``once`` method, which is inherited from
+    `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``EventEmitter`` class.
+    """
+
+    #: Available events.
     Events = SimpleNamespace(
         Console='console',
         Dialog='dialog',
@@ -65,7 +74,7 @@ class Page(EventEmitter):
     async def create(client: Session, ignoreHTTPSErrors: bool = False,
                      appMode: bool = False,
                      screenshotTaskQueue: list = None) -> 'Page':
-        """Async function which make new page."""
+        """Async function which makes new page object."""
         await client.send('Page.enable'),
         frameTree = (await client.send('Page.getFrameTree'))['frameTree']
         page = Page(client, frameTree, ignoreHTTPSErrors, screenshotTaskQueue)
@@ -89,7 +98,6 @@ class Page(EventEmitter):
                  ignoreHTTPSErrors: bool = False,
                  screenshotTaskQueue: list = None,
                  ) -> None:
-        """Make new page object."""
         super().__init__()
         self._client = client
         self._keyboard = Keyboard(client)
@@ -145,21 +153,24 @@ class Page(EventEmitter):
 
     @property
     def mainFrame(self) -> Optional['Frame']:
-        """Get main frame."""
+        """Get main :class:`~pyppeteer.frame_manager.Frame` of this page."""
         return self._frameManager._mainFrame
 
     @property
     def keyboard(self) -> Keyboard:
-        """Get keybord object."""
+        """Get :class:`~pyppeteer.input.Keyboard` object."""
         return self._keyboard
 
     @property
     def touchscreen(self) -> Touchscreen:
-        """Get touchscreen object."""
+        """Get :class:`~pyppeteer.input.Touchscreen` object."""
         return self._touchscreen
 
     async def tap(self, selector: str) -> None:
-        """Tap the element which matches selector."""
+        """Tap the element which matches the ``selector``.
+
+        :arg str selector: A selector to search element to touch.
+        """
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -173,11 +184,11 @@ class Page(EventEmitter):
 
     @property
     def frames(self) -> List['Frame']:
-        """Get frames."""
+        """Get all frames of this page."""
         return list(self._frameManager.frames())
 
     async def setRequestInterception(self, value: bool) -> None:
-        """Enable request interception."""
+        """Enable/disable request interception."""
         return await self._networkManager.setRequestInterception(value)
 
     async def setOfflineMode(self, enabled: bool) -> None:
@@ -195,7 +206,14 @@ class Page(EventEmitter):
         )
 
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
-        """Get Element which matches `selector`."""
+        """Get an Element which matches ``selector``.
+
+        :arg str selector: A selector to search element.
+        :return Optional[ElementHandle]: If element which matches the
+            ``selector`` is found, return its
+            :class:`~pyppeteer.element_handle.ElementHandle`. If not found,
+            returns ``None``.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -203,7 +221,14 @@ class Page(EventEmitter):
 
     async def evaluateHandle(self, pageFunction: str, *args: Any
                              ) -> JSHandle:
-        """Execute function on this page."""
+        """Execute function on this page.
+
+        Difference between :meth:`~pyppeteer.page.Page.evaluate` and
+        :meth:`~pyppeteer.page.Page.evaluateHandle` is that
+        ``evaluateHandle`` returns JSHandle object (not value).
+
+        :arg str pageFunction: JavaScript function to be executed.
+        """
         if not self.mainFrame:
             raise PageError('no main frame.')
         if not self.mainFrame.executionContext:
@@ -212,7 +237,10 @@ class Page(EventEmitter):
             pageFunction, *args)
 
     async def queryObjects(self, prototypeHandle: JSHandle) -> JSHandle:
-        """Iterate js heap and finds all the objects with the handle."""
+        """Iterate js heap and finds all the objects with the handle.
+
+        :arg JSHandle prototypeHandle: JSHandle of prototype object.
+        """
         if not self.mainFrame:
             raise PageError('no main frame.')
         if not self.mainFrame.executionContext:
@@ -222,7 +250,16 @@ class Page(EventEmitter):
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:
-        """Execute function on element which matches selector."""
+        """Execute function with an element which matches ``selector``.
+
+        :arg str selector: A selector to query page for.
+        :arg str pageFunction: String of JavaScript function to be evaluated on
+                               browser. This function takes an element which
+                               matches the selector as a first argument.
+        :arg Any args: Arguments to pass to ``pageFunction``.
+
+        This method raises error if no element matched the ``selector``.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -230,26 +267,40 @@ class Page(EventEmitter):
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
                                    *args: Any) -> Optional[Any]:
-        """Get Element which matches `selector`."""
+        """Execute function with all elements which matches ``selector``.
+
+        :arg str selector: A selector to query page for.
+        :arg str pageFunction: String of JavaScript function to be evaluated on
+                               browser. This function takes Array of the
+                               matched elements as the first argument.
+        :arg Any args: Arguments to pass to ``pageFunction``.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return await frame.querySelectorAllEval(selector, pageFunction, *args)
 
     async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
-        """Get Element which matches `selector`."""
+        """Get all element which matches `selector` as a list.
+
+        :arg str selector: A selector to search element.
+        :return List[ElementHandle]: List of
+            :class:`~pyppeteer.element_handle.ElementHandle` which matches the
+            ``selector``. If no element is matched to the ``selector``, return
+            empty list.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return await frame.querySelectorAll(selector)
 
-    #: alias to querySelector
+    #: alias to :meth:`Page.querySelector`
     J = querySelector
-    #: alias to querySelectorEval
+    #: alias to :meth:`Page.querySelectorEval`
     Jeval = querySelectorEval
-    #: alias to querySelectorAll
+    #: alias to :meth:`Page.querySelectorAll`
     JJ = querySelectorAll
-    #: alias to querySelectorAllEval
+    #: alias to :meth:`Page.querySelectorAllEval`
     JJeval = querySelectorAllEval
 
     async def cookies(self, *urls: str) -> dict:
@@ -287,7 +338,16 @@ class Page(EventEmitter):
 
     async def addScriptTag(self, options: Dict = None, **kwargs: str
                            ) -> ElementHandle:
-        """Add script tag to this page."""
+        """Add script tag to this page.
+
+        One of ``url``, ``path`` or ``content`` option is necessary.
+            * ``url`` (string): URL of a script to add.
+            * ``path`` (string): Path to the local JavaScript file to add.
+            * ``content`` (string): JavaScript string to add.
+
+        :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
+                               of added tag.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -296,7 +356,16 @@ class Page(EventEmitter):
 
     async def addStyleTag(self, options: Dict = None, **kwargs: str
                           ) -> ElementHandle:
-        """Add script tag to this page."""
+        """Add style or link tag to this page.
+
+        One of ``url``, ``path`` or ``content`` option is necessary.
+            * ``url`` (string): URL of the link tag to add.
+            * ``path`` (string): Path to the local CSS file to add.
+            * ``content`` (string): CSS string to add.
+
+        :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
+                               of added tag.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -304,7 +373,10 @@ class Page(EventEmitter):
         return await frame.addStyleTag(options)
 
     async def injectFile(self, filePath: str) -> str:
-        """[Deprecated] Inject file to this page."""
+        """[Deprecated] Inject file to this page.
+
+        This method is deprecated. Use :meth:`addScriptTag` instead.
+        """
         warnings.warn('Page.injectFile is deprecated.', DeprecationWarning)
         frame = self.mainFrame
         if not frame:
@@ -313,9 +385,13 @@ class Page(EventEmitter):
 
     async def exposeFunction(self, name: str, pyppeteerFunction: Callable
                              ) -> None:
-        """Register python function to chrome as `name`.
+        """Add python function to the browser's ``window`` object as ``name``.
 
         Registered function can be called from chrome process.
+
+        :arg string name: Name of the function on the window object.
+        :arg Callable pyppeteerFunction: Function which will be called on
+                                         python process.
         """
         if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '
@@ -351,8 +427,8 @@ function addPageBinding(bindingName) {
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
         """Provide credentials for http authentication.
 
-        `credentials` should be `None` or dict which has `username` and
-        `password` in its keys.
+        ``credentials`` should be ``None`` or dict which has ``username`` and
+        ``password`` field.
         """
         return await self._networkManager.authenticate(credentials)
 
@@ -467,7 +543,7 @@ function deliverResult(name, seq, result) {
         '''.strip())
 
     async def setContent(self, html: str) -> None:
-        """Set content."""
+        """Set content to this page."""
         func = '''
 function(html) {
   document.open();
@@ -479,7 +555,10 @@ function(html) {
 
     async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
-        """Got to url."""
+        """Go to the url.
+
+        :arg string url: URL to go.
+        """
         options = merge_dict(options, kwargs)
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
@@ -525,7 +604,7 @@ function(html) {
 
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
-        """Wait navigation completes."""
+        """Wait for navigation completes."""
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
         if mainFrame is None:
@@ -580,11 +659,13 @@ function(html) {
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
         """Emulate viewport and user agent."""
         options = merge_dict(options, kwargs)
+        # TODO: if options does not have viewport or userAgent,
+        # skip its setting.
         await self.setViewport(options.get('viewport', {}))
         await self.setUserAgent(options.get('userAgent', ''))
 
     async def setJavaScriptEnabled(self, enabled: bool) -> None:
-        """Set JavaScript enabled/disabled."""
+        """Set JavaScript enable/disable."""
         await self._client.send('Emulation.setScriptExecutionDisabled', {
             'value': not enabled,
         })
@@ -598,7 +679,16 @@ function(html) {
         })
 
     async def setViewport(self, viewport: dict) -> None:
-        """Set viewport."""
+        """Set viewport.
+
+        Available options are:
+            * ``width`` (int): page width in pixel.
+            * ``height`` (int): page height in pixel.
+            * ``deviceScaleFactor`` (float): Default to 1.0.
+            * ``isMobile`` (bool): Default to ``False``.
+            * ``hasTouch`` (bool): Default to ``False``.
+            * ``isLandscape`` (bool): Default to ``False``.
+        """
         needsReload = await self._emulationManager.emulateViewport(
             self._client, viewport,
         )
@@ -608,18 +698,23 @@ function(html) {
 
     @property
     def viewport(self) -> dict:
-        """Get viewport."""
+        """Get viewport dict.
+
+        Field of returned dict is same as :meth:`setViewport`.
+        """
         return self._viewport
 
     async def evaluate(self, pageFunction: str, *args: Any,
-                       force_expr: bool = False) -> str:
+                       force_expr: bool = False) -> Any:
         """Execute js-function or js-expression on browser and get result.
 
         :arg str pageFunction: String of js-function/expression to be executed
                                on the browser.
         :arg bool force_expr: If True, evaluate `pageFunction` as expression.
                               If False (default), try to automatically detect
-                              function of expression.
+                              function or expression.
+
+        note: ``force_expr`` option is a keyword only argument.
         """
         frame = self._frameManager.mainFrame
         if frame is None:
@@ -628,14 +723,43 @@ function(html) {
 
     async def evaluateOnNewDocument(self, pageFunction: str, *args: str
                                     ) -> None:
-        """Evaluate js-function on new document."""
+        """Add a JavaScript function to the document.
+
+        This function would be invoked in one of the following scenarios:
+
+        * whenever the page is navigated
+        * whenever the child frame is attached or navigated. Inthis case, the
+          function is invoked in the context of the newly attached frame.
+        """
         source = helper.evaluationString(pageFunction, *args)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {
             'source': source,
         })
 
     async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
-        """Take screen shot."""
+        """Take a screen shot.
+
+        The following options are available:
+
+        * ``path`` (str): The file path to save the image to. The screenshot
+          type will be inferred from the file extension.
+        * ``type`` (str): Specify screenshot type, can be either ``jpeg`` or
+          ``png``. Defaults to ``png``.
+        * ``quality`` (int): The quality of the image, between 0-100. Not
+          applicable to ``png`` image.
+        * ``fullpage`` (bool): When true, take a screenshot of the full
+          scrollable page. Defaults to ``False``.
+        * ``clip`` (dict): An object which specifies clipping region of the
+          page. This option should have the following fields:
+
+          * ``x`` (int): x-coordinate of top-left corner of clip area.
+          * ``y`` (int): y-coordinate of top-left corner of clip area.
+          * ``width`` (int): width of clipping area.
+          * ``height`` (int): height of clipping area.
+
+        * ``omitBackground`` (bool): Hide default white background and allow
+          capturing screenshot with transparency.
+        """
         options = merge_dict(options, kwargs)
         screenshotType = None
         if 'path' in options:
@@ -708,7 +832,43 @@ function(html) {
         return buffer
 
     async def pdf(self, options: dict = None, **kwargs: Any) -> bytes:
-        """Not yet implemented."""
+        """Generate a pdf of the page.
+
+        Options:
+
+        * ``path`` (str): The file path to save the PDF.
+        * ``scale`` (float): Scale of the webpage rendering, defaults to ``1``.
+        * ``displayHeaderFooter`` (bool): Display header and footer.
+          Defaults to ``False``.
+        * ``headerTemplate`` (str): HTML template for the print header. Should
+          be valid HTML markup with following classes.
+
+          * ``data``: formatted print date
+          * ``title``: document title
+          * ``url``: document location
+          * ``pageNumber``: current page number
+          * ``totalPages``: total pages in the document
+
+        * ``footerTemplate`` (str): HTML template for the print footer. Should
+          use the same template as ``headerTemplate``.
+        * ``printBackground`` (bool): Print background graphics. Defaults to
+          ``False``.
+        * ``landscape`` (bool): Paper orientation. Defaults to ``False``.
+        * ``pageRanges`` (string): Paper ranges to print, e.g., '1-5,8,11-13'.
+          Defaults to empty string, which means all pages.
+        * ``foramt`` (str): Paper format. If set, takes prioprity over
+          ``width`` or ``height``. Defaults to ``Letter``.
+        * ``width`` (str): Paper width, accepts values labeled with units.
+        * ``height`` (str): Paper height, accepts values labeled with units.
+        * ``margin`` (dict): Paper margins, defaults to ``None``.
+
+          * ``top`` (str): Top margin, accepts values labeled with units.
+          * ``right`` (str): Right margin, accepts values labeled with units.
+          * ``bottom`` (str): Bottom margin, accepts values labeled with units.
+          * ``left`` (str): Left margin, accepts values labeled with units.
+
+        :return bytes: Return generated PDF ``bytes`` object.
+        """
         options = merge_dict(options, kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
@@ -775,7 +935,7 @@ function(html) {
 
     @property
     def mouse(self) -> Mouse:
-        """Get mouse object."""
+        """Get :class:`~pyppeteer.input.Mouse` object."""
         return self._mouse
 
     async def click(self, selector: str, options: dict = None, **kwargs: Any
@@ -789,7 +949,10 @@ function(html) {
         await handle.dispose()
 
     async def hover(self, selector: str) -> None:
-        """Mouse hover the element which matches `selector`."""
+        """Mouse hover the element which matches ``selector``.
+
+        If no element matched the ``selector``, raise ``PageError``.
+        """
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -797,7 +960,10 @@ function(html) {
         await handle.dispose()
 
     async def focus(self, selector: str) -> None:
-        """Focus the element which matches `selector`."""
+        """Focus the element which matches ``selector``.
+
+        If no element matched the ``selector``, raise ``PageError``.
+        """
         handle = await self.J(selector)
         if not handle:
             raise PageError('No node found for selector: ' + selector)
@@ -805,7 +971,10 @@ function(html) {
         await handle.dispose()
 
     async def select(self, selector: str, *values: str) -> List[str]:
-        """Select options and return selected values."""
+        """Select options and return selected values.
+
+        If no element matched the ``selector``, raise ``ElementHandleError``.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -813,7 +982,12 @@ function(html) {
 
     async def type(self, selector: str, text: str, options: dict = None,
                    **kwargs: Any) -> None:
-        """Type text on the selected element."""
+        """Type ``text`` on the element which matches ``selector``.
+
+        If no element matched the ``selector``, raise ``PageError``.
+
+        Details see :meth:`pyppeteer.input.Keyboard.type`.
+        """
         options = merge_dict(options, kwargs)
         handle = await self.querySelector(selector)
         if handle is None:
@@ -823,7 +997,22 @@ function(html) {
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
-        """Wait for function, timeout, or element which matches on page."""
+        """Wait for function, timeout, or element which matches on page.
+
+        This method behaves differently with respect to the first argument:
+
+        * If ``selectorOrFunctionOrTimeout`` is number (int or float), then it
+          is treated as a timeout in milliseconds and this returns future which
+          will be done after the timeout.
+        * If ``selectorOrFunctionOrTimeout`` is a string of JavaScript
+          function, this method is a shortcut to :meth:`waitForFunction`.
+        * If ``selectorOrFunctionOrTimeout`` is a selector string, this method
+          is a shortcut to :meth:`waitForSelector`.
+
+        Pyppeteer tries to automatically detect function or selector, but
+        sometimes miss-detects. If not work as you expected, use
+        :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -832,7 +1021,19 @@ function(html) {
 
     def waitForSelector(self, selector: str, options: dict = None,
                         **kwargs: Any) -> Awaitable:
-        """Wait until element which matches selector appears on page."""
+        """Wait until element which matches ``selector`` appears on page.
+
+        This method accepts the following options:
+
+        * ``visible`` (bool): Wait for element to be present in DOM and to be
+          visible; i.e. to not have ``display: none`` or ``visibility: hidden``
+          CSS properties. Defaults to ``False``.
+        * ``hidden`` (bool): Wait for eleemnt to not be found in the DOM or to
+          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
+          properties. Defaults to ``False``.
+        * ``timeout`` (int|float): Maximum time to wait for in milliseconds.
+          Defaults to 30000 (30 seconds).
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -840,7 +1041,13 @@ function(html) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:
-        """Wait for function."""
+        """Wait until the function completes.
+
+        This method accepts the following options:
+
+        * ``polling`` (str|number): **Not Implemented Yet**
+        * ``timeout`` (int|float): maximum time to wait for in milliseconds.
+        """
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -899,11 +1106,17 @@ def convertPrintParameterToInches(parameter: Union[None, int, float, str]
 
 
 class ConsoleMessage(object):
-    """Console message class."""
+    """Console message class.
 
-    def __init__(self, type: str, text: str, args: List) -> None:
+    ConsoleMessage objects are dispatched by page via the ``console`` event.
+    """
+
+    def __init__(self, type: str, text: str, args: List[JSHandle]) -> None:
+        #: (str) type of console message
         self.type = type
+        #: (str) console message string
         self.text = text
+        #: list of JSHandle
         self.args = args
 
 

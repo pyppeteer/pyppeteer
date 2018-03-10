@@ -3,18 +3,30 @@ History
 
 ## Version 0.0.13 (next version)
 
-* **`launch` is now coroutine** (breaking change)
+* `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function
 * `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to downlaod chromium
 * Rename `setRequestInterceptionEnable` to `setRequestInterception`
+* Rename `Page.getMetrics` to `Page.metrics`
 * Implement `Browser.pages` to acccess all pages
     * Add `Target` class and some new method on Browser
+* Add `ElementHandle.querySelector` and `ElementHandle.querySelectorAll`
 * Refactor NavigatoinWatcher
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
 * `Request.abort` accepts error code
+* `addScriptTag` and `addStyleTag` return `ElementHandle`
 * Add `force_expr` option to `evaluate` method
+* `Page.select` returns selected values
 * Add `pyppeteer.version` and `pyppeteer.version_info`
-* BugFix: Do not change original options dictionary
+
+* BugFix:
+    * Do not change original options dictionary
+    * `Page.frames`
+    * `Page.queryObjects`
+    * `Page.exposeFunction`
+    * Request interception
+    * Console api
+    * websocket error on closing browser (#24)
 
 ## Version 0.0.12 (2018-03-01)
 

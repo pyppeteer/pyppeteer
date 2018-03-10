@@ -55,7 +55,7 @@ AUTOMATION_ARGS = [
 
 
 class Launcher(object):
-    """Chromium parocess launcher class."""
+    """Chrome parocess launcher class."""
 
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
@@ -108,7 +108,7 @@ class Launcher(object):
             shutil.rmtree(self._tmp_user_data_dir)
 
     async def launch(self) -> Browser:
-        """Start chromium process."""
+        """Start chrome process and return `Browser` object."""
         env = self.options.get('env', {})
         self.chromeClosed = False
         self.connection: Optional[Connection] = None
@@ -170,12 +170,55 @@ class Launcher(object):
 
 
 async def launch(options: dict = None, **kwargs: Any) -> Browser:
-    """Start chromium process and return `Browser` object."""
+    """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
+
+    This function is a shotcut to :meth:`Launcher(options, **kwargs).launch`.
+
+    Available options are:
+
+    * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
+      ``False``.
+    * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
+      ``True`` unless ``appMode`` or ``devtools`` options is ``True``.
+    * ``executablePath`` (str): Path to a Chromium or Chrome executable to run
+      instead of default bundled Chromium.
+    * ``slowMo`` (int|float): Sles down pyppeteer operations by the specified
+      amount of milliseconds.
+    * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
+      process.
+    * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
+      is dangerous option; use with care.
+    * ``userDataDir`` (str): Path to a user data directory.
+    * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
+      If this option is ``True``, the ``headless`` option will be set
+      ``False``.
+    * ``appMode`` (bool): Deprecated.
+
+    .. note::
+        Pyppeteer can also be used to control the Chrome browser, but it works
+        best with the version of Chromium it is bundled with. There is no
+        guarantee it will work with any other version. Use ``executablePath``
+        option with extreme caution.
+    """
     return await Launcher(options, **kwargs).launch()
 
 
 async def connect(options: dict = None, **kwargs: Any) -> Browser:
-    """Connect to existing chrome."""
+    """Connect to the existing chrome.
+
+    ``browserWSEndpoint`` option is necessary to connect to the chrome. The
+    format is ``ws://${host}:${port}/devtools/browser/<id>``. This value can
+    get by :attr:`~pyppeteer.browser.Browser.wsEndpoint`.
+
+    Available options are:
+
+    * ``browserWSEndpoint`` (str): A browser websocket endpoint to connect to.
+      (**required**)
+    * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
+      ``False``.
+    * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
+      milliseconds.
+    """
     options = merge_dict(options, kwargs)
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
@@ -186,5 +229,5 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
 
 
 def executablePath() -> str:
-    """Get executable path of chromium."""
+    """Get executable path of default chrome."""
     return str(chromium_excutable())
