@@ -1,5 +1,5 @@
-Pyppeteer
-=========
+Pyppeteer's documentation
+=========================
 
 .. mdinclude:: ../README.md
 

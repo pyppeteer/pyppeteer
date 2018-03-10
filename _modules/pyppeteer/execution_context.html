@@ -1,0 +1,298 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyppeteer.execution_context &#8212; Pyppeteer 0.0.13 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <!-- font -->
+  <link href='https://fonts.googleapis.com/css?family=Raleway:500' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,400italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Noto+Serif:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <!-- Style -->
+  
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyppeteer.execution_context</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;Execut Context Module.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+
+<span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">pyppeteer.element_handle</span> <span class="k">import</span> <span class="n">ElementHandle</span>  <span class="c1"># noqa: F401</span>
+
+
+<div class="viewcode-block" id="ExecutionContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext">[docs]</a><span class="k">class</span> <span class="nc">ExecutionContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Execution Context class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span> <span class="n">contextId</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">objectHandleFactory</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span> <span class="o">=</span> <span class="n">contextId</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_objectHandleFactory</span> <span class="o">=</span> <span class="n">objectHandleFactory</span>
+
+<div class="viewcode-block" id="ExecutionContext.evaluate"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext.evaluate">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                       <span class="n">force_expr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute ``pageFunction`` on this context.</span>
+
+<span class="sd">        Details see :meth:`pyppeteer.page.Page.evaluate`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">handle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>
+            <span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">force_expr</span><span class="o">=</span><span class="n">force_expr</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">jsonValue</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="ExecutionContext.evaluateHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext.evaluateHandle">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluateHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+                             <span class="n">force_expr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Execute ``pageFunction`` on this context.</span>
+
+<span class="sd">        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">force_expr</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">helper</span><span class="o">.</span><span class="n">is_jsfunc</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">)):</span>
+            <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">pageFunction</span><span class="p">,</span>
+                <span class="s1">&#39;contextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
+                <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">})</span>
+            <span class="n">exceptionDetails</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">exceptionDetails</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                    <span class="s1">&#39;Evaluation failed: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                        <span class="n">helper</span><span class="o">.</span><span class="n">getExceptionMessage</span><span class="p">(</span><span class="n">exceptionDetails</span><span class="p">)))</span>
+            <span class="n">remoteObject</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objectHandleFactory</span><span class="p">(</span><span class="n">remoteObject</span><span class="p">)</span>
+
+        <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.callFunctionOn&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;functionDeclaration&#39;</span><span class="p">:</span> <span class="n">pageFunction</span><span class="p">,</span>
+            <span class="s1">&#39;executionContextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
+            <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convertArgument</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span>
+            <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">exceptionDetails</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">exceptionDetails</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;Evaluation failed: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">helper</span><span class="o">.</span><span class="n">getExceptionMessage</span><span class="p">(</span><span class="n">exceptionDetails</span><span class="p">)))</span>
+        <span class="n">remoteObject</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objectHandleFactory</span><span class="p">(</span><span class="n">remoteObject</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_convertArgument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arg</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>  <span class="c1"># noqa: C901</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="o">==</span> <span class="n">math</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;unserializableValue&#39;</span><span class="p">:</span> <span class="s1">&#39;Infinity&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="o">==</span> <span class="o">-</span><span class="n">math</span><span class="o">.</span><span class="n">inf</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;unserializableValue&#39;</span><span class="p">:</span> <span class="s1">&#39;-Infinity&#39;</span><span class="p">}</span>
+        <span class="n">objectHandle</span> <span class="o">=</span> <span class="n">arg</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">JSHandle</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">objectHandle</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_context</span> <span class="o">!=</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;JSHandles can be evaluated only in the context they were created!&#39;</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
+            <span class="k">if</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_disposed</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;JSHandle is disposed!&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unserializableValue&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;unserializableValue&#39;</span><span class="p">:</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;unserializableValue&#39;</span><span class="p">)}</span>  <span class="c1"># noqa: E501</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)}</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="n">arg</span><span class="p">}</span>
+
+<div class="viewcode-block" id="ExecutionContext.queryObjects"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext.queryObjects">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">queryObjects</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prototypeHandle</span><span class="p">:</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Send query.</span>
+
+<span class="sd">        Details see :meth:`pyppeteer.page.Page.queryObjects`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">prototypeHandle</span><span class="o">.</span><span class="n">_disposed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;Prototype JSHandle is disposed!&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">prototypeHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="s1">&#39;Prototype JSHandle must not be referencing primitive value&#39;</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.queryObjects&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;prototypeObjectId&#39;</span><span class="p">:</span> <span class="n">prototypeHandle</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">[</span><span class="s1">&#39;objectId&#39;</span><span class="p">],</span>
+        <span class="p">})</span></div></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objectHandleFactory</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objects&#39;</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="JSHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle">[docs]</a><span class="k">class</span> <span class="nc">JSHandle</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;JSHandle class.</span>
+
+<span class="sd">    JSHandle represents an in-page JavaScript object. JSHandle can be created</span>
+<span class="sd">    with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+                 <span class="n">remoteObject</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_context</span> <span class="o">=</span> <span class="n">context</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span> <span class="o">=</span> <span class="n">remoteObject</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">executionContext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionContext</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get execution context of this handle.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span>
+
+<div class="viewcode-block" id="JSHandle.getProperty"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.getProperty">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">getProperty</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">propertyName</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get property value of ``propertyName``.&quot;&quot;&quot;</span>
+        <span class="n">objectHandle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>
+            <span class="sd">&#39;&#39;&#39;(object, propertyName) =&gt; {</span>
+<span class="sd">                const result = {__proto__: null};</span>
+<span class="sd">                result[propertyName] = object[propertyName];</span>
+<span class="sd">                return result;</span>
+<span class="sd">            }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">propertyName</span><span class="p">)</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="k">await</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">getProperties</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">properties</span><span class="p">[</span><span class="n">propertyName</span><span class="p">]</span>
+        <span class="k">await</span> <span class="n">objectHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="JSHandle.getProperties"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.getProperties">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">getProperties</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get all properties of this handle.&quot;&quot;&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.getProperties&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;ownProperties&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">prop</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;enumerable&#39;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">prop</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">_objectHandleFactory</span><span class="p">(</span>
+                <span class="n">prop</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">))</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="JSHandle.jsonValue"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.jsonValue">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">jsonValue</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get Jsonized value of this object.&quot;&quot;&quot;</span>
+        <span class="n">objectId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">objectId</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.callFunctionOn&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;functionDeclaration&#39;</span><span class="p">:</span> <span class="s1">&#39;function() { return this; }&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectId</span><span class="p">,</span>
+                <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;awaitPromiss&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">})</span>
+            <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">])</span></div>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">)</span>
+
+<div class="viewcode-block" id="JSHandle.asElement"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.asElement">[docs]</a>    <span class="k">def</span> <span class="nf">asElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return either null or the object handle itself.&quot;&quot;&quot;</span></div>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="JSHandle.dispose"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.dispose">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">dispose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stop referencing the handle.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">True</span></div>
+        <span class="k">await</span> <span class="n">helper</span><span class="o">.</span><span class="n">releaseObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">)</span>
+
+<div class="viewcode-block" id="JSHandle.toString"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.JSHandle.toString">[docs]</a>    <span class="k">def</span> <span class="nf">toString</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get string representation.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">):</span>
+            <span class="n">_type</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;subtype&#39;</span><span class="p">)</span> <span class="ow">or</span>
+                     <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;JSHandle@</span><span class="si">{_type}</span><span class="s1">&#39;</span>
+        <span class="k">return</span> <span class="s1">&#39;JSHandle: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span></div></div>
+            <span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">))</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Pyppeteer</a></h1>
+
+
+
+<p class="blurb">Headless chrome/chromium automation library (unofficial port of puppeteer)</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=miyakogi&repo=pyppeteer&type=mark&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">History</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Hiroyuki Takagi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/miyakogi/pyppeteer" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

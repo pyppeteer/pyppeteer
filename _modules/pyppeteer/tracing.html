@@ -4,9 +4,9 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.tracing &#8212; Pyppeteer 0.0.11 documentation</title>
+    <title>pyppeteer.tracing &#8212; Pyppeteer 0.0.13 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -48,21 +48,30 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
 
 
 <div class="viewcode-block" id="Tracing"><a class="viewcode-back" href="../../reference.html#pyppeteer.tracing.Tracing">[docs]</a><span class="k">class</span> <span class="nc">Tracing</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Tracing class.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Make new tracing object.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_recording</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
 
 <div class="viewcode-block" id="Tracing.start"><a class="viewcode-back" href="../../reference.html#pyppeteer.tracing.Tracing.start">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Start.&quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">options</span> <span class="ow">or</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="n">options</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="sd">&quot;&quot;&quot;Start tracing.</span>
+
+<span class="sd">        Only one trace can be active at a time per browser.</span>
+
+<span class="sd">        This method accepts the following options:</span>
+
+<span class="sd">        * ``path`` (str): A path to write the trace file to. **required**</span>
+<span class="sd">        * ``screenshots`` (bool): Capture screenshots in the trace.</span>
+<span class="sd">        * ``categories`` (List[str]): Specify custom categories to use instead</span>
+<span class="sd">          of default.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">categoriesArray</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s1">&#39;-*&#39;</span><span class="p">,</span> <span class="s1">&#39;devtools.timeline&#39;</span><span class="p">,</span> <span class="s1">&#39;v8.execute&#39;</span><span class="p">,</span>
             <span class="s1">&#39;disabled-by-default-devtools.timeline&#39;</span><span class="p">,</span>
@@ -83,7 +92,7 @@
         <span class="p">})</span>
 
 <div class="viewcode-block" id="Tracing.stop"><a class="viewcode-back" href="../../reference.html#pyppeteer.tracing.Tracing.stop">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Stop.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Stop tracing.&quot;&quot;&quot;</span>
         <span class="n">contentPromise</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">once</span><span class="p">(</span>
             <span class="s1">&#39;Tracing.tracingComplete&#39;</span><span class="p">,</span>
@@ -170,7 +179,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

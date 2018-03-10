@@ -4,9 +4,9 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-        <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.11 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.13 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -40,8 +40,48 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="version-0-0-11-next-version">
-<h2>Version 0.0.11 (next version)<a class="headerlink" href="#version-0-0-11-next-version" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="version-0-0-13-2018-03-10">
+<h2>Version 0.0.13 (2018-03-10)<a class="headerlink" href="#version-0-0-13-2018-03-10" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">pyppeteer.launch()</span></code> is now <strong>coroutine</strong></li>
+<li>Implement <code class="docutils literal notranslate"><span class="pre">connect</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">PYPPETEER_DOWNLAOD_HOST</span></code> env variable specifies host part of URL to downlaod chromium</li>
+<li>Rename <code class="docutils literal notranslate"><span class="pre">setRequestInterceptionEnable</span></code> to <code class="docutils literal notranslate"><span class="pre">setRequestInterception</span></code></li>
+<li>Rename <code class="docutils literal notranslate"><span class="pre">Page.getMetrics</span></code> to <code class="docutils literal notranslate"><span class="pre">Page.metrics</span></code></li>
+<li>Implement <code class="docutils literal notranslate"><span class="pre">Browser.pages</span></code> to acccess all pages<ul>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Target</span></code> class and some new method on Browser</li>
+</ul>
+</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.querySelector</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.querySelectorAll</span></code></li>
+<li>Refactor NavigatoinWatcher<ul>
+<li>add <code class="docutils literal notranslate"><span class="pre">documentloaded</span></code>, <code class="docutils literal notranslate"><span class="pre">networkidle0</span></code>, and <code class="docutils literal notranslate"><span class="pre">networkidle2</span></code> options</li>
+</ul>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">Request.abort</span></code> accepts error code</li>
+<li><code class="docutils literal notranslate"><span class="pre">addScriptTag</span></code> and <code class="docutils literal notranslate"><span class="pre">addStyleTag</span></code> return <code class="docutils literal notranslate"><span class="pre">ElementHandle</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">force_expr</span></code> option to <code class="docutils literal notranslate"><span class="pre">evaluate</span></code> method</li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.select</span></code> returns selected values</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">pyppeteer.version</span></code> and <code class="docutils literal notranslate"><span class="pre">pyppeteer.version_info</span></code></li>
+<li>BugFix:<ul>
+<li>Do not change original options dictionary</li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.frames</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.queryObjects</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.exposeFunction</span></code></li>
+<li>Request interception</li>
+<li>Console api</li>
+<li>websocket error on closing browser (#24)</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="version-0-0-12-2018-03-01">
+<h2>Version 0.0.12 (2018-03-01)<a class="headerlink" href="#version-0-0-12-2018-03-01" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>BugFix (#33)</li>
+</ul>
+</div>
+<div class="section" id="version-0-0-11-2018-03-01">
+<h2>Version 0.0.11 (2018-03-01)<a class="headerlink" href="#version-0-0-11-2018-03-01" title="Permalink to this headline">¶</a></h2>
 <p>Catch up puppeteer v0.12.0</p>
 <ul class="simple">
 <li>Remove <code class="docutils literal notranslate"><span class="pre">ElementHandle.evaluate</span></code></li>
@@ -141,7 +181,9 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#version-0-0-11-next-version">Version 0.0.11 (next version)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-13-2018-03-10">Version 0.0.13 (2018-03-10)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-12-2018-03-01">Version 0.0.12 (2018-03-01)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-11-2018-03-01">Version 0.0.11 (2018-03-01)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-10-2018-02-27">Version 0.0.10 (2018-02-27)</a></li>
 </ul>
 </li>
@@ -175,7 +217,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |

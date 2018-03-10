@@ -4,69 +4,123 @@ API Reference
 Launcher
 --------
 
-.. autofunction:: pyppeteer.launcher.launch
-.. autofunction:: pyppeteer.launcher.connect
+.. currentmodule:: pyppeteer.launcher
 
-Browser
+.. autofunction:: launch
+.. autofunction:: connect
+.. autofunction:: executablePath
+
+Browser Class
 -------
+
+.. currentmodule:: pyppeteer.browser
 
 .. autoclass:: pyppeteer.browser.Browser
    :members:
+   :exclude-members: create
 
 
-Page
+Page Class
 ----
+
+.. currentmodule:: pyppeteer.page
 
 .. autoclass:: pyppeteer.page.Page
    :members:
+   :exclude-members: create
 
-Keyboard
+Keyboard Class
 --------
+
+.. currentmodule:: pyppeteer.input
 
 .. autoclass:: pyppeteer.input.Keyboard
    :members:
 
-Mouse
+Mouse Class
 -----
+
+.. currentmodule:: pyppeteer.input
 
 .. autoclass:: pyppeteer.input.Mouse
    :members:
 
-Tracing
+Tracing Class
 -------
+
+.. currentmodule:: pyppeteer.tracing
 
 .. autoclass:: pyppeteer.tracing.Tracing
    :members:
 
-Dialog
+Dialog Class
 ------
+
+.. currentmodule:: pyppeteer.dialog
 
 .. autoclass:: pyppeteer.dialog.Dialog
    :members:
-   :member-order: alphabetic
 
-Frame
+ConsoleMessage Class
+--------------
+
+.. currentmodule:: pyppeteer.page
+
+.. autoclass:: pyppeteer.page.ConsoleMessage
+   :members:
+
+Frame Class
 -----
+
+.. currentmodule:: pyppeteer.frame
 
 .. autoclass:: pyppeteer.frame_manager.Frame
    :members:
 
-ElementHandle
+ExecutionContext Class
+----------------
+
+.. currentmodule:: pyppeteer.execution_context
+
+.. autoclass:: pyppeteer.execution_context.ExecutionContext
+   :members:
+
+JSHandle Class
+--------
+
+.. autoclass:: pyppeteer.execution_context.JSHandle
+   :members:
+
+ElementHandle Class
 -------------
+
+.. currentmodule:: pyppeteer.element_handle
 
 .. autoclass:: pyppeteer.element_handle.ElementHandle
    :members:
 
-Request
+Request Class
 -------
+
+.. currentmodule:: pyppeteer.network_manager
 
 .. autoclass:: pyppeteer.network_manager.Request
    :members:
 
-Response
+Response Class
 --------
 
+.. currentmodule:: pyppeteer.network_manager
+
 .. autoclass:: pyppeteer.network_manager.Response
+   :members:
+
+Target Class
+------
+
+.. currentmodule:: pyppeteer.browser
+
+.. autoclass:: pyppeteer.browser.Target
    :members:
 
 .
