@@ -487,6 +487,12 @@ a + b
     async def test_hover_not_found(self) -> None:
         with self.assertRaises(PageError):
             await self.page.hover('#no-such-element')
+        elm = await self.page.J('h1')
+        await self.page.evaluate(
+            'document.querySelector("h1").remove();'
+        )
+        with self.assertRaises(ElementHandleError):
+            await elm.hover()
 
     @sync
     async def test_focus_not_found(self) -> None:
@@ -633,6 +639,15 @@ a + b
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
+    async def test_elm_click_detached(self):
+        btn1 = await self.page.querySelector('#link1')
+        await self.page.evaluate(
+            'document.querySelector("#link1").remove();'
+        )
+        with self.assertRaises(ElementHandleError):
+            await btn1.click()
+
+    @sync
     async def test_elm_tap(self):
         btn1 = await self.page.querySelector('#link1')
         self.assertTrue(btn1)
@@ -640,6 +655,15 @@ a + b
         await asyncio.sleep(0.05)
         await self.page.waitForSelector('h1#link1')
         self.assertEqual(await self.page.title(), 'link1')
+
+    @sync
+    async def test_elm_tap_detached(self):
+        btn1 = await self.page.querySelector('#link1')
+        await self.page.evaluate(
+            'document.querySelector("#link1").remove();'
+        )
+        with self.assertRaises(ElementHandleError):
+            await btn1.tap()
 
     @sync
     async def test_back_forward(self):
