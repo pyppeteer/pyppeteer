@@ -165,7 +165,7 @@ class Launcher(object):
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             self.waitForChromeToClose()
         else:
-            if self.connection:
+            if self.connection and self.connection._connected:
                 await self.connection.send('Browser.close')
 
 
