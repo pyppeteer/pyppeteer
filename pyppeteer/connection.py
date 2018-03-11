@@ -36,7 +36,7 @@ class Connection(EventEmitter):
         self._sessions: Dict[str, Session] = dict()
         self.connection: Session
         self._connected = False
-        self._ws = websockets.client.connect(self._url)
+        self._ws = websockets.client.connect(self._url, max_size=None)
         self._recv_fut = asyncio.ensure_future(self._recv_loop())
         self._closeCallback: Optional[Callable[[], None]] = None
 
