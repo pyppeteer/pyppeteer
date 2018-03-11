@@ -244,7 +244,6 @@ a + b
         result = await self.page.evaluate('() => 3 * 7')
         self.assertEqual(result, 21)
 
-    @unittest.skip('Promise is not awaited')
     @sync
     async def test_evaluate_func_promise(self):
         result = await self.page.evaluate('() => Promise.resolve(8 * 7)')
