@@ -55,6 +55,7 @@ class Page(EventEmitter):
         FrameDetached='framedetached',
         FrameNavigated='framenavigated',
         Load='load',
+        Metrics='metrics',
     )
 
     PaperFormats: Dict[str, Dict[str, float]] = dict(
