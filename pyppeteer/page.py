@@ -1055,19 +1055,19 @@ function(html) {
 
 
 supportedMetrics = (
-  'Timestamp',
-  'Documents',
-  'Frames',
-  'JSEventListeners',
-  'Nodes',
-  'LayoutCount',
-  'RecalcStyleCount',
-  'LayoutDuration',
-  'RecalcStyleDuration',
-  'ScriptDuration',
-  'TaskDuration',
-  'JSHeapUsedSize',
-  'JSHeapTotalSize',
+    'Timestamp',
+    'Documents',
+    'Frames',
+    'JSEventListeners',
+    'Nodes',
+    'LayoutCount',
+    'RecalcStyleCount',
+    'LayoutDuration',
+    'RecalcStyleDuration',
+    'ScriptDuration',
+    'TaskDuration',
+    'JSHeapUsedSize',
+    'JSHeapTotalSize',
 )
 
 

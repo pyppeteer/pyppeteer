@@ -254,4 +254,3 @@ keyDefinitions = {
     '}': {'keyCode': 221, 'key': '}', 'code': 'BracketRight'},
     '"': {'keyCode': 222, 'key': '"', 'code': 'Quote'},
 }
-
