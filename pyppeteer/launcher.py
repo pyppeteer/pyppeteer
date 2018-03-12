@@ -109,7 +109,7 @@ class Launcher(object):
 
     async def launch(self) -> Browser:
         """Start chrome process and return `Browser` object."""
-        env = self.options.get('env', {})
+        env = self.options.get('env')
         self.chromeClosed = False
         self.connection: Optional[Connection] = None
         self.proc = subprocess.Popen(
