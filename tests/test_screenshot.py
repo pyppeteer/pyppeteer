@@ -4,7 +4,6 @@
 from pathlib import Path
 from unittest import TestCase
 
-import asyncio
 from syncer import sync
 
 from pyppeteer import launch
@@ -59,22 +58,6 @@ class TestScreenShot(TestCase):
         options = {'path': 'example.unsupported'}
         with self.assertRaises(PageError, msg='mime type: unsupported'):
             await page.screenshot(options)
-
-    @sync
-    async def test_screenshot_large(self):
-        page = await self.browser.newPage()
-        await page.setViewport({
-            'width': 2000,
-            'height': 2000,
-        })
-        await page.goto('https://unsplash.com/')
-        options = {'path': str(self.target_path)}
-        self.assertFalse(self.target_path.exists())
-        await asyncio.wait_for(page.screenshot(options), 30)
-        self.assertTrue(self.target_path.exists())
-        with open(self.target_path, 'rb') as fh:
-            bytes = fh.read()
-            self.assertGreater(len(bytes), 2**20)
 
 
 class TestPDF(TestCase):
