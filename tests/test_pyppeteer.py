@@ -188,6 +188,11 @@ class TestPyppeteer(BaseTestCase):
         self.assertEqual(self.page.url, 'https://example.com/')
 
     @sync
+    async def test_get_facebook(self):
+        await self.page.goto('https://www.facebook.com/')
+        self.assertEqual(self.page.url, 'https://www.facebook.com/')
+
+    @sync
     async def test_plain_text_depr(self):
         with self.assertWarns(DeprecationWarning):
             text = await self.page.plainText()
