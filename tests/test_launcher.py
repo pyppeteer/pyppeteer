@@ -53,7 +53,7 @@ class TestLauncher(unittest.TestCase):
         
     @sync
     async def test_clean_kill(self):
-        launcher = Launcher()
+        launcher = await launch()
         self.assertTrue(os.path.exists(launcher._tmp_user_data_dir))
         await launcher.killChrome()
         self.assertFalse(os.path.exists(launcher._tmp_user_data_dir))
