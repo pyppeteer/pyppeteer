@@ -105,8 +105,9 @@ class Launcher(object):
 
     def _cleanup_tmp_user_data_dir(self) -> None:
         for retry in range(100):
-            if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
-                shutil.rmtree(self._tmp_user_data_dir,ignore_errors=True)
+            if self._tmp_user_data_dir and os.path.exists(
+                    self._tmp_user_data_dir):
+                shutil.rmtree(self._tmp_user_data_dir, ignore_errors=True)
             else:
                 break
         else:
