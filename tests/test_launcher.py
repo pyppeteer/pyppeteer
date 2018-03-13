@@ -51,9 +51,9 @@ class TestLauncher(unittest.TestCase):
         self.assertIn('--user-data-dir=/path/to/profile', launcher.chrome_args)
         self.assertIsNone(launcher._tmp_user_data_dir)
         
-    def test_clean_kill(self):
+    @sync
+    async def test_clean_kill(self):
         launcher = Launcher()
-        self.check_default_args(launcher)
         self.assertTrue(os.path.exists(launcher._tmp_user_data_dir))
         await launcher.killChrome()
         self.assertFalse(os.path.exists(launcher._tmp_user_data_dir))
