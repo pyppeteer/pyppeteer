@@ -55,6 +55,7 @@ class Page(EventEmitter):
         FrameDetached='framedetached',
         FrameNavigated='framenavigated',
         Load='load',
+        Metrics='metrics',
     )
 
     PaperFormats: Dict[str, Dict[str, float]] = dict(
@@ -1055,19 +1056,19 @@ function(html) {
 
 
 supportedMetrics = (
-  'Timestamp',
-  'Documents',
-  'Frames',
-  'JSEventListeners',
-  'Nodes',
-  'LayoutCount',
-  'RecalcStyleCount',
-  'LayoutDuration',
-  'RecalcStyleDuration',
-  'ScriptDuration',
-  'TaskDuration',
-  'JSHeapUsedSize',
-  'JSHeapTotalSize',
+    'Timestamp',
+    'Documents',
+    'Frames',
+    'JSEventListeners',
+    'Nodes',
+    'LayoutCount',
+    'RecalcStyleCount',
+    'LayoutDuration',
+    'RecalcStyleDuration',
+    'ScriptDuration',
+    'TaskDuration',
+    'JSHeapUsedSize',
+    'JSHeapTotalSize',
 )
 
 

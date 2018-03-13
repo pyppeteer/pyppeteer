@@ -188,6 +188,11 @@ class TestPyppeteer(BaseTestCase):
         self.assertEqual(self.page.url, 'https://example.com/')
 
     @sync
+    async def test_get_facebook(self):
+        await self.page.goto('https://www.facebook.com/')
+        self.assertEqual(self.page.url, 'https://www.facebook.com/')
+
+    @sync
     async def test_plain_text_depr(self):
         with self.assertWarns(DeprecationWarning):
             text = await self.page.plainText()
@@ -244,7 +249,6 @@ a + b
         result = await self.page.evaluate('() => 3 * 7')
         self.assertEqual(result, 21)
 
-    @unittest.skip('Promise is not awaited')
     @sync
     async def test_evaluate_func_promise(self):
         result = await self.page.evaluate('() => Promise.resolve(8 * 7)')
@@ -1650,3 +1654,32 @@ class TestPage(unittest.TestCase):
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()
         await self.page.evaluateOnNewDocument('() => 1 + 2')
+
+
+class TestScreenshot(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.target_path = Path(__file__).resolve().parent / 'test.png'
+        if self.target_path.exists():
+            self.target_path.unlink()
+
+    def tearDown(self):
+        if self.target_path.exists():
+            self.target_path.unlink()
+        super().tearDown()
+
+    @sync
+    async def test_screenshot_large(self):
+        page = await self.browser.newPage()
+        await page.setViewport({
+            'width': 2000,
+            'height': 2000,
+        })
+        await page.goto(self.url + 'static/huge-page.html')
+        options = {'path': str(self.target_path)}
+        self.assertFalse(self.target_path.exists())
+        await asyncio.wait_for(page.screenshot(options), 30)
+        self.assertTrue(self.target_path.exists())
+        with self.target_path.open('rb') as fh:
+            bytes = fh.read()
+            self.assertGreater(len(bytes), 2**20)

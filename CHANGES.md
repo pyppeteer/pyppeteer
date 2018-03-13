@@ -1,6 +1,16 @@
 History
 =======
 
+## Version 0.0.14 (2018-03-14)
+
+* Read WS endpoint from web interface instead of stdout
+* Pass environment variables of python process to chrome by default
+* Do not limit size of websocket frames
+
+* BugFix:
+    * `Keyboard.type`
+    * `Page.Events.Metrics`
+
 ## Version 0.0.13 (2018-03-10)
 
 * `pyppeteer.launch()` is now **coroutine**

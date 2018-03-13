@@ -170,7 +170,7 @@ class Keyboard(object):
         if options and options.get('delay'):
             delay = options['delay']
         for char in text:
-            if 'char' in keyDefinitions:
+            if char in keyDefinitions:
                 await self.press(char, {'delay': delay})
             else:
                 await self.sendCharacter(char)
