@@ -52,11 +52,11 @@ class TestLauncher(unittest.TestCase):
         self.assertIsNone(launcher._tmp_user_data_dir)
         
     @sync
-    async def test_clean_kill(self):
+    async def test_clean_up(self):
         launcher = Launcher()
         self.assertTrue(os.path.exists(launcher._tmp_user_data_dir))
-        await launcher.launch()
-        launcher.waitForChromeToClose()
+        browser = await launcher.launch()
+        await browser.close()
         self.assertFalse(os.path.exists(launcher._tmp_user_data_dir))
 
     @sync
