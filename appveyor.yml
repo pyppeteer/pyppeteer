@@ -1,0 +1,9 @@
+install:
+  - C:\Python36\python.exe -V
+  - C:\Python36\python.exe -m pip install -U pip setuptools"
+  - C:\Python36\python.exe -m pip install tox"
+
+test_script:
+  - C:\Python36\python.exe -m tox
+
+build: off
