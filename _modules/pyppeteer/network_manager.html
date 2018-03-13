@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.13 documentation</title>
+    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.14 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -476,18 +476,18 @@
 
 
 <span class="n">errorReasons</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s1">&#39;aborted&#39;</span><span class="p">:</span> <span class="s1">&#39;Aborted&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;accessdenied&#39;</span><span class="p">:</span> <span class="s1">&#39;AccessDenied&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;addressunreachable&#39;</span><span class="p">:</span> <span class="s1">&#39;AddressUnreachable&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;connectionaborted&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionAborted&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;connectionclosed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionClosed&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;connectionfailed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionFailed&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;connectionrefused&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionRefused&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;connectionreset&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionReset&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;internetdisconnected&#39;</span><span class="p">:</span> <span class="s1">&#39;InternetDisconnected&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;namenotresolved&#39;</span><span class="p">:</span> <span class="s1">&#39;NameNotResolved&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;timedout&#39;</span><span class="p">:</span> <span class="s1">&#39;TimedOut&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;failed&#39;</span><span class="p">:</span> <span class="s1">&#39;Failed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;aborted&#39;</span><span class="p">:</span> <span class="s1">&#39;Aborted&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;accessdenied&#39;</span><span class="p">:</span> <span class="s1">&#39;AccessDenied&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;addressunreachable&#39;</span><span class="p">:</span> <span class="s1">&#39;AddressUnreachable&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;connectionaborted&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionAborted&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;connectionclosed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionClosed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;connectionfailed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionFailed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;connectionrefused&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionRefused&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;connectionreset&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionReset&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;internetdisconnected&#39;</span><span class="p">:</span> <span class="s1">&#39;InternetDisconnected&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;namenotresolved&#39;</span><span class="p">:</span> <span class="s1">&#39;NameNotResolved&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;timedout&#39;</span><span class="p">:</span> <span class="s1">&#39;TimedOut&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;failed&#39;</span><span class="p">:</span> <span class="s1">&#39;Failed&#39;</span><span class="p">,</span>
 <span class="p">}</span>
 
 
@@ -513,7 +513,7 @@
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_bufread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.getResponseBody&#39;</span><span class="p">,</span> <span class="p">{</span>
-          <span class="s1">&#39;requestId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="o">.</span><span class="n">_requestId</span>
+            <span class="s1">&#39;requestId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="o">.</span><span class="n">_requestId</span>
         <span class="p">})</span>
         <span class="n">body</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;body&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;base64Encoded&#39;</span><span class="p">):</span>
@@ -569,66 +569,66 @@
 
 
 <span class="n">statusTexts</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="s1">&#39;100&#39;</span><span class="p">:</span> <span class="s1">&#39;Continue&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;101&#39;</span><span class="p">:</span> <span class="s1">&#39;Switching Protocols&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;102&#39;</span><span class="p">:</span> <span class="s1">&#39;Processing&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;200&#39;</span><span class="p">:</span> <span class="s1">&#39;OK&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;201&#39;</span><span class="p">:</span> <span class="s1">&#39;Created&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;202&#39;</span><span class="p">:</span> <span class="s1">&#39;Accepted&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;203&#39;</span><span class="p">:</span> <span class="s1">&#39;Non-Authoritative Information&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;204&#39;</span><span class="p">:</span> <span class="s1">&#39;No Content&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;206&#39;</span><span class="p">:</span> <span class="s1">&#39;Partial Content&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;207&#39;</span><span class="p">:</span> <span class="s1">&#39;Multi-Status&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;208&#39;</span><span class="p">:</span> <span class="s1">&#39;Already Reported&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;209&#39;</span><span class="p">:</span> <span class="s1">&#39;IM Used&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;300&#39;</span><span class="p">:</span> <span class="s1">&#39;Multiple Choices&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;301&#39;</span><span class="p">:</span> <span class="s1">&#39;Moved Permanently&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;302&#39;</span><span class="p">:</span> <span class="s1">&#39;Found&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;303&#39;</span><span class="p">:</span> <span class="s1">&#39;See Other&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;304&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Modified&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;305&#39;</span><span class="p">:</span> <span class="s1">&#39;Use Proxy&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;306&#39;</span><span class="p">:</span> <span class="s1">&#39;Switch Proxy&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;307&#39;</span><span class="p">:</span> <span class="s1">&#39;Temporary Redirect&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;308&#39;</span><span class="p">:</span> <span class="s1">&#39;Permanent Redirect&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;400&#39;</span><span class="p">:</span> <span class="s1">&#39;Bad Request&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;401&#39;</span><span class="p">:</span> <span class="s1">&#39;Unauthorized&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;402&#39;</span><span class="p">:</span> <span class="s1">&#39;Payment Required&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;403&#39;</span><span class="p">:</span> <span class="s1">&#39;Forbidden&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;404&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Found&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;405&#39;</span><span class="p">:</span> <span class="s1">&#39;Method Not Allowed&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;406&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Acceptable&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;407&#39;</span><span class="p">:</span> <span class="s1">&#39;Proxy Authentication Required&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;408&#39;</span><span class="p">:</span> <span class="s1">&#39;Request Timeout&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;409&#39;</span><span class="p">:</span> <span class="s1">&#39;Conflict&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;410&#39;</span><span class="p">:</span> <span class="s1">&#39;Gone&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;411&#39;</span><span class="p">:</span> <span class="s1">&#39;Length Required&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;412&#39;</span><span class="p">:</span> <span class="s1">&#39;Precondition Failed&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;413&#39;</span><span class="p">:</span> <span class="s1">&#39;Payload Too Large&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;414&#39;</span><span class="p">:</span> <span class="s1">&#39;URI Too Long&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;415&#39;</span><span class="p">:</span> <span class="s1">&#39;Unsupported Media Type&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;416&#39;</span><span class="p">:</span> <span class="s1">&#39;Range Not Satisfiable&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;417&#39;</span><span class="p">:</span> <span class="s1">&#39;Expectation Failed&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;418&#39;</span><span class="p">:</span> <span class="s1">&#39;I</span><span class="se">\&#39;</span><span class="s1">m a teapot&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;421&#39;</span><span class="p">:</span> <span class="s1">&#39;Misdirected Request&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;422&#39;</span><span class="p">:</span> <span class="s1">&#39;Unprocessable Entity&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;423&#39;</span><span class="p">:</span> <span class="s1">&#39;Locked&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;424&#39;</span><span class="p">:</span> <span class="s1">&#39;Failed Dependency&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;426&#39;</span><span class="p">:</span> <span class="s1">&#39;Upgrade Required&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;428&#39;</span><span class="p">:</span> <span class="s1">&#39;Precondition Required&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;429&#39;</span><span class="p">:</span> <span class="s1">&#39;Too Many Requests&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;431&#39;</span><span class="p">:</span> <span class="s1">&#39;Request Header Fields Too Large&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;451&#39;</span><span class="p">:</span> <span class="s1">&#39;Unavailable For Legal Reasons&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;500&#39;</span><span class="p">:</span> <span class="s1">&#39;Internal Server Error&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;501&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Implemented&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;502&#39;</span><span class="p">:</span> <span class="s1">&#39;Bad Gateway&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;503&#39;</span><span class="p">:</span> <span class="s1">&#39;Service Unavailable&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;504&#39;</span><span class="p">:</span> <span class="s1">&#39;Gateway Timeout&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;505&#39;</span><span class="p">:</span> <span class="s1">&#39;HTTP Version Not Supported&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;506&#39;</span><span class="p">:</span> <span class="s1">&#39;Variant Also Negotiates&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;507&#39;</span><span class="p">:</span> <span class="s1">&#39;Insufficient Storage&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;508&#39;</span><span class="p">:</span> <span class="s1">&#39;Loop Detected&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;510&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Extended&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;511&#39;</span><span class="p">:</span> <span class="s1">&#39;Network Authentication Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;100&#39;</span><span class="p">:</span> <span class="s1">&#39;Continue&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;101&#39;</span><span class="p">:</span> <span class="s1">&#39;Switching Protocols&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;102&#39;</span><span class="p">:</span> <span class="s1">&#39;Processing&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;200&#39;</span><span class="p">:</span> <span class="s1">&#39;OK&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;201&#39;</span><span class="p">:</span> <span class="s1">&#39;Created&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;202&#39;</span><span class="p">:</span> <span class="s1">&#39;Accepted&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;203&#39;</span><span class="p">:</span> <span class="s1">&#39;Non-Authoritative Information&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;204&#39;</span><span class="p">:</span> <span class="s1">&#39;No Content&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;206&#39;</span><span class="p">:</span> <span class="s1">&#39;Partial Content&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;207&#39;</span><span class="p">:</span> <span class="s1">&#39;Multi-Status&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;208&#39;</span><span class="p">:</span> <span class="s1">&#39;Already Reported&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;209&#39;</span><span class="p">:</span> <span class="s1">&#39;IM Used&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;300&#39;</span><span class="p">:</span> <span class="s1">&#39;Multiple Choices&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;301&#39;</span><span class="p">:</span> <span class="s1">&#39;Moved Permanently&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;302&#39;</span><span class="p">:</span> <span class="s1">&#39;Found&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;303&#39;</span><span class="p">:</span> <span class="s1">&#39;See Other&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;304&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Modified&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;305&#39;</span><span class="p">:</span> <span class="s1">&#39;Use Proxy&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;306&#39;</span><span class="p">:</span> <span class="s1">&#39;Switch Proxy&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;307&#39;</span><span class="p">:</span> <span class="s1">&#39;Temporary Redirect&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;308&#39;</span><span class="p">:</span> <span class="s1">&#39;Permanent Redirect&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;400&#39;</span><span class="p">:</span> <span class="s1">&#39;Bad Request&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;401&#39;</span><span class="p">:</span> <span class="s1">&#39;Unauthorized&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;402&#39;</span><span class="p">:</span> <span class="s1">&#39;Payment Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;403&#39;</span><span class="p">:</span> <span class="s1">&#39;Forbidden&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;404&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Found&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;405&#39;</span><span class="p">:</span> <span class="s1">&#39;Method Not Allowed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;406&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Acceptable&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;407&#39;</span><span class="p">:</span> <span class="s1">&#39;Proxy Authentication Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;408&#39;</span><span class="p">:</span> <span class="s1">&#39;Request Timeout&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;409&#39;</span><span class="p">:</span> <span class="s1">&#39;Conflict&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;410&#39;</span><span class="p">:</span> <span class="s1">&#39;Gone&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;411&#39;</span><span class="p">:</span> <span class="s1">&#39;Length Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;412&#39;</span><span class="p">:</span> <span class="s1">&#39;Precondition Failed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;413&#39;</span><span class="p">:</span> <span class="s1">&#39;Payload Too Large&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;414&#39;</span><span class="p">:</span> <span class="s1">&#39;URI Too Long&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;415&#39;</span><span class="p">:</span> <span class="s1">&#39;Unsupported Media Type&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;416&#39;</span><span class="p">:</span> <span class="s1">&#39;Range Not Satisfiable&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;417&#39;</span><span class="p">:</span> <span class="s1">&#39;Expectation Failed&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;418&#39;</span><span class="p">:</span> <span class="s1">&#39;I</span><span class="se">\&#39;</span><span class="s1">m a teapot&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;421&#39;</span><span class="p">:</span> <span class="s1">&#39;Misdirected Request&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;422&#39;</span><span class="p">:</span> <span class="s1">&#39;Unprocessable Entity&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;423&#39;</span><span class="p">:</span> <span class="s1">&#39;Locked&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;424&#39;</span><span class="p">:</span> <span class="s1">&#39;Failed Dependency&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;426&#39;</span><span class="p">:</span> <span class="s1">&#39;Upgrade Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;428&#39;</span><span class="p">:</span> <span class="s1">&#39;Precondition Required&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;429&#39;</span><span class="p">:</span> <span class="s1">&#39;Too Many Requests&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;431&#39;</span><span class="p">:</span> <span class="s1">&#39;Request Header Fields Too Large&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;451&#39;</span><span class="p">:</span> <span class="s1">&#39;Unavailable For Legal Reasons&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;500&#39;</span><span class="p">:</span> <span class="s1">&#39;Internal Server Error&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;501&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Implemented&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;502&#39;</span><span class="p">:</span> <span class="s1">&#39;Bad Gateway&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;503&#39;</span><span class="p">:</span> <span class="s1">&#39;Service Unavailable&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;504&#39;</span><span class="p">:</span> <span class="s1">&#39;Gateway Timeout&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;505&#39;</span><span class="p">:</span> <span class="s1">&#39;HTTP Version Not Supported&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;506&#39;</span><span class="p">:</span> <span class="s1">&#39;Variant Also Negotiates&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;507&#39;</span><span class="p">:</span> <span class="s1">&#39;Insufficient Storage&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;508&#39;</span><span class="p">:</span> <span class="s1">&#39;Loop Detected&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;510&#39;</span><span class="p">:</span> <span class="s1">&#39;Not Extended&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;511&#39;</span><span class="p">:</span> <span class="s1">&#39;Network Authentication Required&#39;</span><span class="p">,</span>
 <span class="p">}</span>
 </pre></div>
 
