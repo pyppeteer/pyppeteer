@@ -5,21 +5,24 @@
 
 import asyncio
 import atexit
+import json
+from urllib.request import urlopen
+from urllib.error import URLError
 import logging
 import os
 import os.path
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tempfile
+import time
 from typing import Any, Dict, TYPE_CHECKING
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.util import check_chromium, chromium_excutable
-from pyppeteer.util import download_chromium, merge_dict
+from pyppeteer.util import download_chromium, merge_dict, get_free_port
 
 if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
@@ -43,7 +46,6 @@ DEFAULT_ARGS = [
     '--disable-translate',
     '--metrics-recording-only',
     '--no-first-run',
-    '--remote-debugging-port=0',
     '--safebrowsing-disable-auto-update',
 ]
 
@@ -60,7 +62,13 @@ class Launcher(object):
     def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
         """Make new launcher."""
         self.options = merge_dict(options, kwargs)
+        self.port = get_free_port()
+        self.url = f'http://127.0.0.1:{self.port}'
+
         self.chrome_args = DEFAULT_ARGS
+        self.chrome_args.append(
+            f'--remote-debugging-port={self.port}',
+        )
         self.chromeClosed = True
         if self.options.get('appMode', False):
             self.options['headless'] = False
@@ -114,8 +122,8 @@ class Launcher(object):
         self.connection: Optional[Connection] = None
         self.proc = subprocess.Popen(
             self.cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
             env=env,
         )
 
@@ -126,30 +134,27 @@ class Launcher(object):
         # dont forget to close browser process
         atexit.register(_close_process)
 
-        import time
-        for _ in range(100):
-            # wait for DevTools port to open for at least 10sec
-            # setting timeout timer is bettter
-            time.sleep(0.1)
-            if self.proc.poll() is not None:
-                self._cleanup_tmp_user_data_dir()
-                raise BrowserError('Unexpectedly chrome process closed with '
-                                   f'return code: {self.proc.returncode}')
-            msg = self.proc.stdout.readline().decode()
-            if not msg:
-                continue
-            m = re.match(r'DevTools listening on (ws://.*)$', msg)
-            if m is not None:
-                break
-        else:
-            # This block called only when `for`-loop does not `break`
-            raise BrowserError('Failed to connect DevTools port.')
-        logger.debug(m.group(0))
         connectionDelay = self.options.get('slowMo', 0)
-        self.browserWSEndpoint = m.group(1).strip()
+        self.browserWSEndpoint = self._get_ws_endpoint()
+        logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(self.browserWSEndpoint, connectionDelay)
         return await Browser.create(
             self.connection, self.options, self.killChrome)
+
+    def _get_ws_endpoint(self) -> str:
+        url = self.url + '/json/version'
+        for i in range(100):
+            time.sleep(0.1)
+            try:
+                with urlopen(url) as f:
+                    data = json.loads(f.read().decode())
+                break
+            except URLError as e:
+                continue
+        else:
+            # cannot connet to browser for 10 seconds
+            raise BrowserError(f'Failed to connect to browser port: {url}')
+        return data['webSocketDebuggerUrl']
 
     def waitForChromeToClose(self) -> None:
         """Terminate chrome."""
