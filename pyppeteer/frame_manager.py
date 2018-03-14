@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 from pyee import EventEmitter
 
 # from pyppeteer import helper
+from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.execution_context import ExecutionContext, JSHandle
@@ -469,9 +470,8 @@ class Frame(object):
                 str(type(selectorOrFunctionOrTimeout))
             ))
             return fut
-        # TODO: use helper.is_jsfunc
-        if ('=>' in selectorOrFunctionOrTimeout or
-                selectorOrFunctionOrTimeout.strip().startswith('function')):
+
+        if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(
                 selectorOrFunctionOrTimeout, options, *args)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
@@ -485,7 +485,7 @@ class Frame(object):
         options = merge_dict(options, kwargs)
         waitForVisible = bool(options.get('visible'))
         waitForHidden = bool(options.get('hidden'))
-        pageFunction = '''
+        predicate = '''
 (selector, waitForVisible, waitForHidden) => {
     const node = document.querySelector(selector);
     if (!node)
@@ -503,7 +503,7 @@ class Frame(object):
 }
         '''  # noqa: E501
         return self.waitForFunction(
-            pageFunction, options, selector, waitForVisible, waitForHidden)
+            predicate, options, selector, waitForVisible, waitForHidden)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: Any, **kwargs: Any) -> Awaitable:
@@ -513,8 +513,10 @@ class Frame(object):
         """
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
-        interval = options.get('interval', 0)  # msec
-        return WaitTask(self, pageFunction, timeout, *args, interval=interval)
+        polling = options.get('polling', 'raf')
+        predicateCode = 'return ' + helper.evaluationString(
+            pageFunction, *args)
+        return WaitTask(self, predicateCode, polling, timeout)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -541,83 +543,163 @@ class Frame(object):
         self._parentFrame = None
 
 
-class WaitTask(asyncio.Future):
+class WaitTask(object):
     """WaitTask class."""
 
-    def __init__(self, frame: Frame, expr: str, timeout: float,
-                 *args: Any, interval: float = 0) -> None:
-        """Make new wait task.
+    def __init__(self, frame: Frame, predicateBody: str,
+                 polling: Union[str, int], timeout: float) -> None:
+        if isinstance(polling, str):
+            if polling not in ['raf', 'mutation']:
+                raise ValueError(f'Unknown polling: {polling}')
+        elif isinstance(polling, (int, float)):
+            if polling <= 0:
+                raise ValueError(
+                    f'Cannot poll with non-positive interval: {polling}'
+                )
+        else:
+            raise ValueError(f'Unknown polling option: {polling}')
 
-        :arg float timeout: msec to wait for task [default 30_000 [msec]].
-        :arg float interval: msec to poll for task [default timeout / 1000].
-        """
-        super().__init__()
-        self.__frame: Frame = frame
-        self.expr = expr
-        self.args = args
-        self.__timeout = timeout / 1000  # sec
-        self.__interval = interval / 1000 or self.__timeout / 100  # sec
-        self.__runCount: int = 0
-        self.__terminated = False
-        self.__done = False
-        frame._waitTasks.add(self)
-        # Since page navigation requires us to re-install the pageScript,
-        # we should track timeout on our end.
-        self.__loop = asyncio.get_event_loop()
-        self.__timeoutTimer = self.__loop.call_later(
-            self.__timeout,
-            lambda: self.terminate(
-                TimeoutError(f'waiting failed: timeout {timeout}ms exceeded')
-            )
+        self._frame = frame
+        self._polling = polling
+        self._timeout = timeout
+        self._pageScript = helper.evaluationString(
+            waitForPredicatePageFunction, predicateBody, polling, timeout
         )
-        asyncio.ensure_future(self.rerun(True))
+        self._runCount = 0
+        self._terminated = False
+        self._timeoutError = False
+        frame._waitTasks.add(self)
+
+        loop = asyncio.get_event_loop()
+        self.promise = loop.create_future()
+
+        async def timer(timeout: Union[int, float]) -> None:
+            await asyncio.sleep(timeout / 1000)
+            self._timeoutError = True
+            self.terminate(
+                TimeoutError(f'Waiting failed: timeout {timeout}ms exceeds.')
+            )
+
+        self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
+        self._runningTask = asyncio.ensure_future(self.rerun())
+
+    def __await__(self) -> Any:
+        """Make this class **awaitable**."""
+        yield from self.promise
 
     def terminate(self, error: Exception) -> None:
-        """Terminate task by error."""
-        self.__terminated = True
-        self.set_exception(error)
-        self.__cleanup()
+        """Terminate this task."""
+        self._terminated = True
+        if not self.promise.done():
+            self.promise.set_exception(error)
+        self._cleanup()
 
-    async def rerun(self, internal: bool = False) -> None:  # noqa: C901
-        """Re-run the task."""
-        if self.__done:
-            return
-        self.__runCount += 1
-        runCount = self.__runCount
+    async def rerun(self) -> None:
+        """Start polling."""
+        runCount = self._runCount = self._runCount + 1
         success = False
         error = None
+
         try:
-            success = bool(await self.__frame.evaluate(self.expr, *self.args))
+            success = await self._frame.evaluate(
+                self._pageScript, force_expr=True
+            )
         except Exception as e:
             error = e
 
-        if self.__terminated or runCount != self.__runCount:
+        if self.promise.done():
             return
 
-        # Ignore timeouts in pageScript - we track timeouts ourselves.
+        if self._terminated or runCount != self._runCount:
+            return
+
         if not success and not error:
-            if internal:
-                self.__loop.call_later(
-                    self.__interval,
-                    lambda: asyncio.ensure_future(self.rerun(True)),
-                )
             return
 
-        # When the page is navigated, the promise is rejected.
-        # We will try again in the new execution context.
-        if error:
-            error_msg = str(error)
-            if 'Execution context was destroyed' in error_msg:
-                return
+        # TODO: Need more error handling
 
         if error:
-            self.set_exception(error)
+            self.promise.set_exception(error)
         else:
-            self.set_result(None)
-        self.__cleanup()
+            self.promise.set_result(None)
 
-    def __cleanup(self) -> None:
-        self.__timeoutTimer.cancel()
-        self.__frame._waitTasks.remove(self)
-        self._runningTask = None
-        self.__done = True
+        self._cleanup()
+
+    def _cleanup(self) -> None:
+        if not self._timeoutError:
+            self._timeoutTimer.cancel()
+        self._frame._waitTasks.remove(self)
+
+
+waitForPredicatePageFunction = """
+async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
+  const predicate = new Function(predicateBody);
+  let timedOut = false;
+  setTimeout(() => timedOut = true, timeout);
+  if (polling === 'raf')
+    await pollRaf();
+  else if (polling === 'mutation')
+    await pollMutation();
+  else if (typeof polling === 'number')
+    await pollInterval(polling);
+  return !timedOut;
+
+  /**
+   * @return {!Promise}
+   */
+  function pollMutation() {
+    if (predicate())
+      return Promise.resolve();
+
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    const observer = new MutationObserver(mutations => {
+      if (timedOut || predicate()) {
+        observer.disconnect();
+        fulfill();
+      }
+    });
+    observer.observe(document, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+    return result;
+  }
+
+  /**
+   * @return {!Promise}
+   */
+  function pollRaf() {
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    onRaf();
+    return result;
+
+    function onRaf() {
+      if (timedOut || predicate())
+        fulfill();
+      else
+        requestAnimationFrame(onRaf);
+    }
+  }
+
+  /**
+   * @param {number} pollInterval
+   * @return {!Promise}
+   */
+  function pollInterval(pollInterval) {
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    onTimeout();
+    return result;
+
+    function onTimeout() {
+      if (timedOut || predicate())
+        fulfill();
+      else
+        setTimeout(onTimeout, pollInterval);
+    }
+  }
+}
+"""  # noqa: E501
