@@ -49,15 +49,7 @@ class TestLauncher(unittest.TestCase):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
         self.check_default_args(launcher)
         self.assertIn('--user-data-dir=/path/to/profile', launcher.chrome_args)
-        self.assertIsNone(launcher._tmp_user_data_dir)
-        
-    @sync
-    async def test_clean_up(self):
-        launcher = Launcher()
-        self.assertTrue(os.path.exists(launcher._tmp_user_data_dir))
-        browser = await launcher.launch()
-        await browser.close()
-        self.assertFalse(os.path.exists(launcher._tmp_user_data_dir))
+        self.assertIsNone(launcher._tmp_user_data_dir)        
 
     @sync
     async def test_close_no_connection(self):
