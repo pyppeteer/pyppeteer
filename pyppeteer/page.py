@@ -1013,6 +1013,13 @@ function(html) {
         Pyppeteer tries to automatically detect function or selector, but
         sometimes miss-detects. If not work as you expected, use
         :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.
+
+        :arg selectorOrFunctionOrTimeout: A selector or
+          function string, or timeout (milliseconds).
+        :arg Any args: Arguments to pass the function.
+
+        Available options: see :meth:`waitForFunction` or
+        :meth:`waitForSelector`
         """
         frame = self.mainFrame
         if not frame:
@@ -1023,6 +1030,8 @@ function(html) {
     def waitForSelector(self, selector: str, options: dict = None,
                         **kwargs: Any) -> Awaitable:
         """Wait until element which matches ``selector`` appears on page.
+
+        :arg str selector: A selector of an element to wait for.
 
         This method accepts the following options:
 
@@ -1044,9 +1053,21 @@ function(html) {
                         *args: str, **kwargs: Any) -> Awaitable:
         """Wait until the function completes.
 
+        :arg Any args: Arguments to pass to ``pageFunction``.
+
         This method accepts the following options:
 
-        * ``polling`` (str|number): **Not Implemented Yet**
+        * ``polling`` (str|number): An interval at which the ``pageFunction``
+          is executed, defaults to ``raf``. If ``polling`` is a number, then
+          it is treated as an interval in milliseconds at which the function
+          would be executed. If ``polling`` is a string, then it can be one of
+          the following values:
+
+          * ``raf``: to constantly execute ``pageFunction`` in
+            ``requestAnimationFrame`` callback. This is the tightest polling
+            mode which is suitable to observe styling changes.
+          * ``mutation``: to execute ``pageFunction`` on every DOM mutation.
+
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
         """
         frame = self.mainFrame

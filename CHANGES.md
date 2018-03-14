@@ -1,6 +1,11 @@
 History
 =======
 
+## Version 0.0.15 (next version)
+
+* Support `raf` and `mutation` polling for `waitFor*` methods.
+
+
 ## Version 0.0.14 (2018-03-14)
 
 * Read WS endpoint from web interface instead of stdout
