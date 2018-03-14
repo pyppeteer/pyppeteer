@@ -15,6 +15,7 @@ from pyee import EventEmitter
 from pyppeteer import helper
 from pyppeteer.connection import Session
 from pyppeteer.element_handle import ElementHandle
+from pyppeteer.errors import NetworkError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
@@ -461,7 +462,7 @@ class Frame(object):
         options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
-                asyncio.sleep(selectorOrFunctionOrTimeout))
+                asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
             fut = asyncio.get_event_loop().create_future()
@@ -594,7 +595,7 @@ class WaitTask(object):
             self.promise.set_exception(error)
         self._cleanup()
 
-    async def rerun(self) -> None:
+    async def rerun(self) -> None:  # noqa: C901
         """Start polling."""
         runCount = self._runCount = self._runCount + 1
         success = False
@@ -616,7 +617,16 @@ class WaitTask(object):
         if not success and not error:
             return
 
-        # TODO: Need more error handling
+        # page is navigated and context is destroyed.
+        # Try again in the new execution context.
+        if (isinstance(error, NetworkError) and
+                'Execution context was destroyed' in error.args[0]):
+            return
+
+        # Try again in the new execution context.
+        if (isinstance(error, NetworkError) and
+                'Cannot find context with specified id' in error.args[0]):
+            return
 
         if error:
             self.promise.set_exception(error)

@@ -1124,6 +1124,41 @@ a + b
         self.assertEqual(body, 'intercepted')
 
 
+class TestWaitFor(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+        self.result = False
+        self.results = []
+
+    def set_result(self, value):
+        self.result = value
+
+    @sync
+    async def test_wait_for_page_navigated(self) -> None:
+        fut = asyncio.ensure_future(self.page.waitFor('h1'))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(self.result)
+        await self.page.goto(self.url)
+        await fut
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_timeout(self) -> None:
+        start_time = time.perf_counter()
+        fut = asyncio.ensure_future(self.page.waitFor(100))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await fut
+        self.assertGreater(time.perf_counter() - start_time, 0.1)
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_error_type(self) -> None:
+        with self.assertRaises(TypeError):
+            await self.page.waitFor({'a': 1})
+
+
 class TestWaitForFunction(BaseTestCase):
     def setUp(self):
         super().setUp()
