@@ -329,6 +329,30 @@ class Frame(object):
     #: Alias to :meth:`querySelectorAllEval`
     JJeval = querySelectorAllEval
 
+    async def content(self) -> str:
+        """Get the whole HTML contents of the page."""
+        return await self.evaluate('''
+() => {
+  let retVal = '';
+  if (document.doctype)
+    retVal = new XMLSerializer().serializeToString(document.doctype);
+  if (document.documentElement)
+    retVal += document.documentElement.outerHTML;
+  return retVal;
+}
+        '''.strip())
+
+    async def setContent(self, html: str) -> None:
+        """Set content to this page."""
+        func = '''
+function(html) {
+  document.open();
+  document.write(html);
+  document.close();
+}
+'''
+        await self.evaluate(func, html)
+
     @property
     def name(self) -> str:
         """Get frame name."""

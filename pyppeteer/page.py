@@ -532,27 +532,17 @@ function deliverResult(name, seq, result) {
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        return await self.evaluate('''
-() => {
-  let retVal = '';
-  if (document.doctype)
-    retVal = new XMLSerializer().serializeToString(document.doctype);
-  if (document.documentElement)
-    retVal += document.documentElement.outerHTML;
-  return retVal;
-}
-        '''.strip())
+        frame = self._frameManager.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        return await frame.content()
 
     async def setContent(self, html: str) -> None:
         """Set content to this page."""
-        func = '''
-function(html) {
-  document.open();
-  document.write(html);
-  document.close();
-}
-'''
-        await self.evaluate(func, html)
+        frame = self._frameManager.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.setContent(html)
 
     async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
