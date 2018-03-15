@@ -217,12 +217,13 @@ class NetworkManager(EventEmitter):
             return
         if event.get('redirectResponse'):
             request = self._requestIdToRequest[event['requestId']]
-            redirectResponse = event.get('redirectResponse', {})
-            self._handleRequestRedirect(
-                request,
-                redirectResponse.get('status'),
-                redirectResponse.get('headers'),
-            )
+            if request:
+                redirectResponse = event.get('redirectResponse', {})
+                self._handleRequestRedirect(
+                    request,
+                    redirectResponse.get('status'),
+                    redirectResponse.get('headers'),
+                )
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
