@@ -1127,11 +1127,26 @@ class ConsoleMessage(object):
 
     def __init__(self, type: str, text: str, args: List[JSHandle]) -> None:
         #: (str) type of console message
-        self.type = type
+        self._type = type
         #: (str) console message string
-        self.text = text
+        self._text = text
         #: list of JSHandle
-        self.args = args
+        self._args = args
+
+    @property
+    def type(self) -> str:
+        """Return type of this message."""
+        return self._type
+
+    @property
+    def text(self) -> str:
+        """Return text representation of this message."""
+        return self._text
+
+    @property
+    def args(self) -> List[JSHandle]:
+        """Return list of args (JSHandle) of this message."""
+        return self._args
 
 
 #: alias to :func:`create_page()`

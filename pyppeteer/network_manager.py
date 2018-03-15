@@ -295,14 +295,49 @@ class Request(object):
         self._failureText: Optional[str] = None
         self._completePromise = asyncio.get_event_loop().create_future()
 
-        self.url = url
-        self.resourceType = resourceType.lower()
-        self.method = payload.get('method', '')
-        self.postData = payload.get('postData', '')
-        self.headers = payload.get('headers', {})
+        self._url = url
+        self._resourceType = resourceType.lower()
+        self._method = payload.get('method', '')
+        self._postData = payload.get('postData', '')
+        headers = payload.get('headers', {})
+        self._headers = {k.lower(): v for k, v in headers.items()}
 
     def _completePromiseFulfill(self) -> None:
         self._completePromise.set_result(None)
+
+    @property
+    def url(self) -> str:
+        """URL of this request."""
+        return self._url
+
+    @property
+    def resourceType(self) -> str:
+        """Resource type of this request perceived by the rendering engine.
+
+        ResourceType will be one of the following: ``document``,
+        ``stylesheet``, ``image``, ``media``, ``font``, ``script``,
+        ``texttrack``, ``xhr``, ``fetch``, ``eventsource``, ``websocket``,
+        ``manifest``, ``other``.
+        """
+        return self._resourceType
+
+    @property
+    def method(self) -> str:
+        """Return this request's method (GET, POST, etc.)."""
+        return self._method
+
+    @property
+    def postData(self) -> str:
+        """Return post body of this request."""
+        return self._postData
+
+    @property
+    def headers(self) -> Dict:
+        """Reurn a dictionary of HTTP headers of this request.
+
+        All header names are lower-case.
+        """
+        return self._headers
 
     @property
     def response(self) -> Optional['Response']:
@@ -368,7 +403,7 @@ class Request(object):
           response header.
         * ``body`` (str|bytes): Optional response body.
         """
-        if self.url.startswith('data:'):
+        if self._url.startswith('data:'):
             return
         if not self._allowInterception:
             raise NetworkError('Request interception is not enabled.')
@@ -466,11 +501,33 @@ class Response(object):
                  headers: Dict[str, str]) -> None:
         self._client = client
         self._request = request
-        self.status = status
+        self._status = status
         self._contentPromise = asyncio.get_event_loop().create_future()
-        self.ok = 200 <= status <= 299
-        self.url = request.url
-        self.headers = {k.lower(): v for k, v in headers.items()}
+        self._url = request.url
+        self._headers = {k.lower(): v for k, v in headers.items()}
+
+    @property
+    def url(self) -> str:
+        """URL of the response."""
+        return self._url
+
+    @property
+    def ok(self) -> bool:
+        """Return bool whether this request is successfull (200-299) or not."""
+        return 200 <= self._status <= 299
+
+    @property
+    def status(self) -> int:
+        """Status code of the response."""
+        return self._status
+
+    @property
+    def headers(self) -> Dict:
+        """Return dictionary of HTTP headers of this response.
+
+        All header names are lower-case.
+        """
+        return self._headers
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {

@@ -1031,7 +1031,7 @@ a + b
         async def request_check(req):
             self.assertIn('empty', req.url)
             self.assertEqual(req.method, 'GET')
-            self.assertTrue(req.headers.get('User-Agent'))
+            self.assertTrue(req.headers.get('user-agent'))
             self.assertEqual(req.resourceType, 'document')
             await req.continue_()
 
