@@ -3,7 +3,8 @@ History
 
 ## Version 0.0.15 (next version)
 
-* Support `raf` and `mutation` polling for `waitFor*` methods.
+* Support `raf` and `mutation` polling for `waitFor*` methods
+* Change `Frame.executionContest` from property to coroutine
 
 
 ## Version 0.0.14 (2018-03-14)
