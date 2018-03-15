@@ -753,17 +753,19 @@ function deliverResult(name, seq, result) {
         """
         options = merge_dict(options, kwargs)
         screenshotType = None
-        if 'path' in options:
+        if 'type' in options:
+            screenshotType = options['type']
+            if screenshotType not in ['png', 'jpeg']:
+                raise ValueError(f'Unknown type value: {screenshotType}')
+        elif 'path' in options:
             mimeType, _ = mimetypes.guess_type(options['path'])
             if mimeType == 'image/png':
                 screenshotType = 'png'
             elif mimeType == 'image/jpeg':
                 screenshotType = 'jpeg'
             else:
-                raise PageError('Unsupported screenshot '
-                                f'mime type: {mimeType}')
-        if 'type' in options:
-            screenshotType = options['type']
+                raise ValueError('Unsupported screenshot '
+                                 f'mime type: {mimeType}')
         if not screenshotType:
             screenshotType = 'png'
         return await self._screenshotTask(screenshotType, options)

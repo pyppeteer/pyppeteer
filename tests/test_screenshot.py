@@ -7,7 +7,6 @@ from unittest import TestCase
 from syncer import sync
 
 from pyppeteer import launch
-from pyppeteer.errors import PageError
 
 root_path = Path(__file__).resolve().parent
 blank_png_path = root_path / 'blank_800x600.png'
@@ -56,7 +55,7 @@ class TestScreenShot(TestCase):
         page = await self.browser.newPage()
         await page.goto('about:blank')
         options = {'path': 'example.unsupported'}
-        with self.assertRaises(PageError, msg='mime type: unsupported'):
+        with self.assertRaises(ValueError, msg='mime type: unsupported'):
             await page.screenshot(options)
 
 
