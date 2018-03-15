@@ -1406,13 +1406,15 @@ class TestFrames(BaseTestCase):
         self.assertEqual(len(self.page.frames), 2)
         frame1 = self.page.frames[0]
         frame2 = self.page.frames[1]
-        self.assertTrue(frame1.executionContext)
-        self.assertTrue(frame2.executionContext)
+        context1 = await frame1.executionContext()
+        context2 = await frame2.executionContext()
+        self.assertTrue(context1)
+        self.assertTrue(context2)
 
-        await frame1.executionContext.evaluate('() => window.a = 1')
-        await frame2.executionContext.evaluate('() => window.a = 2')
-        a1 = await frame1.executionContext.evaluate('() => window.a')
-        a2 = await frame2.executionContext.evaluate('() => window.a')
+        await context1.evaluate('() => window.a = 1')
+        await context2.evaluate('() => window.a = 2')
+        a1 = await context1.evaluate('() => window.a')
+        a2 = await context2.evaluate('() => window.a')
         self.assertEqual(a1, 1)
         self.assertEqual(a2, 2)
 
@@ -1429,6 +1431,18 @@ class TestFrames(BaseTestCase):
         a2 = await frame2.evaluate('window.a')
         self.assertEqual(a1, 1)
         self.assertEqual(a2, 2)
+
+    @sync
+    async def test_frame_evaluate_after_navigation(self) -> None:
+        self.result = None
+
+        def frame_navigated(frame):
+            self.result = asyncio.ensure_future(frame.evaluate('6 * 7'))
+
+        self.page.on('framenavigated', frame_navigated)
+        await self.page.goto(self.url + 'empty')
+        self.assertIsNotNone(self.result)
+        self.assertEqual(await self.result, 42)
 
     @sync
     async def test_frame_cross_site(self):

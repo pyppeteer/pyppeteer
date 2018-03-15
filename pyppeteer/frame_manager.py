@@ -55,6 +55,11 @@ class FrameManager(EventEmitter):
         client.on('Runtime.executionContextCreated',
                   lambda event: self._onExecutionContextCreated(
                       event.get('context')))
+        client.on('Runtime.executionContextDestroyed',
+                  lambda event: self._onExecutionContextDestroyed(
+                      event.get('executionContextId')))
+        client.on('Runtime.executionContextsCleared',
+                  lambda event: self._onExecutionContextsCleared())
         client.on('Page.lifecycleEvent',
                   lambda event: self._onLifecycleEvent(event))
 
@@ -137,24 +142,33 @@ class FrameManager(EventEmitter):
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         context = ExecutionContext(
             self._client,
-            contextPayload['id'],
+            contextPayload,
             lambda obj: self.createJSHandle(contextPayload['id'], obj),
         )
         self._contextIdToContext[contextPayload['id']] = context
 
-        auxData = contextPayload.get('auxData')
-        frameId = (auxData.get('frameId')
-                   if auxData and auxData.get('isDefault')
-                   else None)
-        frame = self._frames.get(frameId)
-        if not frame:
-            return
-        frame._context = context
-        for waitTask in frame._waitTasks:
-            asyncio.ensure_future(waitTask.rerun())
+        frame = (self._frames.get(context._frameId)
+                 if context._frameId else None)
 
-    def _onExecutionContextDestroyed(self, contextPayload: Dict) -> None:
-        del self._contextIdToContext[contextPayload['id']]
+        if frame and context._isDefault:
+            frame._setDefaultContext(context)
+
+    def _removeContext(self, context: ExecutionContext) -> None:
+        frame = self._frames[context._frameId] if context._frameId else None
+        if frame and context._isDefault:
+            frame._setDefaultContext(None)
+
+    def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
+        context = self._contextIdToContext.get(executionContextId)
+        if not context:
+            return
+        del self._contextIdToContext[executionContextId]
+        self._removeContext(context)
+
+    def _onExecutionContextsCleared(self) -> None:
+        for context in self._contextIdToContext.values():
+            self._removeContext(context)
+        self._contextIdToContext.clear()
 
     def createJSHandle(self, contextId: str, remoteObject: Dict = None
                        ) -> 'JSHandle':
@@ -191,7 +205,10 @@ class Frame(object):
         self._url = ''
         self._detached = False
         self._id = frameId
-        self._context: Optional[ExecutionContext] = None
+
+        self._contextResolveCallback = lambda _: None
+        self._setDefaultContext(None)
+
         self._waitTasks: Set[WaitTask] = set()  # maybe list
         self._loaderId = ''
         self._lifecycleEvents: Set[str] = set()
@@ -199,14 +216,28 @@ class Frame(object):
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-    @property
-    def executionContext(self) -> Optional[ExecutionContext]:
+    def _setDefaultContext(self, context: Optional[ExecutionContext]) -> None:
+        if context is not None:
+            self._contextResolveCallback(context)  # type: ignore
+            self._contextResolveCallback = lambda _: None
+            for waitTask in self._waitTasks:
+                asyncio.ensure_future(waitTask.rerun())
+        else:
+            self._contextPromise = asyncio.get_event_loop().create_future()
+            self._contextResolveCallback = (
+                lambda _context: self._contextPromise.set_result(_context)
+            )
+
+    async def executionContext(self) -> Optional[ExecutionContext]:
         """Return execution context of this frame.
 
-        Return :class:`pyppeteer.execution_context.ExecutionContext` associated
-        to this frame.
+        Return :class:`~pyppeteer.execution_context.ExecutionContext`
+        associated to this frame.
         """
-        return self._context
+        if self._contextPromise.done():
+            return self._contextPromise.result()
+        await self._contextPromise
+        return self._contextPromise.result()
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:
@@ -214,9 +245,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await self._context.evaluate(
+        return await context.evaluate(
             pageFunction, *args, force_expr=force_expr)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
@@ -224,9 +256,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelector`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        handle = await self._context.evaluateHandle(
+        handle = await context.evaluateHandle(
             'selector => document.querySelector(selector)', selector)
         element = handle.asElement()
         if element:
@@ -255,9 +288,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await self._context.evaluateHandle(
+        arrayHandle = await context.evaluateHandle(
             'selector => Array.from(document.querySelectorAll(selector))',
             selector,
         )
@@ -270,9 +304,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await self._context.evaluateHandle(
+        arrayHandle = await context.evaluateHandle(
             'selector => document.querySelectorAll(selector)',
             selector,
         )
@@ -337,7 +372,8 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
 
         addScriptUrl = '''
@@ -362,7 +398,7 @@ class Frame(object):
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addScriptUrl, options['url'])
 
         if isinstance(options.get('path'), str):
@@ -370,11 +406,11 @@ class Frame(object):
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
                 re.sub(options['path'], '\n', ''))
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addScriptContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addScriptContent, options['content'])
 
         raise ValueError(
@@ -385,6 +421,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.addStyleTag`.
         """
+        context = await self.executionContext()
+        if context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+
         addStyleUrl = '''
         async function (url) {
             const link = document.createElement('link');
@@ -408,18 +448,18 @@ class Frame(object):
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addStyleUrl, options['url'])
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addStyleContent, contents)
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(  # type: ignore
+            return await context.evaluateHandle(  # type: ignore
                 addStyleContent, options['content'])
 
         raise ValueError(

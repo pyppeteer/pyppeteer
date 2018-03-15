@@ -232,10 +232,10 @@ class Page(EventEmitter):
         """
         if not self.mainFrame:
             raise PageError('no main frame.')
-        if not self.mainFrame.executionContext:
+        context = await self.mainFrame.executionContext()
+        if not context:
             raise PageError('No context.')
-        return await self.mainFrame.executionContext.evaluateHandle(
-            pageFunction, *args)
+        return await context.evaluateHandle(pageFunction, *args)
 
     async def queryObjects(self, prototypeHandle: JSHandle) -> JSHandle:
         """Iterate js heap and finds all the objects with the handle.
@@ -244,10 +244,10 @@ class Page(EventEmitter):
         """
         if not self.mainFrame:
             raise PageError('no main frame.')
-        if not self.mainFrame.executionContext:
+        context = await self.mainFrame.executionContext()
+        if not context:
             raise PageError('No context.')
-        return await self.mainFrame.executionContext.queryObjects(
-            prototypeHandle)
+        return await context.queryObjects(prototypeHandle)
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:

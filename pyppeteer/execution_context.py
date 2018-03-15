@@ -17,10 +17,14 @@ if TYPE_CHECKING:
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: Session, contextId: int,
+    def __init__(self, client: Session, contextPayload: Dict,
                  objectHandleFactory: Any) -> None:
         self._client = client
-        self._contextId = contextId
+        self._contextId = contextPayload.get('id')
+
+        auxData = contextPayload.get('auxData', {'isDefault': True})
+        self._frameId = auxData.get('frameId', None)
+        self._isDefault = bool(auxData.get('isDefault'))
         self._objectHandleFactory = objectHandleFactory
 
     async def evaluate(self, pageFunction: str, *args: Any,
