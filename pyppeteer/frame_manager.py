@@ -234,10 +234,7 @@ class Frame(object):
         Return :class:`~pyppeteer.execution_context.ExecutionContext`
         associated to this frame.
         """
-        if self._contextPromise.done():
-            return self._contextPromise.result()
-        await self._contextPromise
-        return self._contextPromise.result()
+        return await self._contextPromise
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:
