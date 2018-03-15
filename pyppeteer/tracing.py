@@ -32,7 +32,7 @@ class Tracing(object):
           of default.
         """
         options = merge_dict(options, kwargs)
-        categoriesArray = [
+        defaultCategories = [
             '-*', 'devtools.timeline', 'v8.execute',
             'disabled-by-default-devtools.timeline',
             'disabled-by-default-devtools.timeline.frame', 'toplevel',
@@ -40,6 +40,7 @@ class Tracing(object):
             'disabled-by-default-devtools.timeline.stack',
             'disabled-by-default-v8.cpu_profiler',
         ]
+        categoriesArray = options.get('categories', defaultCategories)
 
         if 'screenshots' in options:
             categoriesArray.append('disabled-by-default-devtools.screenshot')

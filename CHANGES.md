@@ -6,6 +6,7 @@ History
 * Support `raf` and `mutation` polling for `waitFor*` methods
 * Change `Frame.executionContest` from property to coroutine
 * Implement `Frame.content` and `Frame.setContent` methods
+* `page.tracing.start` accepts custom tracing categories option
 
 
 ## Version 0.0.14 (2018-03-14)

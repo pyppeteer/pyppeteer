@@ -9,6 +9,7 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
+import json
 import math
 from pathlib import Path
 import sys
@@ -478,7 +479,7 @@ a + b
         self.assertEqual(len(elements), 0)
 
     @sync
-    async def test_hover(self) -> None:
+    async def test_hover(self):
         await self.page.hover('a#link1')
         _id = await self.page.evaluate('document.querySelector("a:hover").id')
         self.assertEqual(_id, 'link1')
@@ -488,7 +489,7 @@ a + b
         self.assertEqual(_id, 'link2')
 
     @sync
-    async def test_hover_not_found(self) -> None:
+    async def test_hover_not_found(self):
         with self.assertRaises(PageError):
             await self.page.hover('#no-such-element')
         elm = await self.page.J('h1')
@@ -499,7 +500,7 @@ a + b
             await elm.hover()
 
     @sync
-    async def test_focus_not_found(self) -> None:
+    async def test_focus_not_found(self):
         with self.assertRaises(PageError):
             await self.page.focus('#no-such-element')
 
@@ -521,7 +522,7 @@ a + b
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
-    async def test_select(self) -> None:
+    async def test_select(self):
         await self.page.goto(self.url + 'static/select.html')
         value = await self.page.select('select', 'blue')
         self.assertEqual(value, ['blue'])
@@ -536,7 +537,7 @@ a + b
         self.assertEqual(change, ['blue'])
 
     @sync
-    async def test_select_multiple(self) -> None:
+    async def test_select_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.evaluate('makeMultiple();')
         values = await self.page.select('select', 'blue', 'green', 'red')
@@ -547,31 +548,31 @@ a + b
         self.assertEqual(change, ['blue', 'green', 'red'])
 
     @sync
-    async def test_select_not_select_element(self) -> None:
+    async def test_select_not_select_element(self):
         await self.page.goto(self.url + 'static/select.html')
         with self.assertRaises(ElementHandleError):
             await self.page.select('body', '')
 
     @sync
-    async def test_select_no_match(self) -> None:
+    async def test_select_no_match(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select', 'abc', 'def')
         self.assertEqual(values, [])
 
     @sync
-    async def test_select_not_multiple(self) -> None:
+    async def test_select_not_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select', 'blue', 'green', 'red')
         self.assertEqual(len(values), 1)
 
     @sync
-    async def test_select_no_value(self) -> None:
+    async def test_select_no_value(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select')
         self.assertEqual(values, [])
 
     @sync
-    async def test_select_deselect(self) -> None:
+    async def test_select_deselect(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.select('select', 'blue', 'green', 'red')
         await self.page.select('select')
@@ -582,7 +583,7 @@ a + b
         self.assertTrue(result)
 
     @sync
-    async def test_select_deselect_multiple(self) -> None:
+    async def test_select_deselect_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.evaluate('makeMultiple();')
         await self.page.select('select', 'blue', 'green', 'red')
@@ -594,7 +595,7 @@ a + b
         self.assertTrue(result)
 
     @sync
-    async def test_select_nonstring(self) -> None:
+    async def test_select_nonstring(self):
         await self.page.goto(self.url + 'static/select.html')
         with self.assertRaises(TypeError):
             await self.page.select('select', 12)
@@ -1014,7 +1015,7 @@ a + b
         self.assertEqual(result, 36)
 
     @sync
-    async def test_request_interception(self) -> None:
+    async def test_request_interception(self):
         await self.page.setRequestInterception(True)
 
         async def request_check(req):
@@ -1030,7 +1031,7 @@ a + b
         self.assertIn(res.status, [200, 304])
 
     @sync
-    async def test_request_interception_stop(self) -> None:
+    async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
         self.page.once('request',
                        lambda req: asyncio.ensure_future(req.continue_()))
@@ -1105,7 +1106,7 @@ a + b
         )
 
     @sync
-    async def test_request_respond(self) -> None:
+    async def test_request_respond(self):
         await self.page.setRequestInterception(True)
 
         async def interception(req):
@@ -1135,7 +1136,7 @@ class TestWaitFor(BaseTestCase):
         self.result = value
 
     @sync
-    async def test_wait_for_page_navigated(self) -> None:
+    async def test_wait_for_page_navigated(self):
         fut = asyncio.ensure_future(self.page.waitFor('h1'))
         fut.add_done_callback(lambda f: self.set_result(True))
         await self.page.goto(self.url + 'empty')
@@ -1145,7 +1146,7 @@ class TestWaitFor(BaseTestCase):
         self.assertTrue(self.result)
 
     @sync
-    async def test_wait_for_timeout(self) -> None:
+    async def test_wait_for_timeout(self):
         start_time = time.perf_counter()
         fut = asyncio.ensure_future(self.page.waitFor(100))
         fut.add_done_callback(lambda f: self.set_result(True))
@@ -1154,7 +1155,7 @@ class TestWaitFor(BaseTestCase):
         self.assertTrue(self.result)
 
     @sync
-    async def test_wait_for_error_type(self) -> None:
+    async def test_wait_for_error_type(self):
         with self.assertRaises(TypeError):
             await self.page.waitFor({'a': 1})
 
@@ -1240,12 +1241,12 @@ class TestWaitForFunction(BaseTestCase):
         self.assertTrue(result)
 
     @sync
-    async def test_bad_polling_value(self) -> None:
+    async def test_bad_polling_value(self):
         with self.assertRaises(ValueError):
             await self.page.waitForFunction('() => true', polling='unknown')
 
     @sync
-    async def test_negative_polling_value(self) -> None:
+    async def test_negative_polling_value(self):
         with self.assertRaises(ValueError):
             await self.page.waitForFunction('() => true', polling=-100)
 
@@ -1291,7 +1292,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(result)
 
     @sync
-    async def test_wait_for_selector_inner_html(self) -> None:
+    async def test_wait_for_selector_inner_html(self):
         fut = asyncio.ensure_future(self.page.waitForSelector('h3 div'))
         await self.page.evaluate(self.addElement, 'span')
         await self.page.evaluate('() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"')  # noqa: E501
@@ -1304,7 +1305,7 @@ class TestWaitForSelector(BaseTestCase):
             await self.page.waitForSelector('*')
 
     @sync
-    async def test_wait_for_selector_visible(self) -> None:
+    async def test_wait_for_selector_visible(self):
         div = []
         fut = asyncio.ensure_future(
             self.page.waitForSelector('div', visible=True))
@@ -1322,7 +1323,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_visible_ininer(self) -> None:
+    async def test_wait_for_selector_visible_ininer(self):
         div = []
         fut = asyncio.ensure_future(
             self.page.waitForSelector('div#inner', visible=True))
@@ -1341,7 +1342,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_hidden(self) -> None:
+    async def test_wait_for_selector_hidden(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
         fut = asyncio.ensure_future(
@@ -1354,7 +1355,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_display_none(self) -> None:
+    async def test_wait_for_selector_display_none(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
         fut = asyncio.ensure_future(
@@ -1367,7 +1368,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_remove(self) -> None:
+    async def test_wait_for_selector_remove(self):
         div = []
         await self.page.setContent('<div></div>')
         fut = asyncio.ensure_future(
@@ -1380,12 +1381,12 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_timeout(self) -> None:
+    async def test_wait_for_selector_timeout(self):
         with self.assertRaises(TimeoutError):
             await self.page.waitForSelector('div', timeout=10)
 
     @sync
-    async def test_wait_for_selector_node_mutation(self) -> None:
+    async def test_wait_for_selector_node_mutation(self):
         div = []
         fut = asyncio.ensure_future(self.page.waitForSelector('.cls'))
         fut.add_done_callback(lambda fut: div.append(True))
@@ -1433,7 +1434,7 @@ class TestFrames(BaseTestCase):
         self.assertEqual(a2, 2)
 
     @sync
-    async def test_frame_evaluate_after_navigation(self) -> None:
+    async def test_frame_evaluate_after_navigation(self):
         self.result = None
 
         def frame_navigated(frame):
@@ -1455,7 +1456,7 @@ class TestFrames(BaseTestCase):
         self.assertIn('127.0.0.1', loc)
 
     @sync
-    async def test_frame_nested(self) -> None:
+    async def test_frame_nested(self):
         await self.page.goto(self.url + 'static/nested-frames.html')
         dumped_frames = dumpFrames(self.page.mainFrame)
         try:
@@ -1473,7 +1474,7 @@ http://localhost:{port}/static/nested-frames.html
             print(dumpFrames(self.page.mainFrame))
 
     @sync
-    async def test_frame_events(self) -> None:
+    async def test_frame_events(self):
         await self.page.goto(self.url + 'empty')
         attachedFrames = []
         self.page.on('frameattached', lambda f: attachedFrames.append(f))
@@ -1494,7 +1495,7 @@ http://localhost:{port}/static/nested-frames.html
         self.assertTrue(detachedFrames[0].isDetached())
 
     @sync
-    async def test_frame_events_main(self) -> None:
+    async def test_frame_events_main(self):
         # no attach/detach events should be emitted on main frame
         events = []
         navigatedFrames = []
@@ -1506,7 +1507,7 @@ http://localhost:{port}/static/nested-frames.html
         self.assertEqual(len(navigatedFrames), 1)
 
     @sync
-    async def test_frame_events_child(self) -> None:
+    async def test_frame_events_child(self):
         attachedFrames = []
         detachedFrames = []
         navigatedFrames = []
@@ -1563,12 +1564,12 @@ http://localhost:{port}/static/nested-frames.html
 
 
 class TestConsole(BaseTestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         super().setUp()
         sync(self.page.goto(self.url + 'empty'))
 
     @sync
-    async def test_console_event(self) -> None:
+    async def test_console_event(self):
         messages = []
         self.page.once('console', lambda m: messages.append(m))
         await self.page.evaluate('() => console.log("hello", 5, {foo: "bar"})')
@@ -1583,7 +1584,7 @@ class TestConsole(BaseTestCase):
         self.assertEqual(await msg.args[2].jsonValue(), {'foo': 'bar'})
 
     @sync
-    async def test_console_event_many(self) -> None:
+    async def test_console_event_many(self):
         messages = []
         self.page.on('console', lambda m: messages.append(m))
         await self.page.evaluate('''
@@ -1611,7 +1612,7 @@ console.log(Promise.resolve('should not wait until resolved!'));
         ])
 
     @sync
-    async def test_console_window(self) -> None:
+    async def test_console_window(self):
         messages = []
         self.page.once('console', lambda m: messages.append(m))
         await self.page.evaluate('console.error(window);')
@@ -1619,6 +1620,52 @@ console.log(Promise.resolve('should not wait until resolved!'));
         self.assertEqual(len(messages), 1)
         msg = messages[0]
         self.assertEqual(msg.text, 'JSHandle@object')
+
+
+class TestTracing(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.outfile = Path(__file__).parent / 'trace.json'
+        if self.outfile.is_file():
+            self.outfile.unlink()
+
+    def tearDown(self):
+        if self.outfile.is_file():
+            self.outfile.unlink()
+        super().tearDown()
+
+    @sync
+    async def test_tracing(self):
+        await self.page.tracing.start({
+            'path': str(self.outfile)
+        })
+        await self.page.goto(self.url)
+        await self.page.tracing.stop()
+        self.assertTrue(self.outfile.is_file())
+
+    @sync
+    async def test_custom_categories(self):
+        await self.page.tracing.start({
+            'path': str(self.outfile),
+            'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
+        })
+        await self.page.tracing.stop()
+        self.assertTrue(self.outfile.is_file())
+        with self.outfile.open() as f:
+            trace_json = json.load(f)
+        self.assertIn(
+            'disabled-by-default-v8.cpu_profiler.hires',
+            trace_json['metadata']['trace-config'],
+        )
+
+    @sync
+    async def test_tracing_two_page_error(self):
+        await self.page.tracing.start({'path': str(self.outfile)})
+        new_page = await self.browser.newPage()
+        with self.assertRaises(NetworkError):
+            await new_page.tracing.start({'path': str(self.outfile)})
+        await new_page.close()
+        await self.page.tracing.stop()
 
 
 class TestPage(unittest.TestCase):
@@ -1723,18 +1770,6 @@ class TestPage(unittest.TestCase):
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()
-
-    @sync
-    async def test_tracing(self):
-        outfile = Path(__file__).parent / 'trace.json'
-        if outfile.is_file():
-            outfile.unlink()
-        await self.page.tracing.start({
-            'path': str(outfile)
-        })
-        await self.page.goto(self.url)
-        await self.page.tracing.stop()
-        self.assertTrue(outfile.is_file())
 
     @sync
     async def test_auth(self):
