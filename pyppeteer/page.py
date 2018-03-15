@@ -324,12 +324,19 @@ class Page(EventEmitter):
 
     async def setCookie(self, *cookies: dict) -> None:
         """Set cookies."""
+        pageURL = self.url
+        startsWithHTTP = pageURL.startswith('http')
         items = []
         for cookie in cookies:
             item = dict(**cookie)
-            pageURL = self.url
-            if 'url' not in item and pageURL.startswith('http'):
+            if 'url' not in item and startsWithHTTP:
                 item['url'] = pageURL
+            if item.get('url') == 'about:blank':
+                name = item.get('name', '')
+                raise PageError(f'Blank page can not have cookie "{name}"')
+            if item.get('url', '').startswith('data:'):
+                name = item.get('name', '')
+                raise PageError(f'Data URL page can not have cookie "{name}"')
             items.append(item)
         await self.deleteCookie(*items)
         if items:

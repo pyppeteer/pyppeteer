@@ -761,6 +761,38 @@ a + b
         }])
 
     @sync
+    async def test_cookie_blank_page(self) -> None:
+        await self.page.goto('about:blank')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_blank_page2(self) -> None:
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'about:blank',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
+
+    @sync
+    async def test_cookie_data_url_page(self) -> None:
+        await self.page.goto('data:,hello')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_data_url_page2(self) -> None:
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'data:,hello',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
+
+    @sync
     async def test_redirect(self):
         await self.page.goto(self.url + 'redirect1')
         await self.page.waitForSelector('h1#red2')
