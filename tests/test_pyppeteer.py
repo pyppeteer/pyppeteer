@@ -90,6 +90,16 @@ class TestLauncher(unittest.TestCase):
         await browser.close()
 
     @sync
+    async def test_browser_process(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        process = browser.process
+        self.assertGreater(process.pid, 0)
+        wsEndpoint = browser.wsEndpoint
+        browser2 = await connect({'browserWSEndpoint': wsEndpoint})
+        self.assertIsNone(browser2.process)
+        await browser.close()
+
+    @sync
     async def test_version(self):
         browser = await launch(DEFAULT_OPTIONS)
         version = await browser.version()

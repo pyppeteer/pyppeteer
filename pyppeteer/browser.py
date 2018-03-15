@@ -4,6 +4,7 @@
 """Browser module."""
 
 import asyncio
+from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
@@ -31,12 +32,14 @@ class Browser(EventEmitter):
     )
 
     def __init__(self, connection: Connection, options: Dict = None,
+                 process: Optional[Popen] = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
         options = merge_dict(options, kwargs)
         self._ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
         self._appMode = bool(options.get('appMode', False))
+        self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
 
@@ -57,13 +60,23 @@ class Browser(EventEmitter):
         self._connection.on('Target.targetDestroyed', self._targetDestroyed)
         self._connection.on('Target.targetInfoChanged', self._targetInfoChanged)  # noqa: E501
 
+    @property
+    def process(self) -> Optional[Popen]:
+        """Return process of this browser.
+
+        If browser instance is created by :func:`pyppeteer.launcer.connect`,
+        return ``None``.
+        """
+        return self._process
+
     @staticmethod
     async def create(connection: Connection, options: dict = None,
+                     process: Optional[Popen] = None,
                      closeCallback: Callable[[], Awaitable[None]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
         options = merge_dict(options, kwargs)
-        browser = Browser(connection, options, closeCallback)
+        browser = Browser(connection, options, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 

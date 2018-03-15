@@ -139,7 +139,7 @@ class Launcher(object):
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(self.browserWSEndpoint, connectionDelay)
         return await Browser.create(
-            self.connection, self.options, self.killChrome)
+            self.connection, self.options, self.proc, self.killChrome)
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
@@ -230,7 +230,7 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
         raise BrowserError('Need `browserWSEndpoint` option.')
     connection = Connection(browserWSEndpoint)
     return await Browser.create(
-        connection, options, lambda: connection.send('Browser.close'))
+        connection, options, None, lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:
