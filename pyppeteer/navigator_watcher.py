@@ -35,7 +35,12 @@ class NavigatorWatcher:
                 self._frameManeger,
                 FrameManager.Events.LifecycleEvent,
                 self._checkLifecycleComplete,
-            )
+            ),
+            helper.addEventListener(
+                self._frameManeger,
+                FrameManager.Events.FrameDetached,
+                self._checkLifecycleComplete,
+            ),
         ]
         loop = asyncio.get_event_loop()
         self._lifecycleCompletePromise = loop.create_future()
