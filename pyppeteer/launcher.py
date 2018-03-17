@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import tempfile
 import time
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, Dict, List, TYPE_CHECKING
 
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
@@ -59,20 +59,24 @@ AUTOMATION_ARGS = [
 class Launcher(object):
     """Chrome parocess launcher class."""
 
-    def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:
+    def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
+                 **kwargs: Any) -> None:
         """Make new launcher."""
         self.options = merge_dict(options, kwargs)
         self.port = get_free_port()
         self.url = f'http://127.0.0.1:{self.port}'
+        self.chrome_args: List[str] = []
 
-        self.chrome_args = DEFAULT_ARGS
-        self.chrome_args.append(
-            f'--remote-debugging-port={self.port}',
-        )
+        if not self.options.get('ignoreDefaultArgs', False):
+            self.chrome_args.extend(DEFAULT_ARGS)
+            self.chrome_args.append(
+                f'--remote-debugging-port={self.port}',
+            )
+
         self.chromeClosed = True
         if self.options.get('appMode', False):
             self.options['headless'] = False
-        else:
+        elif not self.options.get('ignoreDefaultArgs', False):
             self.chrome_args.extend(AUTOMATION_ARGS)
 
         self._tmp_user_data_dir: Optional[str] = None
@@ -83,18 +87,20 @@ class Launcher(object):
             self.options['headless'] = False
 
         if 'headless' not in self.options or self.options.get('headless'):
-            self.chrome_args = self.chrome_args + [
+            self.chrome_args.extend([
                 '--headless',
                 '--disable-gpu',
                 '--hide-scrollbars',
                 '--mute-audio',
-            ]
+            ])
+
         if 'executablePath' in self.options:
             self.exec = self.options['executablePath']
         else:
             if not check_chromium():
                 download_chromium()
             self.exec = str(chromium_excutable())
+
         self.cmd = [self.exec] + self.chrome_args
 
     def _parse_args(self) -> None:
@@ -191,8 +197,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       amount of milliseconds.
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
-    * ``ignoreDefaultArgs`` (bool): [not implemented yet] Do not use
-      pyppeteer's default args. This is dangerous option; use with care.
+    * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
+      is dangerous option; use with care.
     * ``userDataDir`` (str): Path to a user data directory.
     * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
       If this option is ``True``, the ``headless`` option will be set
@@ -236,3 +242,8 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
 def executablePath() -> str:
     """Get executable path of default chrome."""
     return str(chromium_excutable())
+
+
+def defaultArgs() -> List[str]:
+    """Get list of default chrome args."""
+    return DEFAULT_ARGS + AUTOMATION_ARGS

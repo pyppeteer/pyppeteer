@@ -6,6 +6,7 @@ History
 * Support `raf` and `mutation` polling for `waitFor*` methods
 * Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
 * Change `Frame.executionContest` from property to coroutine
+* Add `ignoreDefaultArgs` option to `pyppeteer.launch`
 * Implement `Frame.content` and `Frame.setContent` methods
 * `page.tracing.start` accepts custom tracing categories option
 * Add `Browser.process` property

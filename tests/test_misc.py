@@ -21,6 +21,13 @@ class TestVersion(unittest.TestCase):
             self.assertTrue(isinstance(i, int))
 
 
+class TestDefaultArgs(unittest.TestCase):
+    def test_default_args(self):
+        args = pyppeteer.defaultArgs()
+        self.assertIn('--no-first-run', args)
+        self.assertIn('--enable-automation', args)
+
+
 class TestToInches(unittest.TestCase):
     def test_px(self):
         self.assertEqual(

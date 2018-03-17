@@ -35,6 +35,18 @@ class TestLauncher(unittest.TestCase):
         for opt in self.headless_options:
             self.assertNotIn(opt, launcher.chrome_args)
 
+    def test_disable_default_args(self):
+        launcher = Launcher(ignoreDefaultArgs=True)
+        # check defatul args
+        self.assertNotIn('--no-first-run', launcher.chrome_args)
+        # check dev tools port
+        self.assertNotIn(
+            '--remote-debugging-port={}'.format(launcher.port),
+            launcher.chrome_args,
+        )
+        # check automation args
+        self.assertNotIn('--enable-automation', launcher.chrome_args)
+
     def test_executable(self):
         launcher = Launcher({'executablePath': '/path/to/chrome'})
         self.assertEqual(launcher.exec, '/path/to/chrome')

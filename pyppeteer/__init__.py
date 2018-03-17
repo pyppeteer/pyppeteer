@@ -23,6 +23,7 @@ _logger.propagate = False
 # logger.setLevel(logging.DEBUG)
 
 from pyppeteer.launcher import launch, executablePath  # noqa: E402
+from pyppeteer.launcher import defaultArgs  # noqa: E402
 
 version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
@@ -30,6 +31,7 @@ version_info = tuple(int(i) for i in version.split('.'))
 __all__ = [
     'launch',
     'executablePath',
+    'defaultArgs',
     'version',
     'version_info',
 ]
