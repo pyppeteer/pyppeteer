@@ -295,6 +295,18 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorAll(selector)
 
+    async def xpath(self, expression: str) -> Optional[ElementHandle]:
+        """Evaluate XPath expression.
+
+        If there is no such element in this page, return None.
+
+        :arg str expression: XPath string to be evaluated.
+        """
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.xpath(expression)
+
     #: alias to :meth:`Page.querySelector`
     J = querySelector
     #: alias to :meth:`Page.querySelectorEval`

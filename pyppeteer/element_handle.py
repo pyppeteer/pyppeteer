@@ -244,3 +244,22 @@ class ElementHandle(JSHandle):
     J = querySelector
     #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
+
+    async def xpath(self, expression: str) -> Optional['ElementHandle']:
+        """Evaluate XPath expression relative to this elementHandle.
+
+        If there is no such element, return None.
+
+        :arg str expression: XPath string to be evaluated.
+        """
+        handle = await self.executionContext.evaluateHandle(
+            '''(element, expression) => {
+                const document = element.ownerDocument || element;
+                return document.evaluate(expression, element, null,
+                    XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
+            }''', self, expression)
+        element = handle.asElement()
+        if element:
+            return element
+        await handle.dispose()
+        return None

@@ -206,6 +206,7 @@ class Frame(object):
         self._detached = False
         self._id = frameId
 
+        self._documentPromise: Optional[ElementHandle] = None
         self._contextResolveCallback = lambda _: None
         self._setDefaultContext(None)
 
@@ -223,6 +224,7 @@ class Frame(object):
             for waitTask in self._waitTasks:
                 asyncio.ensure_future(waitTask.rerun())
         else:
+            self._documentPromise = None
             self._contextPromise = asyncio.get_event_loop().create_future()
             self._contextResolveCallback = (
                 lambda _context: self._contextPromise.set_result(_context)
@@ -253,16 +255,32 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelector`.
         """
+        document = await self._document()
+        value = await document.querySelector(selector)
+        return value
+
+    async def _document(self) -> ElementHandle:
+        if self._documentPromise:
+            return self._documentPromise
         context = await self.executionContext()
         if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        handle = await context.evaluateHandle(
-            'selector => document.querySelector(selector)', selector)
-        element = handle.asElement()
-        if element:
-            return element
-        await handle.dispose()
-        return None
+            raise PageError('No context exists.')
+        document = (await context.evaluateHandle('document')).asElement()
+        self._documentPromise = document
+        if document is None:
+            raise PageError('Could not find `document`.')
+        return document
+
+    async def xpath(self, expression: str) -> Optional[ElementHandle]:
+        """Evaluate XPath expression.
+
+        If there is no such element in this frame, return None.
+
+        :arg str expression: XPath string to be evaluated.
+        """
+        document = await self._document()
+        value = await document.xpath(expression)
+        return value
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:
@@ -301,21 +319,9 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
         """
-        context = await self.executionContext()
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await context.evaluateHandle(
-            'selector => document.querySelectorAll(selector)',
-            selector,
-        )
-        properties = await arrayHandle.getProperties()
-        await arrayHandle.dispose()
-        result = []
-        for prop in properties.values():
-            elementHandle = prop.asElement()
-            if elementHandle:
-                result.append(elementHandle)
-        return result
+        document = await self._document()
+        value = await document.querySelectorAll(selector)
+        return value
 
     #: Alias to :meth:`querySelector`
     J = querySelector
@@ -419,20 +425,20 @@ function(html) {
         }'''
 
         if isinstance(options.get('url'), str):
-            return await context.evaluateHandle(  # type: ignore
-                addScriptUrl, options['url'])
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptUrl, options['url'])).asElement()
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
                 re.sub(options['path'], '\n', ''))
-            return await context.evaluateHandle(  # type: ignore
-                addScriptContent, contents)
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptContent, contents)).asElement()
 
         if isinstance(options.get('content'), str):
-            return await context.evaluateHandle(  # type: ignore
-                addScriptContent, options['content'])
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptContent, options['content'])).asElement()
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
@@ -469,19 +475,19 @@ function(html) {
         }'''
 
         if isinstance(options.get('url'), str):
-            return await context.evaluateHandle(  # type: ignore
-                addStyleUrl, options['url'])
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleUrl, options['url'])).asElement()
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
-            return await context.evaluateHandle(  # type: ignore
-                addStyleContent, contents)
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleContent, contents)).asElement()
 
         if isinstance(options.get('content'), str):
-            return await context.evaluateHandle(  # type: ignore
-                addStyleContent, options['content'])
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleContent, options['content'])).asElement()
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
