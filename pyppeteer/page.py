@@ -16,6 +16,7 @@ from pyee import EventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import Session
+from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle  # noqa: F401
 from pyppeteer.emulation_manager import EmulationManager
@@ -110,6 +111,7 @@ class Page(EventEmitter):
         self._tracing = Tracing(client)
         self._pageBindings: Dict[str, Callable] = dict()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
+        self._coverage = Coverage(client)
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = list()
@@ -166,6 +168,11 @@ class Page(EventEmitter):
     def touchscreen(self) -> Touchscreen:
         """Get :class:`~pyppeteer.input.Touchscreen` object."""
         return self._touchscreen
+
+    @property
+    def coverage(self) -> Coverage:
+        """Return :class:`~pyppeteer.coverage.Coverage`."""
+        return self._coverage
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.

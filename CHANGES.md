@@ -4,6 +4,7 @@ History
 ## Version 0.0.15 (next version)
 
 * Support `raf` and `mutation` polling for `waitFor*` methods
+* Add `Page.coverage` to support JS and CSS coverage
 * Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
 * Change `Frame.executionContest` from property to coroutine
 * Add `ignoreDefaultArgs` option to `pyppeteer.launch`
