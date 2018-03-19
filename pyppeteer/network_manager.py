@@ -145,21 +145,19 @@ class NetworkManager(EventEmitter):
                 }
             ))
 
-        if 'redirectStatusCode' in event:
+        if 'redirectURL' in event:
             request = self._interceptionIdToRequest.get(
                 event.get('interceptionId', ''))
-            if not request:
-                raise NetworkError('INTERNAL ERROR: failed to find request '
-                                   'for interception redirect.')
-            self._handleRequestRedirect(request,
-                                        event.get('redirectStatusCode', 0),
-                                        event.get('redirectHeaders', {}))
-            self._handleRequestStart(request._requestId,
-                                     event.get('interceptionId', ''),
-                                     event.get('redirectUrl', ''),
-                                     event.get('resourceType', ''),
-                                     event.get('request', {}),
-                                     event.get('frameId'))
+            if request:
+                self._handleRequestRedirect(request,
+                                            event.get('redirectStatusCode', 0),
+                                            event.get('redirectHeaders', {}))
+                self._handleRequestStart(request._requestId,
+                                         event.get('interceptionId', ''),
+                                         event.get('redirectUrl', ''),
+                                         event.get('resourceType', ''),
+                                         event.get('request', {}),
+                                         event.get('frameId'))
             return
 
         requestHash = generateRequestHash(event['request'])
