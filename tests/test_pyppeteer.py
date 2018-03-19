@@ -306,6 +306,12 @@ a + b
         result = await self.page.evaluate('() => null')
         self.assertEqual(result, None)
 
+    @unittest.skip('cannot pass this test. see puppeteer #1510.')
+    @sync
+    async def test_evaluate_func_null_field(self):
+        result = await self.page.evaluate('{a: undefined}')
+        self.assertEqual(result, {})
+
     @sync
     async def test_evaluate_func_error(self):
         with self.assertRaises(ElementHandleError):
