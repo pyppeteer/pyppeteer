@@ -106,6 +106,13 @@ class TestLauncher(unittest.TestCase):
         self.assertTrue(len(version) > 0)
         self.assertTrue(version.startswith('Headless'))
 
+    @sync
+    async def test_user_agent(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        userAgent = await browser.userAgent()
+        self.assertGreater(len(userAgent), 0)
+        self.assertIn('WebKit', userAgent)
+
 
 class BaseTestCase(unittest.TestCase):
     @classmethod

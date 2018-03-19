@@ -466,7 +466,7 @@ function addPageBinding(bindingName) {
         return await self._networkManager.setExtraHTTPHeaders(headers)
 
     async def setUserAgent(self, userAgent: str) -> None:
-        """Set user agent."""
+        """Set user agent to use in this page."""
         return await self._networkManager.setUserAgent(userAgent)
 
     async def metrics(self) -> Dict[str, Any]:

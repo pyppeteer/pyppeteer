@@ -137,8 +137,18 @@ class Browser(EventEmitter):
 
     async def version(self) -> str:
         """Get version of the browser."""
-        version = await self._connection.send('Browser.getVersion')
+        version = await self._getVersion()
         return version['product']
+
+    async def userAgent(self) -> str:
+        """Return browser's original user agent.
+
+        .. note::
+            Pages can override browser user agent with
+            :meth:`pyppeteer.page.Page.setUserAgent`.
+        """
+        version = await self._getVersion()
+        return version.get('userAgent', '')
 
     async def close(self) -> None:
         """Close connections and terminate browser process."""
@@ -148,6 +158,9 @@ class Browser(EventEmitter):
     async def disconnect(self) -> None:
         """Disconnect browser."""
         await self._connection.dispose()
+
+    def _getVersion(self) -> Awaitable:
+        return self._connection.send('Browser.getVersion')
 
 
 class Target(object):
