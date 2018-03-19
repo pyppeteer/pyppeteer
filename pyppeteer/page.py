@@ -302,7 +302,7 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorAll(selector)
 
-    async def xpath(self, expression: str) -> Optional[ElementHandle]:
+    async def xpath(self, expression: str) -> List[ElementHandle]:
         """Evaluate XPath expression.
 
         If there is no such element in this page, return None.
@@ -314,14 +314,16 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.xpath(expression)
 
-    #: alias to :meth:`Page.querySelector`
+    #: alias to :meth:`querySelector`
     J = querySelector
-    #: alias to :meth:`Page.querySelectorEval`
+    #: alias to :meth:`querySelectorEval`
     Jeval = querySelectorEval
-    #: alias to :meth:`Page.querySelectorAll`
+    #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
-    #: alias to :meth:`Page.querySelectorAllEval`
+    #: alias to :meth:`querySelectorAllEval`
     JJeval = querySelectorAllEval
+    #: alias to :meth:`xpath`
+    Jx = xpath
 
     async def cookies(self, *urls: str) -> dict:
         """Get cookies."""

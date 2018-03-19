@@ -271,7 +271,7 @@ class Frame(object):
             raise PageError('Could not find `document`.')
         return document
 
-    async def xpath(self, expression: str) -> Optional[ElementHandle]:
+    async def xpath(self, expression: str) -> List[ElementHandle]:
         """Evaluate XPath expression.
 
         If there is no such element in this frame, return None.
@@ -325,6 +325,8 @@ class Frame(object):
 
     #: Alias to :meth:`querySelector`
     J = querySelector
+    #: Alias to :meth:`xpath`
+    Jx = xpath
     #: Alias to :meth:`querySelectorEval`
     Jeval = querySelectorEval
     #: Alias to :meth:`querySelectorAll`

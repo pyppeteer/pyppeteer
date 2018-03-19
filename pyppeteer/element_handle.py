@@ -245,21 +245,33 @@ class ElementHandle(JSHandle):
     #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
 
-    async def xpath(self, expression: str) -> Optional['ElementHandle']:
+    async def xpath(self, expression: str) -> List['ElementHandle']:
         """Evaluate XPath expression relative to this elementHandle.
 
         If there is no such element, return None.
 
         :arg str expression: XPath string to be evaluated.
         """
-        handle = await self.executionContext.evaluateHandle(
+        arrayHandle = await self.executionContext.evaluateHandle(
             '''(element, expression) => {
                 const document = element.ownerDocument || element;
-                return document.evaluate(expression, element, null,
-                    XPathResult.FIRST_ORDERED_NODE_TYPE).singleNodeValue;
+                const iterator = document.evaluate(expression, element, null,
+                    XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+                const array = [];
+                let item;
+                while ((item = iterator.iterateNext()))
+                    array.push(item);
+                return array;
+
             }''', self, expression)
-        element = handle.asElement()
-        if element:
-            return element
-        await handle.dispose()
-        return None
+        properties = await arrayHandle.getProperties()
+        await arrayHandle.dispose()
+        result = []
+        for property in properties.values():
+            elementHandle = property.asElement()
+            if elementHandle:
+                result.append(elementHandle)
+        return result
+
+    #: alias to :meth:`xpath`
+    Jx = xpath

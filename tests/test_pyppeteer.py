@@ -433,9 +433,21 @@ a + b
         self.assertTrue(element)
 
     @sync
+    async def test_page_xpath_alias(self) -> None:
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.Jx('/html/body/section')
+        self.assertTrue(element)
+
+    @sync
     async def test_page_xpath_not_found(self) -> None:
         element = await self.page.xpath('/html/body/no-such-tag')
-        self.assertIsNone(element)
+        self.assertEqual(element, [])
+
+    @sync
+    async def test_page_xpath_multiple(self) -> None:
+        await self.page.setContent('<div></div><div></div>')
+        element = await self.page.xpath('/html/body/div')
+        self.assertEqual(len(element), 2)
 
     @sync
     async def test_element_inner_html(self):
@@ -506,8 +518,8 @@ a + b
         )
         html = await self.page.querySelector('html')
         second = await html.xpath('./body/div[contains(@class, \'second\')]')
-        inner = await second.xpath('./div[contains(@class, \'inner\')]')
-        content = await self.page.evaluate('(e) => e.textContent', inner)
+        inner = await second[0].xpath('./div[contains(@class, \'inner\')]')
+        content = await self.page.evaluate('(e) => e.textContent', inner[0])
         self.assertEqual(content, 'A')
 
     @sync
@@ -515,7 +527,7 @@ a + b
         await self.page.goto(self.url + 'empty')
         html = await self.page.querySelector('html')
         element = await html.xpath('/div[contains(@class, \'third\')]')
-        self.assertIsNone(element)
+        self.assertEqual(element, [])
 
     @sync
     async def test_hover(self):
