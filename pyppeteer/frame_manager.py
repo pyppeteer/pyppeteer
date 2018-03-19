@@ -95,6 +95,10 @@ class FrameManager(EventEmitter):
         """Retrun all frames."""
         return list(self._frames.values())
 
+    def frame(self, frameId: str) -> Optional['Frame']:
+        """Return :class:`Frame` of ``frameId``."""
+        return self._frames.get(frameId)
+
     def _onFrameAttached(self, frameId: str, parentFrameId: str) -> None:
         if frameId in self._frames:
             return

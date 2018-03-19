@@ -15,6 +15,7 @@ from pyee import EventEmitter
 
 from pyppeteer.connection import Session
 from pyppeteer.errors import NetworkError
+from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
@@ -31,10 +32,11 @@ class NetworkManager(EventEmitter):
         RequestFinished='requestfinished',
     )
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: Session, frameManager: FrameManager) -> None:
         """Make new NetworkManager."""
         super().__init__()
         self._client = client
+        self._frameManager = frameManager
         self._requestIdToRequest: Dict[Optional[str], Request] = dict()
         self._interceptionIdToRequest: Dict[Optional[str], Request] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
@@ -156,7 +158,8 @@ class NetworkManager(EventEmitter):
                                      event.get('interceptionId', ''),
                                      event.get('redirectUrl', ''),
                                      event.get('resourceType', ''),
-                                     event.get('request', {}))
+                                     event.get('request', {}),
+                                     event.get('frameId'))
             return
 
         requestHash = generateRequestHash(event['request'])
@@ -165,14 +168,14 @@ class NetworkManager(EventEmitter):
             self._requestHashToRequestIds.delete(requestHash, requestId)
             self._handleRequestStart(
                 requestId, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request']
+                event['resourceType'], event['request'], event['frameId']
             )
         else:
             self._requestHashToInterceptionIds.set(
                 requestHash, event['interceptionId'])
             self._handleRequestStart(
                 None, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request']
+                event['resourceType'], event['request'], event['frameId']
             )
 
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
@@ -188,10 +191,15 @@ class NetworkManager(EventEmitter):
 
     def _handleRequestStart(self, requestId: Optional[str],
                             interceptionId: str, url: str, resourceType: str,
-                            requestPayload: Dict) -> None:
+                            requestPayload: Dict, frameId: Optional[str]
+                            ) -> None:
+        frame = None
+        if frameId and self._frameManager is not None:
+            frame = self._frameManager.frame(frameId)
+
         request = Request(self._client, requestId, interceptionId,
                           self._userRequestInterceptionEnabled, url,
-                          resourceType, requestPayload)
+                          resourceType, requestPayload, frame)
         if requestId:
             self._requestIdToRequest[requestId] = request
         if interceptionId:
@@ -229,6 +237,7 @@ class NetworkManager(EventEmitter):
             event.get('request', {}).get('url', ''),
             event.get('type', ''),
             event.get('request', {}),
+            event.get('frameId'),
         )
 
     def _onResponseReceived(self, event: dict) -> None:
@@ -285,7 +294,8 @@ class Request(object):
 
     def __init__(self, client: Session, requestId: Optional[str],
                  interceptionId: str, allowInterception: bool, url: str,
-                 resourceType: str, payload: dict) -> None:
+                 resourceType: str, payload: dict, frame: Optional[Frame]
+                 ) -> None:
         self._client = client
         self._requestId = requestId
         self._interceptionId = interceptionId
@@ -301,6 +311,7 @@ class Request(object):
         self._postData = payload.get('postData', '')
         headers = payload.get('headers', {})
         self._headers = {k.lower(): v for k, v in headers.items()}
+        self._frame = frame
 
     def _completePromiseFulfill(self) -> None:
         self._completePromise.set_result(None)
@@ -346,6 +357,14 @@ class Request(object):
         If the response has not been recieved, return ``None``.
         """
         return self._response
+
+    @property
+    def frame(self) -> Optional[Frame]:
+        """Return a matching :class:`~pyppeteer.frame_manager.frame` object.
+
+        Return ``None`` if navigating to error page.
+        """
+        return self._frame
 
     def failure(self) -> Optional[Dict]:
         """Return error text.

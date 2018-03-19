@@ -106,7 +106,7 @@ class Page(EventEmitter):
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
         self._frameManager = FrameManager(client, frameTree, self)
-        self._networkManager = NetworkManager(client)
+        self._networkManager = NetworkManager(client, self._frameManager)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
         self._pageBindings: Dict[str, Callable] = dict()
