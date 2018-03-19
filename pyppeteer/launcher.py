@@ -118,8 +118,14 @@ class Launcher(object):
             self.chrome_args.extend(self.options['args'])
 
     def _cleanup_tmp_user_data_dir(self) -> None:
-        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
-            shutil.rmtree(self._tmp_user_data_dir)
+        for retry in range(100):
+            if self._tmp_user_data_dir and os.path.exists(
+                    self._tmp_user_data_dir):
+                shutil.rmtree(self._tmp_user_data_dir, ignore_errors=True)
+            else:
+                break
+        else:
+            raise IOError('Unable to remove Temporary User Data')
 
     async def launch(self) -> Browser:
         """Start chrome process and return `Browser` object."""
