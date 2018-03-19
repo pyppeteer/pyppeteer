@@ -7,7 +7,8 @@ import asyncio
 from collections import OrderedDict
 import re
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -523,7 +524,8 @@ function(html) {
         ''', values)  # noqa: E501
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any
+                ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
         Details see :meth:`pyppeteer.page.Page.waitFor`.
@@ -547,7 +549,7 @@ function(html) {
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,
-                        **kwargs: Any) -> Awaitable:
+                        **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
@@ -561,10 +563,11 @@ function(html) {
     if (!node)
         return waitForHidden;
     if (!waitForVisible && !waitForHidden)
-        return true;
+        return node;
     const style = window.getComputedStyle(node);
     const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-    return (waitForVisible === isVisible || waitForHidden === !isVisible);
+    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
+    return success ? node : null
 
     function hasVisibleBoundingBox() {
         const rect = node.getBoundingClientRect();
@@ -576,7 +579,7 @@ function(html) {
             predicate, options, selector, waitForVisible, waitForHidden)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: Any, **kwargs: Any) -> Awaitable:
+                        *args: Any, **kwargs: Any) -> 'WaitTask':
         """Wait until the function completes.
 
         Details see :meth:`pyppeteer.page.Page.waitForFunction`.
@@ -584,9 +587,7 @@ function(html) {
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
-        predicateCode = 'return ' + helper.evaluationString(
-            pageFunction, *args)
-        return WaitTask(self, predicateCode, polling, timeout)
+        return WaitTask(self, pageFunction, polling, timeout, *args)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -614,10 +615,13 @@ function(html) {
 
 
 class WaitTask(object):
-    """WaitTask class."""
+    """WaitTask class.
+
+    Instance of this class is awaitable.
+    """
 
     def __init__(self, frame: Frame, predicateBody: str,
-                 polling: Union[str, int], timeout: float) -> None:
+                 polling: Union[str, int], timeout: float, *args: Any) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
                 raise ValueError(f'Unknown polling: {polling}')
@@ -632,9 +636,11 @@ class WaitTask(object):
         self._frame = frame
         self._polling = polling
         self._timeout = timeout
-        self._pageScript = helper.evaluationString(
-            waitForPredicatePageFunction, predicateBody, polling, timeout
-        )
+        if args or helper.is_jsfunc(predicateBody):
+            self._predicateBody = f'return ({predicateBody})(...args)'
+        else:
+            self._predicateBody = f'return {predicateBody}'
+        self._args = args
         self._runCount = 0
         self._terminated = False
         self._timeoutError = False
@@ -653,9 +659,10 @@ class WaitTask(object):
         self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
         self._runningTask = asyncio.ensure_future(self.rerun())
 
-    def __await__(self) -> Any:
+    def __await__(self) -> Generator:
         """Make this class **awaitable**."""
         yield from self.promise
+        return self.promise.result()
 
     def terminate(self, error: Exception) -> None:
         """Terminate this task."""
@@ -667,12 +674,19 @@ class WaitTask(object):
     async def rerun(self) -> None:  # noqa: C901
         """Start polling."""
         runCount = self._runCount = self._runCount + 1
-        success = False
+        success: Optional[JSHandle] = None
         error = None
 
         try:
-            success = await self._frame.evaluate(
-                self._pageScript, force_expr=True
+            context = await self._frame.executionContext()
+            if context is None:
+                raise PageError('No execution context.')
+            success = await context.evaluateHandle(
+                waitForPredicatePageFunction,
+                self._predicateBody,
+                self._polling,
+                self._timeout,
+                *self._args,
             )
         except Exception as e:
             error = e
@@ -681,9 +695,13 @@ class WaitTask(object):
             return
 
         if self._terminated or runCount != self._runCount:
+            if success:
+                await success.dispose()
             return
 
-        if not success and not error:
+        if not error and success and (
+                await self._frame.evaluate('s => !s', success)):
+            await success.dispose()
             return
 
         # page is navigated and context is destroyed.
@@ -700,7 +718,7 @@ class WaitTask(object):
         if error:
             self.promise.set_exception(error)
         else:
-            self.promise.set_result(None)
+            self.promise.set_result(success)
 
         self._cleanup()
 
@@ -711,31 +729,36 @@ class WaitTask(object):
 
 
 waitForPredicatePageFunction = """
-async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
-  const predicate = new Function(predicateBody);
+async function waitForPredicatePageFunction(predicateBody, polling, timeout, ...args) {
+  const predicate = new Function('...args', predicateBody);
   let timedOut = false;
   setTimeout(() => timedOut = true, timeout);
   if (polling === 'raf')
-    await pollRaf();
-  else if (polling === 'mutation')
-    await pollMutation();
-  else if (typeof polling === 'number')
-    await pollInterval(polling);
-  return !timedOut;
+    return await pollRaf();
+  if (polling === 'mutation')
+    return await pollMutation();
+  if (typeof polling === 'number')
+    return await pollInterval(polling);
 
   /**
-   * @return {!Promise}
+   * @return {!Promise<*>}
    */
   function pollMutation() {
-    if (predicate())
-      return Promise.resolve();
+    const success = predicate.apply(null, args);
+    if (success)
+      return Promise.resolve(success);
 
     let fulfill;
     const result = new Promise(x => fulfill = x);
     const observer = new MutationObserver(mutations => {
-      if (timedOut || predicate()) {
+      if (timedOut) {
         observer.disconnect();
         fulfill();
+      }
+      const success = predicate.apply(null, args);
+      if (success) {
+        observer.disconnect();
+        fulfill(success);
       }
     });
     observer.observe(document, {
@@ -747,7 +770,7 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
   }
 
   /**
-   * @return {!Promise}
+   * @return {!Promise<*>}
    */
   function pollRaf() {
     let fulfill;
@@ -756,8 +779,13 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
     return result;
 
     function onRaf() {
-      if (timedOut || predicate())
+      if (timedOut) {
         fulfill();
+        return;
+      }
+      const success = predicate.apply(null, args);
+      if (success)
+        fulfill(success);
       else
         requestAnimationFrame(onRaf);
     }
@@ -765,7 +793,7 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
 
   /**
    * @param {number} pollInterval
-   * @return {!Promise}
+   * @return {!Promise<*>}
    */
   function pollInterval(pollInterval) {
     let fulfill;
@@ -774,8 +802,13 @@ async function waitForPredicatePageFunction(predicateBody, polling, timeout) {
     return result;
 
     function onTimeout() {
-      if (timedOut || predicate())
+      if (timedOut) {
         fulfill();
+        return;
+      }
+      const success = predicate.apply(null, args);
+      if (success)
+        fulfill(success);
       else
         setTimeout(onTimeout, pollInterval);
     }

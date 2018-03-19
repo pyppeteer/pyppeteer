@@ -1037,6 +1037,8 @@ function deliverResult(name, seq, result) {
         :arg selectorOrFunctionOrTimeout: A selector or
           function string, or timeout (milliseconds).
         :arg Any args: Arguments to pass the function.
+        :return: Return awaitable object which resolves to a JSHandle of the
+                 success value.
 
         Available options: see :meth:`waitForFunction` or
         :meth:`waitForSelector`
@@ -1051,7 +1053,14 @@ function deliverResult(name, seq, result) {
                         **kwargs: Any) -> Awaitable:
         """Wait until element which matches ``selector`` appears on page.
 
+        Wait for the ``selector`` to appear in page. If at the moment of
+        callingthe method the ``selector`` already exists, the method will
+        return immediately. If the selector doesn't appear after the
+        ``timeout`` milliseconds of waiting, the function will raise error.
+
         :arg str selector: A selector of an element to wait for.
+        :return: Return awaitable object which resolves when element specified
+                 by selector string is added to DOM.
 
         This method accepts the following options:
 
@@ -1071,9 +1080,13 @@ function deliverResult(name, seq, result) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:
-        """Wait until the function completes.
+        """Wait until the function completes and returns a truethy value.
 
         :arg Any args: Arguments to pass to ``pageFunction``.
+        :return: Return awaitable object which resolves when the
+                 ``pageFunction`` returns a truethy value. It resolves to a
+                 :class:`~pyppeteer.execution_context.JSHandle` of the truethy
+                 value.
 
         This method accepts the following options:
 

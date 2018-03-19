@@ -433,24 +433,24 @@ a + b
         self.assertEqual(ln, 0)
 
     @sync
-    async def test_page_xpath(self) -> None:
+    async def test_page_xpath(self):
         await self.page.setContent('<section>test</section>')
         element = await self.page.xpath('/html/body/section')
         self.assertTrue(element)
 
     @sync
-    async def test_page_xpath_alias(self) -> None:
+    async def test_page_xpath_alias(self):
         await self.page.setContent('<section>test</section>')
         element = await self.page.Jx('/html/body/section')
         self.assertTrue(element)
 
     @sync
-    async def test_page_xpath_not_found(self) -> None:
+    async def test_page_xpath_not_found(self):
         element = await self.page.xpath('/html/body/no-such-tag')
         self.assertEqual(element, [])
 
     @sync
-    async def test_page_xpath_multiple(self) -> None:
+    async def test_page_xpath_multiple(self):
         await self.page.setContent('<div></div><div></div>')
         element = await self.page.xpath('/html/body/div')
         self.assertEqual(len(element), 2)
@@ -518,7 +518,7 @@ a + b
         self.assertEqual(len(elements), 0)
 
     @sync
-    async def test_element_handle_xpath(self) -> None:
+    async def test_element_handle_xpath(self):
         await self.page.setContent(
             '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
         )
@@ -529,7 +529,7 @@ a + b
         self.assertEqual(content, 'A')
 
     @sync
-    async def test_element_handle_xpath_not_found(self) -> None:
+    async def test_element_handle_xpath_not_found(self):
         await self.page.goto(self.url + 'empty')
         html = await self.page.querySelector('html')
         element = await html.xpath('/div[contains(@class, \'third\')]')
@@ -808,13 +808,13 @@ a + b
         }])
 
     @sync
-    async def test_cookie_blank_page(self) -> None:
+    async def test_cookie_blank_page(self):
         await self.page.goto('about:blank')
         with self.assertRaises(NetworkError):
             await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
 
     @sync
-    async def test_cookie_blank_page2(self) -> None:
+    async def test_cookie_blank_page2(self):
         with self.assertRaises(PageError):
             await self.page.setCookie(
                 {'name': 'example-cookie', 'value': 'best'},
@@ -824,13 +824,13 @@ a + b
             )
 
     @sync
-    async def test_cookie_data_url_page(self) -> None:
+    async def test_cookie_data_url_page(self):
         await self.page.goto('data:,hello')
         with self.assertRaises(NetworkError):
             await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
 
     @sync
-    async def test_cookie_data_url_page2(self) -> None:
+    async def test_cookie_data_url_page2(self):
         with self.assertRaises(PageError):
             await self.page.setCookie(
                 {'name': 'example-cookie', 'value': 'best'},
@@ -1219,7 +1219,6 @@ class TestWaitFor(BaseTestCase):
         super().setUp()
         sync(self.page.goto(self.url + 'empty'))
         self.result = False
-        self.results = []
 
     def set_result(self, value):
         self.result = value
@@ -1253,6 +1252,10 @@ class TestWaitForFunction(BaseTestCase):
     def setUp(self):
         super().setUp()
         sync(self.page.goto(self.url + 'empty'))
+        self.result = False
+
+    def set_result(self, value):
+        self.result = value
 
     @unittest.skip('Currently not support expression in waitFor.')
     @sync
@@ -1338,6 +1341,28 @@ class TestWaitForFunction(BaseTestCase):
     async def test_negative_polling_value(self):
         with self.assertRaises(ValueError):
             await self.page.waitForFunction('() => true', polling=-100)
+
+    @sync
+    async def test_wait_for_fucntion_return_value(self):
+        result = await self.page.waitForFunction('() => 5')
+        self.assertEqual(await result.jsonValue(), 5)
+
+    @sync
+    async def test_wait_for_function_window(self):
+        self.assertTrue(await self.page.waitForFunction('() => window'))
+
+    @sync
+    async def test_wait_for_function_arg_element(self):
+        await self.page.setContent('<div></div>')
+        div = await self.page.J('div')
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction('e => !e.parentElement', {}, div))
+        fut.add_done_callback(lambda fut: self.set_result(True))
+        await asyncio.sleep(0.1)
+        self.assertFalse(self.result)
+        await self.page.evaluate('e => e.remove()', div)
+        await fut
+        self.assertTrue(self.result)
 
 
 class TestWaitForSelector(BaseTestCase):
@@ -1486,6 +1511,15 @@ class TestWaitForSelector(BaseTestCase):
         )
         await asyncio.sleep(0.1)
         self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_return_element(self):
+        selector = asyncio.ensure_future(self.page.waitForSelector('.zombo'))
+        await self.page.setContent('<div class="zombo">anything</div>')
+        self.assertEqual(
+            await self.page.evaluate('e => e.textContent', await selector),
+            'anything',
+        )
 
 
 class TestFrames(BaseTestCase):
@@ -1842,7 +1876,7 @@ class TestJSCoverage(BaseTestCase):
 
 class TestCSSCoverage(BaseTestCase):
     @sync
-    async def test_css_coverage(self) -> None:
+    async def test_css_coverage(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/simple.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1856,7 +1890,7 @@ class TestCSSCoverage(BaseTestCase):
         )
 
     @sync
-    async def test_css_coverage_url(self) -> None:
+    async def test_css_coverage_url(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/sourceurl.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1864,7 +1898,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(coverage[0]['url'], 'nicename.css')
 
     @sync
-    async def test_css_coverage_multiple(self) -> None:
+    async def test_css_coverage_multiple(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/multiple.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1874,7 +1908,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertIn('/csscoverage/stylesheet2.css', coverage[1]['url'])
 
     @sync
-    async def test_css_coverage_no_coverage(self) -> None:
+    async def test_css_coverage_no_coverage(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/unused.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1883,7 +1917,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(coverage[0]['ranges'], [])
 
     @sync
-    async def test_css_coverage_media(self) -> None:
+    async def test_css_coverage_media(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/media.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1892,7 +1926,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(coverage[0]['ranges'], [{'start': 17, 'end': 38}])
 
     @sync
-    async def test_css_coverage_complicated(self) -> None:
+    async def test_css_coverage_complicated(self):
         await self.page.coverage.startCSSCoverage()
         await self.page.goto(self.url + 'static/csscoverage/involved.html')
         coverage = await self.page.coverage.stopCSSCoverage()
@@ -1905,7 +1939,7 @@ class TestCSSCoverage(BaseTestCase):
 
     @unittest.skip('Cannot pass this test.')
     @sync
-    async def test_css_ignore_injected_css(self) -> None:
+    async def test_css_ignore_injected_css(self):
         await self.page.goto(self.url + 'empty')
         await self.page.coverage.startCSSCoverage()
         await self.page.addStyleTag(content='body { margin: 10px; }')
@@ -1917,7 +1951,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(coverage, [])
 
     @sync
-    async def test_css_coverage_no_reset_navigation(self) -> None:
+    async def test_css_coverage_no_reset_navigation(self):
         await self.page.coverage.startCSSCoverage(resetOnNavigation=False)
         await self.page.goto(self.url + 'static/csscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
@@ -1925,7 +1959,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(len(coverage), 2)
 
     @sync
-    async def test_css_coverage_reset_navigation(self) -> None:
+    async def test_css_coverage_reset_navigation(self):
         await self.page.coverage.startCSSCoverage()  # enabled by default
         await self.page.goto(self.url + 'static/csscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
