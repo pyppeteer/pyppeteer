@@ -579,10 +579,11 @@ def generateRequestHash(request: dict) -> str:
         headers = list(request['headers'].keys())
         headers.sort()
         for header in headers:
-            if (header == 'Accept' or header == 'Referer' or
-                    header == 'X-DevTools-Emulate-Network-Conditions-Client-Id'):  # noqa: E501
+            headerValue = request['headers'][header]
+            header = header.lower()
+            if (header == 'accept' or header == 'referer' or header == 'x-devtools-emulate-network-conditions-client-id'):  # noqa: E501
                 continue
-            _hash['headers'][header] = request['headers'][header]
+            _hash['headers'][header] = headerValue
     return json.dumps(_hash)
 
 

@@ -1150,6 +1150,21 @@ a + b
         self.assertIn(res.status, [200, 304])
 
     @sync
+    async def test_request_interception_custom_referer_header(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setExtraHTTPHeaders({'referer': self.url + 'empty'})
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertEqual(req.headers['referer'], self.url + 'empty')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
     async def test_request_interception_abort_main(self):
         await self.page.setRequestInterception(True)
 
