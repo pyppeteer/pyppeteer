@@ -564,7 +564,10 @@ class Response(object):
     async def text(self) -> str:
         """Get text representation of response body."""
         content = await self.buffer()
-        return content.decode('utf-8')
+        if isinstance(content, str):
+            return content
+        else:
+            return content.decode('utf-8')
 
     async def json(self) -> dict:
         """Get JSON representation of response body."""
