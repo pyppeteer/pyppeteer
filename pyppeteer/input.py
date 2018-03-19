@@ -6,7 +6,7 @@
 import asyncio
 from typing import Any, Dict, TYPE_CHECKING
 
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PyppeteerError
 from pyppeteer.us_keyboard_layout import keyDefinitions
 from pyppeteer.util import merge_dict
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class Keyboard(object):
     """Keyboard class."""
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
@@ -206,7 +206,7 @@ class Keyboard(object):
 class Mouse(object):
     """Mouse class."""
 
-    def __init__(self, client: Session, keyboard: Keyboard) -> None:
+    def __init__(self, client: CDPSession, keyboard: Keyboard) -> None:
         self._client = client
         self._keyboard = keyboard
         self._x = 0.0
@@ -302,7 +302,7 @@ class Mouse(object):
 class Touchscreen(object):
     """Touchscreen class."""
 
-    def __init__(self, client: Session, keyboard: Keyboard) -> None:
+    def __init__(self, client: CDPSession, keyboard: Keyboard) -> None:
         """Make new touchscreen object."""
         self._client = client
         self._keyboard = keyboard

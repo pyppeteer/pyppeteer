@@ -7,14 +7,14 @@ import asyncio
 from pathlib import Path
 from typing import Any, Awaitable
 
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.util import merge_dict
 
 
 class Tracing(object):
     """Tracing class."""
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._recording = False
         self._path = ''

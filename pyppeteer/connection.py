@@ -33,8 +33,8 @@ class Connection(EventEmitter):
         self._lastId = 0
         self._callbacks: Dict[int, asyncio.Future] = dict()
         self._delay = delay
-        self._sessions: Dict[str, Session] = dict()
-        self.connection: Session
+        self._sessions: Dict[str, CDPSession] = dict()
+        self.connection: CDPSession
         self._connected = False
         self._ws = websockets.client.connect(self._url, max_size=None)
         self._recv_fut = asyncio.ensure_future(self._recv_loop())
@@ -139,20 +139,30 @@ class Connection(EventEmitter):
         await self._on_close()
         self._connected = False
 
-    async def createSession(self, targetId: str) -> 'Session':
+    async def createSession(self, targetId: str) -> 'CDPSession':
         """Create new session."""
         resp = await self.send(
             'Target.attachToTarget',
             {'targetId': targetId}
         )
         sessionId = resp.get('sessionId')
-        session = Session(self, targetId, sessionId)
+        session = CDPSession(self, targetId, sessionId)
         self._sessions[sessionId] = session
         return session
 
 
-class Session(EventEmitter):
-    """Session class."""
+class CDPSession(EventEmitter):
+    """Chrome Devtools Protocol Session.
+
+    The :class:`CDPSession` instances are used to talk raw Chrome Devtools
+    Protocol:
+
+    * protocol methods can be called with :meth:`send` method.
+    * protocol events can be subscribed to with :meth:`on` method.
+
+    Documentation on DevTools Protocol can be found
+    `here <https://chromedevtools.github.io/devtools-protocol/>`_.
+    """
 
     def __init__(self, connection: Connection, targetId: str, sessionId: str
                  ) -> None:
@@ -164,13 +174,12 @@ class Session(EventEmitter):
         self._targetId = targetId
         self._sessionId = sessionId
 
-    @property
-    def targetId(self) -> str:
-        """Get target id of this session."""
-        return self._targetId
-
     async def send(self, method: str, params: dict = None) -> dict:
-        """Send message to the connected session."""
+        """Send message to the connected session.
+
+        :arg str method: Protocol method name.
+        :arg dict params: Optional method parameters.
+        """
         self._lastId += 1
         _id = self._lastId
         msg = json.dumps(dict(id=_id, method=method, params=params))
@@ -205,13 +214,16 @@ class Session(EventEmitter):
         else:
             self.emit(obj.get('method'), obj.get('params'))
 
-    async def dispose(self) -> None:
-        """Close target."""
-        if self._connection:
-            # broken...?
-            await self._connection.send('Target.closeTarget', {
-                'targetId': self.targetId,
-            })
+    async def detach(self) -> None:
+        """Detach session from target.
+
+        Once detached, session won't emit any events and can't be used to send
+        messages.
+        """
+        if not self._connection:
+            raise NetworkError('Connection already closed.')
+        await self._connection.send('Target.detachFromTarget',
+                                    {'sessionId': self._sessionId})
 
     def _on_closed(self) -> None:
         for cb in self._callbacks.values():

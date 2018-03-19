@@ -8,7 +8,7 @@ import os.path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 # from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError
 from pyppeteer.util import merge_dict
@@ -36,7 +36,7 @@ class ElementHandle(JSHandle):
     :meth:`pyppeteer.page.Page.evaluate` methods.
     """
 
-    def __init__(self, context: ExecutionContext, client: Session,
+    def __init__(self, context: ExecutionContext, client: CDPSession,
                  remoteObject: dict, page: Any) -> None:
         super().__init__(context, client, remoteObject)
         self._client = client

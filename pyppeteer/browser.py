@@ -10,7 +10,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from pyee import EventEmitter
 
-from pyppeteer.connection import Connection
+from pyppeteer.connection import Connection, CDPSession
 from pyppeteer.errors import BrowserError
 from pyppeteer.page import Page
 from pyppeteer.util import merge_dict
@@ -168,6 +168,7 @@ class Target(object):
 
     def __init__(self, browser: Browser, targetInfo: Dict) -> None:
         self._browser = browser
+        self._targetId = targetInfo.get('targetId', '')
         self._targetInfo = targetInfo
         self._page = None
 
@@ -183,13 +184,17 @@ class Target(object):
             self._initializedPromise = asyncio.get_event_loop().create_future()
         self._initializedPromise.set_result(bl)
 
+    async def createCDPSession(self) -> CDPSession:
+        """Create a Chrome Devtools Protocol session attached to the target."""
+        return await self._browser._connection.createSession(self._targetId)
+
     async def page(self) -> Optional[Page]:
         """Get page of this target."""
         if self._targetInfo['type'] == 'page' and self._page is None:
-            session = await self._browser._connection.createSession(
-                self._targetInfo['targetId'])
+            client = await self._browser._connection.createSession(
+                self._targetId)
             new_page = await Page.create(
-                session,
+                client, self,
                 self._browser._ignoreHTTPSErrors,
                 self._browser._appMode,
                 self._browser._screenshotTaskQueue,

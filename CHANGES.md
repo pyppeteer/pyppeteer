@@ -6,6 +6,7 @@ History
 * Support `raf` and `mutation` polling for `waitFor*` methods
 * Add `Page.coverage` to support JS and CSS coverage
 * Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
+* Add `Target.createCDPSession` to work with raw Devtools Protocol
 * Change `Frame.executionContest` from property to coroutine
 * Add `ignoreDefaultArgs` option to `pyppeteer.launch`
 * Add `Page.setDefaultNavigationTimeout` method

@@ -4,19 +4,20 @@
 """Emulation Managet module."""
 
 from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 
 
 class EmulationManager(object):
     """EmulationManager class."""
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         """Make new elmulation manager."""
         self._client = client
         self._emulatingMobile = False
         self._injectedTouchScriptId = None
 
-    async def emulateViewport(self, client: Session, viewport: dict) -> bool:
+    async def emulateViewport(self, client: CDPSession, viewport: dict
+                              ) -> bool:
         """Evaluate viewport."""
         options = dict()
         mobile = viewport.get('isMobile', False)

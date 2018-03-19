@@ -13,7 +13,7 @@ from typing import Awaitable, Dict, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
 
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.multimap import Multimap
@@ -32,7 +32,7 @@ class NetworkManager(EventEmitter):
         RequestFinished='requestfinished',
     )
 
-    def __init__(self, client: Session, frameManager: FrameManager) -> None:
+    def __init__(self, client: CDPSession, frameManager: FrameManager) -> None:
         """Make new NetworkManager."""
         super().__init__()
         self._client = client
@@ -290,7 +290,7 @@ class Request(object):
     #: contains the request's resource type
     resourceType: str
 
-    def __init__(self, client: Session, requestId: Optional[str],
+    def __init__(self, client: CDPSession, requestId: Optional[str],
                  interceptionId: str, allowInterception: bool, url: str,
                  resourceType: str, payload: dict, frame: Optional[Frame]
                  ) -> None:
@@ -514,7 +514,7 @@ class Response(object):
     #: url of the reponse.
     url: str
 
-    def __init__(self, client: Session, request: Request, status: int,
+    def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str]) -> None:
         self._client = client
         self._request = request

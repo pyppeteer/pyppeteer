@@ -10,12 +10,13 @@ import math
 import mimetypes
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import TYPE_CHECKING
 import warnings
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle  # noqa: F401
@@ -29,6 +30,9 @@ from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
+
+if TYPE_CHECKING:
+    from pyppeteer.browser import Target  # noqa: F401
 
 
 class Page(EventEmitter):
@@ -73,13 +77,14 @@ class Page(EventEmitter):
     )
 
     @staticmethod
-    async def create(client: Session, ignoreHTTPSErrors: bool = False,
-                     appMode: bool = False,
+    async def create(client: CDPSession, target: 'Target',
+                     ignoreHTTPSErrors: bool = False, appMode: bool = False,
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which makes new page object."""
         await client.send('Page.enable'),
         frameTree = (await client.send('Page.getFrameTree'))['frameTree']
-        page = Page(client, frameTree, ignoreHTTPSErrors, screenshotTaskQueue)
+        page = Page(client, target, frameTree, ignoreHTTPSErrors,
+                    screenshotTaskQueue)
 
         await asyncio.wait([
             client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
@@ -95,13 +100,13 @@ class Page(EventEmitter):
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
-    def __init__(self, client: Session,
-                 frameTree: Dict,
+    def __init__(self, client: CDPSession, target: 'Target', frameTree: Dict,
                  ignoreHTTPSErrors: bool = False,
                  screenshotTaskQueue: list = None,
                  ) -> None:
         super().__init__()
         self._client = client
+        self._target = target
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
         self._touchscreen = Touchscreen(client, self._keyboard)
@@ -151,6 +156,11 @@ class Page(EventEmitter):
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
+
+    @property
+    def target(self) -> 'Target':
+        """Return a target this page created from."""
+        return self._target
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
@@ -851,7 +861,7 @@ function deliverResult(name, seq, result) {
 
     async def _screenshotTask(self, format: str, options: dict) -> bytes:  # noqa: C901,E501
         await self._client.send('Target.activateTarget', {
-            'targetId': self._client.targetId,
+            'targetId': self._target._targetId,
         })
         clip = options.get('clip')
         if clip:
@@ -1003,7 +1013,12 @@ function deliverResult(name, seq, result) {
 
     async def close(self) -> None:
         """Close connection."""
-        await self._client.dispose()
+        conn = self._client._connection
+        if conn is None:
+            raise PageError('Protocol Error: Connectoin Closed. '
+                            'Most likely the page has been closed.')
+        await conn.send('Target.closeTarget',
+                        {'targetId': self._target._targetId})
 
     @property
     def mouse(self) -> Mouse:

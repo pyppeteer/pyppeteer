@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List
 
 from pyee import EventEmitter
 
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 
 
@@ -85,7 +85,7 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
     return remoteObject.get('value')
 
 
-async def releaseObject(client: Session, remoteObject: dict) -> None:
+async def releaseObject(client: CDPSession, remoteObject: dict) -> None:
     """Release remote object."""
     objectId = remoteObject.get('objectId')
     if not objectId:

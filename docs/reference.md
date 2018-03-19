@@ -123,6 +123,14 @@ Target Class
 .. autoclass:: pyppeteer.browser.Target
    :members:
 
+CDPSession Class
+----------------
+
+.. currentmodule:: pyppeteer.connection
+
+.. autoclass:: pyppeteer.connection.CDPSession
+   :members:
+
 Coverage Class
 --------------
 

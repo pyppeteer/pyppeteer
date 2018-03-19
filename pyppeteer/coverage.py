@@ -8,7 +8,7 @@ from functools import cmp_to_key
 from typing import Any, Dict, List
 
 from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.util import merge_dict
 
@@ -42,7 +42,7 @@ class Coverage(object):
         print('Bytes used: {}%'.format(usedBytes / totalBytes * 100))
     """
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
@@ -114,7 +114,7 @@ class Coverage(object):
 class JSCoverage(object):
     """JavaScript Coverage class."""
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
         self._scriptURLs: Dict = dict()
@@ -197,7 +197,7 @@ class JSCoverage(object):
 class CSSCoverage(object):
     """CSS Coverage class."""
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
         self._stylesheetURLs: Dict = dict()

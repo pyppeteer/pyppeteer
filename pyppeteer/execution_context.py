@@ -7,7 +7,7 @@ import math
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: Session, contextPayload: Dict,
+    def __init__(self, client: CDPSession, contextPayload: Dict,
                  objectHandleFactory: Any) -> None:
         self._client = client
         self._contextId = contextPayload.get('id')
@@ -115,7 +115,7 @@ class JSHandle(object):
     with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.
     """
 
-    def __init__(self, context: ExecutionContext, client: Session,
+    def __init__(self, context: ExecutionContext, client: CDPSession,
                  remoteObject: Dict) -> None:
         self._context = context
         self._client = client

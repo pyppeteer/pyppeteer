@@ -14,7 +14,7 @@ from pyee import EventEmitter
 
 # from pyppeteer import helper
 from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import NetworkError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
@@ -36,7 +36,7 @@ class FrameManager(EventEmitter):
         LifecycleEvent='lifecycleevent',
     )
 
-    def __init__(self, client: Session, frameTree: Dict, page: Any) -> None:
+    def __init__(self, client: CDPSession, frameTree: Dict, page: Any) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
@@ -202,7 +202,7 @@ class Frame(object):
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
     """
 
-    def __init__(self, client: Session, page: Any,
+    def __init__(self, client: CDPSession, page: Any,
                  parentFrame: Optional['Frame'], frameId: str) -> None:
         self._client = client
         self._page = page
