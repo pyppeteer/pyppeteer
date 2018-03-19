@@ -194,7 +194,13 @@ class TestPyppeteer(BaseTestCase):
     @sync
     async def test_timeout(self):
         with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long', timeout=100)
+            await self.page.goto(self.url + 'long', timeout=1)
+
+    @sync
+    async def test_timeout_default(self):
+        self.page.setDefaultNavigationTimeout(1)
+        with self.assertRaises(TimeoutError):
+            await self.page.goto(self.url + 'long')
 
     @sync
     async def test_no_timeout(self):

@@ -111,6 +111,7 @@ class Page(EventEmitter):
         self._tracing = Tracing(client)
         self._pageBindings: Dict[str, Callable] = dict()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
+        self._defaultNavigationTimeout = 30000  # milliseconds
         self._coverage = Coverage(client)
 
         if screenshotTaskQueue is None:
@@ -202,6 +203,22 @@ class Page(EventEmitter):
     async def setOfflineMode(self, enabled: bool) -> None:
         """Set offline mode enable/disable."""
         await self._networkManager.setOfflineMode(enabled)
+
+    def setDefaultNavigationTimeout(self, timeout: int) -> None:
+        """Change the default maximum navigation timeout.
+
+        This method changes the default timeout of 30 seconds for the following
+        methods:
+
+        * :meth:`goto`
+        * :meth:`goBack`
+        * :meth:`goForward`
+        * :meth:`reload`
+        * :meth:`waitForNavigation`
+
+        :arg int timeout: Maximum navigation time in milliseconds.
+        """
+        self._defaultNavigationTimeout = timeout
 
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
@@ -574,9 +591,27 @@ function deliverResult(name, seq, result) {
 
     async def goto(self, url: str, options: dict = None, **kwargs: Any
                    ) -> Optional[Response]:
-        """Go to the url.
+        """Go to the ``url``.
 
-        :arg string url: URL to go.
+        :arg string url: URL to navigate page to. The url should include
+            scheme, e.g. ``https://``.
+
+        Available options are:
+
+        * ``timeout`` (int): Maximum navigation time in milliseconds, defaults
+          to 30 seconds, pass ``0`` to desable timeout. The default value can
+          be changed by using the :meth:`setDefaultNavigationTimeout` method.
+        * ``waitUntil`` (str|List[str]): When to consider navigation succeeded,
+          defaults to ``load``. Given a list of event strings, navigation is
+          considered to be successful after all events have been fired. Events
+          can be either:
+
+          * ``load``: when ``load`` event is fired.
+          * ``documentloaded``: when the ``DOMContentLoaded`` event is fired.
+          * ``networkidle0``: when there are no more than 0 network connections
+            for at least 500 ms.
+          * ``networkidle0``: when there are no more than 2 network connections
+            for at least 500 ms.
         """
         options = merge_dict(options, kwargs)
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
@@ -589,7 +624,9 @@ function deliverResult(name, seq, result) {
         mainFrame = self._frameManager.mainFrame
         if mainFrame is None:
             raise PageError('No main frame.')
-        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
+        timeout = options.get('timeout', self._defaultNavigationTimeout)
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, timeout,
+                                   options)
 
         result = await self._navigate(url, referrer)
         if result is not None:
@@ -613,7 +650,10 @@ function deliverResult(name, seq, result) {
 
     async def reload(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
-        """Reload this page."""
+        """Reload this page.
+
+        Available options are same as :meth:`goto` method.
+        """
         options = merge_dict(options, kwargs)
         response = (await asyncio.gather(
             self.waitForNavigation(options),
@@ -623,12 +663,17 @@ function deliverResult(name, seq, result) {
 
     async def waitForNavigation(self, options: dict = None, **kwargs: Any
                                 ) -> Optional[Response]:
-        """Wait for navigation completes."""
+        """Wait for navigation.
+
+        Available options are same as :meth:`goto` method.
+        """
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
         if mainFrame is None:
             raise PageError('No main frame.')
-        watcher = NavigatorWatcher(self._frameManager, mainFrame, options)
+        timeout = options.get('timeout', self._defaultNavigationTimeout)
+        watcher = NavigatorWatcher(self._frameManager, mainFrame, timeout,
+                                   options)
         responses: Dict[str, Response] = dict()
         listener = helper.addEventListener(
             self._networkManager,
@@ -646,13 +691,19 @@ function deliverResult(name, seq, result) {
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
-        """Go back history."""
+        """Navigate to the previous page in history.
+
+        Available options are same as :meth:`goto` method.
+        """
         options = merge_dict(options, kwargs)
         return await self._go(-1, options)
 
     async def goForward(self, options: dict = None, **kwargs: Any
                         ) -> Optional[Response]:
-        """Go forward history."""
+        """Navigate to the next page in history.
+
+        Available options are same as :meth:`goto` method.
+        """
         options = merge_dict(options, kwargs)
         return await self._go(+1, options)
 

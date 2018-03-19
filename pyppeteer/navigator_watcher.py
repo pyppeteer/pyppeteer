@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 class NavigatorWatcher:
     """NavigatorWatcher class."""
 
-    def __init__(self, frameManager: FrameManager, frame: Frame,
+    def __init__(self, frameManager: FrameManager, frame: Frame, timeout: int,
                  options: Dict = None, **kwargs: Any) -> None:
         """Make new navigator watcher."""
         options = merge_dict(options, kwargs)
@@ -29,7 +29,7 @@ class NavigatorWatcher:
         self._frameManeger = frameManager
         self._frame = frame
         self._initialLoaderId = frame._loaderId
-        self._timeout = options.get('timeout', 30000)
+        self._timeout = timeout
         self._eventListeners = [
             helper.addEventListener(
                 self._frameManeger,
