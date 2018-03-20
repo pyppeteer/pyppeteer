@@ -12,6 +12,7 @@ import logging
 import os
 import os.path
 from pathlib import Path
+import signal
 import shutil
 import subprocess
 import tempfile
@@ -139,12 +140,18 @@ class Launcher(object):
             env=env,
         )
 
-        def _close_process() -> None:
+        def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
                 asyncio.get_event_loop().run_until_complete(self.killChrome())
 
         # dont forget to close browser process
         atexit.register(_close_process)
+        if self.options.get('handleSIGINT', True):
+            signal.signal(signal.SIGINT, _close_process)
+        if self.options.get('handleSIGTERM', True):
+            signal.signal(signal.SIGTERM, _close_process)
+        if self.options.get('handleSIGHUP', True):
+            signal.signal(signal.SIGHUP, _close_process)
 
         connectionDelay = self.options.get('slowMo', 0)
         self.browserWSEndpoint = self._get_ws_endpoint()
@@ -205,7 +212,15 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       process.
     * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
       is dangerous option; use with care.
+    * ``handleSIGINT`` (bool): Close the browser process on Ctrl+C. Defaults to
+      ``True``.
+    * ``handleSIGTERM`` (bool): Close the browser process on SIGTERM. Defaults
+      to ``True``.
+    * ``handleSIGHUP`` (bool): Close the browser process on SIGHUP. Defaults to
+      ``True``.
     * ``userDataDir`` (str): Path to a user data directory.
+    * ``env`` (dict): Specify environment variables that will be visible to the
+      browser. Defaults to same as python process.
     * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
       If this option is ``True``, the ``headless`` option will be set
       ``False``.

@@ -11,6 +11,7 @@ Catch up puppeteer v1.0.0
 * Add `Target.createCDPSession` to work with raw Devtools Protocol
 * Change `Frame.executionContest` from property to coroutine
 * Add `ignoreDefaultArgs` option to `pyppeteer.launch`
+* Add `handleSIGINT`/`handleSIGTERM`/`handleSIGHUP` options to `pyppeteer.launch`
 * Add `Page.setDefaultNavigationTimeout` method
 * `Page.waitFor*` methods accept `JSHandle` as argument
 * Implement `Frame.content` and `Frame.setContent` methods
