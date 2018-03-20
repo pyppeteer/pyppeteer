@@ -3,6 +3,8 @@ History
 
 ## Version 0.0.15 (next version)
 
+Catch up puppeteer v1.0.0
+
 * Support `raf` and `mutation` polling for `waitFor*` methods
 * Add `Page.coverage` to support JS and CSS coverage
 * Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
@@ -28,6 +30,8 @@ History
     * `Page.Events.Metrics`
 
 ## Version 0.0.13 (2018-03-10)
+
+Catch up puppeteer v0.13.0
 
 * `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function
