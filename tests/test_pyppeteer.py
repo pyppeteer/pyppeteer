@@ -10,6 +10,7 @@ Tests for `pyppeteer` module.
 
 import asyncio
 import json
+import logging
 import math
 from pathlib import Path
 import sys
@@ -218,8 +219,9 @@ class TestPyppeteer(BaseTestCase):
 
     @sync
     async def test_plain_text_depr(self):
-        with self.assertWarns(DeprecationWarning):
+        with self.assertLogs('pyppeteer', logging.WARN) as log:
             text = await self.page.plainText()
+            self.assertIn('deprecated', log.records[0].msg)
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
@@ -2135,8 +2137,9 @@ class TestPage(unittest.TestCase):
             f.write('''
 () => document.body.appendChild(document.createElement("section"))
             '''.strip())
-        with self.assertWarns(DeprecationWarning):
+        with self.assertLogs('pyppeteer', logging.WARN) as log:
             await self.page.injectFile(str(tmp_file))
+            self.assertIn('deprecated', log.records[0].msg)
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()

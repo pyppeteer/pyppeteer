@@ -5,6 +5,7 @@
 
 import asyncio
 from collections import OrderedDict
+import logging
 import re
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
@@ -12,7 +13,6 @@ from typing import TYPE_CHECKING
 
 from pyee import EventEmitter
 
-# from pyppeteer import helper
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.element_handle import ElementHandle
@@ -23,7 +23,8 @@ from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
-    # from pyppeteer.page import Page  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class FrameManager(EventEmitter):
@@ -395,7 +396,8 @@ function(html) {
 
     async def injectFile(self, filePath: str) -> str:
         """[Deprecated] Inject file to the frame."""
-        # to be changed to async func
+        logger.warning('`injectFile` method is deprecated.'
+                       ' Use `addScriptTag` method instead.')
         with open(filePath) as f:
             contents = f.read()
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))

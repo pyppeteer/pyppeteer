@@ -6,12 +6,12 @@
 import asyncio
 import base64
 import json
+import logging
 import math
 import mimetypes
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 from typing import TYPE_CHECKING
-import warnings
 
 from pyee import EventEmitter
 
@@ -33,6 +33,8 @@ from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from pyppeteer.browser import Target  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class Page(EventEmitter):
@@ -433,7 +435,6 @@ class Page(EventEmitter):
 
         This method is deprecated. Use :meth:`addScriptTag` instead.
         """
-        warnings.warn('Page.injectFile is deprecated.', DeprecationWarning)
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
@@ -1001,7 +1002,7 @@ function deliverResult(name, seq, result) {
 
     async def plainText(self) -> str:
         """[Deprecated] Get page content as plain text."""
-        warnings.warn('page.plainText is deprecated.', DeprecationWarning)
+        logger.warning('`Page.plainText` is deprecated.')
         return await self.evaluate('() => document.body.innerText')
 
     async def title(self) -> str:
