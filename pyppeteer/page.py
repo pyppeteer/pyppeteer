@@ -827,7 +827,7 @@ function deliverResult(name, seq, result) {
           ``png``. Defaults to ``png``.
         * ``quality`` (int): The quality of the image, between 0-100. Not
           applicable to ``png`` image.
-        * ``fullpage`` (bool): When true, take a screenshot of the full
+        * ``fullPage`` (bool): When true, take a screenshot of the full
           scrollable page. Defaults to ``False``.
         * ``clip`` (dict): An object which specifies clipping region of the
           page. This option should have the following fields:
