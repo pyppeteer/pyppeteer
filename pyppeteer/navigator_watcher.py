@@ -45,10 +45,12 @@ class NavigatorWatcher:
         loop = asyncio.get_event_loop()
         self._lifecycleCompletePromise = loop.create_future()
 
-        self._navigationPromise = asyncio.wait([
+        self._navigationPromise = asyncio.ensure_future(asyncio.wait([
             self._lifecycleCompletePromise,
             self._createTimeoutPromise(),
-        ], return_when=concurrent.futures.FIRST_COMPLETED)
+        ], return_when=concurrent.futures.FIRST_COMPLETED))
+        self._navigationPromise.add_done_callback(
+            lambda fut: self._cleanup())
 
     def _validate_options(self, options: Dict) -> None:  # noqa: C901
         if 'networkIdleTimeout' in options:
