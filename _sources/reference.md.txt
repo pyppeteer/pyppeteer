@@ -11,7 +11,7 @@ Launcher
 .. autofunction:: executablePath
 
 Browser Class
--------
+-------------
 
 .. currentmodule:: pyppeteer.browser
 
@@ -21,7 +21,7 @@ Browser Class
 
 
 Page Class
-----
+----------
 
 .. currentmodule:: pyppeteer.page
 
@@ -30,7 +30,7 @@ Page Class
    :exclude-members: create
 
 Keyboard Class
---------
+--------------
 
 .. currentmodule:: pyppeteer.input
 
@@ -38,7 +38,7 @@ Keyboard Class
    :members:
 
 Mouse Class
------
+-----------
 
 .. currentmodule:: pyppeteer.input
 
@@ -46,7 +46,7 @@ Mouse Class
    :members:
 
 Tracing Class
--------
+-------------
 
 .. currentmodule:: pyppeteer.tracing
 
@@ -54,7 +54,7 @@ Tracing Class
    :members:
 
 Dialog Class
-------
+------------
 
 .. currentmodule:: pyppeteer.dialog
 
@@ -62,7 +62,7 @@ Dialog Class
    :members:
 
 ConsoleMessage Class
---------------
+--------------------
 
 .. currentmodule:: pyppeteer.page
 
@@ -70,7 +70,7 @@ ConsoleMessage Class
    :members:
 
 Frame Class
------
+-----------
 
 .. currentmodule:: pyppeteer.frame
 
@@ -78,7 +78,7 @@ Frame Class
    :members:
 
 ExecutionContext Class
-----------------
+----------------------
 
 .. currentmodule:: pyppeteer.execution_context
 
@@ -86,13 +86,13 @@ ExecutionContext Class
    :members:
 
 JSHandle Class
---------
+--------------
 
 .. autoclass:: pyppeteer.execution_context.JSHandle
    :members:
 
 ElementHandle Class
--------------
+-------------------
 
 .. currentmodule:: pyppeteer.element_handle
 
@@ -100,7 +100,7 @@ ElementHandle Class
    :members:
 
 Request Class
--------
+-------------
 
 .. currentmodule:: pyppeteer.network_manager
 
@@ -108,7 +108,7 @@ Request Class
    :members:
 
 Response Class
---------
+--------------
 
 .. currentmodule:: pyppeteer.network_manager
 
@@ -116,11 +116,26 @@ Response Class
    :members:
 
 Target Class
-------
+------------
 
 .. currentmodule:: pyppeteer.browser
 
 .. autoclass:: pyppeteer.browser.Target
    :members:
 
+CDPSession Class
+----------------
+
+.. currentmodule:: pyppeteer.connection
+
+.. autoclass:: pyppeteer.connection.CDPSession
+   :members:
+
+Coverage Class
+--------------
+
+.. currentmodule:: pyppeteer.coverage
+
+.. autoclass:: pyppeteer.coverage.Coverage
+   :members:
 .

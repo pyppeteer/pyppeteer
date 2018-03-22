@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.14 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.15 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -48,7 +48,7 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
 
 <span class="c1"># from pyppeteer import helper</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">CDPSession</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.execution_context</span> <span class="k">import</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">JSHandle</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
@@ -76,7 +76,7 @@
 <span class="sd">    :meth:`pyppeteer.page.Page.evaluate` methods.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Session</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">,</span>
                  <span class="n">remoteObject</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
@@ -282,8 +282,39 @@
 
     <span class="c1">#: alias to :meth:`querySelector`</span>
     <span class="n">J</span> <span class="o">=</span> <span class="n">querySelector</span>
-    <span class="c1">#: alias to :meth:`querySelectorAll`</span></div>
+    <span class="c1">#: alias to :meth:`querySelectorAll`</span>
     <span class="n">JJ</span> <span class="o">=</span> <span class="n">querySelectorAll</span>
+
+<div class="viewcode-block" id="ElementHandle.xpath"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.xpath">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">xpath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate XPath expression relative to this elementHandle.</span>
+
+<span class="sd">        If there is no such element, return None.</span>
+
+<span class="sd">        :arg str expression: XPath string to be evaluated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">arrayHandle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>
+            <span class="sd">&#39;&#39;&#39;(element, expression) =&gt; {</span>
+<span class="sd">                const document = element.ownerDocument || element;</span>
+<span class="sd">                const iterator = document.evaluate(expression, element, null,</span>
+<span class="sd">                    XPathResult.ORDERED_NODE_ITERATOR_TYPE);</span>
+<span class="sd">                const array = [];</span>
+<span class="sd">                let item;</span>
+<span class="sd">                while ((item = iterator.iterateNext()))</span>
+<span class="sd">                    array.push(item);</span>
+<span class="sd">                return array;</span>
+
+<span class="sd">            }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">)</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">getProperties</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="nb">property</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">elementHandle</span> <span class="o">=</span> <span class="nb">property</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">elementHandle</span><span class="p">:</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elementHandle</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="c1">#: alias to :meth:`xpath`</span></div>
+    <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span>
 </pre></div>
 
           </div>

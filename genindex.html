@@ -7,7 +7,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Index &#8212; Pyppeteer 0.0.14 documentation</title>
+    <title>Index &#8212; Pyppeteer 0.0.15 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -56,6 +56,7 @@
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#Q"><strong>Q</strong></a>
  | <a href="#R"><strong>R</strong></a>
@@ -64,6 +65,7 @@
  | <a href="#U"><strong>U</strong></a>
  | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
+ | <a href="#X"><strong>X</strong></a>
  
 </div>
 <h2 id="A">A</h2>
@@ -119,6 +121,8 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.connection.CDPSession">CDPSession (class in pyppeteer.connection)</a>
+</li>
       <li><a href="reference.html#pyppeteer.frame_manager.Frame.childFrames">childFrames (pyppeteer.frame_manager.Frame attribute)</a>
 </li>
       <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.click">click() (pyppeteer.element_handle.ElementHandle method)</a>
@@ -135,17 +139,27 @@
         <li><a href="reference.html#pyppeteer.page.Page.close">(pyppeteer.page.Page method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.launcher.connect">connect() (in module pyppeteer.launcher)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.page.ConsoleMessage">ConsoleMessage (class in pyppeteer.page)</a>
 </li>
-      <li><a href="reference.html#pyppeteer.page.Page.content">content() (pyppeteer.page.Page method)</a>
+      <li><a href="reference.html#pyppeteer.frame_manager.Frame.content">content() (pyppeteer.frame_manager.Frame method)</a>
+
+      <ul>
+        <li><a href="reference.html#pyppeteer.page.Page.content">(pyppeteer.page.Page method)</a>
 </li>
+      </ul></li>
       <li><a href="reference.html#pyppeteer.network_manager.Request.continue_">continue_() (pyppeteer.network_manager.Request method)</a>
 </li>
       <li><a href="reference.html#pyppeteer.page.Page.cookies">cookies() (pyppeteer.page.Page method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.coverage.Coverage">Coverage (class in pyppeteer.coverage)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.page.Page.coverage">coverage (pyppeteer.page.Page attribute)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.browser.Target.createCDPSession">createCDPSession() (pyppeteer.browser.Target method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -157,12 +171,14 @@
 </li>
       <li><a href="reference.html#pyppeteer.page.Page.deleteCookie">deleteCookie() (pyppeteer.page.Page method)</a>
 </li>
-      <li><a href="reference.html#pyppeteer.dialog.Dialog">Dialog (class in pyppeteer.dialog)</a>
+      <li><a href="reference.html#pyppeteer.connection.CDPSession.detach">detach() (pyppeteer.connection.CDPSession method)</a>
 </li>
-      <li><a href="reference.html#pyppeteer.browser.Browser.disconnect">disconnect() (pyppeteer.browser.Browser method)</a>
+      <li><a href="reference.html#pyppeteer.dialog.Dialog">Dialog (class in pyppeteer.dialog)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.browser.Browser.disconnect">disconnect() (pyppeteer.browser.Browser method)</a>
+</li>
       <li><a href="reference.html#pyppeteer.dialog.Dialog.dismiss">dismiss() (pyppeteer.dialog.Dialog method)</a>
 </li>
       <li><a href="reference.html#pyppeteer.execution_context.JSHandle.dispose">dispose() (pyppeteer.execution_context.JSHandle method)</a>
@@ -210,11 +226,9 @@
       <li><a href="reference.html#pyppeteer.execution_context.ExecutionContext">ExecutionContext (class in pyppeteer.execution_context)</a>
 </li>
       <li><a href="reference.html#pyppeteer.execution_context.JSHandle.executionContext">executionContext (pyppeteer.execution_context.JSHandle attribute)</a>
-
-      <ul>
-        <li><a href="reference.html#pyppeteer.frame_manager.Frame.executionContext">(pyppeteer.frame_manager.Frame attribute)</a>
 </li>
-      </ul></li>
+      <li><a href="reference.html#pyppeteer.frame_manager.Frame.executionContext">executionContext() (pyppeteer.frame_manager.Frame method)</a>
+</li>
       <li><a href="reference.html#pyppeteer.page.Page.exposeFunction">exposeFunction() (pyppeteer.page.Page method)</a>
 </li>
   </ul></td>
@@ -234,6 +248,8 @@
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.frame_manager.Frame">Frame (class in pyppeteer.frame_manager)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.network_manager.Request.frame">frame (pyppeteer.network_manager.Request attribute)</a>
 </li>
       <li><a href="reference.html#pyppeteer.page.Page.frames">frames (pyppeteer.page.Page attribute)</a>
 </li>
@@ -260,6 +276,14 @@
 
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.network_manager.Request.headers">headers (pyppeteer.network_manager.Request attribute)</a>
+
+      <ul>
+        <li><a href="reference.html#pyppeteer.network_manager.Response.headers">(pyppeteer.network_manager.Response attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.hover">hover() (pyppeteer.element_handle.ElementHandle method)</a>
 
@@ -325,6 +349,14 @@
 </li>
       <li><a href="reference.html#pyppeteer.execution_context.JSHandle.jsonValue">jsonValue() (pyppeteer.execution_context.JSHandle method)</a>
 </li>
+      <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.Jx">Jx() (pyppeteer.element_handle.ElementHandle method)</a>
+
+      <ul>
+        <li><a href="reference.html#pyppeteer.frame_manager.Frame.Jx">(pyppeteer.frame_manager.Frame method)</a>
+</li>
+        <li><a href="reference.html#pyppeteer.page.Page.Jx">(pyppeteer.page.Page method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -355,10 +387,12 @@
 </li>
       <li><a href="reference.html#pyppeteer.dialog.Dialog.message">message() (pyppeteer.dialog.Dialog method)</a>
 </li>
-      <li><a href="reference.html#pyppeteer.page.Page.metrics">metrics() (pyppeteer.page.Page method)</a>
+      <li><a href="reference.html#pyppeteer.network_manager.Request.method">method (pyppeteer.network_manager.Request attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.page.Page.metrics">metrics() (pyppeteer.page.Page method)</a>
+</li>
       <li><a href="reference.html#pyppeteer.input.Mouse">Mouse (class in pyppeteer.input)</a>
 </li>
       <li><a href="reference.html#pyppeteer.page.Page.mouse">mouse (pyppeteer.page.Page attribute)</a>
@@ -380,6 +414,14 @@
   </ul></td>
 </tr></table>
 
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.network_manager.Response.ok">ok (pyppeteer.network_manager.Response attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
@@ -391,11 +433,13 @@
 </li>
       <li><a href="reference.html#pyppeteer.frame_manager.Frame.parentFrame">parentFrame (pyppeteer.frame_manager.Frame attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.page.Page.pdf">pdf() (pyppeteer.page.Page method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.page.Page.plainText">plainText() (pyppeteer.page.Page method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.network_manager.Request.postData">postData (pyppeteer.network_manager.Request attribute)</a>
 </li>
       <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.press">press() (pyppeteer.element_handle.ElementHandle method)</a>
 
@@ -403,6 +447,8 @@
         <li><a href="reference.html#pyppeteer.input.Keyboard.press">(pyppeteer.input.Keyboard method)</a>
 </li>
       </ul></li>
+      <li><a href="reference.html#pyppeteer.browser.Browser.process">process (pyppeteer.browser.Browser attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -459,6 +505,8 @@
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.network_manager.Request.resourceType">resourceType (pyppeteer.network_manager.Request attribute)</a>
+</li>
       <li><a href="reference.html#pyppeteer.network_manager.Request.respond">respond() (pyppeteer.network_manager.Request method)</a>
 </li>
       <li><a href="reference.html#pyppeteer.network_manager.Response">Response (class in pyppeteer.network_manager)</a>
@@ -483,16 +531,24 @@
         <li><a href="reference.html#pyppeteer.page.Page.select">(pyppeteer.page.Page method)</a>
 </li>
       </ul></li>
+      <li><a href="reference.html#pyppeteer.connection.CDPSession.send">send() (pyppeteer.connection.CDPSession method)</a>
+</li>
       <li><a href="reference.html#pyppeteer.input.Keyboard.sendCharacter">sendCharacter() (pyppeteer.input.Keyboard method)</a>
 </li>
-      <li><a href="reference.html#pyppeteer.page.Page.setContent">setContent() (pyppeteer.page.Page method)</a>
+      <li><a href="reference.html#pyppeteer.frame_manager.Frame.setContent">setContent() (pyppeteer.frame_manager.Frame method)</a>
+
+      <ul>
+        <li><a href="reference.html#pyppeteer.page.Page.setContent">(pyppeteer.page.Page method)</a>
 </li>
+      </ul></li>
       <li><a href="reference.html#pyppeteer.page.Page.setCookie">setCookie() (pyppeteer.page.Page method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.page.Page.setDefaultNavigationTimeout">setDefaultNavigationTimeout() (pyppeteer.page.Page method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.page.Page.setExtraHTTPHeaders">setExtraHTTPHeaders() (pyppeteer.page.Page method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="reference.html#pyppeteer.page.Page.setExtraHTTPHeaders">setExtraHTTPHeaders() (pyppeteer.page.Page method)</a>
-</li>
       <li><a href="reference.html#pyppeteer.page.Page.setJavaScriptEnabled">setJavaScriptEnabled() (pyppeteer.page.Page method)</a>
 </li>
       <li><a href="reference.html#pyppeteer.page.Page.setOfflineMode">setOfflineMode() (pyppeteer.page.Page method)</a>
@@ -505,7 +561,17 @@
 </li>
       <li><a href="reference.html#pyppeteer.tracing.Tracing.start">start() (pyppeteer.tracing.Tracing method)</a>
 </li>
+      <li><a href="reference.html#pyppeteer.coverage.Coverage.startCSSCoverage">startCSSCoverage() (pyppeteer.coverage.Coverage method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.coverage.Coverage.startJSCoverage">startJSCoverage() (pyppeteer.coverage.Coverage method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.network_manager.Response.status">status (pyppeteer.network_manager.Response attribute)</a>
+</li>
       <li><a href="reference.html#pyppeteer.tracing.Tracing.stop">stop() (pyppeteer.tracing.Tracing method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.coverage.Coverage.stopCSSCoverage">stopCSSCoverage() (pyppeteer.coverage.Coverage method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.coverage.Coverage.stopJSCoverage">stopJSCoverage() (pyppeteer.coverage.Coverage method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -521,6 +587,8 @@
       </ul></li>
       <li><a href="reference.html#pyppeteer.browser.Target">Target (class in pyppeteer.browser)</a>
 </li>
+      <li><a href="reference.html#pyppeteer.page.Page.target">target (pyppeteer.page.Page attribute)</a>
+</li>
       <li><a href="reference.html#pyppeteer.browser.Browser.targets">targets() (pyppeteer.browser.Browser method)</a>
 </li>
       <li><a href="reference.html#pyppeteer.page.ConsoleMessage.text">text (pyppeteer.page.ConsoleMessage attribute)</a>
@@ -533,10 +601,10 @@
         <li><a href="reference.html#pyppeteer.page.Page.title">(pyppeteer.page.Page method)</a>
 </li>
       </ul></li>
-      <li><a href="reference.html#pyppeteer.execution_context.JSHandle.toString">toString() (pyppeteer.execution_context.JSHandle method)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.execution_context.JSHandle.toString">toString() (pyppeteer.execution_context.JSHandle method)</a>
+</li>
       <li><a href="reference.html#pyppeteer.page.Page.touchscreen">touchscreen (pyppeteer.page.Page attribute)</a>
 </li>
       <li><a href="reference.html#pyppeteer.tracing.Tracing">Tracing (class in pyppeteer.tracing)</a>
@@ -573,15 +641,21 @@
       </ul></li>
       <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.uploadFile">uploadFile() (pyppeteer.element_handle.ElementHandle method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.frame_manager.Frame.url">url (pyppeteer.frame_manager.Frame attribute)</a>
 
       <ul>
+        <li><a href="reference.html#pyppeteer.network_manager.Request.url">(pyppeteer.network_manager.Request attribute)</a>
+</li>
+        <li><a href="reference.html#pyppeteer.network_manager.Response.url">(pyppeteer.network_manager.Response attribute)</a>
+</li>
         <li><a href="reference.html#pyppeteer.page.Page.url">(pyppeteer.page.Page attribute)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference.html#pyppeteer.browser.Target.url">url() (pyppeteer.browser.Target method)</a>
+</li>
+      <li><a href="reference.html#pyppeteer.browser.Browser.userAgent">userAgent() (pyppeteer.browser.Browser method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -625,6 +699,20 @@
       </ul></li>
       <li><a href="reference.html#pyppeteer.browser.Browser.wsEndpoint">wsEndpoint (pyppeteer.browser.Browser attribute)</a>
 </li>
+  </ul></td>
+</tr></table>
+
+<h2 id="X">X</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="reference.html#pyppeteer.element_handle.ElementHandle.xpath">xpath() (pyppeteer.element_handle.ElementHandle method)</a>
+
+      <ul>
+        <li><a href="reference.html#pyppeteer.frame_manager.Frame.xpath">(pyppeteer.frame_manager.Frame method)</a>
+</li>
+        <li><a href="reference.html#pyppeteer.page.Page.xpath">(pyppeteer.page.Page method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

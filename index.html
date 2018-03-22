@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Pyppeteer’s documentation &#8212; Pyppeteer 0.0.14 documentation</title>
+    <title>Pyppeteer’s documentation &#8212; Pyppeteer 0.0.15 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -124,10 +124,10 @@ is also useful for pyppeteer users.</p>
 <p>Pyppeteer is to be as similar as puppeteer, but some differences between python
 and JavaScript make it difficult.</p>
 <p>These are differences between puppeteer and pyppeteer.</p>
-<div class="section" id="keyword-argument-for-options">
-<h3>Keyword argument for options<a class="headerlink" href="#keyword-argument-for-options" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="keyword-arguments-for-options">
+<h3>Keyword arguments for options<a class="headerlink" href="#keyword-arguments-for-options" title="Permalink to this headline">¶</a></h3>
 <p>Puppeteer uses object (dictionary in python) for passing options to
-functions/methods. Pyppeteer accepts both dictionary and keyword argument for
+functions/methods. Pyppeteer accepts both dictionary and keyword arguments for
 options.</p>
 <p>Dictionary style option (similar to puppeteer):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">browser</span> <span class="o">=</span> <span class="n">await</span> <span class="n">launch</span><span class="p">({</span><span class="s1">&#39;headless&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">})</span>
@@ -141,18 +141,19 @@ options.</p>
 <div class="section" id="element-selector-method-name-queryselector">
 <h3>Element selector method name (<code class="docutils literal notranslate"><span class="pre">$</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">querySelector</span></code>)<a class="headerlink" href="#element-selector-method-name-queryselector" title="Permalink to this headline">¶</a></h3>
 <p>In python, <code class="docutils literal notranslate"><span class="pre">$</span></code> is not usable for method name.
-So pyppeteer uses <code class="docutils literal notranslate"><span class="pre">Page.querySelector()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">Page.$()</span></code>, and
-<code class="docutils literal notranslate"><span class="pre">Page.querySelectorAll()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">Page.$$()</span></code>.
-Pyppeteer has shorthands for these methods, <code class="docutils literal notranslate"><span class="pre">Page.J()</span></code> and <code class="docutils literal notranslate"><span class="pre">Page.JJ()</span></code>.</p>
+So pyppeteer uses
+<code class="docutils literal notranslate"><span class="pre">Page.querySelector()</span></code>/<code class="docutils literal notranslate"><span class="pre">Page.querySelectorAll()</span></code>/<code class="docutils literal notranslate"><span class="pre">Page.xpath()</span></code> instead of
+<code class="docutils literal notranslate"><span class="pre">Page.$()</span></code>/<code class="docutils literal notranslate"><span class="pre">Page.$$()</span></code>/<code class="docutils literal notranslate"><span class="pre">Page.$x()</span></code>. Pyppeteer also has shorthands for these
+methods, <code class="docutils literal notranslate"><span class="pre">Page.J()</span></code>, <code class="docutils literal notranslate"><span class="pre">Page.JJ()</span></code>, and <code class="docutils literal notranslate"><span class="pre">Page.Jx()</span></code>.</p>
 </div>
-<div class="section" id="argument-of-page-evaluate-and-page-queryselectoreval">
-<h3>Argument of <code class="docutils literal notranslate"><span class="pre">Page.evaluate()</span></code> and <code class="docutils literal notranslate"><span class="pre">Page.querySelectorEval()</span></code><a class="headerlink" href="#argument-of-page-evaluate-and-page-queryselectoreval" title="Permalink to this headline">¶</a></h3>
+<div class="section" id="arguments-of-page-evaluate-and-page-queryselectoreval">
+<h3>Arguments of <code class="docutils literal notranslate"><span class="pre">Page.evaluate()</span></code> and <code class="docutils literal notranslate"><span class="pre">Page.querySelectorEval()</span></code><a class="headerlink" href="#arguments-of-page-evaluate-and-page-queryselectoreval" title="Permalink to this headline">¶</a></h3>
 <p>Puppeteer’s version of <code class="docutils literal notranslate"><span class="pre">evaluate()</span></code> takes JavaScript raw function or string of
 JavaScript expression, but pyppeteer takes string of JavaScript. JavaScript
 strings can be function or expression. Pyppeteer tries to automatically detect
-the string is function or expression, but sometimes fails. If expression string
-is treated as function, and raise error, add <code class="docutils literal notranslate"><span class="pre">force_expr=True</span></code> option, which
-force pyppeteer to treat the string as expression.</p>
+the string is function or expression, but sometimes it fails. If expression
+string is treated as function and error is raised, add <code class="docutils literal notranslate"><span class="pre">force_expr=True</span></code> option,
+which force pyppeteer to treat the string as expression.</p>
 <p>Example to get page content:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">content</span> <span class="o">=</span> <span class="n">await</span> <span class="n">page</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;document.body.textContent&#39;</span><span class="p">,</span> <span class="n">force_expr</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
 </pre></div>
@@ -198,9 +199,12 @@ force pyppeteer to treat the string as expression.</p>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#request-class">Request Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#response-class">Response Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reference.html#target-class">Target Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#cdpsession-class">CDPSession Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="reference.html#coverage-class">Coverage Class</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changes.html">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-15-2018-03-22">Version 0.0.15 (2018-03-22)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-14-2018-03-14">Version 0.0.14 (2018-03-14)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-13-2018-03-10">Version 0.0.13 (2018-03-10)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="changes.html#version-0-0-12-2018-03-01">Version 0.0.12 (2018-03-01)</a></li>

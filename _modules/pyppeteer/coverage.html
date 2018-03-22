@@ -1,0 +1,448 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.15 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <!-- font -->
+  <link href='https://fonts.googleapis.com/css?family=Raleway:500' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,400italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Noto+Serif:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <link href='https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+  <!-- Style -->
+  
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyppeteer.coverage</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;Coverage module.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">cmp_to_key</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">CDPSession</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">PageError</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
+
+
+<div class="viewcode-block" id="Coverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage">[docs]</a><span class="k">class</span> <span class="nc">Coverage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Coverage class.</span>
+
+<span class="sd">    Coverage gathers information about parts of JavaScript and CSS that were</span>
+<span class="sd">    used by the page.</span>
+
+<span class="sd">    An example of using JavaScript and CSS coverage to get percentage of</span>
+<span class="sd">    initially executed code::</span>
+
+<span class="sd">        # Enable both JavaScript and CSS coverage</span>
+<span class="sd">        await page.startJSCoverage()</span>
+<span class="sd">        await page.startCSSCoverage()</span>
+
+<span class="sd">        # Navigato to page</span>
+<span class="sd">        await page.goto(&#39;https://example.com&#39;)</span>
+<span class="sd">        # Disable JS and CSS coverage and get results</span>
+<span class="sd">        jsCoverage = await page.stopJSCoverage()</span>
+<span class="sd">        cssCoverage = await page.stopCSSCoverage()</span>
+<span class="sd">        totalBytes = 0</span>
+<span class="sd">        usedBytes = 0</span>
+<span class="sd">        coverage = jsCoverage + cssCoverage</span>
+<span class="sd">        for entry in coverage:</span>
+<span class="sd">            totalBytes += len(entry[&#39;text&#39;])</span>
+<span class="sd">            for range in entry[&#39;ranges&#39;]:</span>
+<span class="sd">                usedBytes += range[&#39;end&#39;] - range[&#39;start&#39;] - 1</span>
+
+<span class="sd">        print(&#39;Bytes used: {}%&#39;.format(usedBytes / totalBytes * 100))</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span> <span class="o">=</span> <span class="n">JSCoverage</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span> <span class="o">=</span> <span class="n">CSSCoverage</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Coverage.startJSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.startJSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">startJSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+                              <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Start JS coverage measurement.</span>
+
+<span class="sd">        Available options are:</span>
+
+<span class="sd">        * ``resetOnNavigation`` (bool): Whether to reset coverage on every</span>
+<span class="sd">          navigation. Defaults to ``True``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Coverage.stopJSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.stopJSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stopJSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stop JS coverage measurement and get result.</span>
+
+<span class="sd">        Return list of coverage reports for all non-anonymous scripts. Each</span>
+<span class="sd">        report includes:</span>
+
+<span class="sd">        * ``url`` (str): Script url.</span>
+<span class="sd">        * ``text`` (str): Script content.</span>
+<span class="sd">        * ``ranges`` (List[Dict]): Script ranges that were executed. Ranges are</span>
+<span class="sd">          sorted and non-overlapping.</span>
+
+<span class="sd">          * ``start`` (int): A start offset in text, inclusive.</span>
+<span class="sd">          * ``end`` (int): An end offset in text, exclusive.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">           JavaScript coverage doesn&#39;t include anonymous scripts; however,</span>
+<span class="sd">           scripts with sourceURLs are reported.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+<div class="viewcode-block" id="Coverage.startCSSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.startCSSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">startCSSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+                               <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Start CSS coverage measurement.</span>
+
+<span class="sd">        Available options are:</span>
+
+<span class="sd">        * ``resetOnNavigation`` (bool): Whether to reset coverage on every</span>
+<span class="sd">          navigation. Defaults to ``True``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Coverage.stopCSSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.stopCSSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stopCSSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stop CSS coverage measurement and get result.</span>
+
+<span class="sd">        Return list of coverage reports for all non-anonymous scripts. Each</span>
+<span class="sd">        report includes:</span>
+
+<span class="sd">        * ``url`` (str): StyleSheet url.</span>
+<span class="sd">        * ``text`` (str): StyleSheet content.</span>
+<span class="sd">        * ``ranges`` (List[Dict]): StyleSheet ranges that were executed. Ranges</span>
+<span class="sd">          are sorted and non-overlapping.</span>
+
+<span class="sd">          * ``start`` (int): A start offset in text, inclusive.</span>
+<span class="sd">          * ``end`` (int): An end offset in text, exclusive.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">           CSS coverage doesn&#39;t include dynamically injected style tags without</span>
+<span class="sd">           sourceURLs (but currently includs... to be fixed).</span>
+<span class="sd">        &quot;&quot;&quot;</span></div></div>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">JSCoverage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;JavaScript Coverage class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Start coverage measurement.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;JSCoverage is always enabled.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span> <span class="k">if</span> <span class="s1">&#39;resetOnNavigation&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span>
+                                   <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;resetOnNavigation&#39;</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="s1">&#39;Debugger.scriptParsed&#39;</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_onScriptParsed</span><span class="p">(</span><span class="n">e</span><span class="p">))),</span>
+            <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="s1">&#39;Runtime.executionContextsCleared&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_onExecutionContextsCleared</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Profiler.enable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Profiler.startPreciseCoverage&#39;</span><span class="p">,</span>
+                                <span class="p">{</span><span class="s1">&#39;callCount&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s1">&#39;detailed&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Debugger.enable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Debugger.setSkipAllPauses&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;skip&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+
+    <span class="k">def</span> <span class="nf">_onExecutionContextsCleared</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_onScriptParsed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;url&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">scriptId</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptId&#39;</span><span class="p">)</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+                <span class="s1">&#39;Debugger.getScriptSource&#39;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s1">&#39;scriptId&#39;</span><span class="p">:</span> <span class="n">scriptId</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="p">[</span><span class="n">scriptId</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="p">[</span><span class="n">scriptId</span><span class="p">]</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptSource&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># This might happen if the page has already navigated away.</span>
+            <span class="k">pass</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stop coverage measurement and return results.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;JSCoverage is not enabled.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Profiler.takePreciseCoverage&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Profiler.stopPreciseCoverage&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Profiler.disable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Debugger.disable&#39;</span><span class="p">)</span>
+        <span class="n">helper</span><span class="o">.</span><span class="n">removeEventListeners</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span><span class="p">)</span>
+
+        <span class="n">coverage</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptId&#39;</span><span class="p">))</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptId&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">flattenRanges</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;functions&#39;</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">flattenRanges</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">func</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ranges&#39;</span><span class="p">,</span> <span class="p">[]))</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">convertToDisjointRanges</span><span class="p">(</span><span class="n">flattenRanges</span><span class="p">)</span>
+            <span class="n">coverage</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="s1">&#39;ranges&#39;</span><span class="p">:</span> <span class="n">ranges</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">text</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">coverage</span>
+
+
+<span class="k">class</span> <span class="nc">CSSCoverage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;CSS Coverage class.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Start coverage measurement.&quot;&quot;&quot;</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;CSSCoverage is already enabled.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span> <span class="k">if</span> <span class="s1">&#39;resetOnNavigation&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span>
+                                   <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;resetOnNavigation&#39;</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="s1">&#39;CSS.styleSheetAdded&#39;</span><span class="p">,</span>
+                <span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_onStyleSheet</span><span class="p">(</span><span class="n">e</span><span class="p">))),</span>
+            <span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="s1">&#39;Runtime.executionContextsCleared&#39;</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_onExecutionContextsCleared</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;DOM.enable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;CSS.enable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;CSS.startRuleUsageTracking&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_onExecutionContextsCleared</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_onStyleSheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;header&#39;</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="c1"># Ignore anonymous scripts</span>
+        <span class="k">if</span> <span class="s1">&#39;sourceURL&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+                <span class="s1">&#39;CSS.getStyleSheetText&#39;</span><span class="p">,</span>
+                <span class="p">{</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">:</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]}</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="p">[</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;sourceURL&#39;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="p">[</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># This might happen if the page has already navigated away.</span>
+            <span class="k">pass</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Stop coverage measurement and return results.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;CSSCoverage is not enabled.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;CSS.stopRuleUsageTracking&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;CSS.disable&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;DOM.disable&#39;</span><span class="p">)</span>
+        <span class="n">helper</span><span class="o">.</span><span class="n">removeEventListeners</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_eventListeners</span><span class="p">)</span>
+
+        <span class="c1"># aggregate by styleSheetId</span>
+        <span class="n">styleSheetIdToCoverage</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;ruleUsage&#39;</span><span class="p">]:</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">styleSheetIdToCoverage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ranges</span><span class="p">:</span>
+                <span class="n">ranges</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">styleSheetIdToCoverage</span><span class="p">[</span><span class="n">entry</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">ranges</span>
+            <span class="n">ranges</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                <span class="s1">&#39;startOffset&#39;</span><span class="p">:</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;startOffset&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;endOffset&#39;</span><span class="p">:</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;endOffset&#39;</span><span class="p">],</span>
+                <span class="s1">&#39;count&#39;</span><span class="p">:</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">entry</span><span class="p">[</span><span class="s1">&#39;used&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="mi">0</span>
+            <span class="p">})</span>
+
+        <span class="n">coverage</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">styleSheetId</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">styleSheetId</span><span class="p">)</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">styleSheetId</span><span class="p">)</span>
+            <span class="n">ranges</span> <span class="o">=</span> <span class="n">convertToDisjointRanges</span><span class="p">(</span>
+                <span class="n">styleSheetIdToCoverage</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">styleSheetId</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="p">)</span>
+            <span class="n">coverage</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span> <span class="s1">&#39;ranges&#39;</span><span class="p">:</span> <span class="n">ranges</span><span class="p">,</span> <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">text</span><span class="p">})</span>
+
+        <span class="k">return</span> <span class="n">coverage</span>
+
+
+<span class="k">def</span> <span class="nf">convertToDisjointRanges</span><span class="p">(</span><span class="n">nestedRanges</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>  <span class="c1"># noqa: C901</span>
+                            <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Convert ranges.&quot;&quot;&quot;</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="nb">range</span> <span class="ow">in</span> <span class="n">nestedRanges</span><span class="p">:</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">[</span><span class="s1">&#39;startOffset&#39;</span><span class="p">],</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                       <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">})</span>
+        <span class="n">points</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;offset&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">[</span><span class="s1">&#39;endOffset&#39;</span><span class="p">],</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                       <span class="s1">&#39;range&#39;</span><span class="p">:</span> <span class="nb">range</span><span class="p">})</span>
+
+    <span class="c1"># Sort points to form a valid parenthesis sequence.</span>
+    <span class="k">def</span> <span class="nf">_sort_func</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="c1"># Sort with increasing offsets.</span>
+        <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+        <span class="c1"># All &quot;end&quot; points should go before &quot;start&quot; points.</span>
+        <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
+        <span class="n">aLength</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">][</span><span class="s1">&#39;endOffset&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">][</span><span class="s1">&#39;startOffset&#39;</span><span class="p">]</span>
+        <span class="n">bLength</span> <span class="o">=</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">][</span><span class="s1">&#39;endOffset&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">b</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">][</span><span class="s1">&#39;startOffset&#39;</span><span class="p">]</span>
+        <span class="c1"># For two &quot;start&quot; points, the one with longer range goes first.</span>
+        <span class="k">if</span> <span class="n">a</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bLength</span> <span class="o">-</span> <span class="n">aLength</span>
+        <span class="c1"># For two &quot;end&quot; points, the one with shorter range goes first.</span>
+        <span class="k">return</span> <span class="n">aLength</span> <span class="o">-</span> <span class="n">bLength</span>
+
+    <span class="n">points</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="n">cmp_to_key</span><span class="p">(</span><span class="n">_sort_func</span><span class="p">))</span>
+
+    <span class="n">hitCountStack</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">results</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">lastOffset</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># Run scanning line to intersect all ranges.</span>
+    <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">points</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">hitCountStack</span> <span class="ow">and</span>
+                <span class="n">lastOffset</span> <span class="o">&lt;</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                <span class="n">hitCountStack</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">hitCountStack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">lastResult</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">results</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="n">lastResult</span> <span class="ow">and</span> <span class="n">lastResult</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">lastOffset</span><span class="p">:</span>
+                <span class="n">lastResult</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">lastOffset</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]})</span>
+        <span class="n">lastOffset</span> <span class="o">=</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">hitCountStack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">point</span><span class="p">[</span><span class="s1">&#39;range&#39;</span><span class="p">][</span><span class="s1">&#39;count&#39;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">hitCountStack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+    <span class="c1"># Filter out empty ranges.</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">range</span> <span class="k">for</span> <span class="nb">range</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="nb">range</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="nb">range</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">Pyppeteer</a></h1>
+
+
+
+<p class="blurb">Headless chrome/chromium automation library (unofficial port of puppeteer)</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=miyakogi&repo=pyppeteer&type=mark&count=False&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../reference.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changes.html">History</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Hiroyuki Takagi.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+    </div>
+
+    
+    <a href="https://github.com/miyakogi/pyppeteer" class="github">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub"  class="github"/>
+    </a>
+    
+
+    
+  </body>
+</html>

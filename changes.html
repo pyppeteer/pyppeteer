@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.14 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.15 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -40,6 +40,25 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-15-2018-03-22">
+<h2>Version 0.0.15 (2018-03-22)<a class="headerlink" href="#version-0-0-15-2018-03-22" title="Permalink to this headline">¶</a></h2>
+<p>Catch up puppeteer v1.0.0</p>
+<ul class="simple">
+<li>Support <code class="docutils literal notranslate"><span class="pre">raf</span></code> and <code class="docutils literal notranslate"><span class="pre">mutation</span></code> polling for <code class="docutils literal notranslate"><span class="pre">waitFor*</span></code> methods</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.coverage</span></code> to support JS and CSS coverage</li>
+<li>Add XPath support with <code class="docutils literal notranslate"><span class="pre">Page.xpath</span></code>, <code class="docutils literal notranslate"><span class="pre">Frame.xpath</span></code>, and <code class="docutils literal notranslate"><span class="pre">ElementHandle.xpath</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Target.createCDPSession</span></code> to work with raw Devtools Protocol</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Frame.executionContest</span></code> from property to coroutine</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">ignoreDefaultArgs</span></code> option to <code class="docutils literal notranslate"><span class="pre">pyppeteer.launch</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">handleSIGINT</span></code>/<code class="docutils literal notranslate"><span class="pre">handleSIGTERM</span></code>/<code class="docutils literal notranslate"><span class="pre">handleSIGHUP</span></code> options to <code class="docutils literal notranslate"><span class="pre">pyppeteer.launch</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.setDefaultNavigationTimeout</span></code> method</li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.waitFor*</span></code> methods accept <code class="docutils literal notranslate"><span class="pre">JSHandle</span></code> as argument</li>
+<li>Implement <code class="docutils literal notranslate"><span class="pre">Frame.content</span></code> and <code class="docutils literal notranslate"><span class="pre">Frame.setContent</span></code> methods</li>
+<li><code class="docutils literal notranslate"><span class="pre">page.tracing.start</span></code> accepts custom tracing categories option</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Browser.process</span></code> property</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Request.frame</span></code> property</li>
+</ul>
+</div>
 <div class="section" id="version-0-0-14-2018-03-14">
 <h2>Version 0.0.14 (2018-03-14)<a class="headerlink" href="#version-0-0-14-2018-03-14" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -55,6 +74,7 @@
 </div>
 <div class="section" id="version-0-0-13-2018-03-10">
 <h2>Version 0.0.13 (2018-03-10)<a class="headerlink" href="#version-0-0-13-2018-03-10" title="Permalink to this headline">¶</a></h2>
+<p>Catch up puppeteer v0.13.0</p>
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">pyppeteer.launch()</span></code> is now <strong>coroutine</strong></li>
 <li>Implement <code class="docutils literal notranslate"><span class="pre">connect</span></code> function</li>
@@ -194,6 +214,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-15-2018-03-22">Version 0.0.15 (2018-03-22)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-14-2018-03-14">Version 0.0.14 (2018-03-14)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-13-2018-03-10">Version 0.0.13 (2018-03-10)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-12-2018-03-01">Version 0.0.12 (2018-03-01)</a></li>
