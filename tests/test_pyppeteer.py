@@ -9,6 +9,8 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
+import json
+import logging
 import math
 from pathlib import Path
 import sys
@@ -89,11 +91,28 @@ class TestLauncher(unittest.TestCase):
         await browser.close()
 
     @sync
+    async def test_browser_process(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        process = browser.process
+        self.assertGreater(process.pid, 0)
+        wsEndpoint = browser.wsEndpoint
+        browser2 = await connect({'browserWSEndpoint': wsEndpoint})
+        self.assertIsNone(browser2.process)
+        await browser.close()
+
+    @sync
     async def test_version(self):
         browser = await launch(DEFAULT_OPTIONS)
         version = await browser.version()
         self.assertTrue(len(version) > 0)
         self.assertTrue(version.startswith('Headless'))
+
+    @sync
+    async def test_user_agent(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        userAgent = await browser.userAgent()
+        self.assertGreater(len(userAgent), 0)
+        self.assertIn('WebKit', userAgent)
 
 
 class BaseTestCase(unittest.TestCase):
@@ -176,7 +195,13 @@ class TestPyppeteer(BaseTestCase):
     @sync
     async def test_timeout(self):
         with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long', timeout=100)
+            await self.page.goto(self.url + 'long', timeout=1)
+
+    @sync
+    async def test_timeout_default(self):
+        self.page.setDefaultNavigationTimeout(1)
+        with self.assertRaises(TimeoutError):
+            await self.page.goto(self.url + 'long')
 
     @sync
     async def test_no_timeout(self):
@@ -194,8 +219,9 @@ class TestPyppeteer(BaseTestCase):
 
     @sync
     async def test_plain_text_depr(self):
-        with self.assertWarns(DeprecationWarning):
+        with self.assertLogs('pyppeteer', logging.WARN) as log:
             text = await self.page.plainText()
+            self.assertIn('deprecated', log.records[0].msg)
         self.assertEqual(text.split(), ['Hello', 'link1', 'link2'])
 
     @sync
@@ -294,6 +320,12 @@ a + b
     async def test_evaluate_func_return_null(self):
         result = await self.page.evaluate('() => null')
         self.assertEqual(result, None)
+
+    @unittest.skip('cannot pass this test. see puppeteer #1510.')
+    @sync
+    async def test_evaluate_func_null_field(self):
+        result = await self.page.evaluate('{a: undefined}')
+        self.assertEqual(result, {})
 
     @sync
     async def test_evaluate_func_error(self):
@@ -416,6 +448,29 @@ a + b
         self.assertEqual(ln, 0)
 
     @sync
+    async def test_page_xpath(self):
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.xpath('/html/body/section')
+        self.assertTrue(element)
+
+    @sync
+    async def test_page_xpath_alias(self):
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.Jx('/html/body/section')
+        self.assertTrue(element)
+
+    @sync
+    async def test_page_xpath_not_found(self):
+        element = await self.page.xpath('/html/body/no-such-tag')
+        self.assertEqual(element, [])
+
+    @sync
+    async def test_page_xpath_multiple(self):
+        await self.page.setContent('<div></div><div></div>')
+        element = await self.page.xpath('/html/body/div')
+        self.assertEqual(len(element), 2)
+
+    @sync
     async def test_element_inner_html(self):
         elm = await self.page.querySelector('h1')
         text = await self.page.evaluate('(element) => element.innerHTML', elm)
@@ -478,7 +533,25 @@ a + b
         self.assertEqual(len(elements), 0)
 
     @sync
-    async def test_hover(self) -> None:
+    async def test_element_handle_xpath(self):
+        await self.page.setContent(
+            '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
+        )
+        html = await self.page.querySelector('html')
+        second = await html.xpath('./body/div[contains(@class, \'second\')]')
+        inner = await second[0].xpath('./div[contains(@class, \'inner\')]')
+        content = await self.page.evaluate('(e) => e.textContent', inner[0])
+        self.assertEqual(content, 'A')
+
+    @sync
+    async def test_element_handle_xpath_not_found(self):
+        await self.page.goto(self.url + 'empty')
+        html = await self.page.querySelector('html')
+        element = await html.xpath('/div[contains(@class, \'third\')]')
+        self.assertEqual(element, [])
+
+    @sync
+    async def test_hover(self):
         await self.page.hover('a#link1')
         _id = await self.page.evaluate('document.querySelector("a:hover").id')
         self.assertEqual(_id, 'link1')
@@ -488,7 +561,7 @@ a + b
         self.assertEqual(_id, 'link2')
 
     @sync
-    async def test_hover_not_found(self) -> None:
+    async def test_hover_not_found(self):
         with self.assertRaises(PageError):
             await self.page.hover('#no-such-element')
         elm = await self.page.J('h1')
@@ -499,7 +572,7 @@ a + b
             await elm.hover()
 
     @sync
-    async def test_focus_not_found(self) -> None:
+    async def test_focus_not_found(self):
         with self.assertRaises(PageError):
             await self.page.focus('#no-such-element')
 
@@ -521,7 +594,7 @@ a + b
         self.assertEqual(await self.page.title(), 'link1')
 
     @sync
-    async def test_select(self) -> None:
+    async def test_select(self):
         await self.page.goto(self.url + 'static/select.html')
         value = await self.page.select('select', 'blue')
         self.assertEqual(value, ['blue'])
@@ -536,7 +609,7 @@ a + b
         self.assertEqual(change, ['blue'])
 
     @sync
-    async def test_select_multiple(self) -> None:
+    async def test_select_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.evaluate('makeMultiple();')
         values = await self.page.select('select', 'blue', 'green', 'red')
@@ -547,31 +620,31 @@ a + b
         self.assertEqual(change, ['blue', 'green', 'red'])
 
     @sync
-    async def test_select_not_select_element(self) -> None:
+    async def test_select_not_select_element(self):
         await self.page.goto(self.url + 'static/select.html')
         with self.assertRaises(ElementHandleError):
             await self.page.select('body', '')
 
     @sync
-    async def test_select_no_match(self) -> None:
+    async def test_select_no_match(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select', 'abc', 'def')
         self.assertEqual(values, [])
 
     @sync
-    async def test_select_not_multiple(self) -> None:
+    async def test_select_not_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select', 'blue', 'green', 'red')
         self.assertEqual(len(values), 1)
 
     @sync
-    async def test_select_no_value(self) -> None:
+    async def test_select_no_value(self):
         await self.page.goto(self.url + 'static/select.html')
         values = await self.page.select('select')
         self.assertEqual(values, [])
 
     @sync
-    async def test_select_deselect(self) -> None:
+    async def test_select_deselect(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.select('select', 'blue', 'green', 'red')
         await self.page.select('select')
@@ -582,7 +655,7 @@ a + b
         self.assertTrue(result)
 
     @sync
-    async def test_select_deselect_multiple(self) -> None:
+    async def test_select_deselect_multiple(self):
         await self.page.goto(self.url + 'static/select.html')
         await self.page.evaluate('makeMultiple();')
         await self.page.select('select', 'blue', 'green', 'red')
@@ -594,7 +667,7 @@ a + b
         self.assertTrue(result)
 
     @sync
-    async def test_select_nonstring(self) -> None:
+    async def test_select_nonstring(self):
         await self.page.goto(self.url + 'static/select.html')
         with self.assertRaises(TypeError):
             await self.page.select('select', 12)
@@ -748,6 +821,38 @@ a + b
             'secure': False,
             'session': True,
         }])
+
+    @sync
+    async def test_cookie_blank_page(self):
+        await self.page.goto('about:blank')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_blank_page2(self):
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'about:blank',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
+
+    @sync
+    async def test_cookie_data_url_page(self):
+        await self.page.goto('data:,hello')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_data_url_page2(self):
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'data:,hello',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
 
     @sync
     async def test_redirect(self):
@@ -1014,13 +1119,13 @@ a + b
         self.assertEqual(result, 36)
 
     @sync
-    async def test_request_interception(self) -> None:
+    async def test_request_interception(self):
         await self.page.setRequestInterception(True)
 
         async def request_check(req):
             self.assertIn('empty', req.url)
+            self.assertTrue(req.headers.get('user-agent'))
             self.assertEqual(req.method, 'GET')
-            self.assertTrue(req.headers.get('User-Agent'))
             self.assertEqual(req.resourceType, 'document')
             await req.continue_()
 
@@ -1030,7 +1135,7 @@ a + b
         self.assertIn(res.status, [200, 304])
 
     @sync
-    async def test_request_interception_stop(self) -> None:
+    async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
         self.page.once('request',
                        lambda req: asyncio.ensure_future(req.continue_()))
@@ -1045,6 +1150,21 @@ a + b
 
         async def request_check(req):
             self.assertEqual(req.headers['foo'], 'bar')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_custom_referer_header(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setExtraHTTPHeaders({'referer': self.url + 'empty'})
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertEqual(req.headers['referer'], self.url + 'empty')
             await req.continue_()
 
         self.page.on('request',
@@ -1105,7 +1225,7 @@ a + b
         )
 
     @sync
-    async def test_request_respond(self) -> None:
+    async def test_request_respond(self):
         await self.page.setRequestInterception(True)
 
         async def interception(req):
@@ -1124,33 +1244,186 @@ a + b
         self.assertEqual(body, 'intercepted')
 
 
+class TestWaitFor(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+        self.result = False
+
+    def set_result(self, value):
+        self.result = value
+
+    @sync
+    async def test_wait_for_page_navigated(self):
+        fut = asyncio.ensure_future(self.page.waitFor('h1'))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(self.result)
+        await self.page.goto(self.url)
+        await fut
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_timeout(self):
+        start_time = time.perf_counter()
+        fut = asyncio.ensure_future(self.page.waitFor(100))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await fut
+        self.assertGreater(time.perf_counter() - start_time, 0.1)
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_error_type(self):
+        with self.assertRaises(TypeError):
+            await self.page.waitFor({'a': 1})
+
+
+class TestWaitForFunction(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+        self.result = False
+
+    def set_result(self, value):
+        self.result = value
+
+    @unittest.skip('Currently not support expression in waitFor.')
+    @sync
+    async def test_wait_for_expression(self):
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction('window.__FOO === 1')
+        )
+        await self.page.evaluate('window.__FOO = 1;')
+        await fut
+
+    @sync
+    async def test_wait_for_function(self):
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction('() => window.__FOO === 1')
+        )
+        await self.page.evaluate('window.__FOO = 1;')
+        await fut
+
+    @sync
+    async def test_wait_for_function_args(self):
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction(
+                '(a, b) => a + b === 3', {}, 1, 2)
+        )
+        await fut
+
+    @sync
+    async def test_poll_on_interval(self):
+        result = []
+        start_time = time.perf_counter()
+        fut = asyncio.ensure_future(self.page.waitForFunction(
+            '() => window.__FOO === "hit"', polling=100,
+        ))
+        fut.add_done_callback(lambda f: result.append(True))
+        await asyncio.sleep(0)  # once switch task
+        await self.page.evaluate('window.__FOO = "hit"')
+        await self.page.evaluate(
+            'document.body.appendChild(document.createElement("div"))'
+        )
+        await asyncio.sleep(0.02)
+        self.assertFalse(result)
+        await fut
+        self.assertGreater(time.perf_counter() - start_time, 0.1)
+        self.assertEqual(await self.page.evaluate('window.__FOO'), 'hit')
+
+    @sync
+    async def test_poll_on_mutation(self):
+        result = []
+        fut = asyncio.ensure_future(self.page.waitForFunction(
+            '() => window.__FOO === "hit"', polling='mutation',
+        ))
+        fut.add_done_callback(lambda f: result.append(True))
+        await asyncio.sleep(0)  # once switch task
+        await self.page.evaluate('window.__FOO = "hit"')
+        await asyncio.sleep(0.1)
+        self.assertFalse(result)
+        await self.page.evaluate(
+            'document.body.appendChild(document.createElement("div"))'
+        )
+        await fut
+        self.assertTrue(result)
+
+    @sync
+    async def test_poll_on_raf(self):
+        result = []
+        fut = asyncio.ensure_future(self.page.waitForFunction(
+            '() => window.__FOO === "hit"', polling='raf',
+        ))
+        fut.add_done_callback(lambda f: result.append(True))
+        await asyncio.sleep(0)  # once switch task
+        await self.page.evaluate('window.__FOO = "hit"')
+        await asyncio.sleep(0)  # once switch task
+        self.assertFalse(result)
+        await fut
+        self.assertTrue(result)
+
+    @sync
+    async def test_bad_polling_value(self):
+        with self.assertRaises(ValueError):
+            await self.page.waitForFunction('() => true', polling='unknown')
+
+    @sync
+    async def test_negative_polling_value(self):
+        with self.assertRaises(ValueError):
+            await self.page.waitForFunction('() => true', polling=-100)
+
+    @sync
+    async def test_wait_for_fucntion_return_value(self):
+        result = await self.page.waitForFunction('() => 5')
+        self.assertEqual(await result.jsonValue(), 5)
+
+    @sync
+    async def test_wait_for_function_window(self):
+        self.assertTrue(await self.page.waitForFunction('() => window'))
+
+    @sync
+    async def test_wait_for_function_arg_element(self):
+        await self.page.setContent('<div></div>')
+        div = await self.page.J('div')
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction('e => !e.parentElement', {}, div))
+        fut.add_done_callback(lambda fut: self.set_result(True))
+        await asyncio.sleep(0.1)
+        self.assertFalse(self.result)
+        await self.page.evaluate('e => e.remove()', div)
+        await fut
+        self.assertTrue(self.result)
+
+
 class TestWaitForSelector(BaseTestCase):
     addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
 
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+
     @sync
     async def test_wait_for_selector_immediate(self):
-        await self.page.goto(self.url + 'empty')
         frame = self.page.mainFrame
         result = []
-        fut = asyncio.ensure_future(frame.waitForSelector('*', interval=50))
+        fut = asyncio.ensure_future(frame.waitForSelector('*'))
         fut.add_done_callback(lambda fut: result.append(True))
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(result)
 
         result.clear()
         await frame.evaluate(self.addElement, 'div')
-        fut = asyncio.ensure_future(frame.waitForSelector('div', interval=50))
+        fut = asyncio.ensure_future(frame.waitForSelector('div'))
         fut.add_done_callback(lambda fut: result.append(True))
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(result)
 
     @sync
     async def test_wait_for_selector_after_node_appear(self):
-        await self.page.goto(self.url + 'empty')
         frame = self.page.mainFrame
 
         result = []
-        fut = asyncio.ensure_future(frame.waitForSelector('div', interval=50))
+        fut = asyncio.ensure_future(frame.waitForSelector('div'))
         fut.add_done_callback(lambda fut: result.append(True))
         self.assertEqual(await frame.evaluate('() => 42'), 42)
         await asyncio.sleep(0.1)
@@ -1159,12 +1432,11 @@ class TestWaitForSelector(BaseTestCase):
         await asyncio.sleep(0.1)
         self.assertFalse(result)
         await frame.evaluate(self.addElement, 'div')
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(result)
 
     @sync
-    async def test_wait_for_selector_inner_html(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_inner_html(self):
         fut = asyncio.ensure_future(self.page.waitForSelector('h3 div'))
         await self.page.evaluate(self.addElement, 'span')
         await self.page.evaluate('() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"')  # noqa: E501
@@ -1172,17 +1444,15 @@ class TestWaitForSelector(BaseTestCase):
 
     @sync
     async def test_wait_for_selector_fail(self):
-        await self.page.goto(self.url + 'empty')
         await self.page.evaluate('() => document.querySelector = null')  # noqa: E501
         with self.assertRaises(ElementHandleError):
             await self.page.waitForSelector('*')
 
     @sync
-    async def test_wait_for_selector_visible(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_visible(self):
         div = []
         fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', visible=True, interval=50))
+            self.page.waitForSelector('div', visible=True))
         fut.add_done_callback(lambda fut: div.append(True))
         await self.page.setContent(
             '<div style="display: none; visibility: hidden;">1</div>'
@@ -1193,15 +1463,14 @@ class TestWaitForSelector(BaseTestCase):
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.removeProperty("visibility")')  # noqa: E501
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_visible_ininer(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_visible_ininer(self):
         div = []
         fut = asyncio.ensure_future(
-            self.page.waitForSelector('div#inner', visible=True, interval=50))
+            self.page.waitForSelector('div#inner', visible=True))
         fut.add_done_callback(lambda fut: div.append(True))
         await self.page.setContent(
             '<div style="display: none; visibility: hidden;">'
@@ -1213,72 +1482,74 @@ class TestWaitForSelector(BaseTestCase):
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.removeProperty("visibility")')  # noqa: E501
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_hidden(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_hidden(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
         fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True, interval=50))
+            self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda fut: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.setProperty("visibility", "hidden")')  # noqa: E501
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_display_none(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_display_none(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
         fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True, interval=50))
+            self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda fut: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.setProperty("display", "none")')  # noqa: E501
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_remove(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_remove(self):
         div = []
         await self.page.setContent('<div></div>')
         fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True, interval=50))
+            self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda fut: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").remove()')  # noqa: E501
-        await asyncio.sleep(0.1)
+        await fut
         self.assertTrue(div)
 
     @sync
-    async def test_wait_for_selector_timeout(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_timeout(self):
         with self.assertRaises(TimeoutError):
             await self.page.waitForSelector('div', timeout=10)
 
     @sync
-    async def test_wait_for_selector_node_mutation(self) -> None:
-        await self.page.goto(self.url + 'empty')
+    async def test_wait_for_selector_node_mutation(self):
         div = []
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('.cls', interval=50))
+        fut = asyncio.ensure_future(self.page.waitForSelector('.cls'))
         fut.add_done_callback(lambda fut: div.append(True))
         await self.page.setContent('<div class="noCls"></div>')
-        await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate(
             '() => document.querySelector("div").className="cls"'
         )
         await asyncio.sleep(0.1)
         self.assertTrue(div)
+
+    @sync
+    async def test_wait_for_selector_return_element(self):
+        selector = asyncio.ensure_future(self.page.waitForSelector('.zombo'))
+        await self.page.setContent('<div class="zombo">anything</div>')
+        self.assertEqual(
+            await self.page.evaluate('e => e.textContent', await selector),
+            'anything',
+        )
 
 
 class TestFrames(BaseTestCase):
@@ -1289,13 +1560,15 @@ class TestFrames(BaseTestCase):
         self.assertEqual(len(self.page.frames), 2)
         frame1 = self.page.frames[0]
         frame2 = self.page.frames[1]
-        self.assertTrue(frame1.executionContext)
-        self.assertTrue(frame2.executionContext)
+        context1 = await frame1.executionContext()
+        context2 = await frame2.executionContext()
+        self.assertTrue(context1)
+        self.assertTrue(context2)
 
-        await frame1.executionContext.evaluate('() => window.a = 1')
-        await frame2.executionContext.evaluate('() => window.a = 2')
-        a1 = await frame1.executionContext.evaluate('() => window.a')
-        a2 = await frame2.executionContext.evaluate('() => window.a')
+        await context1.evaluate('() => window.a = 1')
+        await context2.evaluate('() => window.a = 2')
+        a1 = await context1.evaluate('() => window.a')
+        a2 = await context2.evaluate('() => window.a')
         self.assertEqual(a1, 1)
         self.assertEqual(a2, 2)
 
@@ -1314,6 +1587,18 @@ class TestFrames(BaseTestCase):
         self.assertEqual(a2, 2)
 
     @sync
+    async def test_frame_evaluate_after_navigation(self):
+        self.result = None
+
+        def frame_navigated(frame):
+            self.result = asyncio.ensure_future(frame.evaluate('6 * 7'))
+
+        self.page.on('framenavigated', frame_navigated)
+        await self.page.goto(self.url + 'empty')
+        self.assertIsNotNone(self.result)
+        self.assertEqual(await self.result, 42)
+
+    @sync
     async def test_frame_cross_site(self):
         await self.page.goto(self.url + 'empty')
         mainFrame = self.page.mainFrame
@@ -1324,7 +1609,7 @@ class TestFrames(BaseTestCase):
         self.assertIn('127.0.0.1', loc)
 
     @sync
-    async def test_frame_nested(self) -> None:
+    async def test_frame_nested(self):
         await self.page.goto(self.url + 'static/nested-frames.html')
         dumped_frames = dumpFrames(self.page.mainFrame)
         try:
@@ -1342,7 +1627,7 @@ http://localhost:{port}/static/nested-frames.html
             print(dumpFrames(self.page.mainFrame))
 
     @sync
-    async def test_frame_events(self) -> None:
+    async def test_frame_events(self):
         await self.page.goto(self.url + 'empty')
         attachedFrames = []
         self.page.on('frameattached', lambda f: attachedFrames.append(f))
@@ -1363,7 +1648,7 @@ http://localhost:{port}/static/nested-frames.html
         self.assertTrue(detachedFrames[0].isDetached())
 
     @sync
-    async def test_frame_events_main(self) -> None:
+    async def test_frame_events_main(self):
         # no attach/detach events should be emitted on main frame
         events = []
         navigatedFrames = []
@@ -1375,7 +1660,7 @@ http://localhost:{port}/static/nested-frames.html
         self.assertEqual(len(navigatedFrames), 1)
 
     @sync
-    async def test_frame_events_child(self) -> None:
+    async def test_frame_events_child(self):
         attachedFrames = []
         detachedFrames = []
         navigatedFrames = []
@@ -1432,12 +1717,12 @@ http://localhost:{port}/static/nested-frames.html
 
 
 class TestConsole(BaseTestCase):
-    def setUp(self) -> None:
+    def setUp(self):
         super().setUp()
         sync(self.page.goto(self.url + 'empty'))
 
     @sync
-    async def test_console_event(self) -> None:
+    async def test_console_event(self):
         messages = []
         self.page.once('console', lambda m: messages.append(m))
         await self.page.evaluate('() => console.log("hello", 5, {foo: "bar"})')
@@ -1452,7 +1737,7 @@ class TestConsole(BaseTestCase):
         self.assertEqual(await msg.args[2].jsonValue(), {'foo': 'bar'})
 
     @sync
-    async def test_console_event_many(self) -> None:
+    async def test_console_event_many(self):
         messages = []
         self.page.on('console', lambda m: messages.append(m))
         await self.page.evaluate('''
@@ -1480,7 +1765,7 @@ console.log(Promise.resolve('should not wait until resolved!'));
         ])
 
     @sync
-    async def test_console_window(self) -> None:
+    async def test_console_window(self):
         messages = []
         self.page.once('console', lambda m: messages.append(m))
         await self.page.evaluate('console.error(window);')
@@ -1488,6 +1773,271 @@ console.log(Promise.resolve('should not wait until resolved!'));
         self.assertEqual(len(messages), 1)
         msg = messages[0]
         self.assertEqual(msg.text, 'JSHandle@object')
+
+
+class TestTracing(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.outfile = Path(__file__).parent / 'trace.json'
+        if self.outfile.is_file():
+            self.outfile.unlink()
+
+    def tearDown(self):
+        if self.outfile.is_file():
+            self.outfile.unlink()
+        super().tearDown()
+
+    @sync
+    async def test_tracing(self):
+        await self.page.tracing.start({
+            'path': str(self.outfile)
+        })
+        await self.page.goto(self.url)
+        await self.page.tracing.stop()
+        self.assertTrue(self.outfile.is_file())
+
+    @sync
+    async def test_custom_categories(self):
+        await self.page.tracing.start({
+            'path': str(self.outfile),
+            'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
+        })
+        await self.page.tracing.stop()
+        self.assertTrue(self.outfile.is_file())
+        with self.outfile.open() as f:
+            trace_json = json.load(f)
+        self.assertIn(
+            'disabled-by-default-v8.cpu_profiler.hires',
+            trace_json['metadata']['trace-config'],
+        )
+
+    @sync
+    async def test_tracing_two_page_error(self):
+        await self.page.tracing.start({'path': str(self.outfile)})
+        new_page = await self.browser.newPage()
+        with self.assertRaises(NetworkError):
+            await new_page.tracing.start({'path': str(self.outfile)})
+        await new_page.close()
+        await self.page.tracing.stop()
+
+
+class TestCDPSession(BaseTestCase):
+    @sync
+    async def test_create_session(self) -> None:
+        client = await self.page.target.createCDPSession()
+        await client.send('Runtime.enable')
+        await client.send('Runtime.evaluate',
+                          {'expression': 'window.foo = "bar"'})
+        foo = await self.page.evaluate('window.foo')
+        self.assertEqual(foo, 'bar')
+
+    @sync
+    async def test_send_event(self) -> None:
+        client = await self.page.target.createCDPSession()
+        await client.send('Network.enable')
+        events = []
+        client.on('Network.requestWillBeSent', lambda e: events.append(e))
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(len(events), 1)
+
+    @sync
+    async def test_enable_disable_domain(self) -> None:
+        client = await self.page.target.createCDPSession()
+        await client.send('Runtime.enable')
+        await client.send('Debugger.enable')
+        await self.page.coverage.startJSCoverage()
+        await self.page.coverage.stopJSCoverage()
+
+    @sync
+    async def test_detach(self) -> None:
+        client = await self.page.target.createCDPSession()
+        await client.send('Runtime.enable')
+        evalResponse = await client.send(
+            'Runtime.evaluate', {'expression': '1 + 2', 'returnByValue': True})
+        self.assertEqual(evalResponse['result']['value'], 3)
+
+        await client.detach()
+        with self.assertRaises(NetworkError):
+            await client.send(
+                'Runtime.evaluate',
+                {'expression': '1 + 3', 'returnByValue': True}
+            )
+
+
+class TestJSCoverage(BaseTestCase):
+    @sync
+    async def test_js_coverage(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/simple.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertIn('/jscoverage/simple.html', coverage[0]['url'])
+        self.assertEqual(coverage[0]['ranges'], [
+            {'start': 0, 'end': 17},
+            {'start': 35, 'end': 61},
+        ])
+
+    @sync
+    async def test_js_coverage_source_url(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/sourceurl.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0]['url'], 'nicename.js')
+
+    @sync
+    async def test_js_coverage_ignore_empty(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'empty')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(coverage, [])
+
+    @sync
+    async def test_js_coverage_multiple_script(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 2)
+        coverage.sort(key=lambda cov: cov['url'])
+        self.assertIn('/jscoverage/script1.js', coverage[0]['url'])
+        self.assertIn('/jscoverage/script2.js', coverage[1]['url'])
+
+    @sync
+    async def test_js_coverage_ranges(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/ranges.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 1)
+        entry = coverage[0]
+        self.assertEqual(len(entry['ranges']), 1)
+        range = entry['ranges'][0]
+        self.assertEqual(
+            entry['text'][range['start']:range['end']],
+            'console.log(\'used!\');',
+        )
+
+    @sync
+    async def test_js_coverage_condition(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/involved.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        expected_range = [
+            {'start': 0, 'end': 35},
+            {'start': 50, 'end': 100},
+            {'start': 107, 'end': 141},
+            {'start': 148, 'end': 160},
+            {'start': 168, 'end': 207},
+        ]
+        self.assertEqual(coverage[0]['ranges'], expected_range)
+
+    @sync
+    async def test_js_coverage_no_reset_navigation(self):
+        await self.page.coverage.startJSCoverage(resetOnNavigation=False)
+        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        await self.page.goto(self.url + 'empty')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 2)
+
+    @sync
+    async def test_js_coverage_reset_navigation(self):
+        await self.page.coverage.startJSCoverage()  # enabled by default
+        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        await self.page.goto(self.url + 'empty')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 0)
+
+
+class TestCSSCoverage(BaseTestCase):
+    @sync
+    async def test_css_coverage(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/simple.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertIn('/csscoverage/simple.html', coverage[0]['url'])
+        self.assertEqual(coverage[0]['ranges'], [{'start': 1, 'end': 22}])
+        range = coverage[0]['ranges'][0]
+        self.assertEqual(
+            coverage[0]['text'][range['start']:range['end']],
+            'div { color: green; }',
+        )
+
+    @sync
+    async def test_css_coverage_url(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/sourceurl.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0]['url'], 'nicename.css')
+
+    @sync
+    async def test_css_coverage_multiple(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 2)
+        coverage.sort(key=lambda cov: cov['url'])
+        self.assertIn('/csscoverage/stylesheet1.css', coverage[0]['url'])
+        self.assertIn('/csscoverage/stylesheet2.css', coverage[1]['url'])
+
+    @sync
+    async def test_css_coverage_no_coverage(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/unused.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertEqual(coverage[0]['url'], 'unused.css')
+        self.assertEqual(coverage[0]['ranges'], [])
+
+    @sync
+    async def test_css_coverage_media(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/media.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 1)
+        self.assertIn('/csscoverage/media.html', coverage[0]['url'])
+        self.assertEqual(coverage[0]['ranges'], [{'start': 17, 'end': 38}])
+
+    @sync
+    async def test_css_coverage_complicated(self):
+        await self.page.coverage.startCSSCoverage()
+        await self.page.goto(self.url + 'static/csscoverage/involved.html')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 1)
+        range = coverage[0]['ranges']
+        self.assertEqual(range, [
+            {'start': 20, 'end': 168},
+            {'start': 198, 'end': 304},
+        ])
+
+    @unittest.skip('Cannot pass this test.')
+    @sync
+    async def test_css_ignore_injected_css(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.coverage.startCSSCoverage()
+        await self.page.addStyleTag(content='body { margin: 10px; }')
+        # trigger style recalc
+        margin = await self.page.evaluate(
+            '() => window.getComputedStyle(document.body).margin')
+        self.assertEqual(margin, '10px')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(coverage, [])
+
+    @sync
+    async def test_css_coverage_no_reset_navigation(self):
+        await self.page.coverage.startCSSCoverage(resetOnNavigation=False)
+        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        await self.page.goto(self.url + 'empty')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 2)
+
+    @sync
+    async def test_css_coverage_reset_navigation(self):
+        await self.page.coverage.startCSSCoverage()  # enabled by default
+        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        await self.page.goto(self.url + 'empty')
+        coverage = await self.page.coverage.stopCSSCoverage()
+        self.assertEqual(len(coverage), 0)
 
 
 class TestPage(unittest.TestCase):
@@ -1587,23 +2137,12 @@ class TestPage(unittest.TestCase):
             f.write('''
 () => document.body.appendChild(document.createElement("section"))
             '''.strip())
-        with self.assertWarns(DeprecationWarning):
+        with self.assertLogs('pyppeteer', logging.WARN) as log:
             await self.page.injectFile(str(tmp_file))
+            self.assertIn('deprecated', log.records[0].msg)
         await self.page.waitForSelector('section')
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()
-
-    @sync
-    async def test_tracing(self):
-        outfile = Path(__file__).parent / 'trace.json'
-        if outfile.is_file():
-            outfile.unlink()
-        await self.page.tracing.start({
-            'path': str(outfile)
-        })
-        await self.page.goto(self.url)
-        await self.page.tracing.stop()
-        self.assertTrue(outfile.is_file())
 
     @sync
     async def test_auth(self):

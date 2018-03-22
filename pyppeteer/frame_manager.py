@@ -5,22 +5,26 @@
 
 import asyncio
 from collections import OrderedDict
+import logging
 import re
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
+from typing import TYPE_CHECKING
 
 from pyee import EventEmitter
 
-# from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer import helper
+from pyppeteer.connection import CDPSession
 from pyppeteer.element_handle import ElementHandle
+from pyppeteer.errors import NetworkError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
-    # from pyppeteer.page import Page  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class FrameManager(EventEmitter):
@@ -33,7 +37,7 @@ class FrameManager(EventEmitter):
         LifecycleEvent='lifecycleevent',
     )
 
-    def __init__(self, client: Session, frameTree: Dict, page: Any) -> None:
+    def __init__(self, client: CDPSession, frameTree: Dict, page: Any) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
@@ -53,6 +57,11 @@ class FrameManager(EventEmitter):
         client.on('Runtime.executionContextCreated',
                   lambda event: self._onExecutionContextCreated(
                       event.get('context')))
+        client.on('Runtime.executionContextDestroyed',
+                  lambda event: self._onExecutionContextDestroyed(
+                      event.get('executionContextId')))
+        client.on('Runtime.executionContextsCleared',
+                  lambda event: self._onExecutionContextsCleared())
         client.on('Page.lifecycleEvent',
                   lambda event: self._onLifecycleEvent(event))
 
@@ -86,6 +95,10 @@ class FrameManager(EventEmitter):
     def frames(self) -> List['Frame']:
         """Retrun all frames."""
         return list(self._frames.values())
+
+    def frame(self, frameId: str) -> Optional['Frame']:
+        """Return :class:`Frame` of ``frameId``."""
+        return self._frames.get(frameId)
 
     def _onFrameAttached(self, frameId: str, parentFrameId: str) -> None:
         if frameId in self._frames:
@@ -135,24 +148,33 @@ class FrameManager(EventEmitter):
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         context = ExecutionContext(
             self._client,
-            contextPayload['id'],
+            contextPayload,
             lambda obj: self.createJSHandle(contextPayload['id'], obj),
         )
         self._contextIdToContext[contextPayload['id']] = context
 
-        auxData = contextPayload.get('auxData')
-        frameId = (auxData.get('frameId')
-                   if auxData and auxData.get('isDefault')
-                   else None)
-        frame = self._frames.get(frameId)
-        if not frame:
-            return
-        frame._context = context
-        for waitTask in frame._waitTasks:
-            asyncio.ensure_future(waitTask.rerun())
+        frame = (self._frames.get(context._frameId)
+                 if context._frameId else None)
 
-    def _onExecutionContextDestroyed(self, contextPayload: Dict) -> None:
-        del self._contextIdToContext[contextPayload['id']]
+        if frame and context._isDefault:
+            frame._setDefaultContext(context)
+
+    def _removeContext(self, context: ExecutionContext) -> None:
+        frame = self._frames[context._frameId] if context._frameId else None
+        if frame and context._isDefault:
+            frame._setDefaultContext(None)
+
+    def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
+        context = self._contextIdToContext.get(executionContextId)
+        if not context:
+            return
+        del self._contextIdToContext[executionContextId]
+        self._removeContext(context)
+
+    def _onExecutionContextsCleared(self) -> None:
+        for context in self._contextIdToContext.values():
+            self._removeContext(context)
+        self._contextIdToContext.clear()
 
     def createJSHandle(self, contextId: str, remoteObject: Dict = None
                        ) -> 'JSHandle':
@@ -181,7 +203,7 @@ class Frame(object):
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
     """
 
-    def __init__(self, client: Session, page: Any,
+    def __init__(self, client: CDPSession, page: Any,
                  parentFrame: Optional['Frame'], frameId: str) -> None:
         self._client = client
         self._page = page
@@ -189,7 +211,11 @@ class Frame(object):
         self._url = ''
         self._detached = False
         self._id = frameId
-        self._context: Optional[ExecutionContext] = None
+
+        self._documentPromise: Optional[ElementHandle] = None
+        self._contextResolveCallback = lambda _: None
+        self._setDefaultContext(None)
+
         self._waitTasks: Set[WaitTask] = set()  # maybe list
         self._loaderId = ''
         self._lifecycleEvents: Set[str] = set()
@@ -197,14 +223,26 @@ class Frame(object):
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-    @property
-    def executionContext(self) -> Optional[ExecutionContext]:
+    def _setDefaultContext(self, context: Optional[ExecutionContext]) -> None:
+        if context is not None:
+            self._contextResolveCallback(context)  # type: ignore
+            self._contextResolveCallback = lambda _: None
+            for waitTask in self._waitTasks:
+                asyncio.ensure_future(waitTask.rerun())
+        else:
+            self._documentPromise = None
+            self._contextPromise = asyncio.get_event_loop().create_future()
+            self._contextResolveCallback = (
+                lambda _context: self._contextPromise.set_result(_context)
+            )
+
+    async def executionContext(self) -> Optional[ExecutionContext]:
         """Return execution context of this frame.
 
-        Return :class:`pyppeteer.execution_context.ExecutionContext` associated
-        to this frame.
+        Return :class:`~pyppeteer.execution_context.ExecutionContext`
+        associated to this frame.
         """
-        return self._context
+        return await self._contextPromise
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:
@@ -212,9 +250,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await self._context.evaluate(
+        return await context.evaluate(
             pageFunction, *args, force_expr=force_expr)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
@@ -222,15 +261,32 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelector`.
         """
-        if self._context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        handle = await self._context.evaluateHandle(
-            'selector => document.querySelector(selector)', selector)
-        element = handle.asElement()
-        if element:
-            return element
-        await handle.dispose()
-        return None
+        document = await self._document()
+        value = await document.querySelector(selector)
+        return value
+
+    async def _document(self) -> ElementHandle:
+        if self._documentPromise:
+            return self._documentPromise
+        context = await self.executionContext()
+        if context is None:
+            raise PageError('No context exists.')
+        document = (await context.evaluateHandle('document')).asElement()
+        self._documentPromise = document
+        if document is None:
+            raise PageError('Could not find `document`.')
+        return document
+
+    async def xpath(self, expression: str) -> List[ElementHandle]:
+        """Evaluate XPath expression.
+
+        If there is no such element in this frame, return None.
+
+        :arg str expression: XPath string to be evaluated.
+        """
+        document = await self._document()
+        value = await document.xpath(expression)
+        return value
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
                                 *args: Any) -> Optional[Any]:
@@ -253,9 +309,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await self._context.evaluateHandle(
+        arrayHandle = await context.evaluateHandle(
             'selector => Array.from(document.querySelectorAll(selector))',
             selector,
         )
@@ -268,29 +325,44 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
         """
-        if self._context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await self._context.evaluateHandle(
-            'selector => document.querySelectorAll(selector)',
-            selector,
-        )
-        properties = await arrayHandle.getProperties()
-        await arrayHandle.dispose()
-        result = []
-        for prop in properties.values():
-            elementHandle = prop.asElement()
-            if elementHandle:
-                result.append(elementHandle)
-        return result
+        document = await self._document()
+        value = await document.querySelectorAll(selector)
+        return value
 
     #: Alias to :meth:`querySelector`
     J = querySelector
+    #: Alias to :meth:`xpath`
+    Jx = xpath
     #: Alias to :meth:`querySelectorEval`
     Jeval = querySelectorEval
     #: Alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
     #: Alias to :meth:`querySelectorAllEval`
     JJeval = querySelectorAllEval
+
+    async def content(self) -> str:
+        """Get the whole HTML contents of the page."""
+        return await self.evaluate('''
+() => {
+  let retVal = '';
+  if (document.doctype)
+    retVal = new XMLSerializer().serializeToString(document.doctype);
+  if (document.documentElement)
+    retVal += document.documentElement.outerHTML;
+  return retVal;
+}
+        '''.strip())
+
+    async def setContent(self, html: str) -> None:
+        """Set content to this page."""
+        func = '''
+function(html) {
+  document.open();
+  document.write(html);
+  document.close();
+}
+'''
+        await self.evaluate(func, html)
 
     @property
     def name(self) -> str:
@@ -324,7 +396,8 @@ class Frame(object):
 
     async def injectFile(self, filePath: str) -> str:
         """[Deprecated] Inject file to the frame."""
-        # to be changed to async func
+        logger.warning('`injectFile` method is deprecated.'
+                       ' Use `addScriptTag` method instead.')
         with open(filePath) as f:
             contents = f.read()
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
@@ -335,7 +408,8 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        if self._context is None:
+        context = await self.executionContext()
+        if context is None:
             raise ElementHandleError('ExecutionContext is None.')
 
         addScriptUrl = '''
@@ -360,20 +434,20 @@ class Frame(object):
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self._context.evaluateHandle(  # type: ignore
-                addScriptUrl, options['url'])
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptUrl, options['url'])).asElement()
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
                 re.sub(options['path'], '\n', ''))
-            return await self._context.evaluateHandle(  # type: ignore
-                addScriptContent, contents)
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptContent, contents)).asElement()
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(  # type: ignore
-                addScriptContent, options['content'])
+            return (await context.evaluateHandle(  # type: ignore
+                addScriptContent, options['content'])).asElement()
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
@@ -383,6 +457,10 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.addStyleTag`.
         """
+        context = await self.executionContext()
+        if context is None:
+            raise ElementHandleError('ExecutionContext is None.')
+
         addStyleUrl = '''
         async function (url) {
             const link = document.createElement('link');
@@ -406,19 +484,19 @@ class Frame(object):
         }'''
 
         if isinstance(options.get('url'), str):
-            return await self._context.evaluateHandle(  # type: ignore
-                addStyleUrl, options['url'])
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleUrl, options['url'])).asElement()
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
-            return await self._context.evaluateHandle(  # type: ignore
-                addStyleContent, contents)
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleContent, contents)).asElement()
 
         if isinstance(options.get('content'), str):
-            return await self._context.evaluateHandle(  # type: ignore
-                addStyleContent, options['content'])
+            return (await context.evaluateHandle(  # type: ignore
+                addStyleContent, options['content'])).asElement()
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
@@ -452,7 +530,8 @@ class Frame(object):
         ''', values)  # noqa: E501
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
+                options: dict = None, *args: Any, **kwargs: Any
+                ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
         Details see :meth:`pyppeteer.page.Page.waitFor`.
@@ -460,7 +539,7 @@ class Frame(object):
         options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             fut: Awaitable[None] = asyncio.ensure_future(
-                asyncio.sleep(selectorOrFunctionOrTimeout))
+                asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
             fut = asyncio.get_event_loop().create_future()
@@ -469,15 +548,14 @@ class Frame(object):
                 str(type(selectorOrFunctionOrTimeout))
             ))
             return fut
-        # TODO: use helper.is_jsfunc
-        if ('=>' in selectorOrFunctionOrTimeout or
-                selectorOrFunctionOrTimeout.strip().startswith('function')):
+
+        if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(
                 selectorOrFunctionOrTimeout, options, *args)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,
-                        **kwargs: Any) -> Awaitable:
+                        **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
@@ -485,16 +563,17 @@ class Frame(object):
         options = merge_dict(options, kwargs)
         waitForVisible = bool(options.get('visible'))
         waitForHidden = bool(options.get('hidden'))
-        pageFunction = '''
+        predicate = '''
 (selector, waitForVisible, waitForHidden) => {
     const node = document.querySelector(selector);
     if (!node)
         return waitForHidden;
     if (!waitForVisible && !waitForHidden)
-        return true;
+        return node;
     const style = window.getComputedStyle(node);
     const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-    return (waitForVisible === isVisible || waitForHidden === !isVisible);
+    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
+    return success ? node : null
 
     function hasVisibleBoundingBox() {
         const rect = node.getBoundingClientRect();
@@ -503,18 +582,18 @@ class Frame(object):
 }
         '''  # noqa: E501
         return self.waitForFunction(
-            pageFunction, options, selector, waitForVisible, waitForHidden)
+            predicate, options, selector, waitForVisible, waitForHidden)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: Any, **kwargs: Any) -> Awaitable:
+                        *args: Any, **kwargs: Any) -> 'WaitTask':
         """Wait until the function completes.
 
         Details see :meth:`pyppeteer.page.Page.waitForFunction`.
         """
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
-        interval = options.get('interval', 0)  # msec
-        return WaitTask(self, pageFunction, timeout, *args, interval=interval)
+        polling = options.get('polling', 'raf')
+        return WaitTask(self, pageFunction, polling, timeout, *args)
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -541,83 +620,204 @@ class Frame(object):
         self._parentFrame = None
 
 
-class WaitTask(asyncio.Future):
-    """WaitTask class."""
+class WaitTask(object):
+    """WaitTask class.
 
-    def __init__(self, frame: Frame, expr: str, timeout: float,
-                 *args: Any, interval: float = 0) -> None:
-        """Make new wait task.
+    Instance of this class is awaitable.
+    """
 
-        :arg float timeout: msec to wait for task [default 30_000 [msec]].
-        :arg float interval: msec to poll for task [default timeout / 1000].
-        """
-        super().__init__()
-        self.__frame: Frame = frame
-        self.expr = expr
-        self.args = args
-        self.__timeout = timeout / 1000  # sec
-        self.__interval = interval / 1000 or self.__timeout / 100  # sec
-        self.__runCount: int = 0
-        self.__terminated = False
-        self.__done = False
+    def __init__(self, frame: Frame, predicateBody: str,
+                 polling: Union[str, int], timeout: float, *args: Any) -> None:
+        if isinstance(polling, str):
+            if polling not in ['raf', 'mutation']:
+                raise ValueError(f'Unknown polling: {polling}')
+        elif isinstance(polling, (int, float)):
+            if polling <= 0:
+                raise ValueError(
+                    f'Cannot poll with non-positive interval: {polling}'
+                )
+        else:
+            raise ValueError(f'Unknown polling option: {polling}')
+
+        self._frame = frame
+        self._polling = polling
+        self._timeout = timeout
+        if args or helper.is_jsfunc(predicateBody):
+            self._predicateBody = f'return ({predicateBody})(...args)'
+        else:
+            self._predicateBody = f'return {predicateBody}'
+        self._args = args
+        self._runCount = 0
+        self._terminated = False
+        self._timeoutError = False
         frame._waitTasks.add(self)
-        # Since page navigation requires us to re-install the pageScript,
-        # we should track timeout on our end.
-        self.__loop = asyncio.get_event_loop()
-        self.__timeoutTimer = self.__loop.call_later(
-            self.__timeout,
-            lambda: self.terminate(
-                TimeoutError(f'waiting failed: timeout {timeout}ms exceeded')
+
+        loop = asyncio.get_event_loop()
+        self.promise = loop.create_future()
+
+        async def timer(timeout: Union[int, float]) -> None:
+            await asyncio.sleep(timeout / 1000)
+            self._timeoutError = True
+            self.terminate(
+                TimeoutError(f'Waiting failed: timeout {timeout}ms exceeds.')
             )
-        )
-        asyncio.ensure_future(self.rerun(True))
+
+        self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
+        self._runningTask = asyncio.ensure_future(self.rerun())
+
+    def __await__(self) -> Generator:
+        """Make this class **awaitable**."""
+        yield from self.promise
+        return self.promise.result()
 
     def terminate(self, error: Exception) -> None:
-        """Terminate task by error."""
-        self.__terminated = True
-        self.set_exception(error)
-        self.__cleanup()
+        """Terminate this task."""
+        self._terminated = True
+        if not self.promise.done():
+            self.promise.set_exception(error)
+        self._cleanup()
 
-    async def rerun(self, internal: bool = False) -> None:  # noqa: C901
-        """Re-run the task."""
-        if self.__done:
-            return
-        self.__runCount += 1
-        runCount = self.__runCount
-        success = False
+    async def rerun(self) -> None:  # noqa: C901
+        """Start polling."""
+        runCount = self._runCount = self._runCount + 1
+        success: Optional[JSHandle] = None
         error = None
+
         try:
-            success = bool(await self.__frame.evaluate(self.expr, *self.args))
+            context = await self._frame.executionContext()
+            if context is None:
+                raise PageError('No execution context.')
+            success = await context.evaluateHandle(
+                waitForPredicatePageFunction,
+                self._predicateBody,
+                self._polling,
+                self._timeout,
+                *self._args,
+            )
         except Exception as e:
             error = e
 
-        if self.__terminated or runCount != self.__runCount:
+        if self.promise.done():
             return
 
-        # Ignore timeouts in pageScript - we track timeouts ourselves.
-        if not success and not error:
-            if internal:
-                self.__loop.call_later(
-                    self.__interval,
-                    lambda: asyncio.ensure_future(self.rerun(True)),
-                )
+        if self._terminated or runCount != self._runCount:
+            if success:
+                await success.dispose()
             return
 
-        # When the page is navigated, the promise is rejected.
-        # We will try again in the new execution context.
-        if error:
-            error_msg = str(error)
-            if 'Execution context was destroyed' in error_msg:
-                return
+        if not error and success and (
+                await self._frame.evaluate('s => !s', success)):
+            await success.dispose()
+            return
+
+        # page is navigated and context is destroyed.
+        # Try again in the new execution context.
+        if (isinstance(error, NetworkError) and
+                'Execution context was destroyed' in error.args[0]):
+            return
+
+        # Try again in the new execution context.
+        if (isinstance(error, NetworkError) and
+                'Cannot find context with specified id' in error.args[0]):
+            return
 
         if error:
-            self.set_exception(error)
+            self.promise.set_exception(error)
         else:
-            self.set_result(None)
-        self.__cleanup()
+            self.promise.set_result(success)
 
-    def __cleanup(self) -> None:
-        self.__timeoutTimer.cancel()
-        self.__frame._waitTasks.remove(self)
-        self._runningTask = None
-        self.__done = True
+        self._cleanup()
+
+    def _cleanup(self) -> None:
+        if not self._timeoutError:
+            self._timeoutTimer.cancel()
+        self._frame._waitTasks.remove(self)
+
+
+waitForPredicatePageFunction = """
+async function waitForPredicatePageFunction(predicateBody, polling, timeout, ...args) {
+  const predicate = new Function('...args', predicateBody);
+  let timedOut = false;
+  setTimeout(() => timedOut = true, timeout);
+  if (polling === 'raf')
+    return await pollRaf();
+  if (polling === 'mutation')
+    return await pollMutation();
+  if (typeof polling === 'number')
+    return await pollInterval(polling);
+
+  /**
+   * @return {!Promise<*>}
+   */
+  function pollMutation() {
+    const success = predicate.apply(null, args);
+    if (success)
+      return Promise.resolve(success);
+
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    const observer = new MutationObserver(mutations => {
+      if (timedOut) {
+        observer.disconnect();
+        fulfill();
+      }
+      const success = predicate.apply(null, args);
+      if (success) {
+        observer.disconnect();
+        fulfill(success);
+      }
+    });
+    observer.observe(document, {
+      childList: true,
+      subtree: true,
+      attributes: true
+    });
+    return result;
+  }
+
+  /**
+   * @return {!Promise<*>}
+   */
+  function pollRaf() {
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    onRaf();
+    return result;
+
+    function onRaf() {
+      if (timedOut) {
+        fulfill();
+        return;
+      }
+      const success = predicate.apply(null, args);
+      if (success)
+        fulfill(success);
+      else
+        requestAnimationFrame(onRaf);
+    }
+  }
+
+  /**
+   * @param {number} pollInterval
+   * @return {!Promise<*>}
+   */
+  function pollInterval(pollInterval) {
+    let fulfill;
+    const result = new Promise(x => fulfill = x);
+    onTimeout();
+    return result;
+
+    function onTimeout() {
+      if (timedOut) {
+        fulfill();
+        return;
+      }
+      const success = predicate.apply(null, args);
+      if (success)
+        fulfill(success);
+      else
+        setTimeout(onTimeout, pollInterval);
+    }
+  }
+}
+"""  # noqa: E501

@@ -1,6 +1,25 @@
 History
 =======
 
+## Version 0.0.15 (2018-03-22)
+
+Catch up puppeteer v1.0.0
+
+* Support `raf` and `mutation` polling for `waitFor*` methods
+* Add `Page.coverage` to support JS and CSS coverage
+* Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
+* Add `Target.createCDPSession` to work with raw Devtools Protocol
+* Change `Frame.executionContest` from property to coroutine
+* Add `ignoreDefaultArgs` option to `pyppeteer.launch`
+* Add `handleSIGINT`/`handleSIGTERM`/`handleSIGHUP` options to `pyppeteer.launch`
+* Add `Page.setDefaultNavigationTimeout` method
+* `Page.waitFor*` methods accept `JSHandle` as argument
+* Implement `Frame.content` and `Frame.setContent` methods
+* `page.tracing.start` accepts custom tracing categories option
+* Add `Browser.process` property
+* Add `Request.frame` property
+
+
 ## Version 0.0.14 (2018-03-14)
 
 * Read WS endpoint from web interface instead of stdout
@@ -12,6 +31,8 @@ History
     * `Page.Events.Metrics`
 
 ## Version 0.0.13 (2018-03-10)
+
+Catch up puppeteer v0.13.0
 
 * `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function

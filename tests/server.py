@@ -35,7 +35,7 @@ class EmptyHandler(web.RequestHandler):
 
 class LongHandler(web.RequestHandler):
     async def get(self) -> None:
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.1)
         self.write('')
 
 

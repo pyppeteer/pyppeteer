@@ -4,12 +4,13 @@
 """Browser module."""
 
 import asyncio
+from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from pyee import EventEmitter
 
-from pyppeteer.connection import Connection
+from pyppeteer.connection import Connection, CDPSession
 from pyppeteer.errors import BrowserError
 from pyppeteer.page import Page
 from pyppeteer.util import merge_dict
@@ -31,12 +32,14 @@ class Browser(EventEmitter):
     )
 
     def __init__(self, connection: Connection, options: Dict = None,
+                 process: Optional[Popen] = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
         options = merge_dict(options, kwargs)
         self._ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
         self._appMode = bool(options.get('appMode', False))
+        self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
 
@@ -57,13 +60,23 @@ class Browser(EventEmitter):
         self._connection.on('Target.targetDestroyed', self._targetDestroyed)
         self._connection.on('Target.targetInfoChanged', self._targetInfoChanged)  # noqa: E501
 
+    @property
+    def process(self) -> Optional[Popen]:
+        """Return process of this browser.
+
+        If browser instance is created by :func:`pyppeteer.launcer.connect`,
+        return ``None``.
+        """
+        return self._process
+
     @staticmethod
     async def create(connection: Connection, options: dict = None,
+                     process: Optional[Popen] = None,
                      closeCallback: Callable[[], Awaitable[None]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
         options = merge_dict(options, kwargs)
-        browser = Browser(connection, options, closeCallback)
+        browser = Browser(connection, options, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -124,8 +137,18 @@ class Browser(EventEmitter):
 
     async def version(self) -> str:
         """Get version of the browser."""
-        version = await self._connection.send('Browser.getVersion')
+        version = await self._getVersion()
         return version['product']
+
+    async def userAgent(self) -> str:
+        """Return browser's original user agent.
+
+        .. note::
+            Pages can override browser user agent with
+            :meth:`pyppeteer.page.Page.setUserAgent`.
+        """
+        version = await self._getVersion()
+        return version.get('userAgent', '')
 
     async def close(self) -> None:
         """Close connections and terminate browser process."""
@@ -136,12 +159,16 @@ class Browser(EventEmitter):
         """Disconnect browser."""
         await self._connection.dispose()
 
+    def _getVersion(self) -> Awaitable:
+        return self._connection.send('Browser.getVersion')
+
 
 class Target(object):
     """Browser's target class."""
 
     def __init__(self, browser: Browser, targetInfo: Dict) -> None:
         self._browser = browser
+        self._targetId = targetInfo.get('targetId', '')
         self._targetInfo = targetInfo
         self._page = None
 
@@ -157,13 +184,17 @@ class Target(object):
             self._initializedPromise = asyncio.get_event_loop().create_future()
         self._initializedPromise.set_result(bl)
 
+    async def createCDPSession(self) -> CDPSession:
+        """Create a Chrome Devtools Protocol session attached to the target."""
+        return await self._browser._connection.createSession(self._targetId)
+
     async def page(self) -> Optional[Page]:
         """Get page of this target."""
         if self._targetInfo['type'] == 'page' and self._page is None:
-            session = await self._browser._connection.createSession(
-                self._targetInfo['targetId'])
+            client = await self._browser._connection.createSession(
+                self._targetId)
             new_page = await Page.create(
-                session,
+                client, self,
                 self._browser._ignoreHTTPSErrors,
                 self._browser._appMode,
                 self._browser._screenshotTaskQueue,

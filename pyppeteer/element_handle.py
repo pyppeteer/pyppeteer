@@ -8,7 +8,7 @@ import os.path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 # from pyppeteer import helper
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError
 from pyppeteer.util import merge_dict
@@ -36,7 +36,7 @@ class ElementHandle(JSHandle):
     :meth:`pyppeteer.page.Page.evaluate` methods.
     """
 
-    def __init__(self, context: ExecutionContext, client: Session,
+    def __init__(self, context: ExecutionContext, client: CDPSession,
                  remoteObject: dict, page: Any) -> None:
         super().__init__(context, client, remoteObject)
         self._client = client
@@ -244,3 +244,34 @@ class ElementHandle(JSHandle):
     J = querySelector
     #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
+
+    async def xpath(self, expression: str) -> List['ElementHandle']:
+        """Evaluate XPath expression relative to this elementHandle.
+
+        If there is no such element, return None.
+
+        :arg str expression: XPath string to be evaluated.
+        """
+        arrayHandle = await self.executionContext.evaluateHandle(
+            '''(element, expression) => {
+                const document = element.ownerDocument || element;
+                const iterator = document.evaluate(expression, element, null,
+                    XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+                const array = [];
+                let item;
+                while ((item = iterator.iterateNext()))
+                    array.push(item);
+                return array;
+
+            }''', self, expression)
+        properties = await arrayHandle.getProperties()
+        await arrayHandle.dispose()
+        result = []
+        for property in properties.values():
+            elementHandle = property.asElement()
+            if elementHandle:
+                result.append(elementHandle)
+        return result
+
+    #: alias to :meth:`xpath`
+    Jx = xpath

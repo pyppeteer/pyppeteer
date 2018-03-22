@@ -4,7 +4,7 @@
 """Dialog module."""
 
 from types import SimpleNamespace
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 
 
 class Dialog(object):
@@ -20,7 +20,7 @@ class Dialog(object):
         Prompt='prompt',
     )
 
-    def __init__(self, client: Session, type: str, message: str,
+    def __init__(self, client: CDPSession, type: str, message: str,
                  defaultValue: str = '') -> None:
         self._client = client
         self._type = type

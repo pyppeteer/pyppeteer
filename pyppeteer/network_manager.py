@@ -13,8 +13,9 @@ from typing import Awaitable, Dict, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
 
-from pyppeteer.connection import Session
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
+from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
@@ -31,10 +32,11 @@ class NetworkManager(EventEmitter):
         RequestFinished='requestfinished',
     )
 
-    def __init__(self, client: Session) -> None:
+    def __init__(self, client: CDPSession, frameManager: FrameManager) -> None:
         """Make new NetworkManager."""
         super().__init__()
         self._client = client
+        self._frameManager = frameManager
         self._requestIdToRequest: Dict[Optional[str], Request] = dict()
         self._interceptionIdToRequest: Dict[Optional[str], Request] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
@@ -143,20 +145,19 @@ class NetworkManager(EventEmitter):
                 }
             ))
 
-        if 'redirectStatusCode' in event:
+        if 'redirectURL' in event:
             request = self._interceptionIdToRequest.get(
                 event.get('interceptionId', ''))
-            if not request:
-                raise NetworkError('INTERNAL ERROR: failed to find request '
-                                   'for interception redirect.')
-            self._handleRequestRedirect(request,
-                                        event.get('redirectStatusCode', 0),
-                                        event.get('redirectHeaders', {}))
-            self._handleRequestStart(request._requestId,
-                                     event.get('interceptionId', ''),
-                                     event.get('redirectUrl', ''),
-                                     event.get('resourceType', ''),
-                                     event.get('request', {}))
+            if request:
+                self._handleRequestRedirect(request,
+                                            event.get('redirectStatusCode', 0),
+                                            event.get('redirectHeaders', {}))
+                self._handleRequestStart(request._requestId,
+                                         event.get('interceptionId', ''),
+                                         event.get('redirectUrl', ''),
+                                         event.get('resourceType', ''),
+                                         event.get('request', {}),
+                                         event.get('frameId'))
             return
 
         requestHash = generateRequestHash(event['request'])
@@ -165,14 +166,14 @@ class NetworkManager(EventEmitter):
             self._requestHashToRequestIds.delete(requestHash, requestId)
             self._handleRequestStart(
                 requestId, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request']
+                event['resourceType'], event['request'], event['frameId']
             )
         else:
             self._requestHashToInterceptionIds.set(
                 requestHash, event['interceptionId'])
             self._handleRequestStart(
                 None, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request']
+                event['resourceType'], event['request'], event['frameId']
             )
 
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
@@ -188,10 +189,15 @@ class NetworkManager(EventEmitter):
 
     def _handleRequestStart(self, requestId: Optional[str],
                             interceptionId: str, url: str, resourceType: str,
-                            requestPayload: Dict) -> None:
+                            requestPayload: Dict, frameId: Optional[str]
+                            ) -> None:
+        frame = None
+        if frameId and self._frameManager is not None:
+            frame = self._frameManager.frame(frameId)
+
         request = Request(self._client, requestId, interceptionId,
                           self._userRequestInterceptionEnabled, url,
-                          resourceType, requestPayload)
+                          resourceType, requestPayload, frame)
         if requestId:
             self._requestIdToRequest[requestId] = request
         if interceptionId:
@@ -217,17 +223,19 @@ class NetworkManager(EventEmitter):
             return
         if event.get('redirectResponse'):
             request = self._requestIdToRequest[event['requestId']]
-            redirectResponse = event.get('redirectResponse', {})
-            self._handleRequestRedirect(
-                request,
-                redirectResponse.get('status'),
-                redirectResponse.get('headers'),
-            )
+            if request:
+                redirectResponse = event.get('redirectResponse', {})
+                self._handleRequestRedirect(
+                    request,
+                    redirectResponse.get('status'),
+                    redirectResponse.get('headers'),
+                )
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
             event.get('type', ''),
             event.get('request', {}),
+            event.get('frameId'),
         )
 
     def _onResponseReceived(self, event: dict) -> None:
@@ -282,9 +290,10 @@ class Request(object):
     #: contains the request's resource type
     resourceType: str
 
-    def __init__(self, client: Session, requestId: Optional[str],
+    def __init__(self, client: CDPSession, requestId: Optional[str],
                  interceptionId: str, allowInterception: bool, url: str,
-                 resourceType: str, payload: dict) -> None:
+                 resourceType: str, payload: dict, frame: Optional[Frame]
+                 ) -> None:
         self._client = client
         self._requestId = requestId
         self._interceptionId = interceptionId
@@ -294,14 +303,50 @@ class Request(object):
         self._failureText: Optional[str] = None
         self._completePromise = asyncio.get_event_loop().create_future()
 
-        self.url = url
-        self.resourceType = resourceType.lower()
-        self.method = payload.get('method', '')
-        self.postData = payload.get('postData', '')
-        self.headers = payload.get('headers', {})
+        self._url = url
+        self._resourceType = resourceType.lower()
+        self._method = payload.get('method', '')
+        self._postData = payload.get('postData', '')
+        headers = payload.get('headers', {})
+        self._headers = {k.lower(): v for k, v in headers.items()}
+        self._frame = frame
 
     def _completePromiseFulfill(self) -> None:
         self._completePromise.set_result(None)
+
+    @property
+    def url(self) -> str:
+        """URL of this request."""
+        return self._url
+
+    @property
+    def resourceType(self) -> str:
+        """Resource type of this request perceived by the rendering engine.
+
+        ResourceType will be one of the following: ``document``,
+        ``stylesheet``, ``image``, ``media``, ``font``, ``script``,
+        ``texttrack``, ``xhr``, ``fetch``, ``eventsource``, ``websocket``,
+        ``manifest``, ``other``.
+        """
+        return self._resourceType
+
+    @property
+    def method(self) -> str:
+        """Return this request's method (GET, POST, etc.)."""
+        return self._method
+
+    @property
+    def postData(self) -> str:
+        """Return post body of this request."""
+        return self._postData
+
+    @property
+    def headers(self) -> Dict:
+        """Reurn a dictionary of HTTP headers of this request.
+
+        All header names are lower-case.
+        """
+        return self._headers
 
     @property
     def response(self) -> Optional['Response']:
@@ -310,6 +355,14 @@ class Request(object):
         If the response has not been recieved, return ``None``.
         """
         return self._response
+
+    @property
+    def frame(self) -> Optional[Frame]:
+        """Return a matching :class:`~pyppeteer.frame_manager.frame` object.
+
+        Return ``None`` if navigating to error page.
+        """
+        return self._frame
 
     def failure(self) -> Optional[Dict]:
         """Return error text.
@@ -367,7 +420,7 @@ class Request(object):
           response header.
         * ``body`` (str|bytes): Optional response body.
         """
-        if self.url.startswith('data:'):
+        if self._url.startswith('data:'):
             return
         if not self._allowInterception:
             raise NetworkError('Request interception is not enabled.')
@@ -461,15 +514,37 @@ class Response(object):
     #: url of the reponse.
     url: str
 
-    def __init__(self, client: Session, request: Request, status: int,
+    def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str]) -> None:
         self._client = client
         self._request = request
-        self.status = status
+        self._status = status
         self._contentPromise = asyncio.get_event_loop().create_future()
-        self.ok = 200 <= status <= 299
-        self.url = request.url
-        self.headers = {k.lower(): v for k, v in headers.items()}
+        self._url = request.url
+        self._headers = {k.lower(): v for k, v in headers.items()}
+
+    @property
+    def url(self) -> str:
+        """URL of the response."""
+        return self._url
+
+    @property
+    def ok(self) -> bool:
+        """Return bool whether this request is successfull (200-299) or not."""
+        return 200 <= self._status <= 299
+
+    @property
+    def status(self) -> int:
+        """Status code of the response."""
+        return self._status
+
+    @property
+    def headers(self) -> Dict:
+        """Return dictionary of HTTP headers of this response.
+
+        All header names are lower-case.
+        """
+        return self._headers
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {
@@ -489,7 +564,10 @@ class Response(object):
     async def text(self) -> str:
         """Get text representation of response body."""
         content = await self.buffer()
-        return content.decode('utf-8')
+        if isinstance(content, str):
+            return content
+        else:
+            return content.decode('utf-8')
 
     async def json(self) -> dict:
         """Get JSON representation of response body."""
@@ -521,10 +599,11 @@ def generateRequestHash(request: dict) -> str:
         headers = list(request['headers'].keys())
         headers.sort()
         for header in headers:
-            if (header == 'Accept' or header == 'Referer' or
-                    header == 'X-DevTools-Emulate-Network-Conditions-Client-Id'):  # noqa: E501
+            headerValue = request['headers'][header]
+            header = header.lower()
+            if (header == 'accept' or header == 'referer' or header == 'x-devtools-emulate-network-conditions-client-id'):  # noqa: E501
                 continue
-            _hash['headers'][header] = request['headers'][header]
+            _hash['headers'][header] = headerValue
     return json.dumps(_hash)
 
 
