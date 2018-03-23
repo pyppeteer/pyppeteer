@@ -199,6 +199,44 @@ class TestBrowser(unittest.TestCase):
         self.assertIn('WebKit', userAgent)
         await browser.close()
 
+    @unittest.skip('Could not pass this test')
+    @sync
+    async def test_disconnect(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        endpoint = browser.wsEndpoint
+        browser1 = await connect(browserWSEndpoint=endpoint)
+        browser2 = await connect(browserWSEndpoint=endpoint)
+        discon = []
+        discon1 = []
+        discon2 = []
+        browser.on('disconnected', lambda: discon.append(1))
+        browser1.on('disconnected', lambda: discon1.append(1))
+        browser2.on('disconnected', lambda: discon2.append(1))
+
+        await browser2.disconnect()
+        self.assertEqual(len(discon), 0)
+        self.assertEqual(len(discon1), 0)
+        self.assertEqual(len(discon2), 1)
+
+        await browser.close()
+        self.assertEqual(len(discon), 1)
+        self.assertEqual(len(discon1), 1)
+        self.assertEqual(len(discon2), 1)
+
+    @sync
+    async def test_crash(self) -> None:
+        browser = await launch(DEFAULT_OPTIONS)
+        page = await browser.newPage()
+        errors = []
+        page.on('error', lambda e: errors.append(e))
+        asyncio.ensure_future(page.goto('chrome://crash'))
+        for i in range(100):
+            await asyncio.sleep(0.01)
+            if errors:
+                break
+        await browser.close()
+        self.assertTrue(errors)
+
 
 class BaseTestCase(unittest.TestCase):
     @classmethod
