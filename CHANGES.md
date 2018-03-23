@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.15 (next version)
+## Version 0.0.16 (2018-03-23)
 
 * BugFIx: Skip SIGHUP option on windows (windows does not support this signal)
 
