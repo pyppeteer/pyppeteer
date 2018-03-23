@@ -27,11 +27,9 @@ from pyppeteer.errors import TimeoutError, PyppeteerError
 from pyppeteer.launcher import connect
 from pyppeteer.util import get_free_port
 
-from server import get_application, BASE_HTML
+from base import BaseTestCase, DEFAULT_OPTIONS
 from frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
-
-
-DEFAULT_OPTIONS = {'args': ['--no-sandbox']}
+from server import get_application, BASE_HTML
 
 
 class TestLauncher(unittest.TestCase):
@@ -236,29 +234,6 @@ class TestBrowser(unittest.TestCase):
                 break
         await browser.close()
         self.assertTrue(errors)
-
-
-class BaseTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.port = get_free_port()
-        time.sleep(0.1)
-        cls.app = get_application()
-        cls.server = cls.app.listen(cls.port)
-        cls.browser = sync(launch(DEFAULT_OPTIONS))
-        cls.url = 'http://localhost:{}/'.format(cls.port)
-
-    @classmethod
-    def tearDownClass(cls):
-        sync(cls.browser.close())
-        cls.server.stop()
-
-    def setUp(self):
-        self.page = sync(self.browser.newPage())
-        sync(self.page.goto(self.url))
-
-    def tearDown(self):
-        sync(self.page.close())
 
 
 class TestPyppeteer(BaseTestCase):
