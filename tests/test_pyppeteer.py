@@ -13,13 +13,15 @@ import json
 import logging
 import math
 from pathlib import Path
+import os
+import shutil
 import sys
 import time
 import unittest
 
 from syncer import sync
 
-from pyppeteer import launch
+from pyppeteer import launch, executablePath
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError, PyppeteerError
 from pyppeteer.launcher import connect
@@ -67,6 +69,81 @@ class TestLauncher(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             await launch(DEFAULT_OPTIONS, executablePath='not-a-path')
 
+
+class TestUserDataDir(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        time.sleep(0.1)
+        cls.app = get_application()
+        cls.server = cls.app.listen(cls.port)
+        cls.url = 'http://localhost:{}/'.format(cls.port)
+
+    def setUp(self):
+        self.datadir = Path(__file__).parent / 'userDataDir'
+        if self.datadir.exists():
+            shutil.rmtree(str(self.datadir))
+        self.datadir.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(str(self.datadir))
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.stop()
+
+    @sync
+    async def test_user_data_dir_option(self):
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        await browser.close()
+        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+
+    @sync
+    async def test_user_data_dir_args(self):
+        options = {}
+        options.update(DEFAULT_OPTIONS)
+        options['args'] = (options['args'] +
+                           ['--user-data-dir={}'.format(str(self.datadir))])
+        browser = await launch(options)
+        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        await browser.close()
+        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+
+    @sync
+    async def test_user_data_dir_restore_state(self):
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        page = await browser.newPage()
+        await page.goto(self.url + 'empty')
+        await page.evaluate('() => localStorage.hey = "hello"')
+        await browser.close()
+
+        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        page2 = await browser2.newPage()
+        await page2.goto(self.url + 'empty')
+        result = await page2.evaluate('() => localStorage.hey')
+        await browser2.close()
+        self.assertEqual(result, 'hello')
+
+    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @sync
+    async def test_user_data_dir_restore_cookie_headful(self):
+        browser = await launch(
+            DEFAULT_OPTIONS, userDataDir=str(self.datadir), headless=False)
+        page = await browser.newPage()
+        await page.goto(self.url + 'empty')
+        await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
+        await browser.close()
+
+        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        page2 = await browser2.newPage()
+        await page2.goto(self.url + 'empty')
+        result = await page2.evaluate('() => document.cookie')
+        await browser2.close()
+        self.assertEqual(result, 'foo=true')
+
+
+class TestConnect(unittest.TestCase):
     @sync
     async def test_connect(self):
         browser = await launch(DEFAULT_OPTIONS)
@@ -91,6 +168,12 @@ class TestLauncher(unittest.TestCase):
         await browser.close()
 
     @sync
+    async def test_executable_path(self):
+        self.assertTrue(os.path.exists(executablePath()))
+
+
+class TestBrowser(unittest.TestCase):
+    @sync
     async def test_browser_process(self):
         browser = await launch(DEFAULT_OPTIONS)
         process = browser.process
@@ -106,6 +189,7 @@ class TestLauncher(unittest.TestCase):
         version = await browser.version()
         self.assertTrue(len(version) > 0)
         self.assertTrue(version.startswith('Headless'))
+        await browser.close()
 
     @sync
     async def test_user_agent(self):
@@ -113,6 +197,7 @@ class TestLauncher(unittest.TestCase):
         userAgent = await browser.userAgent()
         self.assertGreater(len(userAgent), 0)
         self.assertIn('WebKit', userAgent)
+        await browser.close()
 
 
 class BaseTestCase(unittest.TestCase):
@@ -1823,7 +1908,7 @@ class TestTracing(BaseTestCase):
 
 class TestCDPSession(BaseTestCase):
     @sync
-    async def test_create_session(self) -> None:
+    async def test_create_session(self):
         client = await self.page.target.createCDPSession()
         await client.send('Runtime.enable')
         await client.send('Runtime.evaluate',
@@ -1832,7 +1917,7 @@ class TestCDPSession(BaseTestCase):
         self.assertEqual(foo, 'bar')
 
     @sync
-    async def test_send_event(self) -> None:
+    async def test_send_event(self):
         client = await self.page.target.createCDPSession()
         await client.send('Network.enable')
         events = []
@@ -1841,7 +1926,7 @@ class TestCDPSession(BaseTestCase):
         self.assertEqual(len(events), 1)
 
     @sync
-    async def test_enable_disable_domain(self) -> None:
+    async def test_enable_disable_domain(self):
         client = await self.page.target.createCDPSession()
         await client.send('Runtime.enable')
         await client.send('Debugger.enable')
@@ -1849,7 +1934,7 @@ class TestCDPSession(BaseTestCase):
         await self.page.coverage.stopJSCoverage()
 
     @sync
-    async def test_detach(self) -> None:
+    async def test_detach(self):
         client = await self.page.target.createCDPSession()
         await client.send('Runtime.enable')
         evalResponse = await client.send(

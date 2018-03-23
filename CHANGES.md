@@ -1,6 +1,11 @@
 History
 =======
 
+## Version 0.0.16 (2018-03-23)
+
+* BugFIx: Skip SIGHUP option on windows (windows does not support this signal)
+
+
 ## Version 0.0.15 (2018-03-22)
 
 Catch up puppeteer v1.0.0

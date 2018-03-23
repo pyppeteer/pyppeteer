@@ -15,6 +15,7 @@ from pathlib import Path
 import signal
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any, Dict, List, TYPE_CHECKING
@@ -150,8 +151,10 @@ class Launcher(object):
             signal.signal(signal.SIGINT, _close_process)
         if self.options.get('handleSIGTERM', True):
             signal.signal(signal.SIGTERM, _close_process)
-        if self.options.get('handleSIGHUP', True):
-            signal.signal(signal.SIGHUP, _close_process)
+        if not sys.platform.startswith('win'):
+            # SIGHUP is not defined on windows
+            if self.options.get('handleSIGHUP', True):
+                signal.signal(signal.SIGHUP, _close_process)
 
         connectionDelay = self.options.get('slowMo', 0)
         self.browserWSEndpoint = self._get_ws_endpoint()
