@@ -182,3 +182,10 @@ class TestOfflineMode(BaseTestCase):
         self.assertFalse(await self.page.evaluate('window.navigator.onLine'))
         await self.page.setOfflineMode(False)
         self.assertTrue(await self.page.evaluate('window.navigator.onLine'))
+
+
+class TestEvaluateHandle(BaseTestCase):
+    @sync
+    async def test_evaluate_handle(self):
+        windowHandle = await self.page.evaluateHandle('() => window')
+        self.assertTrue(windowHandle)
