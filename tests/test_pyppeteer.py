@@ -2069,15 +2069,6 @@ class TestPage(unittest.TestCase):
         self.assertEqual(len(metrics_to_check), 0)
 
     @sync
-    async def test_offline_mode(self):
-        await self.page.setOfflineMode(True)
-        with self.assertRaises(PageError):
-            await self.page.goto(self.url)
-        await self.page.setOfflineMode(False)
-        res = await self.page.reload()
-        self.assertEqual(res.status, 304)
-
-    @sync
     async def test_no_await_check_just_call(self):
         await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.setContent('')

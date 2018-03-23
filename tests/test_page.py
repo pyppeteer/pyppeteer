@@ -7,7 +7,7 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.errors import ElementHandleError
+from pyppeteer.errors import ElementHandleError, PageError
 
 from base import BaseTestCase
 from frame_utils import attachFrame
@@ -163,3 +163,22 @@ class TestEvaluate(BaseTestCase):
         aHandle = await self.page.evaluateHandle('() => 5')
         isFive = await self.page.evaluate('(e) => Object.is(e, 5)', aHandle)
         self.assertTrue(isFive)
+
+
+class TestOfflineMode(BaseTestCase):
+    @sync
+    async def test_offline_mode(self):
+        await self.page.setOfflineMode(True)
+        with self.assertRaises(PageError):
+            await self.page.goto(self.url)
+        await self.page.setOfflineMode(False)
+        res = await self.page.reload()
+        self.assertEqual(res.status, 304)
+
+    @sync
+    async def test_emulate_navigator_offline(self):
+        self.assertTrue(await self.page.evaluate('window.navigator.onLine'))
+        await self.page.setOfflineMode(True)
+        self.assertFalse(await self.page.evaluate('window.navigator.onLine'))
+        await self.page.setOfflineMode(False)
+        self.assertTrue(await self.page.evaluate('window.navigator.onLine'))
