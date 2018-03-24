@@ -3,6 +3,7 @@
 
 import asyncio
 import math
+import time
 import unittest
 
 from syncer import sync
@@ -189,3 +190,140 @@ class TestEvaluateHandle(BaseTestCase):
     async def test_evaluate_handle(self):
         windowHandle = await self.page.evaluateHandle('() => window')
         self.assertTrue(windowHandle)
+
+
+class TestWaitFor(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+        self.result = False
+
+    def set_result(self, value):
+        self.result = value
+
+    @sync
+    async def test_wait_for_page_navigated(self):
+        fut = asyncio.ensure_future(self.page.waitFor('h1'))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(self.result)
+        await self.page.goto(self.url)
+        await fut
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_timeout(self):
+        start_time = time.perf_counter()
+        fut = asyncio.ensure_future(self.page.waitFor(100))
+        fut.add_done_callback(lambda f: self.set_result(True))
+        await fut
+        self.assertGreater(time.perf_counter() - start_time, 0.1)
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_error_type(self):
+        with self.assertRaises(TypeError) as cm:
+            await self.page.waitFor({'a': 1})
+        self.assertIn('Unsupported target type', cm.exception.args[0])
+
+    @sync
+    async def test_wait_for_func_with_args(self) -> None:
+        await self.page.waitFor('(arg1, arg2) => arg1 !== arg2', {}, 1, 2)
+
+
+class TestConsole(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'empty'))
+
+    @sync
+    async def test_console_event(self):
+        messages = []
+        self.page.once('console', lambda m: messages.append(m))
+        await self.page.evaluate('() => console.log("hello", 5, {foo: "bar"})')
+        await asyncio.sleep(0.01)
+        self.assertEqual(len(messages), 1)
+
+        msg = messages[0]
+        self.assertEqual(msg.type, 'log')
+        self.assertEqual(msg.text, 'hello 5 JSHandle@object')
+        self.assertEqual(await msg.args[0].jsonValue(), 'hello')
+        self.assertEqual(await msg.args[1].jsonValue(), 5)
+        self.assertEqual(await msg.args[2].jsonValue(), {'foo': 'bar'})
+
+    @sync
+    async def test_console_event_many(self):
+        messages = []
+        self.page.on('console', lambda m: messages.append(m))
+        await self.page.evaluate('''
+// A pair of time/timeEnd generates only one Console API call.
+console.time('calling console.time');
+console.timeEnd('calling console.time');
+console.trace('calling console.trace');
+console.dir('calling console.dir');
+console.warn('calling console.warn');
+console.error('calling console.error');
+console.log(Promise.resolve('should not wait until resolved!'));
+        ''')
+        await asyncio.sleep(0.1)
+        self.assertEqual(
+            [msg.type for msg in messages],
+            ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log'],
+        )
+        self.assertIn('calling console.time', messages[0].text)
+        self.assertEqual([msg.text for msg in messages[1:]], [
+            'calling console.trace',
+            'calling console.dir',
+            'calling console.warn',
+            'calling console.error',
+            'JSHandle@promise',
+        ])
+
+    @sync
+    async def test_console_window(self):
+        messages = []
+        self.page.once('console', lambda m: messages.append(m))
+        await self.page.evaluate('console.error(window);')
+        await asyncio.sleep(0.1)
+        self.assertEqual(len(messages), 1)
+        msg = messages[0]
+        self.assertEqual(msg.text, 'JSHandle@object')
+
+
+class TestMetrics(BaseTestCase):
+    def checkMetrics(self, metrics):
+        metrics_to_check = set([
+            'Timestamp',
+            'Documents',
+            'Frames',
+            'JSEventListeners',
+            'Nodes',
+            'LayoutCount',
+            'RecalcStyleCount',
+            'LayoutDuration',
+            'RecalcStyleDuration',
+            'ScriptDuration',
+            'TaskDuration',
+            'JSHeapUsedSize',
+            'JSHeapTotalSize',
+        ])
+        for name, value in metrics.items():
+            self.assertTrue(name in metrics_to_check)
+            self.assertTrue(value >= 0)
+            metrics_to_check.remove(name)
+        self.assertEqual(len(metrics_to_check), 0)
+
+    @sync
+    async def test_metrics(self):
+        await self.page.goto('about:blank')
+        metrics = await self.page.metrics()
+        self.checkMetrics(metrics)
+
+    @sync
+    async def test_metrics_event(self):
+        fut = asyncio.get_event_loop().create_future()
+        self.page.on('metrics', lambda metrics: fut.set_result(metrics))
+        await self.page.evaluate('() => console.timeStamp("test42")')
+        metrics = await fut
+        self.assertEqual(metrics['title'], 'test42')
+        self.checkMetrics(metrics['metrics'])

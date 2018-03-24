@@ -1186,65 +1186,6 @@ http://localhost:{port}/static/nested-frames.html
         self.assertEqual(frame3.parentFrame, frame1)
 
 
-class TestConsole(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-
-    @sync
-    async def test_console_event(self):
-        messages = []
-        self.page.once('console', lambda m: messages.append(m))
-        await self.page.evaluate('() => console.log("hello", 5, {foo: "bar"})')
-        await asyncio.sleep(0.01)
-        self.assertEqual(len(messages), 1)
-
-        msg = messages[0]
-        self.assertEqual(msg.type, 'log')
-        self.assertEqual(msg.text, 'hello 5 JSHandle@object')
-        self.assertEqual(await msg.args[0].jsonValue(), 'hello')
-        self.assertEqual(await msg.args[1].jsonValue(), 5)
-        self.assertEqual(await msg.args[2].jsonValue(), {'foo': 'bar'})
-
-    @sync
-    async def test_console_event_many(self):
-        messages = []
-        self.page.on('console', lambda m: messages.append(m))
-        await self.page.evaluate('''
-// A pair of time/timeEnd generates only one Console API call.
-console.time('calling console.time');
-console.timeEnd('calling console.time');
-console.trace('calling console.trace');
-console.dir('calling console.dir');
-console.warn('calling console.warn');
-console.error('calling console.error');
-console.log(Promise.resolve('should not wait until resolved!'));
-        ''')
-        await asyncio.sleep(0.1)
-        self.assertEqual(
-            [msg.type for msg in messages],
-            ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log'],
-        )
-        self.assertIn('calling console.time', messages[0].text)
-        self.assertEqual([msg.text for msg in messages[1:]], [
-            'calling console.trace',
-            'calling console.dir',
-            'calling console.warn',
-            'calling console.error',
-            'JSHandle@promise',
-        ])
-
-    @sync
-    async def test_console_window(self):
-        messages = []
-        self.page.once('console', lambda m: messages.append(m))
-        await self.page.evaluate('console.error(window);')
-        await asyncio.sleep(0.1)
-        self.assertEqual(len(messages), 1)
-        msg = messages[0]
-        self.assertEqual(msg.text, 'JSHandle@object')
-
-
 class TestTracing(BaseTestCase):
     def setUp(self):
         super().setUp()
@@ -1621,31 +1562,6 @@ class TestPage(unittest.TestCase):
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
         self.assertIn(response.status, [200, 304])
-
-    @sync
-    async def test_metrics(self):
-        await self.page.goto('about:blank')
-        metrics = await self.page.metrics()
-        metrics_to_check = set([
-            'Timestamp',
-            'Documents',
-            'Frames',
-            'JSEventListeners',
-            'Nodes',
-            'LayoutCount',
-            'RecalcStyleCount',
-            'LayoutDuration',
-            'RecalcStyleDuration',
-            'ScriptDuration',
-            'TaskDuration',
-            'JSHeapUsedSize',
-            'JSHeapTotalSize',
-        ])
-        for name, value in metrics.items():
-            self.assertTrue(name in metrics_to_check)
-            self.assertTrue(value >= 0)
-            metrics_to_check.remove(name)
-        self.assertEqual(len(metrics_to_check), 0)
 
     @sync
     async def test_no_await_check_just_call(self):
