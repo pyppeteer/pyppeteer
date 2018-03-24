@@ -21,7 +21,7 @@ from syncer import sync
 
 from pyppeteer import launch
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
-from pyppeteer.errors import TimeoutError, PyppeteerError
+from pyppeteer.errors import PyppeteerError
 from pyppeteer.util import get_free_port
 
 from base import BaseTestCase, DEFAULT_OPTIONS
@@ -30,49 +30,6 @@ from server import get_application, BASE_HTML
 
 
 class TestPyppeteer(BaseTestCase):
-    @sync
-    async def test_get_http(self):
-        response = await self.page.goto('http://example.com/')
-        self.assertEqual(response.status, 200)
-        self.assertEqual(self.page.url, 'http://example.com/')
-
-    @sync
-    async def test_goto_blank(self):
-        response = await self.page.goto('about:blank')
-        self.assertIsNone(response)
-
-    @sync
-    async def test_goto_documentloaded(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='documentloaded')
-        self.assertIn(response.status, [200, 304])
-
-    @sync
-    async def test_goto_networkidle(self):
-        with self.assertRaises(ValueError):
-            await self.page.goto(self.url + 'empty', waitUntil='networkidle')
-
-    @sync
-    async def test_nav_networkidle0(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle0')
-        self.assertIn(response.status, [200, 304])
-
-    @sync
-    async def test_nav_networkidle2(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle2')
-        self.assertIn(response.status, [200, 304])
-
-    @sync
-    async def test_goto_bad_url(self):
-        with self.assertRaises(NetworkError):
-            await self.page.goto('asdf')
-
-    @sync
-    async def test_goto_bad_resource(self):
-        with self.assertRaises(PageError):
-            await self.page.goto('http://localhost:44123')
 
     @sync
     async def test_get(self):
@@ -82,21 +39,6 @@ class TestPyppeteer(BaseTestCase):
         self.assertTrue(self.elm)
         await self.page.goto('about:blank')
         self.assertEqual(self.page.url, 'about:blank')
-
-    @sync
-    async def test_timeout(self):
-        with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long', timeout=1)
-
-    @sync
-    async def test_timeout_default(self):
-        self.page.setDefaultNavigationTimeout(1)
-        with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long')
-
-    @sync
-    async def test_no_timeout(self):
-        await self.page.goto(self.url + 'long', timeout=0)
 
     @sync
     async def test_get_https(self):

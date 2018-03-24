@@ -8,7 +8,8 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.errors import ElementHandleError, PageError
+from pyppeteer.errors import ElementHandleError, NetworkError, PageError
+from pyppeteer.errors import TimeoutError
 
 from base import BaseTestCase
 from frame_utils import attachFrame
@@ -227,7 +228,7 @@ class TestWaitFor(BaseTestCase):
         self.assertIn('Unsupported target type', cm.exception.args[0])
 
     @sync
-    async def test_wait_for_func_with_args(self) -> None:
+    async def test_wait_for_func_with_args(self):
         await self.page.waitFor('(arg1, arg2) => arg1 !== arg2', {}, 1, 2)
 
 
@@ -327,3 +328,112 @@ class TestMetrics(BaseTestCase):
         metrics = await fut
         self.assertEqual(metrics['title'], 'test42')
         self.checkMetrics(metrics['metrics'])
+
+
+class TestGoto(BaseTestCase):
+    @sync
+    async def test_get_http(self):
+        response = await self.page.goto('http://example.com/')
+        self.assertEqual(response.status, 200)
+        self.assertEqual(self.page.url, 'http://example.com/')
+
+    @sync
+    async def test_goto_blank(self):
+        response = await self.page.goto('about:blank')
+        self.assertIsNone(response)
+
+    @sync
+    async def test_goto_documentloaded(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='documentloaded')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_goto_networkidle(self):
+        with self.assertRaises(ValueError):
+            await self.page.goto(self.url + 'empty', waitUntil='networkidle')
+
+    @sync
+    async def test_nav_networkidle0(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='networkidle0')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_nav_networkidle2(self):
+        response = await self.page.goto(self.url + 'empty',
+                                        waitUntil='networkidle2')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_goto_bad_url(self):
+        with self.assertRaises(NetworkError):
+            await self.page.goto('asdf')
+
+    @sync
+    async def test_goto_bad_resource(self):
+        with self.assertRaises(PageError):
+            await self.page.goto('http://localhost:44123/non-existing-url')
+
+    @sync
+    async def test_timeout(self):
+        with self.assertRaises(TimeoutError):
+            await self.page.goto(self.url + 'long', timeout=1)
+
+    @sync
+    async def test_timeout_default(self):
+        self.page.setDefaultNavigationTimeout(1)
+        with self.assertRaises(TimeoutError):
+            await self.page.goto(self.url + 'long')
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto(self.url + 'long', timeout=0)
+
+    @sync
+    async def test_valid_url(self):
+        response = await self.page.goto(self.url + 'empty')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_data_url(self):
+        response = await self.page.goto('data:text/html,hello')
+        self.assertTrue(response.ok)
+
+    @sync
+    async def test_404(self):
+        response = await self.page.goto(self.url + '/not-found')
+        self.assertFalse(response.ok)
+        self.assertEqual(response.status, 404)
+
+    @sync
+    async def test_redirect(self):
+        response = await self.page.goto(self.url + 'redirect1')
+        self.assertTrue(response.ok)
+        self.assertEqual(response.url, self.url + 'redirect2')
+
+    @unittest.skip('This test is not implemented')
+    @sync
+    async def test_wait_for_network_idle(self):
+        pass
+
+    @sync
+    async def test_data_url_request(self):
+        requests = []
+        self.page.on('request', lambda req: requests.append(req))
+        dataURL = 'data:text/html,<div>yo</div>'
+        response = await self.page.goto(dataURL)
+        self.assertTrue(response.ok)
+        self.assertEqual(response.status, 200)
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].url, dataURL)
+
+    @sync
+    async def test_url_with_hash(self):
+        requests = []
+        self.page.on('request', lambda req: requests.append(req))
+        response = await self.page.goto(self.url + 'empty#hash')
+        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.url, self.url + 'empty')
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].url, self.url + 'empty')
