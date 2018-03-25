@@ -473,3 +473,46 @@ class TestGoBack(BaseTestCase):
 
         response = await self.page.goForward()
         self.assertIsNone(response)
+
+
+class TestExposeFunctoin(BaseTestCase):
+    @sync
+    async def test_expose_function(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
+        self.assertEqual(result, 36)
+
+    @sync
+    async def test_expose_function_other_page(self):
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        await self.page.goto(self.url + 'empty')
+        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
+        self.assertEqual(result, 36)
+
+    @unittest.skip('Python does not support promise in expose function')
+    @sync
+    async def test_expose_function_return_promise(self):
+        async def compute(a, b):
+            return a * b
+
+        await self.page.exposeFunction('compute', compute)
+        result = await self.page.evaluate('() => compute(3, 5)')
+        print(result)
+        self.assertEqual(result, 15)
+
+    @sync
+    async def test_expose_function_frames(self):
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        await self.page.goto(self.url + 'static/nested-frames.html')
+        frame = self.page.frames[1]
+        result = await frame.evaluate('() => compute(3, 5)')
+        self.assertEqual(result, 15)
+
+    @sync
+    async def test_expose_function_frames_before_navigation(self):
+        await self.page.goto(self.url + 'static/nested-frames.html')
+        await self.page.exposeFunction('compute', lambda a, b: a * b)
+        frame = self.page.frames[1]
+        result = await frame.evaluate('() => compute(3, 5)')
+        self.assertEqual(result, 15)

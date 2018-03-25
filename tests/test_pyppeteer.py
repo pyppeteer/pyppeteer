@@ -880,20 +880,6 @@ a + b
         self.assertTrue(await originalPage.J('body'))
 
     @sync
-    async def test_expose_function(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
-        self.assertEqual(result, 36)
-
-    @sync
-    async def test_expose_function_other_page(self):
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        await self.page.goto(self.url + 'empty')
-        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
-        self.assertEqual(result, 36)
-
-    @sync
     async def test_request_interception(self):
         await self.page.setRequestInterception(True)
 
