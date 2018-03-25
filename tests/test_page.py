@@ -782,3 +782,19 @@ class TestErrorPage(BaseTestCase):
         await self.page.goto(self.url + 'static/error.html')
         self.assertIsNotNone(error)
         self.assertIn('Fancy', error.args[0])
+
+
+class TestRequest(BaseTestCase):
+    @sync
+    async def test_request(self):
+        requests = []
+        self.page.on('request', lambda req: requests.append(req))
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        self.assertEqual(len(requests), 2)
+        self.assertEqual(requests[0].url, self.url + 'empty')
+        self.assertEqual(requests[0].frame, self.page.mainFrame)
+        self.assertEqual(requests[0].frame.url, self.url + 'empty')
+        self.assertEqual(requests[1].url, self.url + 'empty')
+        self.assertEqual(requests[1].frame, self.page.frames[1])
+        self.assertEqual(requests[1].frame.url, self.url + 'empty')
