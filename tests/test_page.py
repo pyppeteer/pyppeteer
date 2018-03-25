@@ -437,3 +437,39 @@ class TestGoto(BaseTestCase):
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
+
+
+class TestWaitForNavigation(BaseTestCase):
+    @sync
+    async def test_wait_for_navigatoin(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForNavigation(),
+            self.page.evaluate('(url) => window.location.href = url', self.url)
+        )
+        response = results[0]
+        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.url, self.url)
+
+    @unittest.skip('This test is not implemented')
+    @sync
+    async def test_both_documentloaded_loaded(self):
+        pass
+
+
+class TestGoBack(BaseTestCase):
+    @sync
+    async def test_back(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.goto(self.url + 'static/textarea.html')
+
+        response = await self.page.goBack()
+        self.assertTrue(response.ok)
+        self.assertIn('empty', response.url)
+
+        response = await self.page.goForward()
+        self.assertTrue(response.ok)
+        self.assertIn('static/textarea.html', response.url)
+
+        response = await self.page.goForward()
+        self.assertIsNone(response)
