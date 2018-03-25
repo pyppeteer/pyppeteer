@@ -305,8 +305,8 @@ class Request(object):
 
         self._url = url
         self._resourceType = resourceType.lower()
-        self._method = payload.get('method', '')
-        self._postData = payload.get('postData', '')
+        self._method = payload.get('method')
+        self._postData = payload.get('postData')
         headers = payload.get('headers', {})
         self._headers = {k.lower(): v for k, v in headers.items()}
         self._frame = frame
@@ -331,12 +331,12 @@ class Request(object):
         return self._resourceType
 
     @property
-    def method(self) -> str:
+    def method(self) -> Optional[str]:
         """Return this request's method (GET, POST, etc.)."""
         return self._method
 
     @property
-    def postData(self) -> str:
+    def postData(self) -> Optional[str]:
         """Return post body of this request."""
         return self._postData
 
