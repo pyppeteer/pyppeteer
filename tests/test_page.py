@@ -767,3 +767,18 @@ class TestRequestInterception(BaseTestCase):
     @sync
     async def test_request_respond_bytes(self):
         pass
+
+
+class TestErrorPage(BaseTestCase):
+    @sync
+    async def test_error_page(self):
+        error = None
+
+        def check(e):
+            nonlocal error
+            error = e
+
+        self.page.on('pageerror', check)
+        await self.page.goto(self.url + 'static/error.html')
+        self.assertIsNotNone(error)
+        self.assertIn('Fancy', error.args[0])
