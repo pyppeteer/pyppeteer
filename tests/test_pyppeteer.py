@@ -879,25 +879,6 @@ a + b
         self.assertEqual(await originalPage.evaluate('() => 1 + 2'), 3)
         self.assertTrue(await originalPage.J('body'))
 
-    @sync
-    async def test_request_respond(self):
-        await self.page.setRequestInterception(True)
-
-        async def interception(req):
-            await req.respond({
-                'status': 201,
-                'headers': {'foo': 'bar'},
-                'body': 'intercepted',
-            })
-
-        self.page.on(
-            'request', lambda req: asyncio.ensure_future(interception(req)))
-        response = await self.page.goto(self.url + 'empty')
-        self.assertEqual(response.status, 201)
-        self.assertEqual(response.headers['foo'], 'bar')
-        body = await self.page.evaluate('() => document.body.textContent')
-        self.assertEqual(body, 'intercepted')
-
 
 class TestFrames(BaseTestCase):
     @sync

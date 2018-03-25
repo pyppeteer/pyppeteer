@@ -743,3 +743,27 @@ class TestRequestInterception(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         self.assertIsNotNone(error)
         self.assertIn('Request interception is not enabled', error.args[0])
+
+    @sync
+    async def test_request_respond(self):
+        await self.page.setRequestInterception(True)
+
+        async def interception(req):
+            await req.respond({
+                'status': 201,
+                'headers': {'foo': 'bar'},
+                'body': 'intercepted',
+            })
+
+        self.page.on(
+            'request', lambda req: asyncio.ensure_future(interception(req)))
+        response = await self.page.goto(self.url + 'empty')
+        self.assertEqual(response.status, 201)
+        self.assertEqual(response.headers['foo'], 'bar')
+        body = await self.page.evaluate('() => document.body.textContent')
+        self.assertEqual(body, 'intercepted')
+
+    @unittest.skip('Sending bynary object is not implemented')
+    @sync
+    async def test_request_respond_bytes(self):
+        pass
