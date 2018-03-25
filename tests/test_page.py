@@ -516,3 +516,230 @@ class TestExposeFunctoin(BaseTestCase):
         frame = self.page.frames[1]
         result = await frame.evaluate('() => compute(3, 5)')
         self.assertEqual(result, 15)
+
+
+class TestRequestInterception(BaseTestCase):
+    @sync
+    async def test_request_interception(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertIn('empty', req.url)
+            self.assertTrue(req.headers.get('user-agent'))
+            self.assertEqual(req.method, 'GET')
+            self.assertIsNone(req.postData)
+            self.assertEqual(req.resourceType, 'document')
+            self.assertEqual(req.frame, self.page.mainFrame)
+            self.assertEqual(req.frame.url, self.url)
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_stop(self):
+        await self.page.setRequestInterception(True)
+        self.page.once('request',
+                       lambda req: asyncio.ensure_future(req.continue_()))
+        await self.page.goto(self.url + 'empty')
+        await self.page.setRequestInterception(False)
+        await self.page.goto(self.url + 'empty')
+
+    @sync
+    async def test_request_interception_custom_header(self):
+        await self.page.setExtraHTTPHeaders({'foo': 'bar'})
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertEqual(req.headers['foo'], 'bar')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_custom_referer_header(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setExtraHTTPHeaders({'referer': self.url + 'empty'})
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            self.assertEqual(req.headers['referer'], self.url + 'empty')
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        res = await self.page.goto(self.url + 'empty')
+        self.assertIn(res.status, [200, 304])
+
+    @sync
+    async def test_request_interception_abort(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            if req.url.endswith('.css'):
+                await req.abort()
+            else:
+                await req.continue_()
+
+        failedRequests = []
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('requestfailed', lambda e: failedRequests.append(e))
+        res = await self.page.goto(self.url + 'static/one-style.html')
+        self.assertTrue(res.ok)
+        self.assertIsNone(res.request.failure())
+        self.assertEqual(len(failedRequests), 1)
+
+    @sync
+    async def test_request_interception_custom_error_code(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            await req.abort('internetdisconnected')
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        failedRequests = []
+        self.page.on('requestfailed', lambda req: failedRequests.append(req))
+        with self.assertRaises(PageError):
+            await self.page.goto(self.url + 'empty')
+        self.assertEqual(len(failedRequests), 1)
+        failedRequest = failedRequests[0]
+        self.assertEqual(
+            failedRequest.failure()['errorText'],
+            'net::ERR_INTERNET_DISCONNECTED',
+        )
+
+    @unittest.skip('Need server-side implementation')
+    @sync
+    async def test_request_interception_amend_http_header(self):
+        pass
+
+    @sync
+    async def test_request_interception_abort_main(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            await req.abort()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto(self.url + 'empty')
+        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+
+    @unittest.skip('Failed to get response in redirect')
+    @sync
+    async def test_request_interception_redirects(self):
+        await self.page.setRequestInterception(True)
+        requests = []
+
+        async def check(req):
+            await req.continue_()
+            requests.append(req)
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        response = await self.page.goto(self.url + 'redirect1')
+        self.assertIn(response.status, [200, 304])
+
+    @unittest.skip('This test is not implemented')
+    @sync
+    async def test_request_interception_abort_redirects(self):
+        pass
+
+    @unittest.skip('This test is not implemented')
+    @sync
+    async def test_request_interception_equal_requests(self):
+        pass
+
+    @sync
+    async def test_request_interception_data_url(self):
+        await self.page.setRequestInterception(True)
+        requests = []
+
+        async def check(req):
+            requests.append(req)
+            await req.continue_()
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        dataURL = 'data:text/html,<div>yo</div>'
+        response = await self.page.goto(dataURL)
+        self.assertEqual(response.status, 200)
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].url, dataURL)
+
+    @sync
+    async def test_request_interception_abort_data_url(self):
+        await self.page.setRequestInterception(True)
+
+        async def request_check(req):
+            await req.abort()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(request_check(req)))
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto('data:text/html,No way!')
+        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+
+    @sync
+    async def test_request_interception_with_hash(self):
+        await self.page.setRequestInterception(True)
+        requests = []
+
+        async def check(req):
+            requests.append(req)
+            await req.continue_()
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        response = await self.page.goto(self.url + 'empty#hash')
+        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.url, self.url + 'empty')
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].url, self.url + 'empty')
+
+    @sync
+    async def test_request_interception_encoded_server(self):
+        await self.page.setRequestInterception(True)
+
+        async def check(req):
+            await req.continue_()
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        response = await self.page.goto(self.url + 'non existing page')
+        self.assertEqual(response.status, 404)
+
+    @unittest.skip('Need server-side implementation')
+    @sync
+    async def test_request_interception_badly_encoded_server(self):
+        pass
+
+    @unittest.skip('Need server-side implementation')
+    @sync
+    async def test_request_interception_encoded_server_2(self):
+        pass
+
+    @unittest.skip('This test is not implemented')
+    @sync
+    async def test_request_interception_invalid_interception_id(self):
+        pass
+
+    @sync
+    async def test_request_interception_disabled(self):
+        error = None
+
+        async def check(req):
+            try:
+                await req.continue_()
+            except Exception as e:
+                nonlocal error
+                error = e
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        await self.page.goto(self.url + 'empty')
+        self.assertIsNotNone(error)
+        self.assertIn('Request interception is not enabled', error.args[0])
