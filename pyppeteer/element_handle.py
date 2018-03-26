@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 # from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.execution_context import ExecutionContext, JSHandle
-from pyppeteer.errors import ElementHandleError
+from pyppeteer.errors import ElementHandleError, NetworkError
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
@@ -170,9 +170,14 @@ class ElementHandle(JSHandle):
         * ``width`` (int): The width of the element in pixels.
         * ``height`` (int): The height of the element in pixels.
         """
-        result = await self._client.send('DOM.getBoxModel', {
-            'objectId': self._remoteObject.get('objectId'),
-        })
+        try:
+            result: Optional[Dict] = await self._client.send(
+                'DOM.getBoxModel',
+                {'objectId': self._remoteObject.get('objectId')},
+            )
+        except NetworkError:
+            result = None
+
         if not result:
             return None
 
