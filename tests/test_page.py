@@ -798,3 +798,92 @@ class TestRequest(BaseTestCase):
         self.assertEqual(requests[1].url, self.url + 'empty')
         self.assertEqual(requests[1].frame, self.page.frames[1])
         self.assertEqual(requests[1].frame.url, self.url + 'empty')
+
+
+class TestQuerySelector(BaseTestCase):
+    @sync
+    async def test_jeval(self):
+        await self.page.setContent(
+            '<section id="testAttribute">43543</section>')
+        idAttribute = await self.page.Jeval('section', 'e => e.id')
+        self.assertEqual(idAttribute, 'testAttribute')
+
+    @sync
+    async def test_jeval_argument(self):
+        await self.page.setContent('<section>hello</section>')
+        text = await self.page.Jeval(
+            'section', '(e, suffix) => e.textContent + suffix', ' world!')
+        self.assertEqual(text, 'hello world!')
+
+    @sync
+    async def test_jeval_argument_element(self):
+        await self.page.setContent('<section>hello</section><div> world</div>')
+        divHandle = await self.page.J('div')
+        text = await self.page.Jeval(
+            'section',
+            '(e, div) => e.textContent + div.textContent',
+            divHandle,
+        )
+        self.assertEqual(text, 'hello world')
+
+    @sync
+    async def test_jeval_not_found(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(PageError) as cm:
+            await self.page.Jeval('section', 'e => e.id')
+        self.assertIn(
+            'failed to find element matching selector "section"',
+            cm.exception.args[0],
+        )
+
+    @sync
+    async def test_JJeval(self):
+        await self.page.setContent(
+            '<div>hello</div><div>beautiful</div><div>world</div>')
+        divsCount = await self.page.JJeval('div', 'divs => divs.length')
+        self.assertEqual(divsCount, 3)
+
+    @sync
+    async def test_query_selector(self):
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.J('section')
+        self.assertTrue(element)
+
+    @sync
+    async def test_query_selector_all(self):
+        await self.page.setContent('<div>A</div><br/><div>B</div>')
+        elements = await self.page.JJ('div')
+        self.assertEqual(len(elements), 2)
+        results = []
+        for e in elements:
+            results.append(await self.page.evaluate('e => e.textContent', e))
+        self.assertEqual(results, ['A', 'B'])
+
+    @sync
+    async def test_query_selector_all_not_found(self):
+        await self.page.goto(self.url + 'empty')
+        elements = await self.page.JJ('div')
+        self.assertEqual(len(elements), 0)
+
+    @sync
+    async def test_xpath(self):
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.xpath('/html/body/section')
+        self.assertTrue(element)
+
+    @sync
+    async def test_xpath_alias(self):
+        await self.page.setContent('<section>test</section>')
+        element = await self.page.Jx('/html/body/section')
+        self.assertTrue(element)
+
+    @sync
+    async def test_xpath_not_found(self):
+        element = await self.page.xpath('/html/body/no-such-tag')
+        self.assertEqual(element, [])
+
+    @sync
+    async def test_xpath_multiple(self):
+        await self.page.setContent('<div></div><div></div>')
+        element = await self.page.xpath('/html/body/div')
+        self.assertEqual(len(element), 2)
