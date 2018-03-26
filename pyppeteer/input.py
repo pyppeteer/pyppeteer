@@ -165,10 +165,7 @@ class Keyboard(object):
           to 0.
         """
         options = merge_dict(options, kwargs)
-
-        delay = 0
-        if options and options.get('delay'):
-            delay = options['delay']
+        delay = options.get('delay', 0)
         for char in text:
             if char in keyDefinitions:
                 await self.press(char, {'delay': delay})
@@ -198,7 +195,7 @@ class Keyboard(object):
         options = merge_dict(options, kwargs)
 
         await self.down(key, options)
-        if options and options.get('delay'):
+        if 'delay' in options:
             await asyncio.sleep(options['delay'] / 1000)
         await self.up(key)
 
