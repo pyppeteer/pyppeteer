@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+from pathlib import Path
+
 from syncer import sync
 
 from pyppeteer.errors import PageError
@@ -81,3 +83,25 @@ class TestClick(BaseTestCase):
         await self.page.goto(self.url + 'static/button.html')
         await self.page.click('button')
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+
+class TestFileUpload(BaseTestCase):
+    @sync
+    async def test_file_upload(self):
+        await self.page.goto(self.url + 'static/fileupload.html')
+        filePath = Path(__file__).parent / 'file-to-upload.txt'
+        input = await self.page.J('input')
+        await input.uploadFile(str(filePath))
+        self.assertEqual(
+            await self.page.evaluate('e => e.files[0].name', input),
+            'file-to-upload.txt',
+        )
+        self.assertEqual(
+            await self.page.evaluate('''e => {
+                const reader = new FileReader();
+                const promise = new Promise(fulfill => reader.onload = fulfill);
+                reader.readAsText(e.files[0]);
+                return promise.then(() => reader.result);
+            }''', input),  # noqa: E501
+            'contents of the file\n',
+        )
