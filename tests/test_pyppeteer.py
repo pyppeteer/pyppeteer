@@ -12,7 +12,6 @@ import asyncio
 import json
 import logging
 from pathlib import Path
-import sys
 import time
 import unittest
 
@@ -28,7 +27,6 @@ from server import get_application, BASE_HTML
 
 
 class TestPyppeteer(BaseTestCase):
-
     @sync
     async def test_get(self):
         self.assertEqual(await self.page.title(), 'main')
@@ -59,69 +57,6 @@ class TestPyppeteer(BaseTestCase):
     async def test_content(self):
         html = await self.page.content()
         self.assertEqual(html.replace('\n', ''), BASE_HTML.replace('\n', ''))
-
-    @sync
-    async def test_element_handle_J(self):
-        await self.page.setContent('''
-<html><body><div class="second"><div class="inner">A</div></div></body></html>
-        ''')
-        html = await self.page.J('html')
-        second = await html.J('.second')
-        inner = await second.J('.inner')
-        content = await self.page.evaluate('e => e.textContent', inner)
-        self.assertEqual(content, 'A')
-
-    @sync
-    async def test_element_handle_J_none(self):
-        await self.page.setContent('''
-<html><body><div class="second"><div class="inner">A</div></div></body></html>
-        ''')
-        html = await self.page.J('html')
-        second = await html.J('.third')
-        self.assertIsNone(second)
-
-    @sync
-    async def test_element_handle_JJ(self):
-        await self.page.setContent('''
-<html><body><div>A</div><br/><div>B</div></body></html>
-        ''')
-        html = await self.page.J('html')
-        elements = await html.JJ('div')
-        self.assertEqual(len(elements), 2)
-        if sys.version_info >= (3, 6):
-            result = []
-            for elm in elements:
-                result.append(
-                    await self.page.evaluate('(e) => e.textContent', elm)
-                )
-            self.assertEqual(result, ['A', 'B'])
-
-    @sync
-    async def test_element_handle_JJ_empty(self):
-        await self.page.setContent('''
-<html><body><span>A</span><br/><span>B</span></body></html>
-        ''')
-        html = await self.page.J('html')
-        elements = await html.JJ('div')
-        self.assertEqual(len(elements), 0)
-
-    @sync
-    async def test_element_handle_xpath(self):
-        await self.page.setContent(
-            '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
-        )
-        html = await self.page.querySelector('html')
-        second = await html.xpath('./body/div[contains(@class, \'second\')]')
-        inner = await second[0].xpath('./div[contains(@class, \'inner\')]')
-        content = await self.page.evaluate('(e) => e.textContent', inner[0])
-        self.assertEqual(content, 'A')
-
-    @sync
-    async def test_element_handle_xpath_not_found(self):
-        await self.page.goto(self.url + 'empty')
-        html = await self.page.querySelector('html')
-        element = await html.xpath('/div[contains(@class, \'third\')]')
-        self.assertEqual(element, [])
 
     @sync
     async def test_hover(self):
