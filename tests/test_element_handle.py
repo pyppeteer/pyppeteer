@@ -3,6 +3,8 @@
 
 from syncer import sync
 
+from pyppeteer.errors import ElementHandleError
+
 from base import BaseTestCase
 
 
@@ -33,3 +35,79 @@ class TestBoundingBox(BaseTestCase):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
+
+
+class TestClick(BaseTestCase):
+    @sync
+    async def test_clik(self) -> None:
+        await self.page.goto(self.url + 'static/button.html')
+        button = await self.page.J('button')
+        await button.click()
+        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+    @sync
+    async def test_chadow_dom(self) -> None:
+        await self.page.goto(self.url + 'static/shadow.html')
+        button = await self.page.evaluateHandle('() => button')
+        await button.click()
+        self.assertTrue(await self.page.evaluate('clicked'))
+
+    @sync
+    async def test_text_node(self) -> None:
+        await self.page.goto(self.url + 'static/button.html')
+        buttonTextNode = await self.page.evaluateHandle(
+            '() => document.querySelector("button").firstChild')
+        with self.assertRaises(ElementHandleError) as cm:
+            await buttonTextNode.click()
+        self.assertEqual('Node is not of type HTMLElement',
+                         cm.exception.args[0])
+
+    @sync
+    async def test_detached_node(self) -> None:
+        await self.page.goto(self.url + 'static/button.html')
+        button = await self.page.J('button')
+        await self.page.evaluate('btn => btn.remove()', button)
+        with self.assertRaises(ElementHandleError) as cm:
+            await button.click()
+        self.assertEqual('Node is detached from document',
+                         cm.exception.args[0])
+
+    @sync
+    async def test_hidden_node(self) -> None:
+        await self.page.goto(self.url + 'static/button.html')
+        button = await self.page.J('button')
+        await self.page.evaluate('btn => btn.style.display = "none"', button)
+        with self.assertRaises(ElementHandleError) as cm:
+            await button.click()
+        self.assertEqual('Node is not visible.', cm.exception.args[0])
+
+    @sync
+    async def test_recursively_hidden_node(self) -> None:
+        await self.page.goto(self.url + 'static/button.html')
+        button = await self.page.J('button')
+        await self.page.evaluate(
+            'btn => btn.parentElement.style.display = "none"', button)
+        with self.assertRaises(ElementHandleError) as cm:
+            await button.click()
+        self.assertEqual('Node is not visible.', cm.exception.args[0])
+
+    @sync
+    async def test_br_node(self) -> None:
+        await self.page.setContent('hello<br>goodbye')
+        br = await self.page.J('br')
+        with self.assertRaises(ElementHandleError) as cm:
+            await br.click()
+        self.assertEqual('Node is not visible.', cm.exception.args[0])
+
+
+class TestHover(BaseTestCase):
+    @sync
+    async def test_hover(self) -> None:
+        await self.page.goto(self.url + 'static/scrollable.html')
+        button = await self.page.J('#button-6')
+        await button.hover()
+        self.assertEqual(
+            await self.page.evaluate(
+                'document.querySelector("button:hover").id'),
+            'button-6'
+        )
