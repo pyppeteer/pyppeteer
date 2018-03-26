@@ -116,6 +116,12 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 3)
 
     @sync
+    async def test_evaluate_force_expression(self):
+        result = await self.page.evaluate(
+            '() => null;\n1 + 2;', force_expr=True)
+        self.assertEqual(result, 3)
+
+    @sync
     async def test_accept_string_with_semicolon(self):
         result = await self.page.evaluate('1 + 5;')
         self.assertEqual(result, 6)
