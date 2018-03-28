@@ -16,6 +16,19 @@ from pyppeteer.errors import TimeoutError
 from base import BaseTestCase
 from frame_utils import attachFrame
 
+iPhone = {
+    'name': 'iPhone 6',
+    'userAgent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',  # noqa: E501
+    'viewport': {
+        'width': 375,
+        'height': 667,
+        'deviceScaleFactor': 2,
+        'isMobile': True,
+        'hasTouch': True,
+        'isLandscape': False,
+    }
+}
+
 
 class TestEvaluate(BaseTestCase):
     @sync
@@ -1101,3 +1114,134 @@ class TestAddStyleTag(BaseTestCase):
         styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
+
+
+class TestUrl(BaseTestCase):
+    @sync
+    async def test_url(self):
+        await self.page.goto('about:blank')
+        self.assertEqual(self.page.url, 'about:blank')
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(self.page.url, self.url + 'empty')
+
+
+class TestViewport(BaseTestCase):
+    iPhoneViewport = iPhone['viewport']
+
+    @sync
+    async def test_viewport(self):
+        self.assertEqual(self.page.viewport, {'width': 800, 'height': 600})
+        await self.page.setViewport({'width': 123, 'height': 456})
+        self.assertEqual(self.page.viewport, {'width': 123, 'height': 456})
+
+    @sync
+    async def test_mobile_emulation(self):
+        await self.page.goto(self.url + 'static/mobile.html')
+        self.assertEqual(await self.page.evaluate('window.innerWidth'), 800)
+        await self.page.setViewport(self.iPhoneViewport)
+        self.assertEqual(await self.page.evaluate('window.innerWidth'), 375)
+        await self.page.setViewport({'width': 400, 'height': 300})
+        self.assertEqual(await self.page.evaluate('window.innerWidth'), 400)
+
+    @sync
+    async def test_touch_emulation(self):
+        await self.page.goto(self.url + 'static/mobile.html')
+        self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
+        await self.page.setViewport(self.iPhoneViewport)
+        self.assertTrue(await self.page.evaluate('"ontouchstart" in window'))
+
+        dispatchTouch = '''() => {
+            let fulfill;
+            const promise = new Promise(x => fulfill = x);
+            window.ontouchstart = function(e) {
+                fulfill('Recieved touch');
+            };
+            window.dispatchEvent(new Event('touchstart'));
+
+            fulfill('Did not recieve touch');
+
+            return promise;
+        }'''
+        self.assertEqual(
+            await self.page.evaluate(dispatchTouch), 'Recieved touch')
+
+        await self.page.setViewport({'width': 100, 'height': 100})
+        self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
+
+    @sync
+    async def test_detect_by_modernizr(self):
+        await self.page.goto(self.url + 'static/detect-touch.html')
+        self.assertEqual(
+            await self.page.evaluate('document.body.textContent.trim()'),
+            'NO'
+        )
+        await self.page.setViewport(self.iPhoneViewport)
+        self.assertEqual(
+            await self.page.evaluate('document.body.textContent.trim()'),
+            'YES'
+        )
+
+    @sync
+    async def test_landscape_emulation(self):
+        await self.page.goto(self.url + 'static/mobile.html')
+        self.assertEqual(
+            await self.page.evaluate('screen.orientation.type'),
+            'portrait-primary',
+        )
+        iPhoneLandscapeViewport = self.iPhoneViewport.copy()
+        iPhoneLandscapeViewport['isLandscape'] = True
+        await self.page.setViewport(iPhoneLandscapeViewport)
+        self.assertEqual(
+            await self.page.evaluate('screen.orientation.type'),
+            'landscape-primary',
+        )
+        await self.page.setViewport({'width': 100, 'height': 100})
+        self.assertEqual(
+            await self.page.evaluate('screen.orientation.type'),
+            'portrait-primary',
+        )
+
+
+class TestEmulate(BaseTestCase):
+    @sync
+    async def test_emulate(self):
+        await self.page.goto(self.url + 'static/mobile.html')
+        await self.page.emulate(iPhone)
+        self.assertEqual(await self.page.evaluate('window.innerWidth'), 375)
+        self.assertIn(
+            'Safari', await self.page.evaluate('navigator.userAgent'))
+
+    @sync
+    async def test_click(self):
+        await self.page.emulate(iPhone)
+        await self.page.goto(self.url + 'static/button.html')
+        button = await self.page.J('button')
+        await self.page.evaluate(
+            'button => button.style.marginTop = "200px"', button)
+        await button.click()
+        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+
+class TestEmulateMedia(BaseTestCase):
+    @sync
+    async def test_emulate_media(self):
+        self.assertTrue(
+            await self.page.evaluate('matchMedia("screen").matches'))
+        self.assertFalse(
+            await self.page.evaluate('matchMedia("print").matches'))
+        await self.page.emulateMedia('print')
+        self.assertFalse(
+            await self.page.evaluate('matchMedia("screen").matches'))
+        self.assertTrue(
+            await self.page.evaluate('matchMedia("print").matches'))
+        await self.page.emulateMedia(None)
+        self.assertTrue(
+            await self.page.evaluate('matchMedia("screen").matches'))
+        self.assertFalse(
+            await self.page.evaluate('matchMedia("print").matches'))
+
+    @sync
+    async def test_emulate_media_bad_arg(self):
+        with self.assertRaises(ValueError) as cm:
+            await self.page.emulateMedia('bad')
+        self.assertEqual(cm.exception.args[0], 'Unsupported media type: bad')
