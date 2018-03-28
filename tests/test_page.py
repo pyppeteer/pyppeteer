@@ -4,6 +4,7 @@
 import asyncio
 import math
 from pathlib import Path
+import sys
 import time
 import unittest
 
@@ -856,6 +857,7 @@ class TestQuerySelector(BaseTestCase):
         element = await self.page.J('section')
         self.assertTrue(element)
 
+    @unittest.skipIf(sys.version_info < (3, 6), 'Elements order is unstable')
     @sync
     async def test_query_selector_all(self):
         await self.page.setContent('<div>A</div><br/><div>B</div>')
