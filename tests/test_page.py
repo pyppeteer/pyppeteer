@@ -950,12 +950,16 @@ class TestAuthenticate(BaseTestCase):
         response = await self.page.goto(self.url + 'auth')
         self.assertIn(response.status, [200, 304])
 
+
+class TestAuthenticateFaile(BaseTestCase):
     @sync
     async def test_auth_fail(self):
         await self.page.authenticate({'username': 'foo', 'password': 'bar'})
         response = await self.page.goto(self.url + 'auth')
         self.assertEqual(response.status, 401)
 
+
+class TestAuthenticateDisable(BaseTestCase):
     @sync
     async def test_disable_auth(self):
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
