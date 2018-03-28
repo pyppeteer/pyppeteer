@@ -9,9 +9,21 @@ from syncer import sync
 from pyppeteer.errors import PageError, PyppeteerError
 
 from base import BaseTestCase
+from frame_utils import attachFrame
 
 
 class TestClick(BaseTestCase):
+    get_dimensions = '''
+        function () {
+            const rect = document.querySelector('textarea').getBoundingClientRect();
+            return {
+                x: rect.left,
+                y: rect.top,
+                width: rect.width,
+                height: rect.height
+            };
+        }'''  # noqa: E501
+
     @sync
     async def test_click(self):
         await self.page.goto(self.url + 'static/button.html')
@@ -85,6 +97,196 @@ class TestClick(BaseTestCase):
         await self.page.click('button')
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
+    @sync
+    async def test_resize_textarea(self):
+        await self.page.goto(self.url + 'static/textarea.html')
+        dimensions = await self.page.evaluate(self.get_dimensions)
+        x = dimensions['x']
+        y = dimensions['y']
+        width = dimensions['width']
+        height = dimensions['height']
+        mouse = self.page.mouse
+        await mouse.move(x + width - 4, y + height - 4)
+        await mouse.down()
+        await mouse.move(x + width + 100, y + height + 100)
+        await mouse.up()
+        new_dimensions = await self.page.evaluate(self.get_dimensions)
+        self.assertEqual(new_dimensions['width'], width + 104)
+        self.assertEqual(new_dimensions['height'], height + 104)
+
+    @sync
+    async def test_scroll_and_click(self):
+        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.click('#button-5')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("#button-5").textContent'), 'clicked')
+        await self.page.click('#button-80')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("#button-80").textContent'), 'clicked')
+
+    @sync
+    async def test_double_click(self):
+        await self.page.goto(self.url + 'static/button.html')
+        await self.page.evaluate('''() => {
+            window.double = false;
+            const button = document.querySelector('button');
+            button.addEventListener('dblclick', event => {
+                window.double = true;
+            });
+        }''')
+        button = await self.page.J('button')
+        await button.click(clickCount=2)
+        self.assertTrue(await self.page.evaluate('double'))
+        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+    @sync
+    async def test_click_partially_obscured_button(self):
+        await self.page.goto(self.url + 'static/button.html')
+        await self.page.evaluate('''() => {
+            const button = document.querySelector('button');
+            button.textContent = 'Some really long text that will go off screen';
+            button.style.position = 'absolute';
+            button.style.left = '368px';
+        }''')  # noqa: 501
+        await self.page.click('button')
+        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+    @sync
+    async def test_select_text_by_mouse(self):
+        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.focus('textarea')
+        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
+        await self.page.keyboard.type(text)
+        await self.page.evaluate(
+            'document.querySelector("textarea").scrollTop = 0')
+        dimensions = await self.page.evaluate(self.get_dimensions)
+        x = dimensions['x']
+        y = dimensions['y']
+        await self.page.mouse.move(x + 2, y + 2)
+        await self.page.mouse.down()
+        await self.page.mouse.move(100, 100)
+        await self.page.mouse.up()
+        self.assertEqual(
+            await self.page.evaluate('window.getSelection().toString()'), text)
+
+    @sync
+    async def test_select_text_by_triple_click(self):
+        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.focus('textarea')
+        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
+        await self.page.keyboard.type(text)
+        await self.page.click('textarea')
+        await self.page.click('textarea', clickCount=2)
+        await self.page.click('textarea', clickCount=3)
+        self.assertEqual(
+            await self.page.evaluate('window.getSelection().toString()'), text)
+
+    @sync
+    async def test_trigger_hover(self):
+        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.hover('#button-6')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("button:hover").id'), 'button-6')
+        await self.page.hover('#button-2')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("button:hover").id'), 'button-2')
+        await self.page.hover('#button-91')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("button:hover").id'), 'button-91')
+
+    @sync
+    async def test_right_click(self):
+        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.click('#button-8', button='right')
+        self.assertEqual(await self.page.evaluate(
+            'document.querySelector("#button-8").textContent'), 'context menu')
+
+    @sync
+    async def test_click_with_modifier_key(self):
+        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.evaluate('() => document.querySelector("#button-3").addEventListener("mousedown", e => window.lastEvent = e, true)')  # noqa: E501
+        modifiers = {
+            'Shift': 'shiftKey',
+            'Control': 'ctrlKey',
+            'Alt': 'altKey',
+            'Meta': 'metaKey',
+        }
+        for key, value in modifiers.items():
+            await self.page.keyboard.down(key)
+            await self.page.click('#button-3')
+            self.assertTrue(await self.page.evaluate(
+                'mod => window.lastEvent[mod]', value))
+            await self.page.keyboard.up(key)
+        await self.page.click('#button-3')
+        for key, value in modifiers.items():
+            self.assertFalse(await self.page.evaluate(
+                'mod => window.lastEvent[mod]', value))
+
+    @sync
+    async def test_click_link(self):
+        await self.page.setContent(
+            '<a href="{}">empty.html</a>'.format(self.url + 'empty'))
+        await self.page.click('a')
+
+    @sync
+    async def test_mouse_movement(self):
+        await self.page.mouse.move(100, 100)
+        await self.page.evaluate('''() => {
+                window.result = [];
+                document.addEventListener('mousemove', event => {
+                    window.result.push([event.clientX, event.clientY]);
+                });
+            }''')
+        await self.page.mouse.move(200, 300, steps=5)
+        self.assertEqual(await self.page.evaluate('window.result'), [
+            [120, 140],
+            [140, 180],
+            [160, 220],
+            [180, 260],
+            [200, 300],
+        ])
+
+    @sync
+    async def test_tap_button(self):
+        await self.page.goto(self.url + 'static/button.html')
+        await self.page.tap('button')
+        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+
+    @sync
+    async def test_touches_report(self):
+        await self.page.goto(self.url + 'static/touches.html')
+        button = await self.page.J('button')
+        await button.tap()
+        self.assertEqual(await self.page.evaluate('getResult()'),
+                         ['Touchstart: 0', 'Touchend: 0'])
+
+    @sync
+    async def test_click_insilde_frame(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent(
+            '<div style="width:100px;height:100px;>spacer</div>"')
+        await attachFrame(
+            self.page, 'button-test', self.url + 'static/button.html')
+        frame = self.page.frames[1]
+        button = await frame.J('button')
+        await button.click()
+        self.assertEqual(await frame.evaluate('result'), 'Clicked')
+
+    @sync
+    async def test_click_with_device_scale_factor(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setViewport(
+            {'width': 400, 'height': 400, 'deviceScaleFactor': 5})
+        self.assertEqual(await self.page.evaluate('devicePixelRatio'), 5)
+        await self.page.setContent(
+            '<div style="width:100px;height:100px;>spacer</div>"')
+        await attachFrame(
+            self.page, 'button-test', self.url + 'static/button.html')
+        frame = self.page.frames[1]
+        button = await frame.J('button')
+        await button.click()
+        self.assertEqual(await frame.evaluate('result'), 'Clicked')
+
 
 class TestFileUpload(BaseTestCase):
     @sync
@@ -106,35 +308,6 @@ class TestFileUpload(BaseTestCase):
             }''', input),  # noqa: E501
             'contents of the file\n',
         )
-
-    @sync
-    async def test_resize_textarea(self):
-        await self.page.goto(self.url + 'static/textarea.html')
-        get_dimensions = '''
-    function () {
-      const rect = document.querySelector('textarea').getBoundingClientRect();
-      return {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height
-      };
-    }
-        '''
-
-        dimensions = await self.page.evaluate(get_dimensions)
-        x = dimensions['x']
-        y = dimensions['y']
-        width = dimensions['width']
-        height = dimensions['height']
-        mouse = self.page.mouse
-        await mouse.move(x + width - 4, y + height - 4)
-        await mouse.down()
-        await mouse.move(x + width + 100, y + height + 100)
-        await mouse.up()
-        new_dimensions = await self.page.evaluate(get_dimensions)
-        self.assertEqual(new_dimensions['width'], width + 104)
-        self.assertEqual(new_dimensions['height'], height + 104)
 
 
 class TestType(BaseTestCase):
@@ -311,7 +484,7 @@ class TestType(BaseTestCase):
         await self.page.keyboard.up('Shift')
 
     @sync
-    async def test_not_type_prevent_events(self) -> None:
+    async def test_not_type_prevent_events(self):
         await self.page.goto(self.url + 'static/textarea.html')
         await self.page.focus('textarea')
         await self.page.evaluate('''
