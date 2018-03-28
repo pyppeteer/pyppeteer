@@ -1261,3 +1261,11 @@ class TestJavaScriptEnabled(BaseTestCase):
         await self.page.goto(
             'data:text/html, <script>var something = "forbidden"</script>')
         self.assertEqual(await self.page.evaluate('something'), 'forbidden')
+
+
+class TestEvaluateOnNewDocument(BaseTestCase):
+    @sync
+    async def test_evaluate_before_else_on_page(self):
+        await self.page.evaluateOnNewDocument('() => window.injected = 123')
+        await self.page.goto(self.url + 'static/temperable.html')
+        self.assertEqual(await self.page.evaluate('window.result'), 123)

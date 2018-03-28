@@ -725,13 +725,6 @@ class TestPage(unittest.TestCase):
         self.assertIsNotNone(await self.page.J('section'))
         tmp_file.unlink()
 
-    @sync
-    async def test_no_await_check_just_call(self):
-        await self.page.setContent('')
-        await self.page.setJavaScriptEnabled(True)
-        await self.page.emulateMedia()
-        await self.page.evaluateOnNewDocument('() => 1 + 2')
-
 
 class TestScreenshot(BaseTestCase):
     def setUp(self):
