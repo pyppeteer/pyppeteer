@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from pathlib import Path
+import sys
 import unittest
 
 from syncer import sync
@@ -252,6 +253,7 @@ class TestClick(BaseTestCase):
         await self.page.tap('button')
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
+    @unittest.skipIf(sys.version_info < (3, 6), 'Fails on 3.5')
     @sync
     async def test_touches_report(self):
         await self.page.goto(self.url + 'static/touches.html')
