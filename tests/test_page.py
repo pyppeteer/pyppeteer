@@ -1245,3 +1245,19 @@ class TestEmulateMedia(BaseTestCase):
         with self.assertRaises(ValueError) as cm:
             await self.page.emulateMedia('bad')
         self.assertEqual(cm.exception.args[0], 'Unsupported media type: bad')
+
+
+class TestJavaScriptEnabled(BaseTestCase):
+    @sync
+    async def test_set_javascript_enabled(self):
+        await self.page.setJavaScriptEnabled(False)
+        await self.page.goto(
+            'data:text/html, <script>var something = "forbidden"</script>')
+        with self.assertRaises(ElementHandleError) as cm:
+            await self.page.evaluate('something')
+        self.assertIn('something is not defined', cm.exception.args[0])
+
+        await self.page.setJavaScriptEnabled(True)
+        await self.page.goto(
+            'data:text/html, <script>var something = "forbidden"</script>')
+        self.assertEqual(await self.page.evaluate('something'), 'forbidden')
