@@ -621,7 +621,7 @@ function deliverResult(name, seq, result) {
           * ``documentloaded``: when the ``DOMContentLoaded`` event is fired.
           * ``networkidle0``: when there are no more than 0 network connections
             for at least 500 ms.
-          * ``networkidle0``: when there are no more than 2 network connections
+          * ``networkidle2``: when there are no more than 2 network connections
             for at least 500 ms.
         """
         options = merge_dict(options, kwargs)
