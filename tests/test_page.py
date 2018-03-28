@@ -913,3 +913,29 @@ class TestUserAgent(BaseTestCase):
         await self.page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1')  # noqa: E501
         self.assertIn(
             'Safari', await self.page.evaluate('navigator.userAgent'))
+
+
+class TestExtraHTTPHeader(BaseTestCase):
+    @sync
+    async def test_extra_http_header(self):
+        await self.page.setExtraHTTPHeaders({'foo': 'bar'})
+
+        from tornado.web import RequestHandler
+        requests = []
+
+        class HeaderFetcher(RequestHandler):
+            def get(self):
+                requests.append(self.request)
+                self.write('')
+
+        self.app.add_handlers('localhost', [('/header', HeaderFetcher)])
+        await self.page.goto(self.url + 'header')
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(requests[0].headers['foo'], 'bar')
+
+    @sync
+    async def test_non_string_value(self):
+        with self.assertRaises(TypeError) as e:
+            await self.page.setExtraHTTPHeaders({'foo': 1})
+        self.assertIn(
+            'Expected value of header "foo" to be string', e.exception.args[0])

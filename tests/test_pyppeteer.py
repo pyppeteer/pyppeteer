@@ -799,7 +799,6 @@ class TestPage(unittest.TestCase):
 
     @sync
     async def test_no_await_check_just_call(self):
-        await self.page.setExtraHTTPHeaders({'a': 'b'})
         await self.page.setContent('')
         await self.page.setJavaScriptEnabled(True)
         await self.page.emulateMedia()
