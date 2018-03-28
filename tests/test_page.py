@@ -965,3 +965,28 @@ class TestAuthenticate(BaseTestCase):
         response = await self.page.goto(
             'http://127.0.0.1:{}/auth'.format(self.port))
         self.assertEqual(response.status, 401)
+
+
+class TestSetContent(BaseTestCase):
+    expectedOutput = '<html><head></head><body><div>hello</div></body></html>'
+
+    @sync
+    async def test_set_content(self):
+        await self.page.setContent('<div>hello</div>')
+        result = await self.page.content()
+        self.assertEqual(result, self.expectedOutput)
+
+    @sync
+    async def test_with_doctype(self):
+        doctype = '<!DOCTYPE html>'
+        await self.page.setContent(doctype + '<div>hello</div>')
+        result = await self.page.content()
+        self.assertEqual(result, doctype + self.expectedOutput)
+
+    @sync
+    async def test_with_html4_doctype(self):
+        doctype = ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" '
+                   '"http://www.w3.org/TR/html4/strict.dtd">')
+        await self.page.setContent(doctype + '<div>hello</div>')
+        result = await self.page.content()
+        self.assertEqual(result, doctype + self.expectedOutput)
