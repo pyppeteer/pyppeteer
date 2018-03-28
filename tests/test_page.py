@@ -939,3 +939,29 @@ class TestExtraHTTPHeader(BaseTestCase):
             await self.page.setExtraHTTPHeaders({'foo': 1})
         self.assertIn(
             'Expected value of header "foo" to be string', e.exception.args[0])
+
+
+class TestAuthenticate(BaseTestCase):
+    @sync
+    async def test_auth(self):
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 401)
+        await self.page.authenticate({'username': 'user', 'password': 'pass'})
+        response = await self.page.goto(self.url + 'auth')
+        self.assertIn(response.status, [200, 304])
+
+    @sync
+    async def test_auth_fail(self):
+        await self.page.authenticate({'username': 'foo', 'password': 'bar'})
+        response = await self.page.goto(self.url + 'auth')
+        self.assertEqual(response.status, 401)
+
+    @sync
+    async def test_disable_auth(self):
+        await self.page.authenticate({'username': 'user', 'password': 'pass'})
+        response = await self.page.goto(self.url + 'auth')
+        self.assertIn(response.status, [200, 304])
+        await self.page.authenticate(None)
+        response = await self.page.goto(
+            'http://127.0.0.1:{}/auth'.format(self.port))
+        self.assertEqual(response.status, 401)
