@@ -3,6 +3,7 @@
 
 import asyncio
 import math
+from pathlib import Path
 import time
 import unittest
 
@@ -994,3 +995,107 @@ class TestSetContent(BaseTestCase):
         await self.page.setContent(doctype + '<div>hello</div>')
         result = await self.page.content()
         self.assertEqual(result, doctype + self.expectedOutput)
+
+
+class TestAddScriptTag(BaseTestCase):
+    @sync
+    async def test_script_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(ValueError):
+            await self.page.addScriptTag('/static/injectedfile.js')
+
+    @sync
+    async def test_script_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        scriptHandle = await self.page.addScriptTag(url='/static/injectedfile.js')  # noqa: E501
+        self.assertIsNotNone(scriptHandle.asElement())
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_url_fail(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(PageError) as cm:
+            await self.page.addScriptTag({'url': '/nonexistsfile.js'})
+        self.assertEqual(cm.exception.args[0],
+                         'Loading script from /nonexistsfile.js failed')
+
+    @sync
+    async def test_script_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedfile.js')
+        await self.page.goto(self.url + 'empty')
+        scriptHanlde = await self.page.addScriptTag(path=path)
+        self.assertIsNotNone(scriptHanlde.asElement())
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+
+    @sync
+    async def test_script_tag_path_source_map(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedfile.js')
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(path=path)
+        result = await self.page.evaluate('__injectedError.stack')
+        self.assertIn(str(Path('static') / 'injectedfile.js'), result)
+
+    @sync
+    async def test_script_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')  # noqa: E501
+        self.assertIsNotNone(scriptHandle.asElement())
+        self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
+
+
+class TestAddStyleTag(BaseTestCase):
+    @sync
+    async def test_style_tag_error(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(ValueError):
+            await self.page.addStyleTag('/static/injectedstyle.css')
+
+    async def get_bgcolor(self):
+        return await self.page.evaluate('() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")')  # noqa: E501
+
+    @sync
+    async def test_style_tag_url(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        styleHandle = await self.page.addStyleTag(url='/static/injectedstyle.css')  # noqa: E501
+        self.assertIsNotNone(styleHandle.asElement())
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_url_fail(self):
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(PageError) as cm:
+            await self.page.addStyleTag(url='/nonexistfile.css')
+        self.assertEqual(cm.exception.args[0],
+                         'Loading style from /nonexistfile.css failed')
+
+    @sync
+    async def test_style_tag_path(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedstyle.css')
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        styleHandle = await self.page.addStyleTag(path=path)
+        self.assertIsNotNone(styleHandle.asElement())
+        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
+
+    @sync
+    async def test_style_tag_path_source_map(self):
+        curdir = Path(__file__).parent
+        path = str(curdir / 'static' / 'injectedstyle.css')
+        await self.page.goto(self.url + 'empty')
+        await self.page.addStyleTag(path=str(path))
+        styleHandle = await self.page.J('style')
+        styleContent = await self.page.evaluate(
+            'style => style.innerHTML', styleHandle)
+        self.assertIn(str(Path('static') / 'injectedstyle.css'), styleContent)
+
+    @sync
+    async def test_style_tag_content(self):
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
+        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
+        self.assertIsNotNone(styleHandle.asElement())
+        self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
