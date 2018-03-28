@@ -1281,3 +1281,10 @@ class TestPDF(BaseTestCase):
             pdf = f.read()
         self.assertGreater(len(pdf), 0)
         outfile.unlink()
+
+
+class TestTitle(BaseTestCase):
+    @sync
+    async def test_title(self):
+        await self.page.goto(self.url + 'static/button.html')
+        self.assertEqual(await self.page.title(), 'Button test')
