@@ -1269,3 +1269,15 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         await self.page.evaluateOnNewDocument('() => window.injected = 123')
         await self.page.goto(self.url + 'static/temperable.html')
         self.assertEqual(await self.page.evaluate('window.result'), 123)
+
+
+class TestPDF(BaseTestCase):
+    @sync
+    async def test_pdf(self):
+        outfile = Path(__file__).parent / 'output.pdf'
+        await self.page.pdf({'path': str(outfile)})
+        self.assertTrue(outfile.is_file())
+        with outfile.open('rb') as f:
+            pdf = f.read()
+        self.assertGreater(len(pdf), 0)
+        outfile.unlink()
