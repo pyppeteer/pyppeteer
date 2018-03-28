@@ -751,15 +751,6 @@ class TestPage(unittest.TestCase):
         self.page = await self.browser.newPage()
 
     @sync
-    async def test_user_agent(self):
-        self.assertIn('Mozilla', await self.page.evaluate(
-            '() => navigator.userAgent'))
-        await self.page.setUserAgent('foobar')
-        await self.page.goto(self.url)
-        self.assertEqual('foobar', await self.page.evaluate(
-            '() => navigator.userAgent'))
-
-    @sync
     async def test_viewport(self):
         await self.page.setViewport(dict(
             width=480,

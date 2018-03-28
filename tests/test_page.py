@@ -893,3 +893,23 @@ class TestQuerySelector(BaseTestCase):
         await self.page.setContent('<div></div><div></div>')
         element = await self.page.xpath('/html/body/div')
         self.assertEqual(len(element), 2)
+
+
+class TestUserAgent(BaseTestCase):
+    @sync
+    async def test_user_agent(self):
+        self.assertIn('Mozilla', await self.page.evaluate(
+            '() => navigator.userAgent'))
+        await self.page.setUserAgent('foobar')
+        await self.page.goto(self.url)
+        self.assertEqual('foobar', await self.page.evaluate(
+            '() => navigator.userAgent'))
+
+    @sync
+    async def test_user_agent_mobile_emulate(self):
+        await self.page.goto(self.url + 'static/mobile.html')
+        self.assertIn(
+            'Chrome', await self.page.evaluate('navigator.userAgent'))
+        await self.page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1')  # noqa: E501
+        self.assertIn(
+            'Safari', await self.page.evaluate('navigator.userAgent'))
