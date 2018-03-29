@@ -184,16 +184,17 @@ class Launcher(object):
             self.chromeClosed = True
             self.proc.terminate()
             self.proc.wait()
-            self._cleanup_tmp_user_data_dir()
 
     async def killChrome(self) -> None:
         """Terminate chromium process."""
         logger.debug('terminate chrome process...')
+        if self.connection and self.connection._connected:
+            await self.connection.send('Browser.close')
+            await self.connection.dispose()
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+            # Force kill chrome only when using temporary userDataDir
             self.waitForChromeToClose()
-        else:
-            if self.connection and self.connection._connected:
-                await self.connection.send('Browser.close')
+            self._cleanup_tmp_user_data_dir()
 
 
 async def launch(options: dict = None, **kwargs: Any) -> Browser:
