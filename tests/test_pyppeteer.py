@@ -9,7 +9,6 @@ Tests for `pyppeteer` module.
 """
 
 import asyncio
-import json
 import logging
 from pathlib import Path
 import time
@@ -313,52 +312,6 @@ class TestPyppeteer(BaseTestCase):
                 break
         self.assertEqual(await originalPage.evaluate('() => 1 + 2'), 3)
         self.assertTrue(await originalPage.J('body'))
-
-
-class TestTracing(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        self.outfile = Path(__file__).parent / 'trace.json'
-        if self.outfile.is_file():
-            self.outfile.unlink()
-
-    def tearDown(self):
-        if self.outfile.is_file():
-            self.outfile.unlink()
-        super().tearDown()
-
-    @sync
-    async def test_tracing(self):
-        await self.page.tracing.start({
-            'path': str(self.outfile)
-        })
-        await self.page.goto(self.url)
-        await self.page.tracing.stop()
-        self.assertTrue(self.outfile.is_file())
-
-    @sync
-    async def test_custom_categories(self):
-        await self.page.tracing.start({
-            'path': str(self.outfile),
-            'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
-        })
-        await self.page.tracing.stop()
-        self.assertTrue(self.outfile.is_file())
-        with self.outfile.open() as f:
-            trace_json = json.load(f)
-        self.assertIn(
-            'disabled-by-default-v8.cpu_profiler.hires',
-            trace_json['metadata']['trace-config'],
-        )
-
-    @sync
-    async def test_tracing_two_page_error(self):
-        await self.page.tracing.start({'path': str(self.outfile)})
-        new_page = await self.browser.newPage()
-        with self.assertRaises(NetworkError):
-            await new_page.tracing.start({'path': str(self.outfile)})
-        await new_page.close()
-        await self.page.tracing.stop()
 
 
 class TestCDPSession(BaseTestCase):
