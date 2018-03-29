@@ -27,7 +27,7 @@ class Browser(EventEmitter):
     Events = SimpleNamespace(
         TargetCreated='targetcreated',
         TargetDestroyed='targetdestroyed',
-        TargetChanged='tagetchanged',
+        TargetChanged='targetchanged',
         Disconnected='disconnected',
     )
 
@@ -90,10 +90,10 @@ class Browser(EventEmitter):
 
     async def _targetDestroyed(self, event: Dict) -> None:
         target = self._targets[event['targetId']]
-        target._initializedCallback(False)
         del self._targets[event['targetId']]
         if await target._initializedPromise:
             self.emit(Browser.Events.TargetDestroyed, target)
+        target._initializedCallback(False)
 
     async def _targetInfoChanged(self, event: Dict) -> None:
         target = self._targets.get(event['targetInfo']['targetId'])
@@ -202,10 +202,12 @@ class Target(object):
             return new_page
         return self._page
 
+    @property
     def url(self) -> str:
         """Get url of this target."""
         return self._targetInfo['url']
 
+    @property
     def type(self) -> str:
         """Get type of this target."""
         _type = self._targetInfo['type']

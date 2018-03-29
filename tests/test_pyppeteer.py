@@ -193,13 +193,6 @@ class TestPyppeteer(BaseTestCase):
         self.assertEqual(text, 'redirect2')
 
     @sync
-    async def test_targets(self):
-        targets = self.browser.targets()
-        _list = [target for target in targets
-                 if target.type() == 'page' and target.url() == 'about:blank']
-        self.assertTrue(any(_list))
-
-    @sync
     async def test_all_pages(self):
         pages = await self.browser.pages()
         self.assertEqual(len(pages), 2)
