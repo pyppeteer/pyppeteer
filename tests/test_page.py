@@ -1288,3 +1288,86 @@ class TestTitle(BaseTestCase):
     async def test_title(self):
         await self.page.goto(self.url + 'static/button.html')
         self.assertEqual(await self.page.title(), 'Button test')
+
+
+class TestSelect(BaseTestCase):
+    def setUp(self):
+        super().setUp()
+        sync(self.page.goto(self.url + 'static/select.html'))
+
+    @sync
+    async def test_select(self):
+        value = await self.page.select('select', 'blue')
+        self.assertEqual(value, ['blue'])
+        _input = await self.page.evaluate('result.onInput')
+        self.assertEqual(_input, ['blue'])
+        change = await self.page.evaluate('result.onChange')
+        self.assertEqual(change, ['blue'])
+
+        _input = await self.page.evaluate('result.onBubblingInput')
+        self.assertEqual(_input, ['blue'])
+        change = await self.page.evaluate('result.onBubblingChange')
+        self.assertEqual(change, ['blue'])
+
+    @sync
+    async def test_select_multiple(self):
+        await self.page.evaluate('makeMultiple();')
+        values = await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(values, ['blue', 'green', 'red'])
+        _input = await self.page.evaluate('result.onInput')
+        self.assertEqual(_input, ['blue', 'green', 'red'])
+        change = await self.page.evaluate('result.onChange')
+        self.assertEqual(change, ['blue', 'green', 'red'])
+
+    @sync
+    async def test_select_not_select_element(self):
+        with self.assertRaises(ElementHandleError):
+            await self.page.select('body', '')
+
+    @sync
+    async def test_select_no_match(self):
+        values = await self.page.select('select', 'abc', 'def')
+        self.assertEqual(values, [])
+
+    @sync
+    async def test_return_selected_elements(self):
+        await self.page.evaluate('makeMultiple()')
+        result = await self.page.select('select', 'blue', 'black', 'magenta')
+        self.assertEqual(len(result), 3)
+        self.assertEqual(set(result), set(['blue', 'black', 'magenta']))
+
+    @sync
+    async def test_select_not_multiple(self):
+        values = await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(len(values), 1)
+
+    @sync
+    async def test_select_no_value(self):
+        values = await self.page.select('select')
+        self.assertEqual(values, [])
+
+    @sync
+    async def test_select_deselect(self):
+        await self.page.select('select', 'blue', 'green', 'red')
+        await self.page.select('select')
+        result = await self.page.Jeval(
+            'select',
+            'elm => Array.from(elm.options).every(option => !option.selected)'
+        )
+        self.assertTrue(result)
+
+    @sync
+    async def test_select_deselect_multiple(self):
+        await self.page.evaluate('makeMultiple();')
+        await self.page.select('select', 'blue', 'green', 'red')
+        await self.page.select('select')
+        result = await self.page.Jeval(
+            'select',
+            'elm => Array.from(elm.options).every(option => !option.selected)'
+        )
+        self.assertTrue(result)
+
+    @sync
+    async def test_select_nonstring(self):
+        with self.assertRaises(TypeError):
+            await self.page.select('select', 12)
