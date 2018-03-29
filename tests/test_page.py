@@ -1371,3 +1371,228 @@ class TestSelect(BaseTestCase):
     async def test_select_nonstring(self):
         with self.assertRaises(TypeError):
             await self.page.select('select', 12)
+
+
+class TestCookie(BaseTestCase):
+    @sync
+    async def test_cookies(self):
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [])
+        await self.page.evaluate(
+            'document.cookie = "username=John Doe"'
+        )
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'username',
+            'value': 'John Doe',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': -1,
+            'size': 16,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+        await self.page.setCookie({'name': 'password', 'value': '123456'})
+        cookies = await self.page.evaluate(
+            '() => document.cookie'
+        )
+        self.assertEqual(cookies, 'username=John Doe; password=123456')
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'password',
+            'value': '123456',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': -1,
+            'size': 14,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }, {
+            'name': 'username',
+            'value': 'John Doe',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': -1,
+            'size': 16,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+        await self.page.deleteCookie({'name': 'username'})
+        cookies = await self.page.evaluate(
+            '() => document.cookie'
+        )
+        self.assertEqual(cookies, 'password=123456')
+        cookies = await self.page.cookies()
+        self.assertEqual(cookies, [{
+            'name': 'password',
+            'value': '123456',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': -1,
+            'size': 14,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+
+    @sync
+    async def test_cookie_blank_page(self):
+        await self.page.goto('about:blank')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_blank_page2(self):
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'about:blank',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
+
+    @sync
+    async def test_cookie_data_url_page(self):
+        await self.page.goto('data:,hello')
+        with self.assertRaises(NetworkError):
+            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
+
+    @sync
+    async def test_cookie_data_url_page2(self):
+        with self.assertRaises(PageError):
+            await self.page.setCookie(
+                {'name': 'example-cookie', 'value': 'best'},
+                {'url': 'data:,hello',
+                 'name': 'example-cookie-blank',
+                 'value': 'best'}
+            )
+
+
+class TestCookieWithPath(BaseTestCase):
+    @sync
+    async def test_set_cookie_with_path(self):
+        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.setCookie({
+            'name': 'gridcookie',
+            'value': 'GRID',
+            'path': '/static/grid.html',
+        })
+        self.assertEqual(await self.page.cookies(), [{
+            'name': 'gridcookie',
+            'value': 'GRID',
+            'path': '/static/grid.html',
+            'domain': 'localhost',
+            'expires': -1,
+            'size': 14,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+
+
+class TestCookieDelete(BaseTestCase):
+    @sync
+    async def test_delete_cookie(self):
+        await self.page.setCookie({
+            'name': 'cookie1',
+            'value': '1',
+        }, {
+            'name': 'cookie2',
+            'value': '2',
+        }, {
+            'name': 'cookie3',
+            'value': '3',
+        })
+        self.assertEqual(
+            await self.page.evaluate('document.cookie'),
+            'cookie1=1; cookie2=2; cookie3=3'
+        )
+        await self.page.deleteCookie({'name': 'cookie2'})
+        self.assertEqual(
+            await self.page.evaluate('document.cookie'),
+            'cookie1=1; cookie3=3'
+        )
+
+
+class TestCookieDomain(BaseTestCase):
+    @sync
+    async def test_different_domain(self):
+        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.setCookie({
+            'name': 'example-cookie',
+            'value': 'best',
+            'url': 'https://www.example.com',
+        })
+        self.assertEqual(await self.page.evaluate('document.cookie'), '')
+        self.assertEqual(await self.page.cookies(), [])
+        self.assertEqual(await self.page.cookies('https://www.example.com'), [{
+            'name': 'example-cookie',
+            'value': 'best',
+            'domain': 'www.example.com',
+            'path': '/',
+            'expires': -1,
+            'size': 18,
+            'httpOnly': False,
+            'secure': True,
+            'session': True,
+        }])
+
+
+class TestCookieFrames(BaseTestCase):
+    @sync
+    async def test_frame(self):
+        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.setCookie({
+            'name': 'localhost-cookie',
+            'value': 'best',
+        })
+        url_127 = 'http://127.0.0.1:{}'.format(self.port)
+        await self.page.evaluate('''src => {
+            let fulfill;
+            const promise = new Promise(x => fulfill = x);
+            const iframe = document.createElement('iframe');
+            document.body.appendChild(iframe);
+            iframe.onload = fulfill;
+            iframe.src = src;
+            return promise;
+        }''', url_127)
+        await self.page.setCookie({
+            'name': '127-cookie',
+            'value': 'worst',
+            'url': url_127,
+        })
+
+        self.assertEqual(
+            await self.page.evaluate('document.cookie'),
+            'localhost-cookie=best',
+        )
+        self.assertEqual(
+            await self.page.frames[1].evaluate('document.cookie'),
+            '127-cookie=worst',
+        )
+
+        self.assertEqual(await self.page.cookies(), [{
+            'name': 'localhost-cookie',
+            'value': 'best',
+            'domain': 'localhost',
+            'path': '/',
+            'expires': -1,
+            'size': 20,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
+        self.assertEqual(await self.page.cookies(url_127), [{
+            'name': '127-cookie',
+            'value': 'worst',
+            'domain': '127.0.0.1',
+            'path': '/',
+            'expires': -1,
+            'size': 15,
+            'httpOnly': False,
+            'secure': False,
+            'session': True,
+        }])
