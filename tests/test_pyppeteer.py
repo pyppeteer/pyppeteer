@@ -30,6 +30,7 @@ class TestPyppeteer(BaseTestCase):
 
     @sync
     async def test_plain_text_depr(self):
+        await self.page.goto(self.url)
         with self.assertLogs('pyppeteer', logging.WARN) as log:
             text = await self.page.plainText()
             self.assertIn('deprecated', log.records[0].msg)

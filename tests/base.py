@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import time
 import unittest
 
 from syncer import sync
@@ -18,7 +17,6 @@ class BaseTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.port = get_free_port()
-        time.sleep(0.1)
         cls.app = get_application()
         cls.server = cls.app.listen(cls.port)
         cls.browser = sync(launch(DEFAULT_OPTIONS))
@@ -31,7 +29,6 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.page = sync(self.browser.newPage())
-        sync(self.page.goto(self.url))
 
     def tearDown(self):
         sync(self.page.close())

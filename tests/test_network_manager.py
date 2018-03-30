@@ -26,6 +26,8 @@ class TestNetworkEvent(BaseTestCase):
 
     @sync
     async def test_request_post(self):
+        await self.page.goto(self.url + 'empty')
+
         from tornado.web import RequestHandler
 
         class PostHandler(RequestHandler):
@@ -35,7 +37,7 @@ class TestNetworkEvent(BaseTestCase):
         self.app.add_handlers('localhost', [('/post', PostHandler)])
         requests = []
         self.page.on('request', lambda req: requests.append(req))
-        await self.page.evaluate('fetch("./post", {method: "POST", body: JSON.stringify({foo: "bar"})})')  # noqa: E501
+        await self.page.evaluate('fetch("/post", {method: "POST", body: JSON.stringify({foo: "bar"})})')  # noqa: E501
         self.assertEqual(len(requests), 1)
         req = requests[0]
         self.assertTrue(req)

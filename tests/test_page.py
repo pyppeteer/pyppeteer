@@ -196,7 +196,7 @@ class TestOfflineMode(BaseTestCase):
             await self.page.goto(self.url)
         await self.page.setOfflineMode(False)
         res = await self.page.reload()
-        self.assertEqual(res.status, 304)
+        self.assertIn(res.status, [200, 304])
 
     @sync
     async def test_emulate_navigator_offline(self):
@@ -551,7 +551,7 @@ class TestRequestInterception(BaseTestCase):
             self.assertIsNone(req.postData)
             self.assertEqual(req.resourceType, 'document')
             self.assertEqual(req.frame, self.page.mainFrame)
-            self.assertEqual(req.frame.url, self.url)
+            self.assertEqual(req.frame.url, 'about:blank')
             await req.continue_()
 
         self.page.on('request',
@@ -1376,6 +1376,7 @@ class TestSelect(BaseTestCase):
 class TestCookie(BaseTestCase):
     @sync
     async def test_cookies(self):
+        await self.page.goto(self.url)
         cookies = await self.page.cookies()
         self.assertEqual(cookies, [])
         await self.page.evaluate(
@@ -1496,6 +1497,7 @@ class TestCookieWithPath(BaseTestCase):
 class TestCookieDelete(BaseTestCase):
     @sync
     async def test_delete_cookie(self):
+        await self.page.goto(self.url)
         await self.page.setCookie({
             'name': 'cookie1',
             'value': '1',
