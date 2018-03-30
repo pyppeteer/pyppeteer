@@ -110,7 +110,7 @@ class TestTarget(BaseTestCase):
         self.browser.once('targetcreated',
                           lambda target: otherPagePromise.set_result(target))
         await self.page.evaluate(
-            'url => {window.open(url); return}',
+            'url => window.open(url)',
             'http://127.0.0.1:{}'.format(self.port))
         otherPage = await (await otherPagePromise).page()
 
@@ -199,7 +199,7 @@ class TestTarget(BaseTestCase):
         self.browser.once('targetcreated',
                           lambda t: targetPromise2.set_result(t))
         evaluatePromise = asyncio.ensure_future(
-            newPage.evaluate('window.open("about:blank"); null'))
+            newPage.evaluate('window.open("about:blank")'))
         target2 = await targetPromise2
         self.assertEqual(target2.url, 'about:blank')
         await evaluatePromise

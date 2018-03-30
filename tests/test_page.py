@@ -119,7 +119,6 @@ class TestEvaluate(BaseTestCase):
         result = await self.page.evaluate('() => {a: undefined}')
         self.assertEqual(result, {})
 
-    @unittest.skip('Cannot pass this  test')
     @sync
     async def test_fail_window_object(self):
         result = await self.page.evaluate('() => window')

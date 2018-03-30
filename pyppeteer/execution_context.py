@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
-from pyppeteer.errors import ElementHandleError
+from pyppeteer.errors import ElementHandleError, NetworkError
 
 if TYPE_CHECKING:
     from pyppeteer.element_handle import ElementHandle  # noqa: F401
@@ -35,7 +35,12 @@ class ExecutionContext(object):
         """
         handle = await self.evaluateHandle(
             pageFunction, *args, force_expr=force_expr)
-        result = await handle.jsonValue()
+        try:
+            result = await handle.jsonValue()
+        except NetworkError as e:
+            if 'Object reference chain is too long' in e.args[0]:
+                return
+            raise
         await handle.dispose()
         return result
 
