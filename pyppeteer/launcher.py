@@ -189,8 +189,12 @@ class Launcher(object):
         """Terminate chromium process."""
         logger.debug('terminate chrome process...')
         if self.connection and self.connection._connected:
-            await self.connection.send('Browser.close')
-            await self.connection.dispose()
+            try:
+                await self.connection.send('Browser.close')
+                await self.connection.dispose()
+            except Exception:
+                # ignore errors on browser termination process
+                pass
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             # Force kill chrome only when using temporary userDataDir
             self.waitForChromeToClose()
