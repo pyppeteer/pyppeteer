@@ -1028,7 +1028,31 @@ function deliverResult(name, seq, result) {
 
     async def click(self, selector: str, options: dict = None, **kwargs: Any
                     ) -> None:
-        """Click element which matches `selector`."""
+        """Click element which matches ``selector``.
+
+        This method fetches an element with ``selector``, scrolls it into view
+        if needed, and then uses :attr:`mouse` to click in the center of the
+        element. If there's no element matching ``selector``, the method raises
+        ``PageError``.
+
+        Available options are:
+
+        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
+          ``left``.
+        * ``clickCount`` (int): defaults to 1.
+        * ``delay`` (int|float): Time to wait between ``mousedown`` and
+          ``mouseup`` in milliseconds. defaults to 0.
+
+        .. note:: If this method triggers a navigation event and there's a
+            separate :meth:`waitForNavigation`, you may end up with a race
+            condition that yields unexpected results. The correct pattern for
+            click and wait for navigation is the following::
+
+                await asyncio.wait([
+                    page.waitForNavigation(waitOptions),
+                    page.click(selector, clickOptions),
+                ])
+        """
         options = merge_dict(options, kwargs)
         handle = await self.J(selector)
         if not handle:
