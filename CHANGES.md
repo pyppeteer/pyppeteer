@@ -6,6 +6,7 @@ History
 * Gracefully terminate browser process
 * `Request.method` and `Request.postData` return `None` if no data
 * Change `Target.url` and `Target.type` to properties
+* Change `Dialog.message` and `Dialog.defaultValue` to properties
 * Fix: properly emit `Browser.targetChanged` events
 * Fix: properly emit `Browser.targetDestroyed` events
 
