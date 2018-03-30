@@ -6,7 +6,6 @@
 import asyncio
 from collections import OrderedDict
 import logging
-import re
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
 from typing import TYPE_CHECKING
@@ -434,14 +433,18 @@ function(html) {
         }'''
 
         if isinstance(options.get('url'), str):
-            return (await context.evaluateHandle(  # type: ignore
-                addScriptUrl, options['url'])).asElement()
+            url = options['url']
+            try:
+                return (await context.evaluateHandle(  # type: ignore
+                    addScriptUrl, url)).asElement()
+            except ElementHandleError as e:
+                raise PageError(f'Loading script from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
-                re.sub(options['path'], '\n', ''))
+                options['path'].replace('\n', ''))
             return (await context.evaluateHandle(  # type: ignore
                 addScriptContent, contents)).asElement()
 
@@ -484,13 +487,18 @@ function(html) {
         }'''
 
         if isinstance(options.get('url'), str):
-            return (await context.evaluateHandle(  # type: ignore
-                addStyleUrl, options['url'])).asElement()
+            url = options['url']
+            try:
+                return (await context.evaluateHandle(  # type: ignore
+                    addStyleUrl, url)).asElement()
+            except ElementHandleError as e:
+                raise PageError(f'Loading style from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
-            contents = contents + '/*# sourceURL={}*/'.format(re.sub(options['path'], '\n', ''))  # noqa: E501
+            contents = contents + '/*# sourceURL={}*/'.format(
+                options['path'].replace('\n', ''))
             return (await context.evaluateHandle(  # type: ignore
                 addStyleContent, contents)).asElement()
 

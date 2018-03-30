@@ -722,7 +722,7 @@ function deliverResult(name, seq, result) {
         history = await self._client.send('Page.getNavigationHistory')
         _count = history.get('currentIndex', 0) + delta
         entries = history.get('entries', [])
-        if len(entries) < _count:
+        if len(entries) <= _count:
             return None
         entry = entries[_count]
         response = (await asyncio.gather(

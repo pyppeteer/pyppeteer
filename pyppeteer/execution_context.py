@@ -184,5 +184,5 @@ class JSHandle(object):
             _type = (self._remoteObject.get('subtype') or
                      self._remoteObject.get('type'))
             return f'JSHandle@{_type}'
-        return 'JSHandle: {}'.format(
+        return 'JSHandle:{}'.format(
             helper.valueFromRemoteObject(self._remoteObject))
