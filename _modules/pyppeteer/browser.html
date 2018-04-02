@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.15 documentation</title>
+    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.17 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -67,7 +67,7 @@
     <span class="n">Events</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
         <span class="n">TargetCreated</span><span class="o">=</span><span class="s1">&#39;targetcreated&#39;</span><span class="p">,</span>
         <span class="n">TargetDestroyed</span><span class="o">=</span><span class="s1">&#39;targetdestroyed&#39;</span><span class="p">,</span>
-        <span class="n">TargetChanged</span><span class="o">=</span><span class="s1">&#39;tagetchanged&#39;</span><span class="p">,</span>
+        <span class="n">TargetChanged</span><span class="o">=</span><span class="s1">&#39;targetchanged&#39;</span><span class="p">,</span>
         <span class="n">Disconnected</span><span class="o">=</span><span class="s1">&#39;disconnected&#39;</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -130,10 +130,10 @@
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetDestroyed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span>
-        <span class="n">target</span><span class="o">.</span><span class="n">_initializedCallback</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span>
         <span class="k">if</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetDestroyed</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">target</span><span class="o">.</span><span class="n">_initializedCallback</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetInfoChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">][</span><span class="s1">&#39;targetId&#39;</span><span class="p">])</span>
@@ -191,9 +191,8 @@
         <span class="k">return</span> <span class="n">version</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userAgent&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Browser.close"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Close connections and terminate browser process.&quot;&quot;&quot;</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closeCallback</span><span class="p">()</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">disconnect</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;Close connections and terminate browser process.&quot;&quot;&quot;</span></div>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closeCallback</span><span class="p">()</span>  <span class="c1"># Launcher.killChrome()</span>
 
 <div class="viewcode-block" id="Browser.disconnect"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.disconnect">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">disconnect</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Disconnect browser.&quot;&quot;&quot;</span></div>
@@ -243,15 +242,17 @@
             <span class="k">return</span> <span class="n">new_page</span></div>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span>
 
-<div class="viewcode-block" id="Target.url"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Target.url">[docs]</a>    <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get url of this target.&quot;&quot;&quot;</span></div>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get url of this target.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="Target.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Target.type">[docs]</a>    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Get type of this target.&quot;&quot;&quot;</span>
         <span class="n">_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;page&#39;</span> <span class="ow">or</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;service_worker&#39;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">_type</span></div>
+            <span class="k">return</span> <span class="n">_type</span>
         <span class="k">return</span> <span class="s1">&#39;other&#39;</span>
 
     <span class="k">def</span> <span class="nf">_targetInfoChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetInfo</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>

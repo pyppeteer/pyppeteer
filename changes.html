@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.15 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.17 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="_static/documentation_options.js"></script>
@@ -40,6 +40,24 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-17-2018-04-02">
+<h2>Version 0.0.17 (2018-04-02)<a class="headerlink" href="#version-0-0-17-2018-04-02" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Mark as alpha</li>
+<li>Gracefully terminate browser process</li>
+<li><code class="docutils literal notranslate"><span class="pre">Request.method</span></code> and <code class="docutils literal notranslate"><span class="pre">Request.postData</span></code> return <code class="docutils literal notranslate"><span class="pre">None</span></code> if no data</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Target.url</span></code> and <code class="docutils literal notranslate"><span class="pre">Target.type</span></code> to properties</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Dialog.message</span></code> and <code class="docutils literal notranslate"><span class="pre">Dialog.defaultValue</span></code> to properties</li>
+<li>Fix: properly emit <code class="docutils literal notranslate"><span class="pre">Browser.targetChanged</span></code> events</li>
+<li>Fix: properly emit <code class="docutils literal notranslate"><span class="pre">Browser.targetDestroyed</span></code> events</li>
+</ul>
+</div>
+<div class="section" id="version-0-0-16-2018-03-23">
+<h2>Version 0.0.16 (2018-03-23)<a class="headerlink" href="#version-0-0-16-2018-03-23" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>BugFIx: Skip SIGHUP option on windows (windows does not support this signal)</li>
+</ul>
+</div>
 <div class="section" id="version-0-0-15-2018-03-22">
 <h2>Version 0.0.15 (2018-03-22)<a class="headerlink" href="#version-0-0-15-2018-03-22" title="Permalink to this headline">¶</a></h2>
 <p>Catch up puppeteer v1.0.0</p>
@@ -214,6 +232,8 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-17-2018-04-02">Version 0.0.17 (2018-04-02)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-16-2018-03-23">Version 0.0.16 (2018-03-23)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-15-2018-03-22">Version 0.0.15 (2018-03-22)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-14-2018-03-14">Version 0.0.14 (2018-03-14)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-13-2018-03-10">Version 0.0.13 (2018-03-10)</a></li>

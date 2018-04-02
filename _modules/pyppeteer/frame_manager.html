@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.15 documentation</title>
+    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.17 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -46,7 +46,6 @@
 <span class="kn">import</span> <span class="nn">asyncio</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">import</span> <span class="nn">logging</span>
-<span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">SimpleNamespace</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">TYPE_CHECKING</span>
@@ -474,14 +473,18 @@
 <span class="s1">        }&#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-                <span class="n">addScriptUrl</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">addScriptUrl</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">ElementHandleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Loading script from </span><span class="si">{url}</span><span class="s1"> failed&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
             <span class="n">contents</span> <span class="o">=</span> <span class="n">contents</span> <span class="o">+</span> <span class="s1">&#39;//# sourceURL=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
+                <span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
             <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
                 <span class="n">addScriptContent</span><span class="p">,</span> <span class="n">contents</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
 
@@ -524,13 +527,18 @@
 <span class="s1">        }&#39;&#39;&#39;</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-                <span class="n">addStyleUrl</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">addStyleUrl</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">ElementHandleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Loading style from </span><span class="si">{url}</span><span class="s1"> failed&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-            <span class="n">contents</span> <span class="o">=</span> <span class="n">contents</span> <span class="o">+</span> <span class="s1">&#39;/*# sourceURL=</span><span class="si">{}</span><span class="s1">*/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">],</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>  <span class="c1"># noqa: E501</span>
+            <span class="n">contents</span> <span class="o">=</span> <span class="n">contents</span> <span class="o">+</span> <span class="s1">&#39;/*# sourceURL=</span><span class="si">{}</span><span class="s1">*/&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
             <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
                 <span class="n">addStyleContent</span><span class="p">,</span> <span class="n">contents</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
 

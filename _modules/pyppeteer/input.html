@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.input &#8212; Pyppeteer 0.0.15 documentation</title>
+    <title>pyppeteer.input &#8212; Pyppeteer 0.0.17 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" src="../../_static/documentation_options.js"></script>
@@ -205,10 +205,7 @@
 <span class="sd">          to 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="n">delay</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">if</span> <span class="n">options</span> <span class="ow">and</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">):</span>
-            <span class="n">delay</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span>
+        <span class="n">delay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">text</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">keyDefinitions</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="n">delay</span><span class="p">})</span>
@@ -238,7 +235,7 @@
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">options</span> <span class="ow">and</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;delay&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span></div></div>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
