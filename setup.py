@@ -53,7 +53,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.16',
+    version='0.0.17',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,
@@ -71,7 +71,7 @@ setup(
     zip_safe=False,
     keywords='pyppeteer',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',

@@ -1,7 +1,9 @@
 History
 =======
 
-## Version 0.0.17 (next version)
+## Version 0.0.17 (2018-04-02)
+
+* Mark as alpha
 
 * Gracefully terminate browser process
 * `Request.method` and `Request.postData` return `None` if no data
