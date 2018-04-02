@@ -1,6 +1,17 @@
 History
 =======
 
+## Version 0.0.17 (2018-04-02)
+
+* Mark as alpha
+
+* Gracefully terminate browser process
+* `Request.method` and `Request.postData` return `None` if no data
+* Change `Target.url` and `Target.type` to properties
+* Change `Dialog.message` and `Dialog.defaultValue` to properties
+* Fix: properly emit `Browser.targetChanged` events
+* Fix: properly emit `Browser.targetDestroyed` events
+
 ## Version 0.0.16 (2018-03-23)
 
 * BugFIx: Skip SIGHUP option on windows (windows does not support this signal)

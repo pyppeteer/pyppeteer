@@ -36,10 +36,12 @@ class Dialog(object):
         """
         return self._type
 
+    @property
     def message(self) -> str:
         """Get dialog message."""
         return self._message
 
+    @property
     def defaultValue(self) -> str:
         """If dialog is prompt, get default prompt value.
 

@@ -33,7 +33,8 @@ def docs(p: str) -> str:
     return path.join(docsdir, p)
 
 
-# Wtach documets
+# Watch documents
+server.watch(docs('*.py'), cmd, delay=1)
 server.watch(docs('*.md'), cmd, delay=1)
 server.watch(docs('../*.md'), cmd, delay=1)
 server.watch(docs('*.md'), cmd, delay=1)
