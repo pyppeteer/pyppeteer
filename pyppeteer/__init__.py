@@ -7,7 +7,7 @@ import logging
 
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
-__version__ = '0.0.16'
+__version__ = '0.0.17'
 __chromimum_revision__ = '543305'
 __base_puppeteer_version__ = 'v1.0.0'
 
