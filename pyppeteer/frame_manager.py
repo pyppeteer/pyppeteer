@@ -519,6 +519,41 @@ function(html) {
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
 
+    async def click(self, selector: str, options: dict = None, **kwargs: Any
+                    ) -> None:
+        """Click element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.click`.
+        """
+        options = merge_dict(options, kwargs)
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.click(options)
+        await handle.dispose()
+
+    async def focus(self, selector: str) -> None:
+        """Fucus element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.focus`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await self.evaluate('element => element.focus()', handle)
+        await handle.dispose()
+
+    async def hover(self, selector: str) -> None:
+        """Mouse hover the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.hover`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.hover()
+        await handle.dispose()
+
     async def select(self, selector: str, *values: str) -> List[str]:
         """Select options and return selected values.
 
@@ -549,6 +584,30 @@ function(html) {
     return options.filter(option => option.selected).map(options => options.value)
 }
         ''', values)  # noqa: E501
+
+    async def tap(self, selector: str) -> None:
+        """Tap the element which matches the ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.tap`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.tap()
+        await handle.dispose()
+
+    async def type(self, selector: str, text: str, options: dict = None,
+                   **kwargs: Any) -> None:
+        """Type ``text`` on the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.type`.
+        """
+        options = merge_dict(options, kwargs)
+        handle = await self.querySelector(selector)
+        if handle is None:
+            raise PageError('Cannot find {} on this page'.format(selector))
+        await handle.type(text, options)
+        await handle.dispose()
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any

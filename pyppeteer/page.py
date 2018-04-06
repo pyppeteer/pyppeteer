@@ -195,11 +195,10 @@ class Page(EventEmitter):
 
         :arg str selector: A selector to search element to touch.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.tap()
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('no main frame')
+        await frame.tap(selector)
 
     @property
     def tracing(self) -> 'Tracing':
@@ -591,14 +590,14 @@ function deliverResult(name, seq, result) {
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         return await frame.content()
 
     async def setContent(self, html: str) -> None:
         """Set content to this page."""
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         await frame.setContent(html)
@@ -803,7 +802,7 @@ function deliverResult(name, seq, result) {
 
         note: ``force_expr`` option is a keyword only argument.
         """
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         return await frame.evaluate(pageFunction, *args, force_expr=force_expr)
@@ -1059,34 +1058,30 @@ function deliverResult(name, seq, result) {
                     page.click(selector, clickOptions),
                 )
         """
-        options = merge_dict(options, kwargs)
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.click(options)
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.click(selector, options, **kwargs)
 
     async def hover(self, selector: str) -> None:
         """Mouse hover the element which matches ``selector``.
 
         If no element matched the ``selector``, raise ``PageError``.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.hover()
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.hover(selector)
 
     async def focus(self, selector: str) -> None:
         """Focus the element which matches ``selector``.
 
         If no element matched the ``selector``, raise ``PageError``.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await self.evaluate('element => element.focus()', handle)
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.focus(selector)
 
     async def select(self, selector: str, *values: str) -> List[str]:
         """Select options and return selected values.
@@ -1106,12 +1101,10 @@ function deliverResult(name, seq, result) {
 
         Details see :meth:`pyppeteer.input.Keyboard.type`.
         """
-        options = merge_dict(options, kwargs)
-        handle = await self.querySelector(selector)
-        if handle is None:
-            raise PageError('Cannot find {} on this page'.format(selector))
-        await handle.type(text, options)
-        await handle.dispose()
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.type(selector, text, options, **kwargs)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
