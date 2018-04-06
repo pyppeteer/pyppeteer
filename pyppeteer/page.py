@@ -778,9 +778,7 @@ function deliverResult(name, seq, result) {
             * ``hasTouch`` (bool): Default to ``False``.
             * ``isLandscape`` (bool): Default to ``False``.
         """
-        needsReload = await self._emulationManager.emulateViewport(
-            self._client, viewport,
-        )
+        needsReload = await self._emulationManager.emulateViewport(viewport)
         self._viewport = viewport
         if needsReload:
             await self.reload()
