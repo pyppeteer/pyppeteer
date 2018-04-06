@@ -528,8 +528,11 @@ function(html) {
 
     const options = Array.from(element.options);
     element.value = undefined;
-    for (const option of options)
+    for (const option of options) {
         option.selected = values.includes(option.value);
+        if (option.selected && !element.multiple)
+            break;
+    }
 
     element.dispatchEvent(new Event('input', { 'bubbles': true }));
     element.dispatchEvent(new Event('change', { 'bubbles': true }));

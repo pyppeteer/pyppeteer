@@ -1326,6 +1326,12 @@ class TestSelect(BaseTestCase):
         self.assertEqual(change, ['blue'])
 
     @sync
+    async def test_select_first_item(self):
+        await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(await self.page.evaluate('result.onInput'), ['blue'])
+        self.assertEqual(await self.page.evaluate('result.onChange'), ['blue'])
+
+    @sync
     async def test_select_multiple(self):
         await self.page.evaluate('makeMultiple();')
         values = await self.page.select('select', 'blue', 'green', 'red')
