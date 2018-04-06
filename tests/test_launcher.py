@@ -9,10 +9,10 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer import launch, executablePath
+from pyppeteer import connect, launch, executablePath
 from pyppeteer.chromium_downloader import chromium_excutable
 from pyppeteer.errors import NetworkError
-from pyppeteer.launcher import Launcher, connect
+from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
 
 from base import DEFAULT_OPTIONS

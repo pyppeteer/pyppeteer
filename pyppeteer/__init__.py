@@ -22,13 +22,14 @@ _logger.addHandler(_log_handler)
 _logger.propagate = False
 # logger.setLevel(logging.DEBUG)
 
-from pyppeteer.launcher import launch, executablePath  # noqa: E402
+from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
 from pyppeteer.launcher import defaultArgs  # noqa: E402
 
 version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
 __all__ = [
+    'connect',
     'launch',
     'executablePath',
     'defaultArgs',

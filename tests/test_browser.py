@@ -6,8 +6,7 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer import launch
-from pyppeteer.launcher import connect
+from pyppeteer import connect, launch
 
 from base import BaseTestCase, DEFAULT_OPTIONS
 
