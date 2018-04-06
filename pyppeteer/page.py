@@ -1126,15 +1126,17 @@ function deliverResult(name, seq, result) {
           will be done after the timeout.
         * If ``selectorOrFunctionOrTimeout`` is a string of JavaScript
           function, this method is a shortcut to :meth:`waitForFunction`.
-        * If ``selectorOrFunctionOrTimeout`` is a selector string, this method
-          is a shortcut to :meth:`waitForSelector`.
+        * If ``selectorOrFunctionOrTimeout`` is a selector string or xpath
+          string, this method is a shortcut to :meth:`waitForSelector` or
+          :meth:`waitForXPath`. If the string starts with ``//``, the string is
+          treated as xpath.
 
         Pyppeteer tries to automatically detect function or selector, but
         sometimes miss-detects. If not work as you expected, use
         :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.
 
-        :arg selectorOrFunctionOrTimeout: A selector or
-          function string, or timeout (milliseconds).
+        :arg selectorOrFunctionOrTimeout: A selector, xpath, or function
+                                          string, or timeout (milliseconds).
         :arg Any args: Arguments to pass the function.
         :return: Return awaitable object which resolves to a JSHandle of the
                  success value.
@@ -1176,6 +1178,36 @@ function deliverResult(name, seq, result) {
         if not frame:
             raise PageError('no main frame.')
         return frame.waitForSelector(selector, options, **kwargs)
+
+    def waitForXPath(self, xpath: str, options: dict = None,
+                     **kwargs: Any) -> Awaitable:
+        """Wait until eleemnt which matches ``xpath`` appears on page.
+
+        Wait for the ``xpath`` to appear in page. If the moment of calling the
+        method the ``xpath`` already exists, the method will return
+        immediately. If the xpath doesn't appear after ``timeout`` millisecons
+        of waiting, the function will raise exception.
+
+
+        :arg str xpath: A [xpath] of an element to wait for.
+        :return: Return awaitable object which resolves when element specified
+                 by xpath string is added to DOM.
+
+        Avalaible options are:
+
+        * ``visible`` (bool): wait for element to be present in DOM and to be
+          visible, i.e. to not have ``display: none`` or ``visibility: hidden``
+          CSS properties. Defaults to ``False``.
+        * ``hidden`` (bool): wait for element to not be found in the DOM or to
+          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
+          properties. Defaults to ``False``.
+        * ``timeout`` (int|float): maximum time to wait for in milliseconds.
+          Defaults to 30000 (30 seconds).
+        """
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return frame.waitForXPath(xpath, options, **kwargs)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:

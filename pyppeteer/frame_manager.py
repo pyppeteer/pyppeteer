@@ -560,6 +560,8 @@ function(html) {
         if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(
                 selectorOrFunctionOrTimeout, options, *args)
+        if selectorOrFunctionOrTimeout.startswith('//'):
+            return self.waitForXPath(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,
@@ -569,28 +571,16 @@ function(html) {
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
         """
         options = merge_dict(options, kwargs)
-        waitForVisible = bool(options.get('visible'))
-        waitForHidden = bool(options.get('hidden'))
-        predicate = '''
-(selector, waitForVisible, waitForHidden) => {
-    const node = document.querySelector(selector);
-    if (!node)
-        return waitForHidden;
-    if (!waitForVisible && !waitForHidden)
-        return node;
-    const style = window.getComputedStyle(node);
-    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
-    return success ? node : null
+        return self._waitForSelectorOrXPath(selector, False, options)
 
-    function hasVisibleBoundingBox() {
-        const rect = node.getBoundingClientRect();
-        return !!(rect.top || rect.bottom || rect.width || rect.height);
-    }
-}
-        '''  # noqa: E501
-        return self.waitForFunction(
-            predicate, options, selector, waitForVisible, waitForHidden)
+    def waitForXPath(self, xpath: str, options: dict = None,
+                     **kwargs: Any) -> 'WaitTask':
+        """Wait until element which matches ``xpath`` appears on page.
+
+        Details see :meth:`pyppeteer.page.Page.waitForXPath`.
+        """
+        options = merge_dict(options, kwargs)
+        return self._waitForSelectorOrXPath(xpath, True, options)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: Any, **kwargs: Any) -> 'WaitTask':
@@ -602,6 +592,45 @@ function(html) {
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
         return WaitTask(self, pageFunction, polling, timeout, *args)
+
+    def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
+                                options: dict = None, **kwargs: Any
+                                ) -> 'WaitTask':
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+        waitForVisible = bool(options.get('visible'))
+        waitForHidden = bool(options.get('hidden'))
+        polling = 'raf' if waitForHidden or waitForVisible else 'mutation'
+        predicate = '''
+(selectorOrXPath, isXPath, waitForVisible, waitForHidden) => {
+    const node = isXPath
+        ? document.evaluate(selectorOrXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        : document.querySelector(selectorOrXPath);
+    if (!node)
+        return waitForHidden;
+    if (!waitForVisible && !waitForHidden)
+        return node;
+    const element = /** @type {Element} */ (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
+
+    const style = window.getComputedStyle(element);
+    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
+    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
+    return success ? node : null
+
+    function hasVisibleBoundingBox() {
+        const rect = element.getBoundingClientRect();
+        return !!(rect.top || rect.bottom || rect.width || rect.height);
+    }
+}
+        '''  # noqa: E501
+        return self.waitForFunction(
+            predicate,
+            {'timeout': timeout, 'polling': polling},
+            selectorOrXPath,
+            isXPath,
+            waitForVisible,
+            waitForHidden,
+        )
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -621,7 +650,7 @@ function(html) {
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
             waitTask.terminate(
-                PageError('waitForSelector failed: frame got detached.'))
+                PageError('waitForFunction failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)

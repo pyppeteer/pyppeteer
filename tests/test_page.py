@@ -214,19 +214,31 @@ class TestEvaluateHandle(BaseTestCase):
 
 
 class TestWaitFor(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-
     @sync
-    async def test_wait_for_page_navigated(self):
-        fut = asyncio.ensure_future(self.page.waitFor('h1'))
+    async def test_wait_for_selector(self):
+        fut = asyncio.ensure_future(self.page.waitFor('div'))
         fut.add_done_callback(lambda f: self.set_result(True))
         await self.page.goto(self.url + 'empty')
         self.assertFalse(self.result)
-        await self.page.goto(self.url)
+        await self.page.goto(self.url + 'static/grid.html')
         await fut
         self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_xpath(self):
+        waitFor = asyncio.ensure_future(self.page.waitFor('//div'))
+        waitFor.add_done_callback(lambda fut: self.set_result(True))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(self.result)
+        await self.page.goto(self.url + 'static/grid.html')
+        await waitFor
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_single_slash_fail(self):
+        await self.page.setContent('<div>some text</div>')
+        with self.assertRaises(Exception):
+            await self.page.waitFor('/html/body/div')
 
     @sync
     async def test_wait_for_timeout(self):
@@ -249,10 +261,6 @@ class TestWaitFor(BaseTestCase):
 
 
 class TestConsole(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-
     @sync
     async def test_console_event(self):
         messages = []
