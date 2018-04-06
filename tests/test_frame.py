@@ -36,6 +36,15 @@ class TestContext(BaseTestCase):
         self.assertEqual(a2, 2)
 
 
+class TestEvaluateHandle(BaseTestCase):
+    @sync
+    async def test_evaluate_handle(self):
+        await self.page.goto(self.url + 'empty')
+        frame = self.page.mainFrame
+        windowHandle = await frame.evaluateHandle('window')
+        self.assertTrue(windowHandle)
+
+
 class TestEvaluate(BaseTestCase):
     @sync
     async def test_frame_evaluate(self):

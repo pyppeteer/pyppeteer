@@ -176,7 +176,7 @@ class FrameManager(EventEmitter):
         self._contextIdToContext.clear()
 
     def createJSHandle(self, contextId: str, remoteObject: Dict = None
-                       ) -> 'JSHandle':
+                       ) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
             remoteObject = dict()
@@ -242,6 +242,16 @@ class Frame(object):
         associated to this frame.
         """
         return await self._contextPromise
+
+    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
+        """Execute fucntion on this frame.
+
+        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
+        """
+        context = await self.executionContext()
+        if context is None:
+            raise PageError('this frame has no context.')
+        return await context.evaluateHandle(pageFunction, *args)
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:
