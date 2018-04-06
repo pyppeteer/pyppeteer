@@ -54,7 +54,7 @@ class Connection(EventEmitter):
                     resp = await self.connection.recv()
                     if resp:
                         self._on_message(resp)
-                except websockets.ConnectionClosed:
+                except (websockets.ConnectionClosed, ConnectionResetError):
                     logger.info('connection closed')
                     break
 
