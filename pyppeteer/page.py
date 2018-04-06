@@ -627,9 +627,14 @@ function deliverResult(name, seq, result) {
         options = merge_dict(options, kwargs)
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
+
+        def set_request(request: Request) -> None:
+            if request.url not in requests:
+                requests[request.url] = request
+
         eventListeners = [helper.addEventListener(
             self._networkManager, NetworkManager.Events.Request,
-            lambda request: requests.__setitem__(request.url, request)
+            set_request,
         )]
 
         mainFrame = self._frameManager.mainFrame

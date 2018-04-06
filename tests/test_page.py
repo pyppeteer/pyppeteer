@@ -458,6 +458,12 @@ class TestGoto(BaseTestCase):
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
 
+    @sync
+    async def test_self_request_page(self):
+        response = await self.page.goto(self.url + 'static/self-request.html')
+        self.assertIn(response.status, [200, 304])
+        self.assertIn('self-request.html', response.url)
+
 
 class TestWaitForNavigation(BaseTestCase):
     @sync
