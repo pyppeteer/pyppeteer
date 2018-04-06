@@ -1,6 +1,16 @@
 History
 =======
 
+## Version 0.0.18 (next version)
+
+* Add `Page.waitForXPath` and `Frame.waitForXPath`
+* `Page.waitFor` accepts xpath string which starts with `//`
+* Add `slowMo` option to `connect` function
+* `launcher.connect` can be access from package top
+  * `from pyppeteer import connect` is now valid
+* Add `Frame.evaluateHandle`
+* Add `Page.Events.DOMContentLoaded`
+
 ## Version 0.0.17 (2018-04-02)
 
 * Mark as alpha
