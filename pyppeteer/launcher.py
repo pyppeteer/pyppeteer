@@ -263,7 +263,8 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')
-    connection = Connection(browserWSEndpoint)
+    connectionDelay = options.get('slowMo', 0)
+    connection = Connection(browserWSEndpoint, connectionDelay)
     return await Browser.create(
         connection, options, None, lambda: connection.send('Browser.close'))
 
