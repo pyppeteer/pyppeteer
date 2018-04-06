@@ -52,6 +52,7 @@ class Page(EventEmitter):
     Events = SimpleNamespace(
         Console='console',
         Dialog='dialog',
+        DOMContentLoaded='domcontentloaded',
         Error='error',
         PageError='pageerror',
         Request='request',
@@ -143,6 +144,8 @@ class Page(EventEmitter):
         _nm.on(NetworkManager.Events.RequestFinished,
                lambda event: self.emit(Page.Events.RequestFinished, event))
 
+        client.on('Page.domContentEventFired',
+                  lambda event: self.emit(Page.Events.DOMContentLoaded))
         client.on('Page.loadEventFired',
                   lambda event: self.emit(Page.Events.Load))
         client.on('Runtime.consoleAPICalled',

@@ -217,10 +217,6 @@ class TestWaitFor(BaseTestCase):
     def setUp(self):
         super().setUp()
         sync(self.page.goto(self.url + 'empty'))
-        self.result = False
-
-    def set_result(self, value):
-        self.result = value
 
     @sync
     async def test_wait_for_page_navigated(self):
@@ -309,6 +305,13 @@ console.log(Promise.resolve('should not wait until resolved!'));
         self.assertEqual(len(messages), 1)
         msg = messages[0]
         self.assertEqual(msg.text, 'JSHandle@object')
+
+
+class TestDOMContentLoaded(BaseTestCase):
+    @sync
+    async def test_fired(self):
+        self.page.once('domcontentloaded', self.set_result(True))
+        self.assertTrue(self.result)
 
 
 class TestMetrics(BaseTestCase):

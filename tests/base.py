@@ -29,6 +29,10 @@ class BaseTestCase(unittest.TestCase):
 
     def setUp(self):
         self.page = sync(self.browser.newPage())
+        self.result = False
 
     def tearDown(self):
         sync(self.page.close())
+
+    def set_result(self, value):
+        self.result = value
