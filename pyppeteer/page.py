@@ -88,13 +88,13 @@ class Page(EventEmitter):
         page = Page(client, target, frameTree, ignoreHTTPSErrors,
                     screenshotTaskQueue)
 
-        await asyncio.wait([
+        await asyncio.gather(
             client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
             client.send('Network.enable', {}),
             client.send('Runtime.enable', {}),
             client.send('Security.enable', {}),
             client.send('Performance.enable', {}),
-        ])
+        )
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
@@ -1048,10 +1048,10 @@ function deliverResult(name, seq, result) {
             condition that yields unexpected results. The correct pattern for
             click and wait for navigation is the following::
 
-                await asyncio.wait([
+                await asyncio.gather(
                     page.waitForNavigation(waitOptions),
                     page.click(selector, clickOptions),
-                ])
+                )
         """
         options = merge_dict(options, kwargs)
         handle = await self.J(selector)
