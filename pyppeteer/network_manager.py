@@ -50,6 +50,7 @@ class NetworkManager(EventEmitter):
 
         self._client.on('Network.requestWillBeSent', self._onRequestWillBeSent)
         self._client.on('Network.requestIntercepted', self._onRequestIntercepted)  # noqa: E501
+        self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)
         self._client.on('Network.loadingFinished', self._onLoadingFinished)
         self._client.on('Network.loadingFailed', self._onLoadingFailed)
@@ -150,15 +151,21 @@ class NetworkManager(EventEmitter):
             request = self._interceptionIdToRequest.get(
                 event.get('interceptionId', ''))
             if request:
-                self._handleRequestRedirect(request,
-                                            event.get('redirectStatusCode', 0),
-                                            event.get('redirectHeaders', {}))
-                self._handleRequestStart(request._requestId,
-                                         event.get('interceptionId', ''),
-                                         event.get('redirectUrl', ''),
-                                         event.get('resourceType', ''),
-                                         event.get('request', {}),
-                                         event.get('frameId'))
+                self._handleRequestRedirect(
+                    request,
+                    event.get('redirectStatusCode', 0),
+                    event.get('redirectHeaders', {}),
+                    False,
+                    False,
+                )
+                self._handleRequestStart(
+                    request._requestId,
+                    event.get('interceptionId', ''),
+                    event.get('redirectUrl', ''),
+                    event.get('resourceType', ''),
+                    event.get('request', {}),
+                    event.get('frameId'),
+                )
             return
 
         requestHash = generateRequestHash(event['request'])
@@ -177,10 +184,16 @@ class NetworkManager(EventEmitter):
                 event['resourceType'], event['request'], event['frameId']
             )
 
+    def _onRequestServedFromCache(self, event: Dict) -> None:
+        request = self._requestIdToRequest.get(event.get('requestId'))
+        if request:
+            request._fromMemoryCache = True
+
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
-                               redirectHeaders: Dict) -> None:
-        response = Response(
-            self._client, request, redirectStatus, redirectHeaders)
+                               redirectHeaders: Dict, fromDiskCache: bool,
+                               fromServiceWorker: bool) -> None:
+        response = Response(self._client, request, redirectStatus,
+                            redirectHeaders, fromDiskCache, fromServiceWorker)
         request._response = response
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
@@ -230,6 +243,8 @@ class NetworkManager(EventEmitter):
                     request,
                     redirectResponse.get('status'),
                     redirectResponse.get('headers'),
+                    redirectResponse.get('fromDiskCache'),
+                    redirectResponse.get('fromServiceWorker'),
                 )
         self._handleRequestStart(
             event.get('requestId', ''), '',
@@ -247,7 +262,9 @@ class NetworkManager(EventEmitter):
         _resp = event.get('response', {})
         response = Response(self._client, request,
                             _resp.get('status', 0),
-                            _resp.get('headers', {}))
+                            _resp.get('headers', {}),
+                            _resp.get('fromDiskCache'),
+                            _resp.get('fromServiceWorker'))
         request._response = response
         self.emit(NetworkManager.Events.Response, response)
 
@@ -311,6 +328,8 @@ class Request(object):
         headers = payload.get('headers', {})
         self._headers = {k.lower(): v for k, v in headers.items()}
         self._frame = frame
+
+        self._fromMemoryCache = False
 
     def _completePromiseFulfill(self) -> None:
         self._completePromise.set_result(None)
@@ -516,12 +535,15 @@ class Response(object):
     url: str
 
     def __init__(self, client: CDPSession, request: Request, status: int,
-                 headers: Dict[str, str]) -> None:
+                 headers: Dict[str, str], fromDiskCache: bool,
+                 fromServiceWorker: bool) -> None:
         self._client = client
         self._request = request
         self._status = status
         self._contentPromise = asyncio.get_event_loop().create_future()
         self._url = request.url
+        self._fromDiskCache = fromDiskCache
+        self._fromServiceWorker = fromServiceWorker
         self._headers = {k.lower(): v for k, v in headers.items()}
 
     @property
@@ -579,6 +601,19 @@ class Response(object):
     def request(self) -> Request:
         """Get matching :class:`Request` object."""
         return self._request
+
+    @property
+    def fromCache(self) -> bool:
+        """Return ``True`` if the response was served from cache.
+
+        Here `cache` is either the browser's disk cache or memory cache.
+        """
+        return self._fromDiskCache or self._request._fromMemoryCache
+
+    @property
+    def fromServiceWorker(self) -> bool:
+        """Return ``True`` if the response was served by a service worker."""
+        return self._fromServiceWorker
 
 
 def generateRequestHash(request: dict) -> str:
