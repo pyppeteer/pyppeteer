@@ -1287,6 +1287,25 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         self.assertEqual(await self.page.evaluate('window.result'), 123)
 
 
+class TestCacheEnabled(BaseTestCase):
+    @sync
+    async def test_cache_enable_disable(self):
+        responses = {}
+
+        def set_response(res):
+            responses[res.url.split('/').pop()] = res
+
+        self.page.on('response', set_response)
+        await self.page.goto(self.url + 'static/cached/one-style.html',
+                             waitUntil='networkidle2')
+        await self.page.reload(waitUntil='networkidle2')
+        self.assertTrue(responses.get('one-style.css').fromCache)
+
+        await self.page.setCacheEnabled(False)
+        await self.page.reload(waitUntil='networkidle2')
+        self.assertFalse(responses.get('one-style.css').fromCache)
+
+
 class TestPDF(BaseTestCase):
     @sync
     async def test_pdf(self):

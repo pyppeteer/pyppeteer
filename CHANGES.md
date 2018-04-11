@@ -6,6 +6,7 @@ History
 * Add `Page.waitForXPath` and `Frame.waitForXPath`
 * `Page.waitFor` accepts xpath string which starts with `//`
 * Add `Response.fromCache` and `Response.fromServiceWorker`
+* Add `Page.setCacheEnabled` method
 * Add `slowMo` option to `connect` function
 * `launcher.connect` can be access from package top
   * `from pyppeteer import connect` is now valid

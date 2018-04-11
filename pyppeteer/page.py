@@ -822,6 +822,14 @@ function deliverResult(name, seq, result) {
             'source': source,
         })
 
+    async def setCacheEnabled(self, enabled: bool = True) -> None:
+        """Enable/Disable cache for each request.
+
+        By default, caching is enabled.
+        """
+        await self._client.send('Network.setCacheDisabled',
+                                {'cacheDisabled': not enabled})
+
     async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
         """Take a screen shot.
 
