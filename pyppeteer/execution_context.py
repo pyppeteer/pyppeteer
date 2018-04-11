@@ -12,20 +12,27 @@ from pyppeteer.errors import ElementHandleError, NetworkError
 
 if TYPE_CHECKING:
     from pyppeteer.element_handle import ElementHandle  # noqa: F401
+    from pyppeteer.frame_manager import Frame  # noqa: F401
 
 
 class ExecutionContext(object):
     """Execution Context class."""
 
     def __init__(self, client: CDPSession, contextPayload: Dict,
-                 objectHandleFactory: Any) -> None:
+                 objectHandleFactory: Any, frame: Optional['Frame']) -> None:
         self._client = client
+        self._frame = frame
         self._contextId = contextPayload.get('id')
 
         auxData = contextPayload.get('auxData', {'isDefault': True})
         self._frameId = auxData.get('frameId', None)
         self._isDefault = bool(auxData.get('isDefault'))
         self._objectHandleFactory = objectHandleFactory
+
+    @property
+    def frame(self) -> Optional['Frame']:
+        """Return frame associated with this execution context."""
+        return self._frame
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:

@@ -145,17 +145,23 @@ class FrameManager(EventEmitter):
             self._removeFramesRecursively(frame)
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
+        if (contextPayload.get('auxData') and
+                contextPayload['auxData']['isDefault']):
+            frameId = contextPayload['auxData']['frameId']
+        else:
+            frameId = None
+
+        frame = self._frames.get(frameId) if frameId else None
+
         context = ExecutionContext(
             self._client,
             contextPayload,
             lambda obj: self.createJSHandle(contextPayload['id'], obj),
+            frame,
         )
         self._contextIdToContext[contextPayload['id']] = context
 
-        frame = (self._frames.get(context._frameId)
-                 if context._frameId else None)
-
-        if frame and context._isDefault:
+        if frame:
             frame._setDefaultContext(context)
 
     def _removeContext(self, context: ExecutionContext) -> None:

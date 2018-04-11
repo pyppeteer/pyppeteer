@@ -27,6 +27,9 @@ class TestContext(BaseTestCase):
         context2 = await frame2.executionContext()
         self.assertTrue(context1)
         self.assertTrue(context2)
+        self.assertTrue(context1 != context2)
+        self.assertEqual(context1.frame, frame1)
+        self.assertEqual(context2.frame, frame2)
 
         await context1.evaluate('() => window.a = 1')
         await context2.evaluate('() => window.a = 2')

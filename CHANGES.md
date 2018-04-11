@@ -8,6 +8,7 @@ History
 * Add `Response.fromCache` and `Response.fromServiceWorker`
 * Add `SecurityDetauls` class and `response.secutiryDetails`
 * Add `Page.setCacheEnabled` method
+* Add `ExecutionContext.frame`
 * Add `slowMo` option to `connect` function
 * `launcher.connect` can be access from package top
   * `from pyppeteer import connect` is now valid
