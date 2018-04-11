@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import glob
 import os
-from pathlib import Path
 import shutil
+import tempfile
 import time
 import unittest
 
@@ -121,13 +122,10 @@ class TestUserDataDir(unittest.TestCase):
         cls.url = 'http://localhost:{}/'.format(cls.port)
 
     def setUp(self):
-        self.datadir = Path(__file__).parent / 'userDataDir'
-        if self.datadir.exists():
-            shutil.rmtree(str(self.datadir))
-        self.datadir.mkdir()
+        self.datadir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(str(self.datadir))
+        shutil.rmtree(self.datadir)
 
     @classmethod
     def tearDownClass(cls):
@@ -135,31 +133,31 @@ class TestUserDataDir(unittest.TestCase):
 
     @sync
     async def test_user_data_dir_option(self):
-        browser = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
-        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
+        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
         await browser.close()
-        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
 
     @sync
     async def test_user_data_dir_args(self):
         options = {}
         options.update(DEFAULT_OPTIONS)
         options['args'] = (options['args'] +
-                           ['--user-data-dir={}'.format(str(self.datadir))])
+                           ['--user-data-dir={}'.format(self.datadir)])
         browser = await launch(options)
-        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
         await browser.close()
-        self.assertGreater(len(list(self.datadir.glob('*'))), 0)
+        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
 
     @sync
     async def test_user_data_dir_restore_state(self):
-        browser = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.evaluate('() => localStorage.hey = "hello"')
         await browser.close()
 
-        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
         page2 = await browser2.newPage()
         await page2.goto(self.url + 'empty')
         result = await page2.evaluate('() => localStorage.hey')
@@ -170,13 +168,13 @@ class TestUserDataDir(unittest.TestCase):
     @sync
     async def test_user_data_dir_restore_cookie_headful(self):
         browser = await launch(
-            DEFAULT_OPTIONS, userDataDir=str(self.datadir), headless=False)
+            DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
         await browser.close()
 
-        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=str(self.datadir))
+        browser2 = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
         page2 = await browser2.newPage()
         await page2.goto(self.url + 'empty')
         result = await page2.evaluate('() => document.cookie')
