@@ -56,6 +56,23 @@ class TestNetworkEvent(BaseTestCase):
         self.assertFalse(response.fromCache)
         self.assertFalse(response.fromServiceWorker)
         self.assertTrue(response.request)
+        self.assertEqual(response.securityDetails, {})
+
+    @sync
+    async def test_response_https(self):
+        responses = []
+        self.page.on('response', lambda res: responses.append(res))
+        await self.page.goto('https://example.com/')
+        self.assertEqual(len(responses), 1)
+        response = responses[0]
+        self.assertEqual(response.url, 'https://example.com/')
+        self.assertEqual(response.status, 200)
+        self.assertTrue(response.ok)
+        self.assertFalse(response.fromCache)
+        self.assertFalse(response.fromServiceWorker)
+        self.assertTrue(response.request)
+        self.assertTrue(response.securityDetails)
+        self.assertEqual(response.securityDetails.protocol, 'TLS 1.2')
 
     @sync
     async def test_from_cache(self):

@@ -9,7 +9,7 @@ from collections import OrderedDict
 import json
 from urllib.parse import unquote
 from types import SimpleNamespace
-from typing import Awaitable, Dict, Optional, TYPE_CHECKING
+from typing import Awaitable, Dict, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -264,7 +264,8 @@ class NetworkManager(EventEmitter):
                             _resp.get('status', 0),
                             _resp.get('headers', {}),
                             _resp.get('fromDiskCache'),
-                            _resp.get('fromServiceWorker'))
+                            _resp.get('fromServiceWorker'),
+                            _resp.get('securityDetails'))
         request._response = response
         self.emit(NetworkManager.Events.Response, response)
 
@@ -536,7 +537,8 @@ class Response(object):
 
     def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str], fromDiskCache: bool,
-                 fromServiceWorker: bool) -> None:
+                 fromServiceWorker: bool, securityDetails: Dict = None
+                 ) -> None:
         self._client = client
         self._request = request
         self._status = status
@@ -545,6 +547,15 @@ class Response(object):
         self._fromDiskCache = fromDiskCache
         self._fromServiceWorker = fromServiceWorker
         self._headers = {k.lower(): v for k, v in headers.items()}
+        self._securityDetails: Union[Dict, SecurityDetails] = {}
+        if securityDetails:
+            self._securityDetails = SecurityDetails(
+                securityDetails['subjectName'],
+                securityDetails['issuer'],
+                securityDetails['validFrom'],
+                securityDetails['validTo'],
+                securityDetails['protocol'],
+            )
 
     @property
     def url(self) -> str:
@@ -568,6 +579,11 @@ class Response(object):
         All header names are lower-case.
         """
         return self._headers
+
+    @property
+    def securityDetails(self) -> Union[Dict, 'SecurityDetails']:
+        """Return security details associated with this response."""
+        return self._securityDetails
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {
@@ -641,6 +657,43 @@ def generateRequestHash(request: dict) -> str:
                 continue
             _hash['headers'][header] = headerValue
     return json.dumps(_hash)
+
+
+class SecurityDetails(object):
+    """Class represents responses which are received by page."""
+
+    def __init__(self, subjectName: str, issuer: str, validFrom: int,
+                 validTo: int, protocol: str) -> None:
+        self._subjectName = subjectName
+        self._issuer = issuer
+        self._validFrom = validFrom
+        self._validTo = validTo
+        self._protocol = protocol
+
+    @property
+    def subjectName(self) -> str:
+        """Return the subject to which the certificate was issued to."""
+        return self._subjectName
+
+    @property
+    def issuer(self) -> str:
+        """Return a string with the name of issuer of the certificate."""
+        return self._issuer
+
+    @property
+    def validFrom(self) -> int:
+        """Return timestamp of the start of validity of the certificate."""
+        return self._validFrom
+
+    @property
+    def validTo(self) -> int:
+        """Return timestamp of the end of validity of the certificate."""
+        return self._validTo
+
+    @property
+    def protocol(self) -> str:
+        """Return string of with the security protocol, e.g. "TLS1.2"."""
+        return self._protocol
 
 
 statusTexts = {
