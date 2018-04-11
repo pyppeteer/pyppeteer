@@ -125,7 +125,8 @@ class TestUserDataDir(unittest.TestCase):
         self.datadir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.datadir)
+        if 'CI' not in os.environ:
+            shutil.rmtree(self.datadir)
 
     @classmethod
     def tearDownClass(cls):
