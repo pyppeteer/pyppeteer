@@ -157,6 +157,7 @@ class NetworkManager(EventEmitter):
                     event.get('redirectHeaders', {}),
                     False,
                     False,
+                    None,
                 )
                 self._handleRequestStart(
                     request._requestId,
@@ -191,9 +192,11 @@ class NetworkManager(EventEmitter):
 
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
                                redirectHeaders: Dict, fromDiskCache: bool,
-                               fromServiceWorker: bool) -> None:
+                               fromServiceWorker: bool,
+                               securityDetails: Dict = None) -> None:
         response = Response(self._client, request, redirectStatus,
-                            redirectHeaders, fromDiskCache, fromServiceWorker)
+                            redirectHeaders, fromDiskCache, fromServiceWorker,
+                            securityDetails)
         request._response = response
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
@@ -245,6 +248,7 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('headers'),
                     redirectResponse.get('fromDiskCache'),
                     redirectResponse.get('fromServiceWorker'),
+                    redirectResponse.get('securityDetails'),
                 )
         self._handleRequestStart(
             event.get('requestId', ''), '',
@@ -582,7 +586,11 @@ class Response(object):
 
     @property
     def securityDetails(self) -> Union[Dict, 'SecurityDetails']:
-        """Return security details associated with this response."""
+        """Return security details associated with this response.
+
+        Security details if the response was received over the secure
+        connection, or `None` otherwise.
+        """
         return self._securityDetails
 
     async def _bufread(self) -> bytes:
@@ -682,12 +690,12 @@ class SecurityDetails(object):
 
     @property
     def validFrom(self) -> int:
-        """Return timestamp of the start of validity of the certificate."""
+        """Return UnixTime of the start of validity of the certificate."""
         return self._validFrom
 
     @property
     def validTo(self) -> int:
-        """Return timestamp of the end of validity of the certificate."""
+        """Return UnixTime of the end of validity of the certificate."""
         return self._validTo
 
     @property
