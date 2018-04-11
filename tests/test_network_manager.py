@@ -44,7 +44,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(req.postData, '{"foo":"bar"}')
 
     @sync
-    async def test_response(self) -> None:
+    async def test_response(self):
         responses = []
         self.page.on('response', lambda res: responses.append(res))
         await self.page.goto(self.url + 'empty')
@@ -58,10 +58,10 @@ class TestNetworkEvent(BaseTestCase):
         self.assertTrue(response.request)
 
     @sync
-    async def test_from_cache(self) -> None:
+    async def test_from_cache(self):
         responses = {}
 
-        def set_response(resp) -> None:
+        def set_response(resp):
             basename = resp.url.split('/').pop()
             responses[basename] = resp
 
@@ -77,10 +77,10 @@ class TestNetworkEvent(BaseTestCase):
         self.assertTrue(responses['one-style.css'].fromCache)
 
     @sync
-    async def test_from_service_worker(self) -> None:
+    async def test_from_service_worker(self):
         responses = {}
 
-        def set_response(resp) -> None:
+        def set_response(resp):
             basename = resp.url.split('/').pop()
             responses[basename] = resp
 

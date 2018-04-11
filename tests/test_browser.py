@@ -63,7 +63,7 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(len(discon2), 1)
 
     @sync
-    async def test_crash(self) -> None:
+    async def test_crash(self):
         browser = await launch(DEFAULT_OPTIONS)
         page = await browser.newPage()
         errors = []
@@ -145,8 +145,6 @@ class TestTarget(BaseTestCase):
         self.browser.once('targetcreated',
                           lambda t: createdTargetPromise.set_result(t))
 
-        # registration = await self.page.evaluateHandle(
-        #     '() => navigator.serviceWorker.register("static/sw.js")')
         await self.page.goto(self.url + 'static/serviceworkers/empty/sw.html')
         createdTarget = await createdTargetPromise
         self.assertEqual(createdTarget.type, 'service_worker')
