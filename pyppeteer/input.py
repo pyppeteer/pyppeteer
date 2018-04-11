@@ -43,7 +43,7 @@ class Keyboard(object):
         options = merge_dict(options, kwargs)
 
         description = self._keyDescriptionForString(key)
-        autoRepeat = description['key'] in self._pressedKeys
+        autoRepeat = description['code'] in self._pressedKeys
         self._pressedKeys.add(description['code'])
         self._modifiers |= self._modifierBit(description['key'])
 
@@ -126,7 +126,8 @@ class Keyboard(object):
         description = self._keyDescriptionForString(key)
 
         self._modifiers &= ~self._modifierBit(description['key'])
-        self._pressedKeys.remove(description['code'])
+        if description['code'] in self._pressedKeys:
+            self._pressedKeys.remove(description['code'])
         await self._client.send('Input.dispatchKeyEvent', {
             'type': 'keyUp',
             'modifiers': self._modifiers,
