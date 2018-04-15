@@ -524,7 +524,7 @@ function addPageBinding(bindingName) {
     def _onConsoleAPI(self, event: dict) -> None:
         _args = event.get('args', [])
         if (event.get('type') == 'debug' and _args and
-                _args[0]['value'] == 'driver:page-binding'):
+                _args[0].get('value') == 'driver:page-binding'):
             obj = json.loads(_args[1]['value'])
             name = obj.get('name')
             seq = obj.get('seq')

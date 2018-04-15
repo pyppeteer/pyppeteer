@@ -31,9 +31,11 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     stackTrace = exceptionDetails.get('stackTrace', dict())
     if stackTrace:
         for callframe in stackTrace.get('callFrames'):
-            location = (callframe.get('url', '') + ':' +
-                        callframe.get('lineNumber', '') + ':' +
-                        callframe.get('columnNumber'))
+            location = (
+                str(callframe.get('url', '')) + ':' +
+                str(callframe.get('lineNumber', '')) + ':' +
+                str(callframe.get('columnNumber'))
+            )
             functionName = callframe.get('functionName', '<anonymous>')
             message = message + f'\n    at {functionName} ({location})'
     return message
