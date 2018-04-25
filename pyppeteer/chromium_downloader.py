@@ -37,7 +37,7 @@ chromiumExecutable = {
 }
 
 
-def curret_platform() -> str:
+def current_platform() -> str:
     """Get current platform name by short string."""
     if sys.platform.startswith('linux'):
         return 'linux'
@@ -52,7 +52,7 @@ def curret_platform() -> str:
 
 def get_url() -> str:
     """Get chromium download url."""
-    return downloadURLs[curret_platform()]
+    return downloadURLs[current_platform()]
 
 
 def download_zip(url: str) -> bytes:
