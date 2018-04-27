@@ -216,7 +216,7 @@ keyDefinitions = {
     '%': {'keyCode': 53, 'key': '%', 'code': 'Digit5'},
     '^': {'keyCode': 54, 'key': '^', 'code': 'Digit6'},
     '&': {'keyCode': 55, 'key': '&', 'code': 'Digit7'},
-    '(': {'keyCode': 57, 'key': '\(', 'code': 'Digit9'},
+    '(': {'keyCode': 57, 'key': '(', 'code': 'Digit9'},
     'A': {'keyCode': 65, 'key': 'A', 'code': 'KeyA'},
     'B': {'keyCode': 66, 'key': 'B', 'code': 'KeyB'},
     'C': {'keyCode': 67, 'key': 'C', 'code': 'KeyC'},
