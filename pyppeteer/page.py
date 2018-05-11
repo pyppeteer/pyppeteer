@@ -97,8 +97,8 @@ class Page(EventEmitter):
             client.send('Performance.enable', {}),
         )
         if ignoreHTTPSErrors:
-            await client.send('Security.setOverrideCertificateErrors',
-                              {'override': True})
+            await client.send('Security.setIgnoreCertificateErrors',
+                              {'ignore': True})
         if not appMode:
             await page.setViewport({'width': 800, 'height': 600})
         return page
@@ -155,8 +155,6 @@ class Page(EventEmitter):
         client.on('Runtime.exceptionThrown',
                   lambda exception: self._handleException(
                       exception.get('exceptionDetails')))
-        client.on('Security.certificateError',
-                  lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
@@ -233,16 +231,6 @@ class Page(EventEmitter):
         :arg int timeout: Maximum navigation time in milliseconds.
         """
         self._defaultNavigationTimeout = timeout
-
-    def _onCertificateError(self, event: Any) -> None:
-        if not self._ignoreHTTPSErrors:
-            return
-        asyncio.ensure_future(
-            self._client.send('Security.handleCertificateError', {
-                'eventId': event.get('eventId'),
-                'action': 'continue'
-            })
-        )
 
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
         """Get an Element which matches ``selector``.
