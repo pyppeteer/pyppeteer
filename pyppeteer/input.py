@@ -253,7 +253,7 @@ class Mouse(object):
         await self.move(x, y)
         await self.down(options)
         if options and options.get('delay'):
-            await asyncio.sleep(options.get('delay', 0))
+            await asyncio.sleep(options.get('delay', 0) / 1000)
         await self.up(options)
 
     async def down(self, options: dict = None, **kwargs: Any) -> None:
