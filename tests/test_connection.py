@@ -5,7 +5,7 @@ from syncer import sync
 
 from pyppeteer.errors import NetworkError
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestConnection(BaseTestCase):

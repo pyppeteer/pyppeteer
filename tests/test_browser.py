@@ -8,7 +8,7 @@ from syncer import sync
 
 from pyppeteer import connect, launch
 
-from base import BaseTestCase, DEFAULT_OPTIONS
+from .base import BaseTestCase, DEFAULT_OPTIONS
 
 
 class TestBrowser(unittest.TestCase):

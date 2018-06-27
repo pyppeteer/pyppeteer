@@ -8,7 +8,7 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestBoundingBox(BaseTestCase):

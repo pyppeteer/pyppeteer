@@ -8,7 +8,7 @@ from syncer import sync
 from pyppeteer import launch
 from pyppeteer.util import get_free_port
 
-from server import get_application
+from .server import get_application
 
 DEFAULT_OPTIONS = {'args': ['--no-sandbox']}
 

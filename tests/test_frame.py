@@ -9,8 +9,8 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
-from base import BaseTestCase
-from frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
 
 addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
 

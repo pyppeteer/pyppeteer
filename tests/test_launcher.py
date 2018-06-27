@@ -16,8 +16,8 @@ from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
 
-from base import DEFAULT_OPTIONS
-from server import get_application
+from .base import DEFAULT_OPTIONS
+from .server import get_application
 
 
 class TestLauncher(unittest.TestCase):

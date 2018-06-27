@@ -9,8 +9,8 @@ from syncer import sync
 
 from pyppeteer.errors import PageError, PyppeteerError
 
-from base import BaseTestCase
-from frame_utils import attachFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 
 class TestClick(BaseTestCase):

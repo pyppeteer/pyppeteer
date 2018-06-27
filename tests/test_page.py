@@ -13,8 +13,8 @@ from syncer import sync
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError
 
-from base import BaseTestCase
-from frame_utils import attachFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 iPhone = {
     'name': 'iPhone 6',

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from syncer import sync
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestPyppeteer(BaseTestCase):
