@@ -127,9 +127,9 @@ class TestUserDataDir(unittest.TestCase):
     def tearDown(self):
         if 'CI' not in os.environ:
             for _ in range(100):
+                shutil.rmtree(self.datadir, ignore_errors=True)
                 if os.path.exists(self.datadir):
                     time.sleep(0.01)
-                    shutil.rmtree(self.datadir, ignore_errors=True)
                 else:
                     break
             else:

@@ -123,8 +123,9 @@ class Launcher(object):
         for retry in range(100):
             if self._tmp_user_data_dir and os.path.exists(
                     self._tmp_user_data_dir):
-                time.sleep(0.01)
                 shutil.rmtree(self._tmp_user_data_dir, ignore_errors=True)
+                if os.path.exists(self._tmp_user_data_dir):
+                    time.sleep(0.01)
             else:
                 break
         else:
