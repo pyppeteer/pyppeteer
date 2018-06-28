@@ -4,6 +4,6 @@ install:
   - C:\Python36\python.exe -m pip install tox"
 
 test_script:
-  - C:\Python36\python.exe -m tox
+  - C:\Python36\python.exe -m tox -e py36
 
 build: off
