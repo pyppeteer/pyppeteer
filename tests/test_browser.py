@@ -84,9 +84,8 @@ class TestTarget(BaseTestCase):
         _list = [target for target in targets
                  if target.type == 'page' and target.url == 'about:blank']
         self.assertTrue(any(_list))
-        _list = [target for target in targets
-                 if target.type == 'other' and target.url == '']
-        self.assertTrue(any(_list))
+        target_types = [t.type for t in targets]
+        self.assertIn('browser', target_types)
 
     @sync
     async def test_return_all_pages(self):
@@ -94,6 +93,12 @@ class TestTarget(BaseTestCase):
         self.assertEqual(len(pages), 2)
         self.assertIn(self.page, pages)
         self.assertNotEqual(pages[0], pages[1])
+
+    @sync
+    async def test_browser_target(self):
+        targets = self.browser.targets()
+        browserTarget = [t for t in targets if t.type == 'browser']
+        self.assertTrue(browserTarget)
 
     @sync
     async def test_default_page(self):
