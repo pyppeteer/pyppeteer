@@ -126,7 +126,14 @@ class TestUserDataDir(unittest.TestCase):
 
     def tearDown(self):
         if 'CI' not in os.environ:
-            shutil.rmtree(self.datadir)
+            for _ in range(100):
+                if os.path.exists(self.datadir):
+                    time.sleep(0.01)
+                    shutil.rmtree(self.datadir, ignore_errors=True)
+                else:
+                    break
+            else:
+                raise IOError('Unable to remove Temporary User Data')
 
     @classmethod
     def tearDownClass(cls):
