@@ -324,7 +324,7 @@ class TestDOMContentLoaded(BaseTestCase):
 
 class TestMetrics(BaseTestCase):
     def checkMetrics(self, metrics):
-        metrics_to_check = set([
+        metrics_to_check = {
             'Timestamp',
             'Documents',
             'Frames',
@@ -338,7 +338,7 @@ class TestMetrics(BaseTestCase):
             'TaskDuration',
             'JSHeapUsedSize',
             'JSHeapTotalSize',
-        ])
+        }
         for name, value in metrics.items():
             self.assertTrue(name in metrics_to_check)
             self.assertTrue(value >= 0)
@@ -1441,27 +1441,54 @@ class TestCookie(BaseTestCase):
         )
         self.assertEqual(cookies, 'username=John Doe; password=123456')
         cookies = await self.page.cookies()
-        self.assertEqual(cookies, [{
-            'name': 'password',
-            'value': '123456',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }, {
-            'name': 'username',
-            'value': 'John Doe',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 16,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
+        self.assertIn(cookies, [
+            [
+                {
+                    'name': 'password',
+                    'value': '123456',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 14,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }, {
+                    'name': 'username',
+                    'value': 'John Doe',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 16,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }
+            ],
+            [
+                {
+                    'name': 'username',
+                    'value': 'John Doe',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 16,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }, {
+                    'name': 'password',
+                    'value': '123456',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 14,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }
+            ]
+        ])
         await self.page.deleteCookie({'name': 'username'})
         cookies = await self.page.evaluate(
             '() => document.cookie'
