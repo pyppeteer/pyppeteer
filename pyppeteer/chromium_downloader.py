@@ -37,7 +37,7 @@ chromiumExecutable = {
 }
 
 
-def curret_platform() -> str:
+def current_platform() -> str:
     """Get current platform name by short string."""
     if sys.platform.startswith('linux'):
         return 'linux'
@@ -52,7 +52,7 @@ def curret_platform() -> str:
 
 def get_url() -> str:
     """Get chromium download url."""
-    return downloadURLs[curret_platform()]
+    return downloadURLs[current_platform()]
 
 
 def download_zip(url: str) -> bytes:
@@ -68,7 +68,7 @@ def download_zip(url: str) -> bytes:
 def extract_zip(data: bytes, path: Path) -> None:
     """Extract zipped data to path."""
     # On mac zipfile module cannot extract correctly, so use unzip instead.
-    if curret_platform() == 'mac':
+    if current_platform() == 'mac':
         import subprocess
         import shutil
         zip_path = path / 'chrome.zip'
@@ -100,7 +100,7 @@ def download_chromium() -> None:
 
 def chromium_excutable() -> Path:
     """Get path of the chromium executable."""
-    return chromiumExecutable[curret_platform()]
+    return chromiumExecutable[current_platform()]
 
 
 def check_chromium() -> bool:
