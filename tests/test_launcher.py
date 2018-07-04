@@ -113,6 +113,7 @@ class TestLauncher(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             await launch(DEFAULT_OPTIONS, executablePath='not-a-path')
 
+    @unittest.skipIf(sys.platform.startswith('win'), 'skip on windows')
     def test_dumpio_default(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
@@ -124,6 +125,7 @@ class TestLauncher(unittest.TestCase):
         self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
         self.assertNotIn('DUMPIO_TEST', proc.stderr.decode())
 
+    @unittest.skipIf(sys.platform.startswith('win'), 'skip on windows')
     def test_dumpio_enable(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
