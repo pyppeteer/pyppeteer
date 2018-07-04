@@ -9,6 +9,7 @@ History
 * Add `SecurityDetauls` class and `response.secutiryDetails`
 * Add `Page.setCacheEnabled` method
 * Add `ExecutionContext.frame`
+* Add `dumpio` option to `launch` function
 * Add `slowMo` option to `connect` function
 * `launcher.connect` can be access from package top
   * `from pyppeteer import connect` is now valid

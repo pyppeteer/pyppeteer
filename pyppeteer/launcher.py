@@ -131,16 +131,20 @@ class Launcher(object):
         else:
             raise IOError('Unable to remove Temporary User Data')
 
-    async def launch(self) -> Browser:
+    async def launch(self) -> Browser:  # noqa: C901
         """Start chrome process and return `Browser` object."""
-        env = self.options.get('env')
         self.chromeClosed = False
         self.connection: Optional[Connection] = None
-        self.proc = subprocess.Popen(
+
+        options = {}
+        options['env'] = self.options.get('env')
+        if not self.options.get('dumpio'):
+            options['stdout'] = subprocess.DEVNULL
+            options['stderr'] = subprocess.DEVNULL
+
+        self.proc = subprocess.Popen(  # type: ignore
             self.cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            env=env,
+            **options,
         )
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
@@ -228,6 +232,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       to ``True``.
     * ``handleSIGHUP`` (bool): Close the browser process on SIGHUP. Defaults to
       ``True``.
+    * ``dumpio`` (bool): Whether to pipe the browser process stdout and stderr
+      into ``process.stdout`` and ``process.stderr``. Defaults to ``False``.
     * ``userDataDir`` (str): Path to a user data directory.
     * ``env`` (dict): Specify environment variables that will be visible to the
       browser. Defaults to same as python process.

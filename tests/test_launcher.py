@@ -4,6 +4,8 @@
 import glob
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -110,6 +112,29 @@ class TestLauncher(unittest.TestCase):
     async def test_invalid_executable_path(self):
         with self.assertRaises(FileNotFoundError):
             await launch(DEFAULT_OPTIONS, executablePath='not-a-path')
+
+    def test_dumpio_default(self):
+        basedir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(basedir, 'dumpio.py')
+        proc = subprocess.run(
+            [sys.executable, path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
+        self.assertNotIn('DUMPIO_TEST', proc.stderr.decode())
+
+    def test_dumpio_enable(self):
+        basedir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(basedir, 'dumpio.py')
+        proc = subprocess.run(
+            [sys.executable, path, '--dumpio'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        # console.log output is sent to stderr
+        self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
+        self.assertIn('DUMPIO_TEST', proc.stderr.decode())
 
 
 class TestUserDataDir(unittest.TestCase):
