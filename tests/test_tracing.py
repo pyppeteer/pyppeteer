@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -30,6 +31,7 @@ class TestTracing(BaseTestCase):
         })
         await self.page.goto(self.url)
         await self.page.tracing.stop()
+        await asyncio.sleep(0.1)
         self.assertTrue(self.outfile.is_file())
 
     @sync
