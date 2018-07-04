@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Reference &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>API Reference &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -68,6 +68,8 @@ is dangerous option; use with care.</li>
 to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">handleSIGHUP</span></code> (bool): Close the browser process on SIGHUP. Defaults to
 <code class="docutils literal notranslate"><span class="pre">True</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">dumpio</span></code> (bool): Whether to pipe the browser process stdout and stderr
+into <code class="docutils literal notranslate"><span class="pre">process.stdout</span></code> and <code class="docutils literal notranslate"><span class="pre">process.stderr</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">userDataDir</span></code> (str): Path to a user data directory.</li>
 <li><code class="docutils literal notranslate"><span class="pre">env</span></code> (dict): Specify environment variables that will be visible to the
 browser. Defaults to same as python process.</li>
@@ -114,7 +116,7 @@ milliseconds.</li>
 <h2>Browser Class<a class="headerlink" href="#browser-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.browser.Browser">
-<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Browser</code><span class="sig-paren">(</span><em>connection: pyppeteer.connection.Connection</em>, <em>options: Dict = None</em>, <em>process: Union[subprocess.Popen</em>, <em>NoneType] = None</em>, <em>closeCallback: Callable[Awaitable[NoneType]] = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/browser.html#Browser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Browser</code><span class="sig-paren">(</span><em>connection: pyppeteer.connection.Connection</em>, <em>options: Dict = None</em>, <em>process: Union[subprocess.Popen</em>, <em>NoneType] = None</em>, <em>closeCallback: Callable[Awaitable[NoneType]] = None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Browser"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Browser" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyee.EventEmitter</span></code></p>
 <p>Browser class.</p>
 <p>A Broser object is created when pyppeteer connects to chrome, either
@@ -188,7 +190,7 @@ return <code class="docutils literal notranslate"><span class="pre">None</span><
 <h2>Page Class<a class="headerlink" href="#page-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.page.Page">
-<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">Page</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>target: Target</em>, <em>frameTree: Dict</em>, <em>ignoreHTTPSErrors: bool = False</em>, <em>screenshotTaskQueue: list = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">Page</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>target: Target</em>, <em>frameTree: Dict</em>, <em>ignoreHTTPSErrors: bool = False</em>, <em>screenshotTaskQueue: list = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#Page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyee.EventEmitter</span></code></p>
 <p>Page class.</p>
 <p>This class provides methods to interact with a single tab of chrome. One
@@ -198,7 +200,7 @@ handled by using <code class="docutils literal notranslate"><span class="pre">on
 <a class="reference external" href="https://pyee.readthedocs.io/en/latest/">pyee</a>’s <code class="docutils literal notranslate"><span class="pre">EventEmitter</span></code> class.</p>
 <dl class="attribute">
 <dt id="pyppeteer.page.Page.Events">
-<code class="descname">Events</code><em class="property"> = namespace(Console=’console’, Dialog=’dialog’, Error=’error’, FrameAttached=’frameattached’, FrameDetached=’framedetached’, FrameNavigated=’framenavigated’, Load=’load’, Metrics=’metrics’, PageError=’pageerror’, Request=’request’, RequestFailed=’requestfailed’, RequestFinished=’requestfinished’, Response=’response’)</em><a class="headerlink" href="#pyppeteer.page.Page.Events" title="Permalink to this definition">¶</a></dt>
+<code class="descname">Events</code><em class="property"> = namespace(Console=’console’, DOMContentLoaded=’domcontentloaded’, Dialog=’dialog’, Error=’error’, FrameAttached=’frameattached’, FrameDetached=’framedetached’, FrameNavigated=’framenavigated’, Load=’load’, Metrics=’metrics’, PageError=’pageerror’, Request=’request’, RequestFailed=’requestfailed’, RequestFinished=’requestfinished’, Response=’response’)</em><a class="headerlink" href="#pyppeteer.page.Page.Events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Available events.</p>
 </dd></dl>
 
@@ -318,10 +320,10 @@ element. If there’s no element matching <code class="docutils literal notransl
 separate <a class="reference internal" href="#pyppeteer.page.Page.waitForNavigation" title="pyppeteer.page.Page.waitForNavigation"><code class="xref py py-meth docutils literal notranslate"><span class="pre">waitForNavigation()</span></code></a>, you may end up with a race
 condition that yields unexpected results. The correct pattern for
 click and wait for navigation is the following:</p>
-<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">([</span>
+<div class="last highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
     <span class="n">page</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">(</span><span class="n">waitOptions</span><span class="p">),</span>
     <span class="n">page</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">clickOptions</span><span class="p">),</span>
-<span class="p">])</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -731,6 +733,13 @@ capturing screenshot with transparency.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.page.Page.setCacheEnabled">
+<em class="property">coroutine </em><code class="descname">setCacheEnabled</code><span class="sig-paren">(</span><em>enabled: bool = True</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setCacheEnabled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setCacheEnabled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable/Disable cache for each request.</p>
+<p>By default, caching is enabled.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.page.Page.setContent">
 <em class="property">coroutine </em><code class="descname">setContent</code><span class="sig-paren">(</span><em>html: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setContent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setContent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set content to this page.</p>
@@ -883,8 +892,10 @@ is treated as a timeout in milliseconds and this returns future which
 will be done after the timeout.</li>
 <li>If <code class="docutils literal notranslate"><span class="pre">selectorOrFunctionOrTimeout</span></code> is a string of JavaScript
 function, this method is a shortcut to <a class="reference internal" href="#pyppeteer.page.Page.waitForFunction" title="pyppeteer.page.Page.waitForFunction"><code class="xref py py-meth docutils literal notranslate"><span class="pre">waitForFunction()</span></code></a>.</li>
-<li>If <code class="docutils literal notranslate"><span class="pre">selectorOrFunctionOrTimeout</span></code> is a selector string, this method
-is a shortcut to <a class="reference internal" href="#pyppeteer.page.Page.waitForSelector" title="pyppeteer.page.Page.waitForSelector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">waitForSelector()</span></code></a>.</li>
+<li>If <code class="docutils literal notranslate"><span class="pre">selectorOrFunctionOrTimeout</span></code> is a selector string or xpath
+string, this method is a shortcut to <a class="reference internal" href="#pyppeteer.page.Page.waitForSelector" title="pyppeteer.page.Page.waitForSelector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">waitForSelector()</span></code></a> or
+<a class="reference internal" href="#pyppeteer.page.Page.waitForXPath" title="pyppeteer.page.Page.waitForXPath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">waitForXPath()</span></code></a>. If the string starts with <code class="docutils literal notranslate"><span class="pre">//</span></code>, the string is
+treated as xpath.</li>
 </ul>
 <p>Pyppeteer tries to automatically detect function or selector, but
 sometimes miss-detects. If not work as you expected, use
@@ -894,8 +905,8 @@ sometimes miss-detects. If not work as you expected, use
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>selectorOrFunctionOrTimeout</strong> – A selector or
-function string, or timeout (milliseconds).</li>
+<li><strong>selectorOrFunctionOrTimeout</strong> – A selector, xpath, or function
+string, or timeout (milliseconds).</li>
 <li><strong>args</strong> (<em>Any</em>) – Arguments to pass the function.</li>
 </ul>
 </td>
@@ -984,6 +995,38 @@ Defaults to 30000 (30 seconds).</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.page.Page.waitForXPath">
+<code class="descname">waitForXPath</code><span class="sig-paren">(</span><em>xpath: str</em>, <em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; Awaitable<a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitForXPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitForXPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait until eleemnt which matches <code class="docutils literal notranslate"><span class="pre">xpath</span></code> appears on page.</p>
+<p>Wait for the <code class="docutils literal notranslate"><span class="pre">xpath</span></code> to appear in page. If the moment of calling the
+method the <code class="docutils literal notranslate"><span class="pre">xpath</span></code> already exists, the method will return
+immediately. If the xpath doesn’t appear after <code class="docutils literal notranslate"><span class="pre">timeout</span></code> millisecons
+of waiting, the function will raise exception.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>xpath</strong> (<em>str</em>) – A [xpath] of an element to wait for.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Return awaitable object which resolves when element specified
+by xpath string is added to DOM.</td>
+</tr>
+</tbody>
+</table>
+<p>Avalaible options are:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">visible</span></code> (bool): wait for element to be present in DOM and to be
+visible, i.e. to not have <code class="docutils literal notranslate"><span class="pre">display:</span> <span class="pre">none</span></code> or <code class="docutils literal notranslate"><span class="pre">visibility:</span> <span class="pre">hidden</span></code>
+CSS properties. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hidden</span></code> (bool): wait for element to not be found in the DOM or to
+be hidden, i.e. have <code class="docutils literal notranslate"><span class="pre">display:</span> <span class="pre">none</span></code> or <code class="docutils literal notranslate"><span class="pre">visibility:</span> <span class="pre">hidden</span></code> CSS
+properties. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (int|float): maximum time to wait for in milliseconds.
+Defaults to 30000 (30 seconds).</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.page.Page.xpath">
 <em class="property">coroutine </em><code class="descname">xpath</code><span class="sig-paren">(</span><em>expression: str</em><span class="sig-paren">)</span> &#x2192; List[pyppeteer.element_handle.ElementHandle]<a class="reference internal" href="_modules/pyppeteer/page.html#Page.xpath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.xpath" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluate XPath expression.</p>
@@ -1005,7 +1048,7 @@ Defaults to 30000 (30 seconds).</li>
 <h2>Keyboard Class<a class="headerlink" href="#keyboard-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.input.Keyboard">
-<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Keyboard</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/input.html#Keyboard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Keyboard" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Keyboard</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/input.html#Keyboard"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Keyboard" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Keyboard class.</p>
 <dl class="method">
@@ -1111,7 +1154,7 @@ to 0.</li>
 <h2>Mouse Class<a class="headerlink" href="#mouse-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.input.Mouse">
-<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Mouse</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>keyboard: pyppeteer.input.Keyboard</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/input.html#Mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Mouse" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.input.</code><code class="descname">Mouse</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>keyboard: pyppeteer.input.Keyboard</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/input.html#Mouse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.input.Mouse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Mouse class.</p>
 <dl class="method">
@@ -1168,7 +1211,7 @@ specified, Sends intermediate <code class="docutils literal notranslate"><span c
 <h2>Tracing Class<a class="headerlink" href="#tracing-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.tracing.Tracing">
-<em class="property">class </em><code class="descclassname">pyppeteer.tracing.</code><code class="descname">Tracing</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/tracing.html#Tracing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.tracing.Tracing" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.tracing.</code><code class="descname">Tracing</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/tracing.html#Tracing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.tracing.Tracing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Tracing class.</p>
 <dl class="method">
@@ -1198,7 +1241,7 @@ of default.</li>
 <h2>Dialog Class<a class="headerlink" href="#dialog-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.dialog.Dialog">
-<em class="property">class </em><code class="descclassname">pyppeteer.dialog.</code><code class="descname">Dialog</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>type: str</em>, <em>message: str</em>, <em>defaultValue: str = ‘’</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/dialog.html#Dialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.dialog.Dialog" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.dialog.</code><code class="descname">Dialog</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>type: str</em>, <em>message: str</em>, <em>defaultValue: str = ‘’</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/dialog.html#Dialog"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.dialog.Dialog" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Dialog class.</p>
 <p>Dialog objects are dispatched by page via the <code class="docutils literal notranslate"><span class="pre">dialog</span></code> event.</p>
@@ -1245,7 +1288,7 @@ is not prompt, this does not cause any effect.</li>
 <h2>ConsoleMessage Class<a class="headerlink" href="#consolemessage-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.page.ConsoleMessage">
-<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">ConsoleMessage</code><span class="sig-paren">(</span><em>type: str, text: str, args: List[pyppeteer.execution_context.JSHandle]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#ConsoleMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.ConsoleMessage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">ConsoleMessage</code><span class="sig-paren">(</span><em>type: str, text: str, args: List[pyppeteer.execution_context.JSHandle]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#ConsoleMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.ConsoleMessage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Console message class.</p>
 <p>ConsoleMessage objects are dispatched by page via the <code class="docutils literal notranslate"><span class="pre">console</span></code> event.</p>
@@ -1274,7 +1317,7 @@ is not prompt, this does not cause any effect.</li>
 <h2>Frame Class<a class="headerlink" href="#frame-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.frame_manager.Frame">
-<em class="property">class </em><code class="descclassname">pyppeteer.frame_manager.</code><code class="descname">Frame</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, page: Any, parentFrame: Union[_ForwardRef(‘Frame’), NoneType], frameId: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.frame_manager.</code><code class="descname">Frame</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, page: Any, parentFrame: Union[_ForwardRef(‘Frame’), NoneType], frameId: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Frame class.</p>
 <p>Frame objects can be obtained via <a class="reference internal" href="#pyppeteer.page.Page.mainFrame" title="pyppeteer.page.Page.mainFrame"><code class="xref py py-attr docutils literal notranslate"><span class="pre">pyppeteer.page.Page.mainFrame</span></code></a>.</p>
@@ -1329,6 +1372,13 @@ is not prompt, this does not cause any effect.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.click">
+<em class="property">coroutine </em><code class="descname">click</code><span class="sig-paren">(</span><em>selector: str</em>, <em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.click"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.click" title="Permalink to this definition">¶</a></dt>
+<dd><p>Click element which matches <code class="docutils literal notranslate"><span class="pre">selector</span></code>.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.click" title="pyppeteer.page.Page.click"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.click()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.content">
 <em class="property">coroutine </em><code class="descname">content</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.content" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the whole HTML contents of the page.</p>
@@ -1342,11 +1392,32 @@ is not prompt, this does not cause any effect.</li>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.evaluateHandle">
+<em class="property">coroutine </em><code class="descname">evaluateHandle</code><span class="sig-paren">(</span><em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; pyppeteer.execution_context.JSHandle<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.evaluateHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.evaluateHandle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute fucntion on this frame.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.evaluateHandle" title="pyppeteer.page.Page.evaluateHandle"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.evaluateHandle()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.executionContext">
 <em class="property">coroutine </em><code class="descname">executionContext</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Union[pyppeteer.execution_context.ExecutionContext, NoneType]<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.executionContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.executionContext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return execution context of this frame.</p>
 <p>Return <a class="reference internal" href="#pyppeteer.execution_context.ExecutionContext" title="pyppeteer.execution_context.ExecutionContext"><code class="xref py py-class docutils literal notranslate"><span class="pre">ExecutionContext</span></code></a>
 associated to this frame.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.focus">
+<em class="property">coroutine </em><code class="descname">focus</code><span class="sig-paren">(</span><em>selector: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.focus"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.focus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fucus element which matches <code class="docutils literal notranslate"><span class="pre">selector</span></code>.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.focus" title="pyppeteer.page.Page.focus"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.focus()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.hover">
+<em class="property">coroutine </em><code class="descname">hover</code><span class="sig-paren">(</span><em>selector: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.hover"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.hover" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mouse hover the element which matches <code class="docutils literal notranslate"><span class="pre">selector</span></code>.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.hover" title="pyppeteer.page.Page.hover"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.hover()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1417,9 +1488,23 @@ associated to this frame.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.tap">
+<em class="property">coroutine </em><code class="descname">tap</code><span class="sig-paren">(</span><em>selector: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.tap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.tap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tap the element which matches the <code class="docutils literal notranslate"><span class="pre">selector</span></code>.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.tap" title="pyppeteer.page.Page.tap"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.tap()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.title">
 <em class="property">coroutine </em><code class="descname">title</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.title" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get title of the frame.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.type">
+<em class="property">coroutine </em><code class="descname">type</code><span class="sig-paren">(</span><em>selector: str</em>, <em>text: str</em>, <em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.type"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Type <code class="docutils literal notranslate"><span class="pre">text</span></code> on the element which matches <code class="docutils literal notranslate"><span class="pre">selector</span></code>.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.type" title="pyppeteer.page.Page.type"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.type()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1450,6 +1535,13 @@ associated to this frame.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.frame_manager.Frame.waitForXPath">
+<code class="descname">waitForXPath</code><span class="sig-paren">(</span><em>xpath: str</em>, <em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; pyppeteer.frame_manager.WaitTask<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.waitForXPath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.waitForXPath" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait until element which matches <code class="docutils literal notranslate"><span class="pre">xpath</span></code> appears on page.</p>
+<p>Details see <a class="reference internal" href="#pyppeteer.page.Page.waitForXPath" title="pyppeteer.page.Page.waitForXPath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.waitForXPath()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.xpath">
 <em class="property">coroutine </em><code class="descname">xpath</code><span class="sig-paren">(</span><em>expression: str</em><span class="sig-paren">)</span> &#x2192; List[pyppeteer.element_handle.ElementHandle]<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.xpath"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.xpath" title="Permalink to this definition">¶</a></dt>
 <dd><p>Evaluate XPath expression.</p>
@@ -1471,7 +1563,7 @@ associated to this frame.</p>
 <h2>ExecutionContext Class<a class="headerlink" href="#executioncontext-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.execution_context.ExecutionContext">
-<em class="property">class </em><code class="descclassname">pyppeteer.execution_context.</code><code class="descname">ExecutionContext</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em>, <em>contextPayload: Dict</em>, <em>objectHandleFactory: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/execution_context.html#ExecutionContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.execution_context.ExecutionContext" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.execution_context.</code><code class="descname">ExecutionContext</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, contextPayload: Dict, objectHandleFactory: Any, frame: Union[_ForwardRef(‘Frame’), NoneType]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/execution_context.html#ExecutionContext"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.execution_context.ExecutionContext" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Execution Context class.</p>
 <dl class="method">
@@ -1488,6 +1580,12 @@ associated to this frame.</p>
 <p>Details see <a class="reference internal" href="#pyppeteer.page.Page.evaluateHandle" title="pyppeteer.page.Page.evaluateHandle"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.evaluateHandle()</span></code></a>.</p>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="pyppeteer.execution_context.ExecutionContext.frame">
+<code class="descname">frame</code><a class="headerlink" href="#pyppeteer.execution_context.ExecutionContext.frame" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return frame associated with this execution context.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="pyppeteer.execution_context.ExecutionContext.queryObjects">
 <em class="property">coroutine </em><code class="descname">queryObjects</code><span class="sig-paren">(</span><em>prototypeHandle: pyppeteer.execution_context.JSHandle</em><span class="sig-paren">)</span> &#x2192; pyppeteer.execution_context.JSHandle<a class="reference internal" href="_modules/pyppeteer/execution_context.html#ExecutionContext.queryObjects"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.execution_context.ExecutionContext.queryObjects" title="Permalink to this definition">¶</a></dt>
@@ -1502,7 +1600,7 @@ associated to this frame.</p>
 <h2>JSHandle Class<a class="headerlink" href="#jshandle-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.execution_context.JSHandle">
-<em class="property">class </em><code class="descclassname">pyppeteer.execution_context.</code><code class="descname">JSHandle</code><span class="sig-paren">(</span><em>context: pyppeteer.execution_context.ExecutionContext</em>, <em>client: pyppeteer.connection.CDPSession</em>, <em>remoteObject: Dict</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/execution_context.html#JSHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.execution_context.JSHandle" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.execution_context.</code><code class="descname">JSHandle</code><span class="sig-paren">(</span><em>context: pyppeteer.execution_context.ExecutionContext</em>, <em>client: pyppeteer.connection.CDPSession</em>, <em>remoteObject: Dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/execution_context.html#JSHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.execution_context.JSHandle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>JSHandle class.</p>
 <p>JSHandle represents an in-page JavaScript object. JSHandle can be created
@@ -1556,7 +1654,7 @@ with the <a class="reference internal" href="#pyppeteer.page.Page.evaluateHandle
 <h2>ElementHandle Class<a class="headerlink" href="#elementhandle-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.element_handle.ElementHandle">
-<em class="property">class </em><code class="descclassname">pyppeteer.element_handle.</code><code class="descname">ElementHandle</code><span class="sig-paren">(</span><em>context: pyppeteer.execution_context.ExecutionContext</em>, <em>client: pyppeteer.connection.CDPSession</em>, <em>remoteObject: dict</em>, <em>page: Any</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.element_handle.</code><code class="descname">ElementHandle</code><span class="sig-paren">(</span><em>context: pyppeteer.execution_context.ExecutionContext</em>, <em>client: pyppeteer.connection.CDPSession</em>, <em>remoteObject: dict</em>, <em>page: Any</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#pyppeteer.execution_context.JSHandle" title="pyppeteer.execution_context.JSHandle"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyppeteer.execution_context.JSHandle</span></code></a></p>
 <p>ElementHandle class.</p>
 <p>This class represents an in-page DOM element. ElementHandle can be created
@@ -1725,7 +1823,7 @@ detached from DOM, the method raises <code class="docutils literal notranslate">
 <h2>Request Class<a class="headerlink" href="#request-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.network_manager.Request">
-<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Request</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, requestId: Union[str, NoneType], interceptionId: str, allowInterception: bool, url: str, resourceType: str, payload: dict, frame: Union[pyppeteer.frame_manager.Frame, NoneType]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/network_manager.html#Request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Request" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Request</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, requestId: Union[str, NoneType], interceptionId: str, allowInterception: bool, url: str, resourceType: str, payload: dict, frame: Union[pyppeteer.frame_manager.Frame, NoneType]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Request"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Request" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Request class.</p>
 <dl class="method">
@@ -1779,30 +1877,25 @@ interception is not enabled, raise <code class="docutils literal notranslate"><s
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Request.headers">
 <code class="descname">headers</code><a class="headerlink" href="#pyppeteer.network_manager.Request.headers" title="Permalink to this definition">¶</a></dt>
-<dd><p>Reurn a dictionary of HTTP headers of this request.</p>
-<p>All header names are lower-case.</p>
+<dd><p>headers associated with the request.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Request.method">
 <code class="descname">method</code><a class="headerlink" href="#pyppeteer.network_manager.Request.method" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return this request’s method (GET, POST, etc.).</p>
+<dd><p>contains the request method (GET/POST/…).</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Request.postData">
 <code class="descname">postData</code><a class="headerlink" href="#pyppeteer.network_manager.Request.postData" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return post body of this request.</p>
+<dd><p>contains the request’s post body, if any.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Request.resourceType">
 <code class="descname">resourceType</code><a class="headerlink" href="#pyppeteer.network_manager.Request.resourceType" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resource type of this request perceived by the rendering engine.</p>
-<p>ResourceType will be one of the following: <code class="docutils literal notranslate"><span class="pre">document</span></code>,
-<code class="docutils literal notranslate"><span class="pre">stylesheet</span></code>, <code class="docutils literal notranslate"><span class="pre">image</span></code>, <code class="docutils literal notranslate"><span class="pre">media</span></code>, <code class="docutils literal notranslate"><span class="pre">font</span></code>, <code class="docutils literal notranslate"><span class="pre">script</span></code>,
-<code class="docutils literal notranslate"><span class="pre">texttrack</span></code>, <code class="docutils literal notranslate"><span class="pre">xhr</span></code>, <code class="docutils literal notranslate"><span class="pre">fetch</span></code>, <code class="docutils literal notranslate"><span class="pre">eventsource</span></code>, <code class="docutils literal notranslate"><span class="pre">websocket</span></code>,
-<code class="docutils literal notranslate"><span class="pre">manifest</span></code>, <code class="docutils literal notranslate"><span class="pre">other</span></code>.</p>
+<dd><p>contains the request’s resource type</p>
 </dd></dl>
 
 <dl class="method">
@@ -1832,7 +1925,7 @@ response header.</li>
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Request.url">
 <code class="descname">url</code><a class="headerlink" href="#pyppeteer.network_manager.Request.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>URL of this request.</p>
+<dd><p>url of this request.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1842,13 +1935,26 @@ response header.</li>
 <h2>Response Class<a class="headerlink" href="#response-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.network_manager.Response">
-<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Response</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, request: pyppeteer.network_manager.Request, status: int, headers: Dict[str, str]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.network_manager.</code><code class="descname">Response</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession, request: pyppeteer.network_manager.Request, status: int, headers: Dict[str, str], fromDiskCache: bool, fromServiceWorker: bool, securityDetails: Dict = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Response class represents responses which are recieved by <code class="docutils literal notranslate"><span class="pre">Page</span></code>.</p>
 <dl class="method">
 <dt id="pyppeteer.network_manager.Response.buffer">
 <code class="descname">buffer</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Awaitable[bytes]<a class="reference internal" href="_modules/pyppeteer/network_manager.html#Response.buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.network_manager.Response.buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Retrun awaitable which resolves to bytes with response body.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.network_manager.Response.fromCache">
+<code class="descname">fromCache</code><a class="headerlink" href="#pyppeteer.network_manager.Response.fromCache" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the response was served from cache.</p>
+<p>Here <cite>cache</cite> is either the browser’s disk cache or memory cache.</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyppeteer.network_manager.Response.fromServiceWorker">
+<code class="descname">fromServiceWorker</code><a class="headerlink" href="#pyppeteer.network_manager.Response.fromServiceWorker" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">True</span></code> if the response was served by a service worker.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1867,7 +1973,7 @@ response header.</li>
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Response.ok">
 <code class="descname">ok</code><a class="headerlink" href="#pyppeteer.network_manager.Response.ok" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return bool whether this request is successfull (200-299) or not.</p>
+<dd><p>whether the repoonse succeeded or not.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1877,9 +1983,17 @@ response header.</li>
 </dd></dl>
 
 <dl class="attribute">
+<dt id="pyppeteer.network_manager.Response.securityDetails">
+<code class="descname">securityDetails</code><a class="headerlink" href="#pyppeteer.network_manager.Response.securityDetails" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return security details associated with this response.</p>
+<p>Security details if the response was received over the secure
+connection, or <cite>None</cite> otherwise.</p>
+</dd></dl>
+
+<dl class="attribute">
 <dt id="pyppeteer.network_manager.Response.status">
 <code class="descname">status</code><a class="headerlink" href="#pyppeteer.network_manager.Response.status" title="Permalink to this definition">¶</a></dt>
-<dd><p>Status code of the response.</p>
+<dd><p>status code of the reponse.</p>
 </dd></dl>
 
 <dl class="method">
@@ -1891,7 +2005,7 @@ response header.</li>
 <dl class="attribute">
 <dt id="pyppeteer.network_manager.Response.url">
 <code class="descname">url</code><a class="headerlink" href="#pyppeteer.network_manager.Response.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>URL of the response.</p>
+<dd><p>url of the reponse.</p>
 </dd></dl>
 
 </dd></dl>
@@ -1901,7 +2015,7 @@ response header.</li>
 <h2>Target Class<a class="headerlink" href="#target-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.browser.Target">
-<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Target</code><span class="sig-paren">(</span><em>browser: pyppeteer.browser.Browser</em>, <em>targetInfo: Dict</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/browser.html#Target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Target" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Target</code><span class="sig-paren">(</span><em>browser: pyppeteer.browser.Browser</em>, <em>targetInfo: Dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/browser.html#Target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Target" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Browser’s target class.</p>
 <dl class="method">
@@ -1920,6 +2034,8 @@ response header.</li>
 <dt id="pyppeteer.browser.Target.type">
 <code class="descname">type</code><a class="headerlink" href="#pyppeteer.browser.Target.type" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get type of this target.</p>
+<p>Type can be <code class="docutils literal notranslate"><span class="pre">'page'</span></code>, <code class="docutils literal notranslate"><span class="pre">'service_worker'</span></code>, <code class="docutils literal notranslate"><span class="pre">'browser'</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">'other'</span></code>.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -1935,7 +2051,7 @@ response header.</li>
 <h2>CDPSession Class<a class="headerlink" href="#cdpsession-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.connection.CDPSession">
-<em class="property">class </em><code class="descclassname">pyppeteer.connection.</code><code class="descname">CDPSession</code><span class="sig-paren">(</span><em>connection: pyppeteer.connection.Connection</em>, <em>targetId: str</em>, <em>sessionId: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/connection.html#CDPSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.connection.CDPSession" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.connection.</code><code class="descname">CDPSession</code><span class="sig-paren">(</span><em>connection: pyppeteer.connection.Connection</em>, <em>targetId: str</em>, <em>sessionId: str</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/connection.html#CDPSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.connection.CDPSession" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pyee.EventEmitter</span></code></p>
 <p>Chrome Devtools Protocol Session.</p>
 <p>The <a class="reference internal" href="#pyppeteer.connection.CDPSession" title="pyppeteer.connection.CDPSession"><code class="xref py py-class docutils literal notranslate"><span class="pre">CDPSession</span></code></a> instances are used to talk raw Chrome Devtools
@@ -1979,7 +2095,7 @@ messages.</p>
 <h2>Coverage Class<a class="headerlink" href="#coverage-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.coverage.Coverage">
-<em class="property">class </em><code class="descclassname">pyppeteer.coverage.</code><code class="descname">Coverage</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/coverage.html#Coverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.coverage.Coverage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.coverage.</code><code class="descname">Coverage</code><span class="sig-paren">(</span><em>client: pyppeteer.connection.CDPSession</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/coverage.html#Coverage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.coverage.Coverage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Coverage class.</p>
 <p>Coverage gathers information about parts of JavaScript and CSS that were
@@ -1987,14 +2103,14 @@ used by the page.</p>
 <p>An example of using JavaScript and CSS coverage to get percentage of
 initially executed code:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable both JavaScript and CSS coverage</span>
-<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">startJSCoverage</span><span class="p">()</span>
-<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">startCSSCoverage</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">coverage</span><span class="o">.</span><span class="n">startJSCoverage</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">coverage</span><span class="o">.</span><span class="n">startCSSCoverage</span><span class="p">()</span>
 
 <span class="c1"># Navigato to page</span>
 <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">goto</span><span class="p">(</span><span class="s1">&#39;https://example.com&#39;</span><span class="p">)</span>
 <span class="c1"># Disable JS and CSS coverage and get results</span>
-<span class="n">jsCoverage</span> <span class="o">=</span> <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">stopJSCoverage</span><span class="p">()</span>
-<span class="n">cssCoverage</span> <span class="o">=</span> <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">stopCSSCoverage</span><span class="p">()</span>
+<span class="n">jsCoverage</span> <span class="o">=</span> <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">coverage</span><span class="o">.</span><span class="n">stopJSCoverage</span><span class="p">()</span>
+<span class="n">cssCoverage</span> <span class="o">=</span> <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">coverage</span><span class="o">.</span><span class="n">stopCSSCoverage</span><span class="p">()</span>
 <span class="n">totalBytes</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">usedBytes</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="n">coverage</span> <span class="o">=</span> <span class="n">jsCoverage</span> <span class="o">+</span> <span class="n">cssCoverage</span>
@@ -2158,7 +2274,7 @@ scripts with sourceURLs are reported.</p>
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |

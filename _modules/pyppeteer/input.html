@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.input &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>pyppeteer.input &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
@@ -83,7 +83,7 @@
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">description</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyDescriptionForString</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="n">autoRepeat</span> <span class="o">=</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span>
+        <span class="n">autoRepeat</span> <span class="o">=</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">])</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_modifiers</span> <span class="o">|=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modifierBit</span><span class="p">(</span><span class="n">description</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">])</span>
 
@@ -101,8 +101,8 @@
             <span class="s1">&#39;unmodifiedText&#39;</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
             <span class="s1">&#39;autoRepeat&#39;</span><span class="p">:</span> <span class="n">autoRepeat</span><span class="p">,</span>
             <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;isKeypad&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;isKeypad&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="p">})</span></div>
 
     <span class="k">def</span> <span class="nf">_modifierBit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s1">&#39;Alt&#39;</span><span class="p">:</span>
@@ -166,15 +166,16 @@
         <span class="n">description</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyDescriptionForString</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_modifiers</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="bp">self</span><span class="o">.</span><span class="n">_modifierBit</span><span class="p">(</span><span class="n">description</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">])</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pressedKeys</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">])</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Input.dispatchKeyEvent&#39;</span><span class="p">,</span> <span class="p">{</span>
             <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;keyUp&#39;</span><span class="p">,</span>
             <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
             <span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;key&#39;</span><span class="p">],</span>
             <span class="s1">&#39;windowsVirtualKeyCode&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;keyCode&#39;</span><span class="p">],</span>
             <span class="s1">&#39;code&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">],</span>
-            <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">],</span></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;location&#39;</span><span class="p">:</span> <span class="n">description</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">],</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Keyboard.sendCharacter"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.sendCharacter">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">sendCharacter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Dispatches a ``keypress`` and ``input`` event.</span>
@@ -186,8 +187,8 @@
             <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
             <span class="s1">&#39;text&#39;</span><span class="p">:</span> <span class="n">char</span><span class="p">,</span>
             <span class="s1">&#39;key&#39;</span><span class="p">:</span> <span class="n">char</span><span class="p">,</span>
-            <span class="s1">&#39;unmodifiedText&#39;</span><span class="p">:</span> <span class="n">char</span><span class="p">,</span></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;unmodifiedText&#39;</span><span class="p">:</span> <span class="n">char</span><span class="p">,</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Keyboard.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.type">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -211,8 +212,8 @@
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;delay&#39;</span><span class="p">:</span> <span class="n">delay</span><span class="p">})</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">sendCharacter</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">delay</span><span class="p">:</span></div>
-                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">delay</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">delay</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Keyboard.press"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.press">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -236,8 +237,8 @@
 
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
         <span class="k">if</span> <span class="s1">&#39;delay&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span></div></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;delay&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="Mouse"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Mouse">[docs]</a><span class="k">class</span> <span class="nc">Mouse</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -271,8 +272,8 @@
                 <span class="s1">&#39;button&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_button</span><span class="p">,</span>
                 <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
                 <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span>
-                <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span></div>
-            <span class="p">})</span>
+                <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
+            <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Mouse.click"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Mouse.click">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -292,8 +293,8 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">down</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">options</span> <span class="ow">and</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">):</span>
-            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">up</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Mouse.down"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Mouse.down">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Press down button (dispatches ``mousedown`` event).</span>
@@ -312,8 +313,8 @@
             <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="p">,</span>
             <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="p">,</span>
             <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
-            <span class="s1">&#39;clickCount&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clickCount&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;clickCount&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clickCount&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Mouse.up"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Mouse.up">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Release pressed button (dispatches ``mouseup`` event).</span>
@@ -332,8 +333,8 @@
             <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_x</span><span class="p">,</span>
             <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_y</span><span class="p">,</span>
             <span class="s1">&#39;modifiers&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span><span class="o">.</span><span class="n">_modifiers</span><span class="p">,</span>
-            <span class="s1">&#39;clickCount&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clickCount&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span></div></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;clickCount&#39;</span><span class="p">:</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;clickCount&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="p">})</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">Touchscreen</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -420,7 +421,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

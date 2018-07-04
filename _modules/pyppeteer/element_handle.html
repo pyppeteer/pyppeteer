@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
@@ -85,8 +85,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_disposed</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="ElementHandle.asElement"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.asElement">[docs]</a>    <span class="k">def</span> <span class="nf">asElement</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ElementHandle&#39;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return this ElementHandle.&quot;&quot;&quot;</span></div>
-        <span class="k">return</span> <span class="bp">self</span>
+        <span class="sd">&quot;&quot;&quot;Return this ElementHandle.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_scrollIntoViewIfNeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
@@ -119,8 +119,8 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.click"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.click">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Click the center of this element.</span>
@@ -139,8 +139,8 @@
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.uploadFile"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.uploadFile">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">uploadFile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">filePaths</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Upload files.&quot;&quot;&quot;</span>
@@ -148,8 +148,8 @@
         <span class="n">objectId</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
             <span class="s1">&#39;DOM.setFileInputFiles&#39;</span><span class="p">,</span>
-            <span class="p">{</span><span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectId</span><span class="p">,</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="n">files</span><span class="p">}</span></div>
-        <span class="p">)</span>
+            <span class="p">{</span><span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="n">objectId</span><span class="p">,</span> <span class="s1">&#39;files&#39;</span><span class="p">:</span> <span class="n">files</span><span class="p">}</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.tap"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.tap">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">tap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Tap the center of this element.</span>
@@ -159,13 +159,13 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.focus"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.focus">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">focus</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Focus on this element.&quot;&quot;&quot;</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span></div>
-            <span class="s1">&#39;element =&gt; element.focus()&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+            <span class="s1">&#39;element =&gt; element.focus()&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.type">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -174,8 +174,8 @@
 <span class="sd">        Details see :meth:`pyppeteer.input.Keyboard.type` method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.press"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.press">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">press</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -195,8 +195,8 @@
 <span class="sd">          ``keyup``. Defaults to 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">focus</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">keyboard</span><span class="o">.</span><span class="n">press</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.boundingBox"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.boundingBox">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">boundingBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]:</span>
         <span class="sd">&quot;&quot;&quot;Return bounding box of this element.</span>
@@ -225,8 +225,8 @@
         <span class="n">x</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span>
         <span class="n">y</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
         <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">6</span><span class="p">])</span> <span class="o">-</span> <span class="n">x</span>
-        <span class="n">height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span> <span class="o">-</span> <span class="n">y</span></div>
-        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">}</span>
+        <span class="n">height</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">quad</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">5</span><span class="p">],</span> <span class="n">quad</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span> <span class="o">-</span> <span class="n">y</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="n">width</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="n">height</span><span class="p">}</span></div>
 
 <div class="viewcode-block" id="ElementHandle.screenshot"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.screenshot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Take a screenshot of this element.</span>
@@ -249,8 +249,8 @@
         <span class="n">clip</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clip</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pageX</span>
         <span class="n">clip</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">clip</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">pageY</span>
         <span class="n">opt</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;clip&#39;</span><span class="p">:</span> <span class="n">clip</span><span class="p">}</span>
-        <span class="n">opt</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span>
+        <span class="n">opt</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">screenshot</span><span class="p">(</span><span class="n">opt</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="ElementHandle.querySelector"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.querySelector">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Return first element which matches ``selector`` under this element.</span>
@@ -264,8 +264,8 @@
         <span class="n">element</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">element</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">element</span>
-        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
-        <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
 <div class="viewcode-block" id="ElementHandle.querySelectorAll"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.querySelectorAll">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Return all elements which match ``selector`` under this element.</span>
@@ -282,8 +282,8 @@
         <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">elementHandle</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">elementHandle</span><span class="p">:</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elementHandle</span><span class="p">)</span></div>
-        <span class="k">return</span> <span class="n">result</span>  <span class="c1"># type: ignore</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elementHandle</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>  <span class="c1"># type: ignore</span></div>
 
     <span class="c1">#: alias to :meth:`querySelector`</span>
     <span class="n">J</span> <span class="o">=</span> <span class="n">querySelector</span>
@@ -315,11 +315,11 @@
         <span class="k">for</span> <span class="nb">property</span> <span class="ow">in</span> <span class="n">properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
             <span class="n">elementHandle</span> <span class="o">=</span> <span class="nb">property</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">elementHandle</span><span class="p">:</span>
-                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elementHandle</span><span class="p">)</span></div>
-        <span class="k">return</span> <span class="n">result</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">elementHandle</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
 
-    <span class="c1">#: alias to :meth:`xpath`</span></div>
-    <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span>
+    <span class="c1">#: alias to :meth:`xpath`</span>
+    <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span></div>
 </pre></div>
 
           </div>
@@ -380,7 +380,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

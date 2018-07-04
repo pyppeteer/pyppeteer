@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.dialog &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>pyppeteer.dialog &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
@@ -98,15 +98,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_handled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.handleJavaScriptDialog&#39;</span><span class="p">,</span> <span class="p">{</span>
             <span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s1">&#39;promptText&#39;</span><span class="p">:</span> <span class="n">promptText</span><span class="p">,</span></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;promptText&#39;</span><span class="p">:</span> <span class="n">promptText</span><span class="p">,</span>
+        <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Dialog.dismiss"><a class="viewcode-back" href="../../reference.html#pyppeteer.dialog.Dialog.dismiss">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">dismiss</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Dismiss the dialog.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_handled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.handleJavaScriptDialog&#39;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span></div></div>
-        <span class="p">})</span>
+            <span class="s1">&#39;accept&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">})</span></div></div>
 </pre></div>
 
           </div>
@@ -167,7 +167,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

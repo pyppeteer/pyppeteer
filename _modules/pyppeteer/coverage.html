@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
     <script type="text/javascript" src="../../_static/jquery.js"></script>
     <script type="text/javascript" src="../../_static/underscore.js"></script>
     <script type="text/javascript" src="../../_static/doctools.js"></script>
@@ -63,14 +63,14 @@
 <span class="sd">    initially executed code::</span>
 
 <span class="sd">        # Enable both JavaScript and CSS coverage</span>
-<span class="sd">        await page.startJSCoverage()</span>
-<span class="sd">        await page.startCSSCoverage()</span>
+<span class="sd">        await page.coverage.startJSCoverage()</span>
+<span class="sd">        await page.coverage.startCSSCoverage()</span>
 
 <span class="sd">        # Navigato to page</span>
 <span class="sd">        await page.goto(&#39;https://example.com&#39;)</span>
 <span class="sd">        # Disable JS and CSS coverage and get results</span>
-<span class="sd">        jsCoverage = await page.stopJSCoverage()</span>
-<span class="sd">        cssCoverage = await page.stopCSSCoverage()</span>
+<span class="sd">        jsCoverage = await page.coverage.stopJSCoverage()</span>
+<span class="sd">        cssCoverage = await page.coverage.stopCSSCoverage()</span>
 <span class="sd">        totalBytes = 0</span>
 <span class="sd">        usedBytes = 0</span>
 <span class="sd">        coverage = jsCoverage + cssCoverage</span>
@@ -95,8 +95,8 @@
 <span class="sd">        * ``resetOnNavigation`` (bool): Whether to reset coverage on every</span>
 <span class="sd">          navigation. Defaults to ``True``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Coverage.stopJSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.stopJSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stopJSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Stop JS coverage measurement and get result.</span>
@@ -115,8 +115,8 @@
 <span class="sd">        .. note::</span>
 <span class="sd">           JavaScript coverage doesn&#39;t include anonymous scripts; however,</span>
 <span class="sd">           scripts with sourceURLs are reported.</span>
-<span class="sd">        &quot;&quot;&quot;</span></div>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Coverage.startCSSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.startCSSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">startCSSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                                <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -127,8 +127,8 @@
 <span class="sd">        * ``resetOnNavigation`` (bool): Whether to reset coverage on every</span>
 <span class="sd">          navigation. Defaults to ``True``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Coverage.stopCSSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.stopCSSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stopCSSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Stop CSS coverage measurement and get result.</span>
@@ -147,8 +147,8 @@
 <span class="sd">        .. note::</span>
 <span class="sd">           CSS coverage doesn&#39;t include dynamically injected style tags without</span>
 <span class="sd">           sourceURLs (but currently includs... to be fixed).</span>
-<span class="sd">        &quot;&quot;&quot;</span></div></div>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cssCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div></div>
 
 
 <span class="k">class</span> <span class="nc">JSCoverage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -432,7 +432,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
     </div>

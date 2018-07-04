@@ -6,10 +6,10 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.17 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.18 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
@@ -40,6 +40,26 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-18-next-version">
+<h2>Version 0.0.18 (next version)<a class="headerlink" href="#version-0-0-18-next-version" title="Permalink to this headline">¶</a></h2>
+<p>Catch up puppeteer v1.1.1</p>
+<ul class="simple">
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.waitForXPath</span></code> and <code class="docutils literal notranslate"><span class="pre">Frame.waitForXPath</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.waitFor</span></code> accepts xpath string which starts with <code class="docutils literal notranslate"><span class="pre">//</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Response.fromCache</span></code> and <code class="docutils literal notranslate"><span class="pre">Response.fromServiceWorker</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">SecurityDetauls</span></code> class and <code class="docutils literal notranslate"><span class="pre">response.secutiryDetails</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.setCacheEnabled</span></code> method</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">ExecutionContext.frame</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">dumpio</span></code> option to <code class="docutils literal notranslate"><span class="pre">launch</span></code> function</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">slowMo</span></code> option to <code class="docutils literal notranslate"><span class="pre">connect</span></code> function</li>
+<li><code class="docutils literal notranslate"><span class="pre">launcher.connect</span></code> can be access from package top<ul>
+<li><code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">pyppeteer</span> <span class="pre">import</span> <span class="pre">connect</span></code> is now valid</li>
+</ul>
+</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Frame.evaluateHandle</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.Events.DOMContentLoaded</span></code></li>
+</ul>
+</div>
 <div class="section" id="version-0-0-17-2018-04-02">
 <h2>Version 0.0.17 (2018-04-02)<a class="headerlink" href="#version-0-0-17-2018-04-02" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -232,6 +252,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-18-next-version">Version 0.0.18 (next version)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-17-2018-04-02">Version 0.0.17 (2018-04-02)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-16-2018-03-23">Version 0.0.16 (2018-03-23)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-15-2018-03-22">Version 0.0.15 (2018-03-22)</a></li>
@@ -272,7 +293,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |
