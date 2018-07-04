@@ -3,6 +3,8 @@ History
 
 ## Version 0.0.18 (next version)
 
+Catch up puppeteer v1.1.1
+
 * Add `Page.waitForXPath` and `Frame.waitForXPath`
 * `Page.waitFor` accepts xpath string which starts with `//`
 * Add `Response.fromCache` and `Response.fromServiceWorker`
