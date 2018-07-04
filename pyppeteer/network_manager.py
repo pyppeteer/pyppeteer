@@ -9,7 +9,7 @@ from collections import OrderedDict
 import json
 from urllib.parse import unquote
 from types import SimpleNamespace
-from typing import Awaitable, Dict, Optional, TYPE_CHECKING
+from typing import Awaitable, Dict, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -50,6 +50,7 @@ class NetworkManager(EventEmitter):
 
         self._client.on('Network.requestWillBeSent', self._onRequestWillBeSent)
         self._client.on('Network.requestIntercepted', self._onRequestIntercepted)  # noqa: E501
+        self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)
         self._client.on('Network.loadingFinished', self._onLoadingFinished)
         self._client.on('Network.loadingFailed', self._onLoadingFailed)
@@ -150,15 +151,22 @@ class NetworkManager(EventEmitter):
             request = self._interceptionIdToRequest.get(
                 event.get('interceptionId', ''))
             if request:
-                self._handleRequestRedirect(request,
-                                            event.get('redirectStatusCode', 0),
-                                            event.get('redirectHeaders', {}))
-                self._handleRequestStart(request._requestId,
-                                         event.get('interceptionId', ''),
-                                         event.get('redirectUrl', ''),
-                                         event.get('resourceType', ''),
-                                         event.get('request', {}),
-                                         event.get('frameId'))
+                self._handleRequestRedirect(
+                    request,
+                    event.get('redirectStatusCode', 0),
+                    event.get('redirectHeaders', {}),
+                    False,
+                    False,
+                    None,
+                )
+                self._handleRequestStart(
+                    request._requestId,
+                    event.get('interceptionId', ''),
+                    event.get('redirectUrl', ''),
+                    event.get('resourceType', ''),
+                    event.get('request', {}),
+                    event.get('frameId'),
+                )
             return
 
         requestHash = generateRequestHash(event['request'])
@@ -177,10 +185,18 @@ class NetworkManager(EventEmitter):
                 event['resourceType'], event['request'], event['frameId']
             )
 
+    def _onRequestServedFromCache(self, event: Dict) -> None:
+        request = self._requestIdToRequest.get(event.get('requestId'))
+        if request:
+            request._fromMemoryCache = True
+
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
-                               redirectHeaders: Dict) -> None:
-        response = Response(
-            self._client, request, redirectStatus, redirectHeaders)
+                               redirectHeaders: Dict, fromDiskCache: bool,
+                               fromServiceWorker: bool,
+                               securityDetails: Dict = None) -> None:
+        response = Response(self._client, request, redirectStatus,
+                            redirectHeaders, fromDiskCache, fromServiceWorker,
+                            securityDetails)
         request._response = response
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
@@ -230,6 +246,9 @@ class NetworkManager(EventEmitter):
                     request,
                     redirectResponse.get('status'),
                     redirectResponse.get('headers'),
+                    redirectResponse.get('fromDiskCache'),
+                    redirectResponse.get('fromServiceWorker'),
+                    redirectResponse.get('securityDetails'),
                 )
         self._handleRequestStart(
             event.get('requestId', ''), '',
@@ -247,7 +266,10 @@ class NetworkManager(EventEmitter):
         _resp = event.get('response', {})
         response = Response(self._client, request,
                             _resp.get('status', 0),
-                            _resp.get('headers', {}))
+                            _resp.get('headers', {}),
+                            _resp.get('fromDiskCache'),
+                            _resp.get('fromServiceWorker'),
+                            _resp.get('securityDetails'))
         request._response = response
         self.emit(NetworkManager.Events.Response, response)
 
@@ -311,6 +333,8 @@ class Request(object):
         headers = payload.get('headers', {})
         self._headers = {k.lower(): v for k, v in headers.items()}
         self._frame = frame
+
+        self._fromMemoryCache = False
 
     def _completePromiseFulfill(self) -> None:
         self._completePromise.set_result(None)
@@ -516,13 +540,26 @@ class Response(object):
     url: str
 
     def __init__(self, client: CDPSession, request: Request, status: int,
-                 headers: Dict[str, str]) -> None:
+                 headers: Dict[str, str], fromDiskCache: bool,
+                 fromServiceWorker: bool, securityDetails: Dict = None
+                 ) -> None:
         self._client = client
         self._request = request
         self._status = status
         self._contentPromise = asyncio.get_event_loop().create_future()
         self._url = request.url
+        self._fromDiskCache = fromDiskCache
+        self._fromServiceWorker = fromServiceWorker
         self._headers = {k.lower(): v for k, v in headers.items()}
+        self._securityDetails: Union[Dict, SecurityDetails] = {}
+        if securityDetails:
+            self._securityDetails = SecurityDetails(
+                securityDetails['subjectName'],
+                securityDetails['issuer'],
+                securityDetails['validFrom'],
+                securityDetails['validTo'],
+                securityDetails['protocol'],
+            )
 
     @property
     def url(self) -> str:
@@ -546,6 +583,15 @@ class Response(object):
         All header names are lower-case.
         """
         return self._headers
+
+    @property
+    def securityDetails(self) -> Union[Dict, 'SecurityDetails']:
+        """Return security details associated with this response.
+
+        Security details if the response was received over the secure
+        connection, or `None` otherwise.
+        """
+        return self._securityDetails
 
     async def _bufread(self) -> bytes:
         response = await self._client.send('Network.getResponseBody', {
@@ -580,6 +626,19 @@ class Response(object):
         """Get matching :class:`Request` object."""
         return self._request
 
+    @property
+    def fromCache(self) -> bool:
+        """Return ``True`` if the response was served from cache.
+
+        Here `cache` is either the browser's disk cache or memory cache.
+        """
+        return self._fromDiskCache or self._request._fromMemoryCache
+
+    @property
+    def fromServiceWorker(self) -> bool:
+        """Return ``True`` if the response was served by a service worker."""
+        return self._fromServiceWorker
+
 
 def generateRequestHash(request: dict) -> str:
     """Generate request hash."""
@@ -606,6 +665,43 @@ def generateRequestHash(request: dict) -> str:
                 continue
             _hash['headers'][header] = headerValue
     return json.dumps(_hash)
+
+
+class SecurityDetails(object):
+    """Class represents responses which are received by page."""
+
+    def __init__(self, subjectName: str, issuer: str, validFrom: int,
+                 validTo: int, protocol: str) -> None:
+        self._subjectName = subjectName
+        self._issuer = issuer
+        self._validFrom = validFrom
+        self._validTo = validTo
+        self._protocol = protocol
+
+    @property
+    def subjectName(self) -> str:
+        """Return the subject to which the certificate was issued to."""
+        return self._subjectName
+
+    @property
+    def issuer(self) -> str:
+        """Return a string with the name of issuer of the certificate."""
+        return self._issuer
+
+    @property
+    def validFrom(self) -> int:
+        """Return UnixTime of the start of validity of the certificate."""
+        return self._validFrom
+
+    @property
+    def validTo(self) -> int:
+        """Return UnixTime of the end of validity of the certificate."""
+        return self._validTo
+
+    @property
+    def protocol(self) -> str:
+        """Return string of with the security protocol, e.g. "TLS1.2"."""
+        return self._protocol
 
 
 statusTexts = {

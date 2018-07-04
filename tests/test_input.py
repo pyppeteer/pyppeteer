@@ -9,8 +9,8 @@ from syncer import sync
 
 from pyppeteer.errors import PageError, PyppeteerError
 
-from base import BaseTestCase
-from frame_utils import attachFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 
 class TestClick(BaseTestCase):
@@ -514,7 +514,6 @@ window.addEventListener('keydown', event => {
         await keyboard.up('Alt')
         self.assertEqual(keyboard._modifiers, 0)
 
-    @unittest.skip('Cannot pass this test')
     @sync
     async def test_repeat_properly(self):
         await self.page.goto(self.url + 'static/textarea.html')
@@ -523,10 +522,19 @@ window.addEventListener('keydown', event => {
             'document.querySelector("textarea").addEventListener("keydown",'
             '    e => window.lastEvent = e, true)', force_expr=True,
         )
-        await self.page.keyboard.down('a', {'text': 'a'})
+        await self.page.keyboard.down('a')
         self.assertFalse(await self.page.evaluate('window.lastEvent.repeat'))
         await self.page.keyboard.press('a')
         self.assertTrue(await self.page.evaluate('window.lastEvent.repeat'))
+
+        await self.page.keyboard.down('b')
+        self.assertFalse(await self.page.evaluate('window.lastEvent.repeat'))
+        await self.page.keyboard.down('b')
+        self.assertTrue(await self.page.evaluate('window.lastEvent.repeat'))
+
+        await self.page.keyboard.up('a')
+        await self.page.keyboard.down('a')
+        self.assertFalse(await self.page.evaluate('window.lastEvent.repeat'))
 
     @sync
     async def test_key_type_long(self):

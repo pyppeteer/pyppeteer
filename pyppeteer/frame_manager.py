@@ -145,17 +145,23 @@ class FrameManager(EventEmitter):
             self._removeFramesRecursively(frame)
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
+        if (contextPayload.get('auxData') and
+                contextPayload['auxData']['isDefault']):
+            frameId = contextPayload['auxData']['frameId']
+        else:
+            frameId = None
+
+        frame = self._frames.get(frameId) if frameId else None
+
         context = ExecutionContext(
             self._client,
             contextPayload,
             lambda obj: self.createJSHandle(contextPayload['id'], obj),
+            frame,
         )
         self._contextIdToContext[contextPayload['id']] = context
 
-        frame = (self._frames.get(context._frameId)
-                 if context._frameId else None)
-
-        if frame and context._isDefault:
+        if frame:
             frame._setDefaultContext(context)
 
     def _removeContext(self, context: ExecutionContext) -> None:
@@ -176,7 +182,7 @@ class FrameManager(EventEmitter):
         self._contextIdToContext.clear()
 
     def createJSHandle(self, contextId: str, remoteObject: Dict = None
-                       ) -> 'JSHandle':
+                       ) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
             remoteObject = dict()
@@ -242,6 +248,16 @@ class Frame(object):
         associated to this frame.
         """
         return await self._contextPromise
+
+    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
+        """Execute fucntion on this frame.
+
+        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
+        """
+        context = await self.executionContext()
+        if context is None:
+            raise PageError('this frame has no context.')
+        return await context.evaluateHandle(pageFunction, *args)
 
     async def evaluate(self, pageFunction: str, *args: Any,
                        force_expr: bool = False) -> Any:
@@ -509,6 +525,41 @@ function(html) {
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
 
+    async def click(self, selector: str, options: dict = None, **kwargs: Any
+                    ) -> None:
+        """Click element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.click`.
+        """
+        options = merge_dict(options, kwargs)
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.click(options)
+        await handle.dispose()
+
+    async def focus(self, selector: str) -> None:
+        """Fucus element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.focus`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await self.evaluate('element => element.focus()', handle)
+        await handle.dispose()
+
+    async def hover(self, selector: str) -> None:
+        """Mouse hover the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.hover`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.hover()
+        await handle.dispose()
+
     async def select(self, selector: str, *values: str) -> List[str]:
         """Select options and return selected values.
 
@@ -528,14 +579,41 @@ function(html) {
 
     const options = Array.from(element.options);
     element.value = undefined;
-    for (const option of options)
+    for (const option of options) {
         option.selected = values.includes(option.value);
+        if (option.selected && !element.multiple)
+            break;
+    }
 
     element.dispatchEvent(new Event('input', { 'bubbles': true }));
     element.dispatchEvent(new Event('change', { 'bubbles': true }));
     return options.filter(option => option.selected).map(options => options.value)
 }
         ''', values)  # noqa: E501
+
+    async def tap(self, selector: str) -> None:
+        """Tap the element which matches the ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.tap`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.tap()
+        await handle.dispose()
+
+    async def type(self, selector: str, text: str, options: dict = None,
+                   **kwargs: Any) -> None:
+        """Type ``text`` on the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.type`.
+        """
+        options = merge_dict(options, kwargs)
+        handle = await self.querySelector(selector)
+        if handle is None:
+            raise PageError('Cannot find {} on this page'.format(selector))
+        await handle.type(text, options)
+        await handle.dispose()
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any
@@ -560,6 +638,8 @@ function(html) {
         if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(
                 selectorOrFunctionOrTimeout, options, *args)
+        if selectorOrFunctionOrTimeout.startswith('//'):
+            return self.waitForXPath(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
     def waitForSelector(self, selector: str, options: dict = None,
@@ -569,28 +649,16 @@ function(html) {
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
         """
         options = merge_dict(options, kwargs)
-        waitForVisible = bool(options.get('visible'))
-        waitForHidden = bool(options.get('hidden'))
-        predicate = '''
-(selector, waitForVisible, waitForHidden) => {
-    const node = document.querySelector(selector);
-    if (!node)
-        return waitForHidden;
-    if (!waitForVisible && !waitForHidden)
-        return node;
-    const style = window.getComputedStyle(node);
-    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
-    return success ? node : null
+        return self._waitForSelectorOrXPath(selector, False, options)
 
-    function hasVisibleBoundingBox() {
-        const rect = node.getBoundingClientRect();
-        return !!(rect.top || rect.bottom || rect.width || rect.height);
-    }
-}
-        '''  # noqa: E501
-        return self.waitForFunction(
-            predicate, options, selector, waitForVisible, waitForHidden)
+    def waitForXPath(self, xpath: str, options: dict = None,
+                     **kwargs: Any) -> 'WaitTask':
+        """Wait until element which matches ``xpath`` appears on page.
+
+        Details see :meth:`pyppeteer.page.Page.waitForXPath`.
+        """
+        options = merge_dict(options, kwargs)
+        return self._waitForSelectorOrXPath(xpath, True, options)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: Any, **kwargs: Any) -> 'WaitTask':
@@ -602,6 +670,45 @@ function(html) {
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
         return WaitTask(self, pageFunction, polling, timeout, *args)
+
+    def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
+                                options: dict = None, **kwargs: Any
+                                ) -> 'WaitTask':
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+        waitForVisible = bool(options.get('visible'))
+        waitForHidden = bool(options.get('hidden'))
+        polling = 'raf' if waitForHidden or waitForVisible else 'mutation'
+        predicate = '''
+(selectorOrXPath, isXPath, waitForVisible, waitForHidden) => {
+    const node = isXPath
+        ? document.evaluate(selectorOrXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
+        : document.querySelector(selectorOrXPath);
+    if (!node)
+        return waitForHidden;
+    if (!waitForVisible && !waitForHidden)
+        return node;
+    const element = /** @type {Element} */ (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
+
+    const style = window.getComputedStyle(element);
+    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
+    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
+    return success ? node : null
+
+    function hasVisibleBoundingBox() {
+        const rect = element.getBoundingClientRect();
+        return !!(rect.top || rect.bottom || rect.width || rect.height);
+    }
+}
+        '''  # noqa: E501
+        return self.waitForFunction(
+            predicate,
+            {'timeout': timeout, 'polling': polling},
+            selectorOrXPath,
+            isXPath,
+            waitForVisible,
+            waitForHidden,
+        )
 
     async def title(self) -> str:
         """Get title of the frame."""
@@ -621,7 +728,7 @@ function(html) {
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
             waitTask.terminate(
-                PageError('waitForSelector failed: frame got detached.'))
+                PageError('waitForFunction failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)

@@ -13,8 +13,8 @@ from syncer import sync
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError
 
-from base import BaseTestCase
-from frame_utils import attachFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 iPhone = {
     'name': 'iPhone 6',
@@ -214,23 +214,31 @@ class TestEvaluateHandle(BaseTestCase):
 
 
 class TestWaitFor(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-        self.result = False
-
-    def set_result(self, value):
-        self.result = value
-
     @sync
-    async def test_wait_for_page_navigated(self):
-        fut = asyncio.ensure_future(self.page.waitFor('h1'))
+    async def test_wait_for_selector(self):
+        fut = asyncio.ensure_future(self.page.waitFor('div'))
         fut.add_done_callback(lambda f: self.set_result(True))
         await self.page.goto(self.url + 'empty')
         self.assertFalse(self.result)
-        await self.page.goto(self.url)
+        await self.page.goto(self.url + 'static/grid.html')
         await fut
         self.assertTrue(self.result)
+
+    @sync
+    async def test_wait_for_xpath(self):
+        waitFor = asyncio.ensure_future(self.page.waitFor('//div'))
+        waitFor.add_done_callback(lambda fut: self.set_result(True))
+        await self.page.goto(self.url + 'empty')
+        self.assertFalse(self.result)
+        await self.page.goto(self.url + 'static/grid.html')
+        await waitFor
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_single_slash_fail(self):
+        await self.page.setContent('<div>some text</div>')
+        with self.assertRaises(Exception):
+            await self.page.waitFor('/html/body/div')
 
     @sync
     async def test_wait_for_timeout(self):
@@ -253,10 +261,6 @@ class TestWaitFor(BaseTestCase):
 
 
 class TestConsole(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-
     @sync
     async def test_console_event(self):
         messages = []
@@ -311,9 +315,16 @@ console.log(Promise.resolve('should not wait until resolved!'));
         self.assertEqual(msg.text, 'JSHandle@object')
 
 
+class TestDOMContentLoaded(BaseTestCase):
+    @sync
+    async def test_fired(self):
+        self.page.once('domcontentloaded', self.set_result(True))
+        self.assertTrue(self.result)
+
+
 class TestMetrics(BaseTestCase):
     def checkMetrics(self, metrics):
-        metrics_to_check = set([
+        metrics_to_check = {
             'Timestamp',
             'Documents',
             'Frames',
@@ -327,7 +338,7 @@ class TestMetrics(BaseTestCase):
             'TaskDuration',
             'JSHeapUsedSize',
             'JSHeapTotalSize',
-        ])
+        }
         for name, value in metrics.items():
             self.assertTrue(name in metrics_to_check)
             self.assertTrue(value >= 0)
@@ -457,6 +468,12 @@ class TestGoto(BaseTestCase):
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
+
+    @sync
+    async def test_self_request_page(self):
+        response = await self.page.goto(self.url + 'static/self-request.html')
+        self.assertIn(response.status, [200, 304])
+        self.assertIn('self-request.html', response.url)
 
 
 class TestWaitForNavigation(BaseTestCase):
@@ -1270,6 +1287,25 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         self.assertEqual(await self.page.evaluate('window.result'), 123)
 
 
+class TestCacheEnabled(BaseTestCase):
+    @sync
+    async def test_cache_enable_disable(self):
+        responses = {}
+
+        def set_response(res):
+            responses[res.url.split('/').pop()] = res
+
+        self.page.on('response', set_response)
+        await self.page.goto(self.url + 'static/cached/one-style.html',
+                             waitUntil='networkidle2')
+        await self.page.reload(waitUntil='networkidle2')
+        self.assertTrue(responses.get('one-style.css').fromCache)
+
+        await self.page.setCacheEnabled(False)
+        await self.page.reload(waitUntil='networkidle2')
+        self.assertFalse(responses.get('one-style.css').fromCache)
+
+
 class TestPDF(BaseTestCase):
     @sync
     async def test_pdf(self):
@@ -1307,6 +1343,12 @@ class TestSelect(BaseTestCase):
         self.assertEqual(_input, ['blue'])
         change = await self.page.evaluate('result.onBubblingChange')
         self.assertEqual(change, ['blue'])
+
+    @sync
+    async def test_select_first_item(self):
+        await self.page.select('select', 'blue', 'green', 'red')
+        self.assertEqual(await self.page.evaluate('result.onInput'), ['blue'])
+        self.assertEqual(await self.page.evaluate('result.onChange'), ['blue'])
 
     @sync
     async def test_select_multiple(self):
@@ -1399,27 +1441,54 @@ class TestCookie(BaseTestCase):
         )
         self.assertEqual(cookies, 'username=John Doe; password=123456')
         cookies = await self.page.cookies()
-        self.assertEqual(cookies, [{
-            'name': 'password',
-            'value': '123456',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }, {
-            'name': 'username',
-            'value': 'John Doe',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 16,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
+        self.assertIn(cookies, [
+            [
+                {
+                    'name': 'password',
+                    'value': '123456',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 14,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }, {
+                    'name': 'username',
+                    'value': 'John Doe',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 16,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }
+            ],
+            [
+                {
+                    'name': 'username',
+                    'value': 'John Doe',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 16,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }, {
+                    'name': 'password',
+                    'value': '123456',
+                    'domain': 'localhost',
+                    'path': '/',
+                    'expires': -1,
+                    'size': 14,
+                    'httpOnly': False,
+                    'secure': False,
+                    'session': True,
+                }
+            ]
+        ])
         await self.page.deleteCookie({'name': 'username'})
         cookies = await self.page.evaluate(
             '() => document.cookie'

@@ -52,6 +52,7 @@ class Page(EventEmitter):
     Events = SimpleNamespace(
         Console='console',
         Dialog='dialog',
+        DOMContentLoaded='domcontentloaded',
         Error='error',
         PageError='pageerror',
         Request='request',
@@ -88,13 +89,13 @@ class Page(EventEmitter):
         page = Page(client, target, frameTree, ignoreHTTPSErrors,
                     screenshotTaskQueue)
 
-        await asyncio.wait([
+        await asyncio.gather(
             client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
             client.send('Network.enable', {}),
             client.send('Runtime.enable', {}),
             client.send('Security.enable', {}),
             client.send('Performance.enable', {}),
-        ])
+        )
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
@@ -143,6 +144,8 @@ class Page(EventEmitter):
         _nm.on(NetworkManager.Events.RequestFinished,
                lambda event: self.emit(Page.Events.RequestFinished, event))
 
+        client.on('Page.domContentEventFired',
+                  lambda event: self.emit(Page.Events.DOMContentLoaded))
         client.on('Page.loadEventFired',
                   lambda event: self.emit(Page.Events.Load))
         client.on('Runtime.consoleAPICalled',
@@ -192,11 +195,10 @@ class Page(EventEmitter):
 
         :arg str selector: A selector to search element to touch.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.tap()
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('no main frame')
+        await frame.tap(selector)
 
     @property
     def tracing(self) -> 'Tracing':
@@ -522,7 +524,7 @@ function addPageBinding(bindingName) {
     def _onConsoleAPI(self, event: dict) -> None:
         _args = event.get('args', [])
         if (event.get('type') == 'debug' and _args and
-                _args[0]['value'] == 'driver:page-binding'):
+                _args[0].get('value') == 'driver:page-binding'):
             obj = json.loads(_args[1]['value'])
             name = obj.get('name')
             seq = obj.get('seq')
@@ -588,14 +590,14 @@ function deliverResult(name, seq, result) {
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         return await frame.content()
 
     async def setContent(self, html: str) -> None:
         """Set content to this page."""
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         await frame.setContent(html)
@@ -627,9 +629,14 @@ function deliverResult(name, seq, result) {
         options = merge_dict(options, kwargs)
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
+
+        def set_request(request: Request) -> None:
+            if request.url not in requests:
+                requests[request.url] = request
+
         eventListeners = [helper.addEventListener(
             self._networkManager, NetworkManager.Events.Request,
-            lambda request: requests.__setitem__(request.url, request)
+            set_request,
         )]
 
         mainFrame = self._frameManager.mainFrame
@@ -770,9 +777,7 @@ function deliverResult(name, seq, result) {
             * ``hasTouch`` (bool): Default to ``False``.
             * ``isLandscape`` (bool): Default to ``False``.
         """
-        needsReload = await self._emulationManager.emulateViewport(
-            self._client, viewport,
-        )
+        needsReload = await self._emulationManager.emulateViewport(viewport)
         self._viewport = viewport
         if needsReload:
             await self.reload()
@@ -797,7 +802,7 @@ function deliverResult(name, seq, result) {
 
         note: ``force_expr`` option is a keyword only argument.
         """
-        frame = self._frameManager.mainFrame
+        frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         return await frame.evaluate(pageFunction, *args, force_expr=force_expr)
@@ -816,6 +821,14 @@ function deliverResult(name, seq, result) {
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {
             'source': source,
         })
+
+    async def setCacheEnabled(self, enabled: bool = True) -> None:
+        """Enable/Disable cache for each request.
+
+        By default, caching is enabled.
+        """
+        await self._client.send('Network.setCacheDisabled',
+                                {'cacheDisabled': not enabled})
 
     async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
         """Take a screen shot.
@@ -1048,39 +1061,35 @@ function deliverResult(name, seq, result) {
             condition that yields unexpected results. The correct pattern for
             click and wait for navigation is the following::
 
-                await asyncio.wait([
+                await asyncio.gather(
                     page.waitForNavigation(waitOptions),
                     page.click(selector, clickOptions),
-                ])
+                )
         """
-        options = merge_dict(options, kwargs)
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.click(options)
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.click(selector, options, **kwargs)
 
     async def hover(self, selector: str) -> None:
         """Mouse hover the element which matches ``selector``.
 
         If no element matched the ``selector``, raise ``PageError``.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.hover()
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.hover(selector)
 
     async def focus(self, selector: str) -> None:
         """Focus the element which matches ``selector``.
 
         If no element matched the ``selector``, raise ``PageError``.
         """
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await self.evaluate('element => element.focus()', handle)
-        await handle.dispose()
+        frame = self.mainFrame
+        if frame is None:
+            raise PageError('No main frame.')
+        await frame.focus(selector)
 
     async def select(self, selector: str, *values: str) -> List[str]:
         """Select options and return selected values.
@@ -1100,12 +1109,10 @@ function deliverResult(name, seq, result) {
 
         Details see :meth:`pyppeteer.input.Keyboard.type`.
         """
-        options = merge_dict(options, kwargs)
-        handle = await self.querySelector(selector)
-        if handle is None:
-            raise PageError('Cannot find {} on this page'.format(selector))
-        await handle.type(text, options)
-        await handle.dispose()
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return await frame.type(selector, text, options, **kwargs)
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
                 options: dict = None, *args: Any, **kwargs: Any) -> Awaitable:
@@ -1118,15 +1125,17 @@ function deliverResult(name, seq, result) {
           will be done after the timeout.
         * If ``selectorOrFunctionOrTimeout`` is a string of JavaScript
           function, this method is a shortcut to :meth:`waitForFunction`.
-        * If ``selectorOrFunctionOrTimeout`` is a selector string, this method
-          is a shortcut to :meth:`waitForSelector`.
+        * If ``selectorOrFunctionOrTimeout`` is a selector string or xpath
+          string, this method is a shortcut to :meth:`waitForSelector` or
+          :meth:`waitForXPath`. If the string starts with ``//``, the string is
+          treated as xpath.
 
         Pyppeteer tries to automatically detect function or selector, but
         sometimes miss-detects. If not work as you expected, use
         :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.
 
-        :arg selectorOrFunctionOrTimeout: A selector or
-          function string, or timeout (milliseconds).
+        :arg selectorOrFunctionOrTimeout: A selector, xpath, or function
+                                          string, or timeout (milliseconds).
         :arg Any args: Arguments to pass the function.
         :return: Return awaitable object which resolves to a JSHandle of the
                  success value.
@@ -1168,6 +1177,36 @@ function deliverResult(name, seq, result) {
         if not frame:
             raise PageError('no main frame.')
         return frame.waitForSelector(selector, options, **kwargs)
+
+    def waitForXPath(self, xpath: str, options: dict = None,
+                     **kwargs: Any) -> Awaitable:
+        """Wait until eleemnt which matches ``xpath`` appears on page.
+
+        Wait for the ``xpath`` to appear in page. If the moment of calling the
+        method the ``xpath`` already exists, the method will return
+        immediately. If the xpath doesn't appear after ``timeout`` millisecons
+        of waiting, the function will raise exception.
+
+
+        :arg str xpath: A [xpath] of an element to wait for.
+        :return: Return awaitable object which resolves when element specified
+                 by xpath string is added to DOM.
+
+        Avalaible options are:
+
+        * ``visible`` (bool): wait for element to be present in DOM and to be
+          visible, i.e. to not have ``display: none`` or ``visibility: hidden``
+          CSS properties. Defaults to ``False``.
+        * ``hidden`` (bool): wait for element to not be found in the DOM or to
+          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
+          properties. Defaults to ``False``.
+        * ``timeout`` (int|float): maximum time to wait for in milliseconds.
+          Defaults to 30000 (30 seconds).
+        """
+        frame = self.mainFrame
+        if not frame:
+            raise PageError('no main frame.')
+        return frame.waitForXPath(xpath, options, **kwargs)
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:

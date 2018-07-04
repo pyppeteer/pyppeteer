@@ -5,7 +5,7 @@ import unittest
 
 from syncer import sync
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestJSCoverage(BaseTestCase):

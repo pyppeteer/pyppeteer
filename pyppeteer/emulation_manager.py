@@ -16,7 +16,7 @@ class EmulationManager(object):
         self._emulatingMobile = False
         self._injectedTouchScriptId = None
 
-    async def emulateViewport(self, client: CDPSession, viewport: dict
+    async def emulateViewport(self, viewport: dict
                               ) -> bool:
         """Evaluate viewport."""
         options = dict()

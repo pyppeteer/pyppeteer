@@ -209,9 +209,13 @@ class Target(object):
 
     @property
     def type(self) -> str:
-        """Get type of this target."""
+        """Get type of this target.
+
+        Type can be ``'page'``, ``'service_worker'``, ``'browser'``, or
+        ``'other'``.
+        """
         _type = self._targetInfo['type']
-        if _type == 'page' or _type == 'service_worker':
+        if _type in ['page', 'service_worker', 'browser']:
             return _type
         return 'other'
 

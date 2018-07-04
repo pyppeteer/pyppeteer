@@ -9,8 +9,10 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
-from base import BaseTestCase
-from frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
+from .base import BaseTestCase
+from .frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
+
+addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
 
 
 class TestContext(BaseTestCase):
@@ -25,6 +27,9 @@ class TestContext(BaseTestCase):
         context2 = await frame2.executionContext()
         self.assertTrue(context1)
         self.assertTrue(context2)
+        self.assertTrue(context1 != context2)
+        self.assertEqual(context1.frame, frame1)
+        self.assertEqual(context2.frame, frame2)
 
         await context1.evaluate('() => window.a = 1')
         await context2.evaluate('() => window.a = 2')
@@ -32,6 +37,15 @@ class TestContext(BaseTestCase):
         a2 = await context2.evaluate('() => window.a')
         self.assertEqual(a1, 1)
         self.assertEqual(a2, 2)
+
+
+class TestEvaluateHandle(BaseTestCase):
+    @sync
+    async def test_evaluate_handle(self):
+        await self.page.goto(self.url + 'empty')
+        frame = self.page.mainFrame
+        windowHandle = await frame.evaluateHandle('window')
+        self.assertTrue(windowHandle)
 
 
 class TestEvaluate(BaseTestCase):
@@ -73,14 +87,6 @@ class TestEvaluate(BaseTestCase):
 
 
 class TestWaitForFunction(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'empty'))
-        self.result = False
-
-    def set_result(self, value):
-        self.result = value
-
     @sync
     async def test_wait_for_expression(self):
         fut = asyncio.ensure_future(
@@ -192,16 +198,6 @@ class TestWaitForFunction(BaseTestCase):
 
 
 class TestWaitForSelector(BaseTestCase):
-    addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
-
-    def setUp(self):
-        super().setUp()
-        self.result = False
-        sync(self.page.goto(self.url + 'empty'))
-
-    def set_result(self, value: bool):
-        self.result = value
-
     @sync
     async def test_wait_for_selector_immediate(self):
         frame = self.page.mainFrame
@@ -212,7 +208,7 @@ class TestWaitForSelector(BaseTestCase):
         self.assertTrue(result)
 
         result.clear()
-        await frame.evaluate(self.addElement, 'div')
+        await frame.evaluate(addElement, 'div')
         fut = asyncio.ensure_future(frame.waitForSelector('div'))
         fut.add_done_callback(lambda fut: result.append(True))
         await fut
@@ -228,17 +224,17 @@ class TestWaitForSelector(BaseTestCase):
         self.assertEqual(await frame.evaluate('() => 42'), 42)
         await asyncio.sleep(0.1)
         self.assertFalse(result)
-        await frame.evaluate(self.addElement, 'br')
+        await frame.evaluate(addElement, 'br')
         await asyncio.sleep(0.1)
         self.assertFalse(result)
-        await frame.evaluate(self.addElement, 'div')
+        await frame.evaluate(addElement, 'div')
         await fut
         self.assertTrue(result)
 
     @sync
     async def test_wait_for_selector_inner_html(self):
         fut = asyncio.ensure_future(self.page.waitForSelector('h3 div'))
-        await self.page.evaluate(self.addElement, 'span')
+        await self.page.evaluate(addElement, 'span')
         await self.page.evaluate('() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"')  # noqa: E501
         await fut
 
@@ -248,10 +244,10 @@ class TestWaitForSelector(BaseTestCase):
         otherFrame = self.page.frames[1]
         fut = asyncio.ensure_future(self.page.waitForSelector('div'))
         fut.add_done_callback(lambda fut: self.set_result(True))
-        await otherFrame.evaluate(self.addElement, 'div')
+        await otherFrame.evaluate(addElement, 'div')
         await asyncio.sleep(0.1)
         self.assertFalse(self.result)
-        await self.page.evaluate(self.addElement, 'div')
+        await self.page.evaluate(addElement, 'div')
         await fut
         self.assertTrue(self.result)
 
@@ -263,10 +259,10 @@ class TestWaitForSelector(BaseTestCase):
         frame2 = self.page.frames[2]
         fut = asyncio.ensure_future(frame2.waitForSelector('div'))
         fut.add_done_callback(lambda fut: self.set_result(True))
-        await frame1.evaluate(self.addElement, 'div')
+        await frame1.evaluate(addElement, 'div')
         await asyncio.sleep(0.1)
         self.assertFalse(self.result)
-        await frame2.evaluate(self.addElement, 'div')
+        await frame2.evaluate(addElement, 'div')
         await fut
         self.assertTrue(self.result)
 
@@ -401,6 +397,88 @@ class TestWaitForSelector(BaseTestCase):
         self.assertEqual(
             await self.page.evaluate('e => e.textContent', await selector),
             'anything',
+        )
+
+
+class TestWaitForXPath(BaseTestCase):
+    @sync
+    async def test_fancy_xpath(self):
+        await self.page.setContent('<p>red heering</p><p>hello world  </p>')
+        waitForXPath = await self.page.waitForXPath('//p[normalize-space(.)="hello world"]')  # noqa: E501
+        self.assertEqual(
+            await self.page.evaluate('x => x.textContent', waitForXPath),
+            'hello world  '
+        )
+
+    @sync
+    async def test_specified_frame(self):
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        await attachFrame(self.page, 'frame2', self.url + 'empty')
+        frame1 = self.page.frames[1]
+        frame2 = self.page.frames[2]
+        fut = asyncio.ensure_future(frame2.waitForXPath('//div'))
+        fut.add_done_callback(lambda fut: self.set_result(True))
+        self.assertFalse(self.result)
+        await frame1.evaluate(addElement, 'div')
+        self.assertFalse(self.result)
+        await frame2.evaluate(addElement, 'div')
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_evaluation_failed(self):
+        await self.page.evaluateOnNewDocument(
+            'function() {document.evaluate = null;}')
+        await self.page.goto(self.url + 'empty')
+        with self.assertRaises(ElementHandleError):
+            await self.page.waitForXPath('*')
+
+    @unittest.skip('Cannot catch error')
+    @sync
+    async def test_frame_detached(self):
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        frame = self.page.frames[1]
+        waitPromise = frame.waitForXPath('//*[@class="box"]', timeout=1000)
+        await detachFrame(self.page, 'frame1')
+        with self.assertRaises(Exception):
+            await waitPromise
+
+    @sync
+    async def test_hidden(self):
+        await self.page.setContent('<div style="display: block;"></div>')
+        waitForXPath = asyncio.ensure_future(
+            self.page.waitForXPath('//div', hidden=True))
+        waitForXPath.add_done_callback(lambda fut: self.set_result(True))
+        await self.page.waitForXPath('//div')
+        self.assertFalse(self.result)
+        await self.page.evaluate('document.querySelector("div").style.setProperty("display", "none")')  # noqa: E501
+        self.assertTrue(await waitForXPath)
+        self.assertTrue(self.result)
+
+    @sync
+    async def test_return_element_handle(self):
+        waitForXPath = self.page.waitForXPath('//*[@class="zombo"]')
+        await self.page.setContent('<div class="zombo">anything</div>')
+        self.assertEqual(
+            await self.page.evaluate('x => x.textContent', await waitForXPath),
+            'anything'
+        )
+
+    @sync
+    async def test_text_node(self):
+        await self.page.setContent('<div>some text</dev>')
+        text = await self.page.waitForXPath('//div/text()')
+        self.assertEqual(
+            await (await text.getProperty('nodeType')).jsonValue(),
+            3  # Node.TEXT_NODE
+        )
+
+    @sync
+    async def test_single_slash(self):
+        await self.page.setContent('<div>some text</div>')
+        waitForXPath = self.page.waitForXPath('/html/body/div')
+        self.assertEqual(
+            await self.page.evaluate('x => x.textContent', await waitForXPath),
+            'some text',
         )
 
 

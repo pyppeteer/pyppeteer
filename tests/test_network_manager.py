@@ -6,7 +6,7 @@ import unittest
 
 from syncer import sync
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestNetworkEvent(BaseTestCase):
@@ -44,7 +44,79 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(req.postData, '{"foo":"bar"}')
 
     @sync
-    async def test_reponse(self):
+    async def test_response(self):
+        responses = []
+        self.page.on('response', lambda res: responses.append(res))
+        await self.page.goto(self.url + 'empty')
+        self.assertEqual(len(responses), 1)
+        response = responses[0]
+        self.assertEqual(response.url, self.url + 'empty')
+        self.assertIn(response.status, [200, 304])
+        # self.assertTrue(response.ok)
+        self.assertFalse(response.fromCache)
+        self.assertFalse(response.fromServiceWorker)
+        self.assertTrue(response.request)
+        self.assertEqual(response.securityDetails, {})
+
+    @sync
+    async def test_response_https(self):
+        responses = []
+        self.page.on('response', lambda res: responses.append(res))
+        await self.page.goto('https://example.com/')
+        self.assertEqual(len(responses), 1)
+        response = responses[0]
+        self.assertEqual(response.url, 'https://example.com/')
+        self.assertEqual(response.status, 200)
+        self.assertTrue(response.ok)
+        self.assertFalse(response.fromCache)
+        self.assertFalse(response.fromServiceWorker)
+        self.assertTrue(response.request)
+        self.assertTrue(response.securityDetails)
+        self.assertEqual(response.securityDetails.protocol, 'TLS 1.2')
+
+    @sync
+    async def test_from_cache(self):
+        responses = {}
+
+        def set_response(resp):
+            basename = resp.url.split('/').pop()
+            responses[basename] = resp
+
+        self.page.on('response', set_response)
+
+        await self.page.goto(self.url + 'static/cached/one-style.html')
+        await self.page.reload()
+
+        self.assertEqual(len(responses), 2)
+        self.assertEqual(responses['one-style.html'].status, 304)
+        self.assertFalse(responses['one-style.html'].fromCache)
+        self.assertEqual(responses['one-style.css'].status, 200)
+        self.assertTrue(responses['one-style.css'].fromCache)
+
+    @sync
+    async def test_from_service_worker(self):
+        responses = {}
+
+        def set_response(resp):
+            basename = resp.url.split('/').pop()
+            responses[basename] = resp
+
+        self.page.on('response', set_response)
+
+        await self.page.goto(
+            self.url + 'static/serviceworkers/fetch/sw.html',
+            waitUntil='networkidle2',
+        )
+        await self.page.reload()
+
+        self.assertEqual(len(responses), 2)
+        self.assertEqual(responses['sw.html'].status, 200)
+        self.assertTrue(responses['sw.html'].fromServiceWorker)
+        self.assertEqual(responses['style.css'].status, 200)
+        self.assertTrue(responses['style.css'].fromServiceWorker)
+
+    @sync
+    async def test_reponse_body(self):
         responses = []
         self.page.on('response', lambda res: responses.append(res))
         await self.page.goto(self.url + 'static/simple.json')

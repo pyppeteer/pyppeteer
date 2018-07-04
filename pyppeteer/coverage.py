@@ -23,14 +23,14 @@ class Coverage(object):
     initially executed code::
 
         # Enable both JavaScript and CSS coverage
-        await page.startJSCoverage()
-        await page.startCSSCoverage()
+        await page.coverage.startJSCoverage()
+        await page.coverage.startCSSCoverage()
 
         # Navigato to page
         await page.goto('https://example.com')
         # Disable JS and CSS coverage and get results
-        jsCoverage = await page.stopJSCoverage()
-        cssCoverage = await page.stopCSSCoverage()
+        jsCoverage = await page.coverage.stopJSCoverage()
+        cssCoverage = await page.coverage.stopCSSCoverage()
         totalBytes = 0
         usedBytes = 0
         coverage = jsCoverage + cssCoverage

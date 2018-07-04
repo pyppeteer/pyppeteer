@@ -8,12 +8,12 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestBoundingBox(BaseTestCase):
     @sync
-    async def test_bounding_box(self) -> None:
+    async def test_bounding_box(self):
         await self.page.setViewport({'width': 500, 'height': 500})
         await self.page.goto(self.url + 'static/grid.html')
         elementHandle = await self.page.J('.box:nth-of-type(13)')
@@ -21,7 +21,7 @@ class TestBoundingBox(BaseTestCase):
         self.assertEqual({'x': 100, 'y': 50, 'width': 50, 'height': 50}, box)
 
     @sync
-    async def test_nested_frame(self) -> None:
+    async def test_nested_frame(self):
         await self.page.setViewport({'width': 500, 'height': 500})
         await self.page.goto(self.url + 'static/nested-frames.html')
         nestedFrame = self.page.frames[1].childFrames[1]
@@ -38,7 +38,7 @@ class TestBoundingBox(BaseTestCase):
         self.assertEqual(box['width'], 264)
 
     @sync
-    async def test_invisible_element(self) -> None:
+    async def test_invisible_element(self):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
@@ -46,21 +46,21 @@ class TestBoundingBox(BaseTestCase):
 
 class TestClick(BaseTestCase):
     @sync
-    async def test_clik(self) -> None:
+    async def test_clik(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await button.click()
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
     @sync
-    async def test_chadow_dom(self) -> None:
+    async def test_chadow_dom(self):
         await self.page.goto(self.url + 'static/shadow.html')
         button = await self.page.evaluateHandle('() => button')
         await button.click()
         self.assertTrue(await self.page.evaluate('clicked'))
 
     @sync
-    async def test_text_node(self) -> None:
+    async def test_text_node(self):
         await self.page.goto(self.url + 'static/button.html')
         buttonTextNode = await self.page.evaluateHandle(
             '() => document.querySelector("button").firstChild')
@@ -70,7 +70,7 @@ class TestClick(BaseTestCase):
                          cm.exception.args[0])
 
     @sync
-    async def test_detached_node(self) -> None:
+    async def test_detached_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.remove()', button)
@@ -80,7 +80,7 @@ class TestClick(BaseTestCase):
                          cm.exception.args[0])
 
     @sync
-    async def test_hidden_node(self) -> None:
+    async def test_hidden_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.style.display = "none"', button)
@@ -89,7 +89,7 @@ class TestClick(BaseTestCase):
         self.assertEqual('Node is not visible.', cm.exception.args[0])
 
     @sync
-    async def test_recursively_hidden_node(self) -> None:
+    async def test_recursively_hidden_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await self.page.evaluate(
@@ -99,7 +99,7 @@ class TestClick(BaseTestCase):
         self.assertEqual('Node is not visible.', cm.exception.args[0])
 
     @sync
-    async def test_br_node(self) -> None:
+    async def test_br_node(self):
         await self.page.setContent('hello<br>goodbye')
         br = await self.page.J('br')
         with self.assertRaises(ElementHandleError) as cm:
@@ -109,7 +109,7 @@ class TestClick(BaseTestCase):
 
 class TestHover(BaseTestCase):
     @sync
-    async def test_hover(self) -> None:
+    async def test_hover(self):
         await self.page.goto(self.url + 'static/scrollable.html')
         button = await self.page.J('#button-6')
         await button.hover()

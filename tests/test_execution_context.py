@@ -5,7 +5,7 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, NetworkError
 
-from base import BaseTestCase
+from .base import BaseTestCase
 
 
 class TestQueryObject(BaseTestCase):

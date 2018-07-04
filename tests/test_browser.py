@@ -6,10 +6,9 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer import launch
-from pyppeteer.launcher import connect
+from pyppeteer import connect, launch
 
-from base import BaseTestCase, DEFAULT_OPTIONS
+from .base import BaseTestCase, DEFAULT_OPTIONS
 
 
 class TestBrowser(unittest.TestCase):
@@ -64,7 +63,7 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(len(discon2), 1)
 
     @sync
-    async def test_crash(self) -> None:
+    async def test_crash(self):
         browser = await launch(DEFAULT_OPTIONS)
         page = await browser.newPage()
         errors = []
@@ -85,9 +84,8 @@ class TestTarget(BaseTestCase):
         _list = [target for target in targets
                  if target.type == 'page' and target.url == 'about:blank']
         self.assertTrue(any(_list))
-        _list = [target for target in targets
-                 if target.type == 'other' and target.url == '']
-        self.assertTrue(any(_list))
+        target_types = [t.type for t in targets]
+        self.assertIn('browser', target_types)
 
     @sync
     async def test_return_all_pages(self):
@@ -95,6 +93,12 @@ class TestTarget(BaseTestCase):
         self.assertEqual(len(pages), 2)
         self.assertIn(self.page, pages)
         self.assertNotEqual(pages[0], pages[1])
+
+    @sync
+    async def test_browser_target(self):
+        targets = self.browser.targets()
+        browserTarget = [t for t in targets if t.type == 'browser']
+        self.assertTrue(browserTarget)
 
     @sync
     async def test_default_page(self):
@@ -146,16 +150,17 @@ class TestTarget(BaseTestCase):
         self.browser.once('targetcreated',
                           lambda t: createdTargetPromise.set_result(t))
 
-        registration = await self.page.evaluateHandle(
-            '() => navigator.serviceWorker.register("static/sw.js")')
+        await self.page.goto(self.url + 'static/serviceworkers/empty/sw.html')
         createdTarget = await createdTargetPromise
         self.assertEqual(createdTarget.type, 'service_worker')
-        self.assertEqual(createdTarget.url, self.url + 'static/sw.js')
+        self.assertEqual(
+            createdTarget.url, self.url + 'static/serviceworkers/empty/sw.js')
 
         destroyedTargetPromise = asyncio.get_event_loop().create_future()
         self.browser.once('targetdestroyed',
                           lambda t: destroyedTargetPromise.set_result(t))
-        await self.page.evaluate('(reg) => reg.unregister()', registration)
+        await self.page.evaluate(
+            '() => window.registrationPromise.then(reg => reg.unregister())')
         destroyedTarget = await destroyedTargetPromise
         self.assertEqual(destroyedTarget, createdTarget)
 
