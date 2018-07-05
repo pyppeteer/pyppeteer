@@ -1,7 +1,9 @@
 History
 =======
 
-## Version 0.0.19 (next version)
+## Version 0.0.19 (2018-07-05)
+
+Catch up puppeteer v1.2.0
 
 * Add `ElementHandle.contentFrame` method
 * Add `Request.redirectChain` method
