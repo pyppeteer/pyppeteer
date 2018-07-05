@@ -94,7 +94,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertTrue(responses['one-style.css'].fromCache)
 
     @sync
-    async def test_from_service_worker(self):
+    async def test_response_from_service_worker(self):
         responses = {}
 
         def set_response(resp):
@@ -107,6 +107,7 @@ class TestNetworkEvent(BaseTestCase):
             self.url + 'static/serviceworkers/fetch/sw.html',
             waitUntil='networkidle2',
         )
+        await self.page.evaluate('async() => await window.activationPromise')
         await self.page.reload()
 
         self.assertEqual(len(responses), 2)
