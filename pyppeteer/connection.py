@@ -213,7 +213,8 @@ class CDPSession(EventEmitter):
                 )
             else:
                 result = obj.get('result')
-                callback.set_result(result)
+                if callback and not callback.done():
+                    callback.set_result(result)
         else:
             self.emit(obj.get('method'), obj.get('params'))
 
