@@ -11,6 +11,7 @@ import time
 import unittest
 
 from syncer import sync
+import websockets
 
 from pyppeteer import connect, launch, executablePath
 from pyppeteer.chromium_downloader import chromium_excutable
@@ -217,6 +218,23 @@ class TestUserDataDir(unittest.TestCase):
         self.assertEqual(result, 'foo=true')
 
 
+class TestClose(unittest.TestCase):
+    @sync
+    async def test_close(self):
+        curdir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(curdir, 'closeme.py')
+        proc = subprocess.run(
+            [sys.executable, path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        self.assertEqual(proc.returncode, 0)
+        wsEndPoint = proc.stdout.decode()
+        # chrome should be already closed, so fail to connet websocket
+        with self.assertRaises(OSError):
+            await websockets.client.connect(wsEndPoint)
+
+
 class TestConnect(unittest.TestCase):
     @sync
     async def test_connect(self):
@@ -240,6 +258,15 @@ class TestConnect(unittest.TestCase):
         page = await browser2.newPage()
         self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
         await browser.close()
+
+    @unittest.skip('This test hangs')
+    @sync
+    async def test_fail_to_connect_closed_chrome(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        browserWSEndpoint = browser.wsEndpoint
+        await browser.close()
+        with self.assertRaises(Exception):
+            await connect(browserWSEndpoint=browserWSEndpoint)
 
     @sync
     async def test_executable_path(self):
