@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.18 documentation</title>
+    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.19 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -231,7 +231,7 @@
             <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;missing context with id = </span><span class="si">{contextId}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;subtype&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;node&#39;</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ElementHandle</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">,</span>
-                                 <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="p">)</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">JSHandle</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_removeFramesRecursively</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="s1">&#39;Frame&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -458,7 +458,7 @@
         <span class="n">contents</span> <span class="o">+=</span> <span class="s1">&#39;/* # sourceURL= </span><span class="si">{}</span><span class="s1"> */&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filePath</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Frame.addScriptTag"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.addScriptTag">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">addScriptTag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ElementHandle</span><span class="p">:</span>
+<div class="viewcode-block" id="Frame.addScriptTag"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.addScriptTag">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">addScriptTag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ElementHandle</span><span class="p">:</span>  <span class="c1"># noqa: C901</span>
         <span class="sd">&quot;&quot;&quot;Add script tag to this frame.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.addScriptTag`.</span>
@@ -468,9 +468,11 @@
             <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;ExecutionContext is None.&#39;</span><span class="p">)</span>
 
         <span class="n">addScriptUrl</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">        async function addScriptUrl(url) {</span>
+<span class="s1">        async function addScriptUrl(url, type) {</span>
 <span class="s1">            const script = document.createElement(&#39;script&#39;);</span>
 <span class="s1">            script.src = url;</span>
+<span class="s1">            if (type)</span>
+<span class="s1">                script.type = type;</span>
 <span class="s1">            document.head.appendChild(script);</span>
 <span class="s1">            await new Promise((res, rej) =&gt; {</span>
 <span class="s1">                script.onload = res;</span>
@@ -480,9 +482,9 @@
 <span class="s1">        }&#39;&#39;&#39;</span>
 
         <span class="n">addScriptContent</span> <span class="o">=</span> <span class="s1">&#39;&#39;&#39;</span>
-<span class="s1">        function addScriptContent(content) {</span>
+<span class="s1">        function addScriptContent(content, type = &#39;text/javascript&#39;) {</span>
 <span class="s1">            const script = document.createElement(&#39;script&#39;);</span>
-<span class="s1">            script.type = &#39;text/javascript&#39;;</span>
+<span class="s1">            script.type = type;</span>
 <span class="s1">            script.text = content;</span>
 <span class="s1">            document.head.appendChild(script);</span>
 <span class="s1">            return script;</span>
@@ -490,9 +492,12 @@
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">url</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">addScriptUrl</span><span class="p">,</span> <span class="n">url</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-                    <span class="n">addScriptUrl</span><span class="p">,</span> <span class="n">url</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+                <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                        <span class="p">)</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
             <span class="k">except</span> <span class="n">ElementHandleError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Loading script from </span><span class="si">{url}</span><span class="s1"> failed&#39;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
 
@@ -501,12 +506,18 @@
                 <span class="n">contents</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
             <span class="n">contents</span> <span class="o">=</span> <span class="n">contents</span> <span class="o">+</span> <span class="s1">&#39;//# sourceURL=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="n">options</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-                <span class="n">addScriptContent</span><span class="p">,</span> <span class="n">contents</span><span class="p">))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">addScriptContent</span><span class="p">,</span> <span class="n">contents</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;content&#39;</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
-                <span class="n">addScriptContent</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="n">addScriptContent</span><span class="p">,</span> <span class="n">options</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="s1">&#39;type&#39;</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="p">(</span><span class="k">await</span> <span class="n">context</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                    <span class="p">)</span><span class="o">.</span><span class="n">asElement</span><span class="p">()</span>
 
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="s1">&#39;Provide an object with a `url`, `path` or `content` property&#39;</span><span class="p">)</span></div>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.18 documentation</title>
+    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.19 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -50,9 +50,10 @@
 
 <span class="kn">from</span> <span class="nn">pyee</span> <span class="k">import</span> <span class="n">EventEmitter</span>
 
-<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">CDPSession</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">Connection</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">BrowserError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.page</span> <span class="k">import</span> <span class="n">Page</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.target</span> <span class="k">import</span> <span class="n">Target</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
 
 
@@ -121,10 +122,17 @@
         <span class="k">return</span> <span class="n">browser</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetCreated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">][</span><span class="s1">&#39;targetId&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">:</span>
+        <span class="n">targetInfo</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">]</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span>
+            <span class="n">targetInfo</span><span class="p">,</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">createSession</span><span class="p">(</span><span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]),</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_appMode</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;target should not exist before create.&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">][</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">target</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">target</span>
         <span class="k">if</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetCreated</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
@@ -139,7 +147,11 @@
         <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">][</span><span class="s1">&#39;targetId&#39;</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">target</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;target should exist before targetInfoChanged&#39;</span><span class="p">)</span>
+        <span class="n">previousURL</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">url</span>
+        <span class="n">wasInitialized</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">_isInitialized</span>
         <span class="n">target</span><span class="o">.</span><span class="n">_targetInfoChanged</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">wasInitialized</span> <span class="ow">and</span> <span class="n">previousURL</span> <span class="o">!=</span> <span class="n">target</span><span class="o">.</span><span class="n">url</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetChanged</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">wsEndpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -200,77 +212,6 @@
 
     <span class="k">def</span> <span class="nf">_getVersion</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Browser.getVersion&#39;</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="Target"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Target">[docs]</a><span class="k">class</span> <span class="nc">Target</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Browser&#39;s target class.&quot;&quot;&quot;</span>
-
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">browser</span><span class="p">:</span> <span class="n">Browser</span><span class="p">,</span> <span class="n">targetInfo</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span> <span class="o">=</span> <span class="n">browser</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_targetId</span> <span class="o">=</span> <span class="n">targetInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;targetId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span> <span class="o">=</span> <span class="n">targetInfo</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_page</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_initializedPromise</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_isInitialized</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;page&#39;</span>
-                               <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isInitialized</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_initializedCallback</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_initializedCallback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bl</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="c1"># TODO: this may cause error on page close</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_initializedPromise</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">bl</span><span class="p">)</span>
-
-<div class="viewcode-block" id="Target.createCDPSession"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Target.createCDPSession">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">createCDPSession</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CDPSession</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a Chrome Devtools Protocol session attached to the target.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">createSession</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targetId</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="Target.page"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Target.page">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">page</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Page</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get page of this target.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;page&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">client</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">createSession</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_targetId</span><span class="p">)</span>
-            <span class="n">new_page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">Page</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-                <span class="n">client</span><span class="p">,</span> <span class="bp">self</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_appMode</span><span class="p">,</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_page</span> <span class="o">=</span> <span class="n">new_page</span>
-            <span class="k">return</span> <span class="n">new_page</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get url of this target.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get type of this target.</span>
-
-<span class="sd">        Type can be ``&#39;page&#39;``, ``&#39;service_worker&#39;``, ``&#39;browser&#39;``, or</span>
-<span class="sd">        ``&#39;other&#39;``.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">_type</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">,</span> <span class="s1">&#39;service_worker&#39;</span><span class="p">,</span> <span class="s1">&#39;browser&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">_type</span>
-        <span class="k">return</span> <span class="s1">&#39;other&#39;</span>
-
-    <span class="k">def</span> <span class="nf">_targetInfoChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">targetInfo</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">previousURL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span> <span class="o">=</span> <span class="n">targetInfo</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isInitialized</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;page&#39;</span> <span class="ow">or</span>
-                                        <span class="bp">self</span><span class="o">.</span><span class="n">_targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;&#39;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_isInitialized</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_initializedCallback</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-            <span class="k">return</span>
-
-        <span class="k">if</span> <span class="n">previousURL</span> <span class="o">!=</span> <span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetChanged</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div>
 </pre></div>
 
           </div>
