@@ -42,6 +42,17 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 56)
 
     @sync
+    async def test_error_on_reload(self) -> None:
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('''() => {
+                location.reload();
+                return new Promise(resolve => {
+                    setTimeout(() => resolve(1), 0);
+                }
+        )}''')
+        self.assertIn('Protocol Error', cm.exception.args[0])
+
+    @sync
     async def test_after_framenavigation(self):
         frameEvaluation = asyncio.get_event_loop().create_future()
 
@@ -122,6 +133,16 @@ class TestEvaluate(BaseTestCase):
     @sync
     async def test_fail_window_object(self):
         result = await self.page.evaluate('() => window')
+        self.assertIsNone(result)
+
+    @sync
+    async def test_fail_for_circular_object(self) -> None:
+        result = await self.page.evaluate('''() => {
+            const a = {};
+            const b = {a};
+            a.b = b;
+            return a;
+        }''')
         self.assertIsNone(result)
 
     @sync
