@@ -3,7 +3,9 @@
 
 """Element handle module."""
 
+import copy
 import logging
+import math
 import os.path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
@@ -63,13 +65,20 @@ class ElementHandle(JSHandle):
 
     async def _visibleCenter(self) -> Dict[str, float]:
         await self._scrollIntoViewIfNeeded()
-        box = await self.boundingBox()
+        box = await self._assertBoundingBox()
         if not box:
             raise ElementHandleError('Node is not visible.')
         return {
             'x': box['x'] + box['width'] / 2,
             'y': box['y'] + box['height'] / 2,
         }
+
+    async def _assertBoundingBox(self) -> Dict:
+        boundingBox = await self.boundingBox()
+        if boundingBox:
+            return boundingBox
+        raise ElementHandleError(
+            'Node is either not visible or not an HTMLElement')
 
     async def hover(self) -> None:
         """Move mouse over to center of this element.
@@ -197,20 +206,44 @@ class ElementHandle(JSHandle):
         Available options are same as :meth:`pyppeteer.page.Page.screenshot`.
         """
         options = merge_dict(options, kwargs)
-        await self._scrollIntoViewIfNeeded()
+
+        needsViewportReset = False
+        boundingBox = await self._assertBoundingBox()
+        original_viewport = copy.deepcopy(self._page.viewport)
+
+        if (boundingBox['width'] > original_viewport['width'] or
+                boundingBox['height'] > original_viewport['height']):
+            newViewport = {
+                'width': max(
+                    original_viewport['width'],
+                    math.ceil(boundingBox['width'])
+                ),
+                'height': max(
+                    original_viewport['height'],
+                    math.ceil(boundingBox['height'])
+                ),
+            }
+            new_viewport = copy.deepcopy(original_viewport)
+            new_viewport.update(newViewport)
+            await self._page.setViewport(new_viewport)
+            needsViewportReset = True
+
         _obj = await self._client.send('Page.getLayoutMetrics')
         pageX = _obj['layoutViewport']['pageX']
         pageY = _obj['layoutViewport']['pageY']
 
-        clip = await self.boundingBox()
-        if not clip:
-            raise ElementHandleError('Node is not visible.')
-
+        clip = {}
+        clip.update(boundingBox)
         clip['x'] = clip['x'] + pageX
         clip['y'] = clip['y'] + pageY
         opt = {'clip': clip}
         opt.update(options)
-        return await self._page.screenshot(opt)
+        imageData = await self._page.screenshot(opt)
+
+        if needsViewportReset:
+            await self._page.setViewport(original_viewport)
+
+        return imageData
 
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
         """Return first element which matches ``selector`` under this element.
