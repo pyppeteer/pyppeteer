@@ -41,6 +41,7 @@ class TestTracing(BaseTestCase):
             'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
         })
         await self.page.tracing.stop()
+        await asyncio.sleep(0.1)
         self.assertTrue(self.outfile.is_file())
         with self.outfile.open() as f:
             trace_json = json.load(f)

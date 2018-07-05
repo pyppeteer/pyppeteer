@@ -217,7 +217,7 @@ class TestNetworkEvent(BaseTestCase):
             'DONE {}'.format(req.url)))
         self.page.on('requestfailed', lambda req: events.append(
             'FAIL {}'.format(req.url)))
-        await self.page.goto(self.url + 'redirect1')
+        response = await self.page.goto(self.url + 'redirect1')
         self.assertEqual(events, [
             'GET {}'.format(self.url + 'redirect1'),
             '302 {}'.format(self.url + 'redirect1'),
@@ -226,3 +226,8 @@ class TestNetworkEvent(BaseTestCase):
             '200 {}'.format(self.url + 'redirect2'),
             'DONE {}'.format(self.url + 'redirect2'),
         ])
+
+        # check redirect chain
+        redirectChain = response.request.redirectChain
+        self.assertEqual(len(redirectChain), 1)
+        self.assertIn('redirect1', redirectChain[0].url)

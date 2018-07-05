@@ -4,6 +4,7 @@ History
 ## Version 0.0.19 (next version)
 
 * Add `ElementHandle.contentFrame` method
+* Add `Request.redirectChain` method
 * `Page.addScriptTag` accepts a new option `type`
 
 
