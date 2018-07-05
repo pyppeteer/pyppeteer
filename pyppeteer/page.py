@@ -663,7 +663,7 @@ function deliverResult(name, seq, result) {
         response = await self._client.send(
             'Page.navigate', {'url': url, 'referrer': referrer})
         if response.get('errorText'):
-            return response['errorText']
+            return f'{response["errorText"]} at {url}'
         return None
 
     async def reload(self, options: dict = None, **kwargs: Any

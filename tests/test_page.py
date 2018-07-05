@@ -496,6 +496,14 @@ class TestGoto(BaseTestCase):
         self.assertIn(response.status, [200, 304])
         self.assertIn('self-request.html', response.url)
 
+    @sync
+    async def test_show_url_in_error_message(self):
+        dummy_port = 9000 if '9000' not in self.url else 9001
+        url = 'http://localhost:{}/test/1.html'.format(dummy_port)
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto(url)
+        self.assertIn(url, cm.exception.args[0])
+
 
 class TestWaitForNavigation(BaseTestCase):
     @sync
@@ -689,7 +697,7 @@ class TestRequestInterception(BaseTestCase):
                      lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto(self.url + 'empty')
-        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+        self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
     @unittest.skip('Failed to get response in redirect')
     @sync
@@ -742,7 +750,7 @@ class TestRequestInterception(BaseTestCase):
                      lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto('data:text/html,No way!')
-        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+        self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
     @sync
     async def test_request_interception_with_hash(self):
