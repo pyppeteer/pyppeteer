@@ -77,6 +77,15 @@ class TestBrowser(unittest.TestCase):
         self.assertTrue(errors)
 
 
+class TestPageClose(BaseTestCase):
+    @sync
+    async def test_not_visible_in_browser_pages(self):
+        newPage = await self.browser.newPage()
+        self.assertIn(newPage, await self.browser.pages())
+        await newPage.close()
+        self.assertNotIn(newPage, await self.browser.pages())
+
+
 class TestTarget(BaseTestCase):
     @sync
     async def test_targets(self):

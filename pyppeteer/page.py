@@ -404,6 +404,8 @@ class Page(EventEmitter):
             * ``url`` (string): URL of a script to add.
             * ``path`` (string): Path to the local JavaScript file to add.
             * ``content`` (string): JavaScript string to add.
+            * ``type`` (string): Script type. Use ``module`` in order to load a
+              JavaScript ES6 module.
 
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
@@ -663,7 +665,7 @@ function deliverResult(name, seq, result) {
         response = await self._client.send(
             'Page.navigate', {'url': url, 'referrer': referrer})
         if response.get('errorText'):
-            return response['errorText']
+            return f'{response["errorText"]} at {url}'
         return None
 
     async def reload(self, options: dict = None, **kwargs: Any

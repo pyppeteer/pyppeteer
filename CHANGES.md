@@ -1,7 +1,16 @@
 History
 =======
 
-## Version 0.0.18 (next version)
+## Version 0.0.19 (2018-07-05)
+
+Catch up puppeteer v1.2.0
+
+* Add `ElementHandle.contentFrame` method
+* Add `Request.redirectChain` method
+* `Page.addScriptTag` accepts a new option `type`
+
+
+## Version 0.0.18 (2018-07-04)
 
 Catch up puppeteer v1.1.1
 
@@ -18,6 +27,7 @@ Catch up puppeteer v1.1.1
 * Add `Frame.evaluateHandle`
 * Add `Page.Events.DOMContentLoaded`
 
+
 ## Version 0.0.17 (2018-04-02)
 
 * Mark as alpha
@@ -28,6 +38,7 @@ Catch up puppeteer v1.1.1
 * Change `Dialog.message` and `Dialog.defaultValue` to properties
 * Fix: properly emit `Browser.targetChanged` events
 * Fix: properly emit `Browser.targetDestroyed` events
+
 
 ## Version 0.0.16 (2018-03-23)
 

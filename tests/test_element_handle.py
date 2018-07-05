@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import unittest
 
 from syncer import sync
 
 from pyppeteer.errors import ElementHandleError
 
 from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 
 class TestBoundingBox(BaseTestCase):
@@ -42,6 +42,16 @@ class TestBoundingBox(BaseTestCase):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
+
+
+class TestContentFrame(BaseTestCase):
+    @sync
+    async def test_content_frame(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        elementHandle = await self.page.J('#frame1')
+        frame = await elementHandle.contentFrame()
+        self.assertEqual(frame, self.page.frames[1])
 
 
 class TestClick(BaseTestCase):
@@ -86,7 +96,10 @@ class TestClick(BaseTestCase):
         await self.page.evaluate('btn => btn.style.display = "none"', button)
         with self.assertRaises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual('Node is not visible.', cm.exception.args[0])
+        self.assertEqual(
+            'Node is either not visible or not an HTMLElement',
+            cm.exception.args[0],
+        )
 
     @sync
     async def test_recursively_hidden_node(self):
@@ -96,7 +109,10 @@ class TestClick(BaseTestCase):
             'btn => btn.parentElement.style.display = "none"', button)
         with self.assertRaises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual('Node is not visible.', cm.exception.args[0])
+        self.assertEqual(
+            'Node is either not visible or not an HTMLElement',
+            cm.exception.args[0],
+        )
 
     @sync
     async def test_br_node(self):
@@ -104,7 +120,10 @@ class TestClick(BaseTestCase):
         br = await self.page.J('br')
         with self.assertRaises(ElementHandleError) as cm:
             await br.click()
-        self.assertEqual('Node is not visible.', cm.exception.args[0])
+        self.assertEqual(
+            'Node is either not visible or not an HTMLElement',
+            cm.exception.args[0],
+        )
 
 
 class TestHover(BaseTestCase):
@@ -120,9 +139,29 @@ class TestHover(BaseTestCase):
         )
 
 
-@unittest.skip('Screenshot tests are not implemented')
 class TestScreenshot(BaseTestCase):
-    pass
+    @sync
+    async def test_screenshot_larger_than_viewport(self):
+        await self.page.setViewport({'width': 500, 'height': 500})
+        await self.page.setContent('''
+someting above
+<style>
+div.to-screenshot {
+    border: 1px solid blue;
+    width: 600px;
+    height: 600px;
+    margin-left: 50px;
+}
+</style>
+
+<div class="to-screenshot"></div>
+                                   ''')
+        elementHandle = await self.page.J('div.to-screenshot')
+        await elementHandle.screenshot()
+        size = await self.page.evaluate(
+            '() => ({ w: window.innerWidth, h: window.innerHeight })'
+        )
+        self.assertEqual({'w': 500, 'h': 500}, size)
 
 
 class TestQuerySelector(BaseTestCase):

@@ -3,6 +3,7 @@
 
 import asyncio
 import math
+import os
 from pathlib import Path
 import sys
 import time
@@ -40,6 +41,17 @@ class TestEvaluate(BaseTestCase):
     async def test_await_promise(self):
         result = await self.page.evaluate('() => Promise.resolve(8 * 7)')
         self.assertEqual(result, 56)
+
+    @sync
+    async def test_error_on_reload(self) -> None:
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('''() => {
+                location.reload();
+                return new Promise(resolve => {
+                    setTimeout(() => resolve(1), 0);
+                }
+        )}''')
+        self.assertIn('Protocol Error', cm.exception.args[0])
 
     @sync
     async def test_after_framenavigation(self):
@@ -122,6 +134,16 @@ class TestEvaluate(BaseTestCase):
     @sync
     async def test_fail_window_object(self):
         result = await self.page.evaluate('() => window')
+        self.assertIsNone(result)
+
+    @sync
+    async def test_fail_for_circular_object(self) -> None:
+        result = await self.page.evaluate('''() => {
+            const a = {};
+            const b = {a};
+            a.b = b;
+            return a;
+        }''')
         self.assertIsNone(result)
 
     @sync
@@ -475,6 +497,14 @@ class TestGoto(BaseTestCase):
         self.assertIn(response.status, [200, 304])
         self.assertIn('self-request.html', response.url)
 
+    @sync
+    async def test_show_url_in_error_message(self):
+        dummy_port = 9000 if '9000' not in self.url else 9001
+        url = 'http://localhost:{}/test/1.html'.format(dummy_port)
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto(url)
+        self.assertIn(url, cm.exception.args[0])
+
 
 class TestWaitForNavigation(BaseTestCase):
     @sync
@@ -668,7 +698,7 @@ class TestRequestInterception(BaseTestCase):
                      lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto(self.url + 'empty')
-        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+        self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
     @unittest.skip('Failed to get response in redirect')
     @sync
@@ -721,7 +751,7 @@ class TestRequestInterception(BaseTestCase):
                      lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto('data:text/html,No way!')
-        self.assertEqual(cm.exception.args[0], 'net::ERR_FAILED')
+        self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
     @sync
     async def test_request_interception_with_hash(self):
@@ -1038,9 +1068,10 @@ class TestAddScriptTag(BaseTestCase):
     @sync
     async def test_script_tag_url(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(url='/static/injectedfile.js')  # noqa: E501
+        scriptHandle = await self.page.addScriptTag(
+            url='/static/injectedfile.js')
         self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 42)
 
     @sync
     async def test_script_tag_url_fail(self):
@@ -1057,7 +1088,7 @@ class TestAddScriptTag(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         scriptHanlde = await self.page.addScriptTag(path=path)
         self.assertIsNotNone(scriptHanlde.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 42)
 
     @sync
     async def test_script_tag_path_source_map(self):
@@ -1071,9 +1102,37 @@ class TestAddScriptTag(BaseTestCase):
     @sync
     async def test_script_tag_content(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')  # noqa: E501
+        scriptHandle = await self.page.addScriptTag(
+            content='window.__injected = 35;')
         self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 35)
+
+    @sync
+    async def test_module_url(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(
+            url='/static/es6/es6import.js', type='module')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
+
+    @sync
+    async def test_module_path(self):
+        await self.page.goto(self.url + 'empty')
+        curdir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(curdir, 'static', 'es6', 'es6pathimport.js')
+        await self.page.addScriptTag(path=path, type='module')
+        await self.page.waitForFunction('window.__es6injected')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
+
+    @sync
+    async def test_module_content(self):
+        await self.page.goto(self.url + 'empty')
+        content = '''
+            import num from '/static/es6/es6module.js';
+            window.__es6injected = num;
+        '''
+        await self.page.addScriptTag(content=content, type='module')
+        await self.page.waitForFunction('window.__es6injected')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
 
 
 class TestAddStyleTag(BaseTestCase):

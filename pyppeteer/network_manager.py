@@ -6,10 +6,11 @@
 import asyncio
 import base64
 from collections import OrderedDict
+import copy
 import json
 from urllib.parse import unquote
 from types import SimpleNamespace
-from typing import Awaitable, Dict, Optional, Union, TYPE_CHECKING
+from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -166,6 +167,7 @@ class NetworkManager(EventEmitter):
                     event.get('resourceType', ''),
                     event.get('request', {}),
                     event.get('frameId'),
+                    request._redirectChain,
                 )
             return
 
@@ -175,14 +177,14 @@ class NetworkManager(EventEmitter):
             self._requestHashToRequestIds.delete(requestHash, requestId)
             self._handleRequestStart(
                 requestId, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId']
+                event['resourceType'], event['request'], event['frameId'], [],
             )
         else:
             self._requestHashToInterceptionIds.set(
                 requestHash, event['interceptionId'])
             self._handleRequestStart(
                 None, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId']
+                event['resourceType'], event['request'], event['frameId'], [],
             )
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
@@ -198,6 +200,7 @@ class NetworkManager(EventEmitter):
                             redirectHeaders, fromDiskCache, fromServiceWorker,
                             securityDetails)
         request._response = response
+        request._redirectChain.append(request)
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
@@ -206,7 +209,8 @@ class NetworkManager(EventEmitter):
 
     def _handleRequestStart(self, requestId: Optional[str],
                             interceptionId: str, url: str, resourceType: str,
-                            requestPayload: Dict, frameId: Optional[str]
+                            requestPayload: Dict, frameId: Optional[str],
+                            redirectChain: List['Request']
                             ) -> None:
         frame = None
         if frameId and self._frameManager is not None:
@@ -214,7 +218,7 @@ class NetworkManager(EventEmitter):
 
         request = Request(self._client, requestId, interceptionId,
                           self._userRequestInterceptionEnabled, url,
-                          resourceType, requestPayload, frame)
+                          resourceType, requestPayload, frame, redirectChain)
         if requestId:
             self._requestIdToRequest[requestId] = request
         if interceptionId:
@@ -238,6 +242,8 @@ class NetworkManager(EventEmitter):
                 self._requestHashToRequestIds.set(
                     requestHash, event['requestId'])
             return
+
+        redirectChain: List[Request] = []
         if event.get('redirectResponse'):
             request = self._requestIdToRequest[event['requestId']]
             if request:
@@ -250,12 +256,14 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('fromServiceWorker'),
                     redirectResponse.get('securityDetails'),
                 )
+                redirectChain = request._redirectChain
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
             event.get('type', ''),
             event.get('request', {}),
             event.get('frameId'),
+            redirectChain,
         )
 
     def _onResponseReceived(self, event: dict) -> None:
@@ -315,7 +323,8 @@ class Request(object):
 
     def __init__(self, client: CDPSession, requestId: Optional[str],
                  interceptionId: str, allowInterception: bool, url: str,
-                 resourceType: str, payload: dict, frame: Optional[Frame]
+                 resourceType: str, payload: dict, frame: Optional[Frame],
+                 redirectChain: List['Request']
                  ) -> None:
         self._client = client
         self._requestId = requestId
@@ -333,6 +342,7 @@ class Request(object):
         headers = payload.get('headers', {})
         self._headers = {k.lower(): v for k, v in headers.items()}
         self._frame = frame
+        self._redirectChain = redirectChain
 
         self._fromMemoryCache = False
 
@@ -389,6 +399,19 @@ class Request(object):
         """
         return self._frame
 
+    @property
+    def redirectChain(self) -> List['Request']:
+        """Return chain of requests initiated to fetch a resource.
+
+        * If there are no redirects and request was successfull, the chain will
+          be empty.
+        * If a server responds with at least a single redirect, then the chain
+          will contain all the requests that were redirected.
+
+        ``redirectChain`` is shared between all the requests of the same chain.
+        """
+        return copy.copy(self._redirectChain)
+
     def failure(self) -> Optional[Dict]:
         """Return error text.
 
@@ -434,8 +457,8 @@ class Request(object):
         """Fulfills request with given response.
 
         To use this, request interception shuold by enabled by
-        :meth:`pyppeteer.page.Page.setRequestInterception`. Requst interception
-        is not enabled, raise ``NetworkError``.
+        :meth:`pyppeteer.page.Page.setRequestInterception`. Request
+        interception is not enabled, raise ``NetworkError``.
 
         ``response`` is a dictinary which can have the following fields:
 
@@ -569,7 +592,7 @@ class Response(object):
     @property
     def ok(self) -> bool:
         """Return bool whether this request is successfull (200-299) or not."""
-        return 200 <= self._status <= 299
+        return self._status == 0 or 200 <= self._status <= 299
 
     @property
     def status(self) -> int:

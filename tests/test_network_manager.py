@@ -94,7 +94,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertTrue(responses['one-style.css'].fromCache)
 
     @sync
-    async def test_from_service_worker(self):
+    async def test_response_from_service_worker(self):
         responses = {}
 
         def set_response(resp):
@@ -107,6 +107,7 @@ class TestNetworkEvent(BaseTestCase):
             self.url + 'static/serviceworkers/fetch/sw.html',
             waitUntil='networkidle2',
         )
+        await self.page.evaluate('async() => await window.activationPromise')
         await self.page.reload()
 
         self.assertEqual(len(responses), 2)
@@ -216,7 +217,7 @@ class TestNetworkEvent(BaseTestCase):
             'DONE {}'.format(req.url)))
         self.page.on('requestfailed', lambda req: events.append(
             'FAIL {}'.format(req.url)))
-        await self.page.goto(self.url + 'redirect1')
+        response = await self.page.goto(self.url + 'redirect1')
         self.assertEqual(events, [
             'GET {}'.format(self.url + 'redirect1'),
             '302 {}'.format(self.url + 'redirect1'),
@@ -225,3 +226,8 @@ class TestNetworkEvent(BaseTestCase):
             '200 {}'.format(self.url + 'redirect2'),
             'DONE {}'.format(self.url + 'redirect2'),
         ])
+
+        # check redirect chain
+        redirectChain = response.request.redirectChain
+        self.assertEqual(len(redirectChain), 1)
+        self.assertIn('redirect1', redirectChain[0].url)
