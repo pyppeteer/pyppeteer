@@ -82,10 +82,17 @@ class Browser(EventEmitter):
         return browser
 
     async def _targetCreated(self, event: Dict) -> None:
-        target = Target(self, event['targetInfo'])
-        if event['targetInfo']['targetId'] in self._targets:
+        targetInfo = event['targetInfo']
+        target = Target(
+            targetInfo,
+            lambda: self._connection.createSession(targetInfo['targetId']),
+            self._ignoreHTTPSErrors,
+            self._appMode,
+            self._screenshotTaskQueue,
+        )
+        if targetInfo['targetId'] in self._targets:
             raise BrowserError('target should not exist before create.')
-        self._targets[event['targetInfo']['targetId']] = target
+        self._targets[targetInfo['targetId']] = target
         if await target._initializedPromise:
             self.emit(Browser.Events.TargetCreated, target)
 
@@ -100,7 +107,11 @@ class Browser(EventEmitter):
         target = self._targets.get(event['targetInfo']['targetId'])
         if not target:
             raise BrowserError('target should exist before targetInfoChanged')
+        previousURL = target.url
+        wasInitialized = target._isInitialized
         target._targetInfoChanged(event['targetInfo'])
+        if wasInitialized and previousURL != target.url:
+            self.emit(Browser.Events.TargetChanged, target)
 
     @property
     def wsEndpoint(self) -> str:
