@@ -8,6 +8,7 @@ from syncer import sync
 from pyppeteer.errors import ElementHandleError
 
 from .base import BaseTestCase
+from .frame_utils import attachFrame
 
 
 class TestBoundingBox(BaseTestCase):
@@ -41,6 +42,16 @@ class TestBoundingBox(BaseTestCase):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
+
+
+class TestContentFrame(BaseTestCase):
+    @sync
+    async def test_content_frame(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(self.page, 'frame1', self.url + 'empty')
+        elementHandle = await self.page.J('#frame1')
+        frame = await elementHandle.contentFrame()
+        self.assertEqual(frame, self.page.frames[1])
 
 
 class TestClick(BaseTestCase):

@@ -16,7 +16,7 @@ from pyppeteer.errors import ElementHandleError, NetworkError
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
-    from pyppeteer.frame_manager import Frame  # noqa: F401
+    from pyppeteer.frame_manager import Frame, FrameManager  # noqa: F401
     # from pyppeteer.page import Page  # noqa: F401
 
 
@@ -39,16 +39,31 @@ class ElementHandle(JSHandle):
     """
 
     def __init__(self, context: ExecutionContext, client: CDPSession,
-                 remoteObject: dict, page: Any) -> None:
+                 remoteObject: dict, page: Any,
+                 frameManager: 'FrameManager') -> None:
         super().__init__(context, client, remoteObject)
         self._client = client
         self._remoteObject = remoteObject
         self._page = page
+        self._frameManager = frameManager
         self._disposed = False
 
     def asElement(self) -> 'ElementHandle':
         """Return this ElementHandle."""
         return self
+
+    async def contentFrame(self) -> Optional['Frame']:
+        """Return the content frame for the element handle.
+
+        Return ``None`` if this handle is not referencing iframe.
+        """
+        nodeInfo = await self._client.send('DOM.describeNode', {
+            'objectId': self._remoteObject.get('objectId'),
+        })
+        node_obj = nodeInfo.get('node', {})
+        if not isinstance(node_obj.get('frameId'), str):
+            return None
+        return self._frameManager.frame(node_obj['frameId'])
 
     async def _scrollIntoViewIfNeeded(self) -> None:
         error = await self.executionContext.evaluate(

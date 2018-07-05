@@ -3,6 +3,7 @@ History
 
 ## Version 0.0.19 (next version)
 
+* Add `ElementHandle.contentFrame` method
 
 
 ## Version 0.0.18 (2018-07-04)

@@ -191,7 +191,7 @@ class FrameManager(EventEmitter):
             raise ElementHandleError(f'missing context with id = {contextId}')
         if remoteObject.get('subtype') == 'node':
             return ElementHandle(context, self._client, remoteObject,
-                                 self._page)
+                                 self._page, self)
         return JSHandle(context, self._client, remoteObject)
 
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
