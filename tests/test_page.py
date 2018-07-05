@@ -3,6 +3,7 @@
 
 import asyncio
 import math
+import os
 from pathlib import Path
 import sys
 import time
@@ -1067,9 +1068,10 @@ class TestAddScriptTag(BaseTestCase):
     @sync
     async def test_script_tag_url(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(url='/static/injectedfile.js')  # noqa: E501
+        scriptHandle = await self.page.addScriptTag(
+            url='/static/injectedfile.js')
         self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 42)
 
     @sync
     async def test_script_tag_url_fail(self):
@@ -1086,7 +1088,7 @@ class TestAddScriptTag(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         scriptHanlde = await self.page.addScriptTag(path=path)
         self.assertIsNotNone(scriptHanlde.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 42)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 42)
 
     @sync
     async def test_script_tag_path_source_map(self):
@@ -1100,9 +1102,37 @@ class TestAddScriptTag(BaseTestCase):
     @sync
     async def test_script_tag_content(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')  # noqa: E501
+        scriptHandle = await self.page.addScriptTag(
+            content='window.__injected = 35;')
         self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('() => window.__injected'), 35)  # noqa: E501
+        self.assertEqual(await self.page.evaluate('__injected'), 35)
+
+    @sync
+    async def test_module_url(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.addScriptTag(
+            url='/static/es6/es6import.js', type='module')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
+
+    @sync
+    async def test_module_path(self):
+        await self.page.goto(self.url + 'empty')
+        curdir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(curdir, 'static', 'es6', 'es6pathimport.js')
+        await self.page.addScriptTag(path=path, type='module')
+        await self.page.waitForFunction('window.__es6injected')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
+
+    @sync
+    async def test_module_content(self):
+        await self.page.goto(self.url + 'empty')
+        content = '''
+            import num from '/static/es6/es6module.js';
+            window.__es6injected = num;
+        '''
+        await self.page.addScriptTag(content=content, type='module')
+        await self.page.waitForFunction('window.__es6injected')
+        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
 
 
 class TestAddStyleTag(BaseTestCase):

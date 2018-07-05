@@ -418,7 +418,7 @@ function(html) {
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
         return await self.evaluate(contents)
 
-    async def addScriptTag(self, options: Dict) -> ElementHandle:
+    async def addScriptTag(self, options: Dict) -> ElementHandle:  # noqa: C901
         """Add script tag to this frame.
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
@@ -428,9 +428,11 @@ function(html) {
             raise ElementHandleError('ExecutionContext is None.')
 
         addScriptUrl = '''
-        async function addScriptUrl(url) {
+        async function addScriptUrl(url, type) {
             const script = document.createElement('script');
             script.src = url;
+            if (type)
+                script.type = type;
             document.head.appendChild(script);
             await new Promise((res, rej) => {
                 script.onload = res;
@@ -440,9 +442,9 @@ function(html) {
         }'''
 
         addScriptContent = '''
-        function addScriptContent(content) {
+        function addScriptContent(content, type = 'text/javascript') {
             const script = document.createElement('script');
-            script.type = 'text/javascript';
+            script.type = type;
             script.text = content;
             document.head.appendChild(script);
             return script;
@@ -450,9 +452,12 @@ function(html) {
 
         if isinstance(options.get('url'), str):
             url = options['url']
+            args = [addScriptUrl, url]
+            if 'type' in options:
+                args.append(options['type'])
             try:
-                return (await context.evaluateHandle(  # type: ignore
-                    addScriptUrl, url)).asElement()
+                return (await context.evaluateHandle(*args)  # type: ignore
+                        ).asElement()
             except ElementHandleError as e:
                 raise PageError(f'Loading script from {url} failed') from e
 
@@ -461,12 +466,18 @@ function(html) {
                 contents = f.read()
             contents = contents + '//# sourceURL={}'.format(
                 options['path'].replace('\n', ''))
-            return (await context.evaluateHandle(  # type: ignore
-                addScriptContent, contents)).asElement()
+            args = [addScriptContent, contents]
+            if 'type' in options:
+                args.append(options['type'])
+            return (await context.evaluateHandle(*args)  # type: ignore
+                    ).asElement()
 
         if isinstance(options.get('content'), str):
-            return (await context.evaluateHandle(  # type: ignore
-                addScriptContent, options['content'])).asElement()
+            args = [addScriptContent, options['content']]
+            if 'type' in options:
+                args.append(options['type'])
+            return (await context.evaluateHandle(*args)  # type: ignore
+                    ).asElement()
 
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')

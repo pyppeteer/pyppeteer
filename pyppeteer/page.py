@@ -404,6 +404,8 @@ class Page(EventEmitter):
             * ``url`` (string): URL of a script to add.
             * ``path`` (string): Path to the local JavaScript file to add.
             * ``content`` (string): JavaScript string to add.
+            * ``type`` (string): Script type. Use ``module`` in order to load a
+              JavaScript ES6 module.
 
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
