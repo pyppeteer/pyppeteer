@@ -43,7 +43,9 @@ def current_platform() -> str:
         return 'linux'
     elif sys.platform.startswith('darwin'):
         return 'mac'
-    elif sys.platform.startswith('win'):
+    elif (sys.platform.startswith('win') or
+          sys.platform.startswith('msys') or
+          sys.platform.startswith('cyg')):
         if sys.maxsize > 2 ** 31 - 1:
             return 'win64'
         return 'win32'

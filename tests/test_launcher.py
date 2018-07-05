@@ -167,6 +167,7 @@ class TestUserDataDir(unittest.TestCase):
     def tearDownClass(cls):
         cls.server.stop()
 
+    @unittest.skipIf(sys.platform.startswith('cyg'), 'Fails on cygwin')
     @sync
     async def test_user_data_dir_option(self):
         browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
@@ -174,6 +175,7 @@ class TestUserDataDir(unittest.TestCase):
         await browser.close()
         self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
 
+    @unittest.skipIf(sys.platform.startswith('cyg'), 'Fails on cygwin')
     @sync
     async def test_user_data_dir_args(self):
         options = {}

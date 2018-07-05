@@ -1,6 +1,11 @@
 History
 =======
 
+## Version 0.0.20 (next version)
+
+* Run on msys/cygwin, anyway
+
+
 ## Version 0.0.19 (2018-07-05)
 
 Catch up puppeteer v1.2.0
