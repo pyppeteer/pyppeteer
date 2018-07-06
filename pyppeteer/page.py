@@ -50,6 +50,7 @@ class Page(EventEmitter):
 
     #: Available events.
     Events = SimpleNamespace(
+        Close='close',
         Console='console',
         Dialog='dialog',
         DOMContentLoaded='domcontentloaded',
@@ -161,6 +162,11 @@ class Page(EventEmitter):
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
+
+        def closed(fut: asyncio.futures.Future) -> None:
+            self.emit(Page.Events.Close)
+
+        self._target._isClosedPromise.add_done_callback(closed)
 
     @property
     def target(self) -> 'Target':

@@ -4,6 +4,7 @@ History
 ## Version 0.0.20 (next version)
 
 * Run on msys/cygwin, anyway
+* Add page `close` event
 
 
 ## Version 0.0.19 (2018-07-05)
