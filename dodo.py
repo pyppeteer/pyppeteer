@@ -3,14 +3,18 @@
 
 """Doit task definitions."""
 
+import multiprocessing
+
+from doit.action import CmdAction
+
+cores = multiprocessing.cpu_count()
 DOIT_CONFIG = {
     'default_tasks': [
         'check',
     ],
     'continue': True,
     'verbosity': 1,
-    'num_process': 8,
-    'par_type': 'thread',
+    'num_process': cores,
 }
 
 
@@ -52,8 +56,27 @@ def task_readme():
 
 
 def task_check():
-    """Run flake8/mypy/pydocstyle/docs tasks."""
+    """Run flake8/mypy/pydocstyle/docs/readme tasks."""
     return {
         'actions': None,
         'task_dep': ['flake8', 'mypy', 'pydocstyle', 'docs', 'readme']
+    }
+
+
+def task_test():
+    """Run pytest."""
+    return {
+        'actions': [CmdAction(
+            'pytest -n {}'.format(cores // 2),
+            buffering=1,
+        )],
+        'verbosity': 2,
+    }
+
+
+def task_all():
+    """Run all tests and checks."""
+    return {
+        'actions': None,
+        'task_dep': ['test', 'check'],
     }
