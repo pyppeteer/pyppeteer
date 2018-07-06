@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import os
-import signal
+
+import logging
+import unittest
+
 from syncer import sync
 
-from .base import BaseTestCase
-from pyppeteer.errors import *
+from pyppeteer import launch
+from pyppeteer.errors import NetworkError
 
 
-class TestBrowserCrash(BaseTestCase):
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    def tearDown(self):
-        pass
-
+class TestBrowserCrash(unittest.TestCase):
     @sync
     async def test_browser_crash_send(self):
-        await self.page.goto(self.url)
-        element = await self.page.querySelector("title")
-        os.kill(self.browser.process.pid, signal.SIGKILL)
+        browser = await launch(args=['--no-sandbox'])
+        page = await browser.newPage()
+        await page.goto('about:blank')
+        await page.querySelector("title")
+        browser.process.terminate()
+        browser.process.wait()
         with self.assertRaises(NetworkError):
-            await self.page.querySelector("title")
+            await page.querySelector("title")
         with self.assertRaises(NetworkError):
-            await self.page.querySelector("title")
+            with self.assertLogs('pyppeteer', logging.ERROR):
+                await page.querySelector("title")
         with self.assertRaises(ConnectionError):
-            await self.browser.newPage()
+            await browser.newPage()

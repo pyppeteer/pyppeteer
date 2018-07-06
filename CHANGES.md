@@ -4,6 +4,8 @@ History
 ## Version 0.0.20 (next version)
 
 * Run on msys/cygwin, anyway
+* Raise error correctly when connection failed (PR#91)
+
 * Add page `close` event
 
 
