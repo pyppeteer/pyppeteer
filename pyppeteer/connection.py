@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 from typing import Awaitable, Callable, TYPE_CHECKING
-
+import concurrent.futures
 from pyee import EventEmitter
 import websockets
 
@@ -57,6 +57,8 @@ class Connection(EventEmitter):
                 except (websockets.ConnectionClosed, ConnectionResetError):
                     logger.info('connection closed')
                     break
+        if self._connected:
+            asyncio.ensure_future(self.dispose())
 
     async def _async_send(self, msg: str, callback_id: int) -> None:
         while not self._connected:
@@ -64,7 +66,7 @@ class Connection(EventEmitter):
         try:
             await self.connection.send(msg)
         except websockets.ConnectionClosed:
-            logger.info('connection closed')
+            logger.error('connection unexpectedly closed')
             callback = self._callbacks.get(callback_id, None)
             if callback and not callback.done():
                 callback.set_result(None)
@@ -142,9 +144,9 @@ class Connection(EventEmitter):
         self._sessions.clear()
 
         # close connection
+        if hasattr(self, 'connection'):  # may not have connection
+            await self.connection.close()
         if not self._recv_fut.done():
-            if hasattr(self, 'connection'):  # may not have connection
-                await self.connection.close()
             self._recv_fut.cancel()
 
     async def dispose(self) -> None:
@@ -200,13 +202,15 @@ class CDPSession(EventEmitter):
         callback = asyncio.get_event_loop().create_future()
         self._callbacks[_id] = callback
         callback.method: str = method  # type: ignore
-
         if not self._connection:
             raise NetworkError('Connection closed.')
-        await self._connection.send('Target.sendMessageToTarget', {
-            'sessionId': self._sessionId,
-            'message': msg,
-        })
+        try:
+            await self._connection.send('Target.sendMessageToTarget', {
+                'sessionId': self._sessionId,
+                'message': msg,
+            })
+        except concurrent.futures.CancelledError:
+            raise NetworkError("connection unexpectedly closed")
         return await callback
 
     def _on_message(self, msg: str) -> None:
