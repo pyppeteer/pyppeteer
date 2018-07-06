@@ -58,13 +58,23 @@ class Connection(EventEmitter):
                     logger.info('connection closed')
                     break
 
-    async def _async_send(self, msg: str) -> None:
+    async def _async_send(self, msg: str, callback_id: int) -> None:
         while not self._connected:
             await asyncio.sleep(self._delay)
-        await self.connection.send(msg)
+        try:
+            await self.connection.send(msg)
+        except websockets.ConnectionClosed:
+            logger.info('connection closed')
+            callback = self._callbacks.get(callback_id, None)
+            if callback and not callback.done():
+                callback.set_result(None)
+                await self.dispose()
 
     def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message via the connection."""
+        # Detect connection availability from the second transmission
+        if self._lastId and not self._connected:
+            raise ConnectionError('Connection is closed')
         if params is None:
             params = dict()
         self._lastId += 1
@@ -75,7 +85,7 @@ class Connection(EventEmitter):
             params=params,
         ))
         logger.debug(f'SEND▶: {msg}')
-        asyncio.ensure_future(self._async_send(msg))
+        asyncio.ensure_future(self._async_send(msg, _id))
         callback = asyncio.get_event_loop().create_future()
         self._callbacks[_id] = callback
         callback.method = method  # type: ignore
