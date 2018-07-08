@@ -363,7 +363,25 @@ class Page(EventEmitter):
     Jx = xpath
 
     async def cookies(self, *urls: str) -> dict:
-        """Get cookies."""
+        """Get cookies.
+
+        If no URLs are specified, this method returns cookies for the current
+        page URL. If URLs are specified, only cookies for those URLs are
+        returned.
+
+        Returned cookies are list of dictionaries which contain these fields:
+
+        * ``name`` (str)
+        * ``value`` (str)
+        * ``url`` (str)
+        * ``domain`` (str)
+        * ``path`` (str)
+        * ``expires`` (number): Unix time in seconds
+        * ``httpOnly`` (bool)
+        * ``secure`` (bool)
+        * ``session`` (bool)
+        * ``sameSite`` (str): ``'Strict'`` or ``'Lax'``
+        """
         if not urls:
             urls = (self.url, )
         resp = await self._client.send('Network.getCookies', {
@@ -372,7 +390,16 @@ class Page(EventEmitter):
         return resp.get('cookies', {})
 
     async def deleteCookie(self, *cookies: dict) -> None:
-        """Delete cookie."""
+        """Delete cookie.
+
+        ``cookies`` should be dictionaries which contain these fields:
+
+        * ``name`` (str): **requiered**
+        * ``url`` (str)
+        * ``domain`` (str)
+        * ``path`` (str)
+        * ``secure`` (bool)
+        """
         pageURL = self.url
         for cookie in cookies:
             item = dict(**cookie)
@@ -381,7 +408,20 @@ class Page(EventEmitter):
             await self._client.send('Network.deleteCookies', item)
 
     async def setCookie(self, *cookies: dict) -> None:
-        """Set cookies."""
+        """Set cookies.
+
+        ``coockies`` should be dictionaries which contain these fields:
+
+        * ``name`` (str): **requiered**
+        * ``value`` (str): **requiered**
+        * ``url`` (str)
+        * ``domain`` (str)
+        * ``path`` (str)
+        * ``expires`` (number): Unix time in seconds
+        * ``httpOnly`` (bool)
+        * ``secure`` (bool)
+        * ``sameSite`` (str): ``'Strict'`` or ``'Lax'``
+        """
         pageURL = self.url
         startsWithHTTP = pageURL.startswith('http')
         items = []
@@ -500,15 +540,52 @@ function addPageBinding(bindingName) {
         return await self._networkManager.authenticate(credentials)
 
     async def setExtraHTTPHeaders(self, headers: Dict[str, str]) -> None:
-        """Set extra http headers."""
+        """Set extra HTTP headers.
+
+        The extra HTTP headers will be sent with every request the page
+        initiates.
+
+        .. note::
+            ``page.setExtraHTTPHeaders`` does not guarantee the order of
+            headers in the outgoing requests.
+
+        :arg Dict headers: A dictionary containing additional http headrs to be
+                           sent with every requests. All header values must be
+                           string.
+        """
         return await self._networkManager.setExtraHTTPHeaders(headers)
 
     async def setUserAgent(self, userAgent: str) -> None:
-        """Set user agent to use in this page."""
+        """Set user agent to use in this page.
+
+        :arg str userAgent: Specific user agent to use in this page
+        """
         return await self._networkManager.setUserAgent(userAgent)
 
     async def metrics(self) -> Dict[str, Any]:
-        """Get metrics."""
+        """Get metrics.
+
+        Returns dictionary containing metrics as key/value pairs:
+
+        * ``Timestamp`` (number): The timestamp when the metrics sample was
+          taken.
+        * ``Documents`` (int): Number of documents in the page.
+        * ``Frames`` (int): Number of frames in the page.
+        * ``JSEventListeners`` (int): Number of events in the page.
+        * ``Nodes`` (int): Number of DOM nodes in the page.
+        * ``LayoutCount`` (int): Total number of full partial page layout.
+        * ``RecalcStyleCount`` (int): Total number of page style
+          recalculations.
+        * ``LayoutDuration`` (int): Combined duration of page duration.
+        * ``RecalcStyleDuration`` (int): Combined duration of all page style
+          recalculations.
+        * ``ScriptDuration`` (int): Combined duration of JavaScript
+          execution.
+        * ``TaskDuration`` (int): Combined duration of all tasks performed by
+          the browser.
+        * ``JSHeapUsedSize`` (float): Used JavaScript heap size.
+        * ``JSHeapTotalSize`` (float): Total JavaScript heap size.
+        """
         response = await self._client.send('Performance.getMetrics')
         return self._buildMetricsObject(response['metrics'])
 
@@ -590,21 +667,27 @@ function deliverResult(name, seq, result) {
 
     @property
     def url(self) -> str:
-        """Get url of this page."""
+        """Get URL of this page."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return frame.url
 
     async def content(self) -> str:
-        """Get the whole HTML contents of the page."""
+        """Get the full HTML contents of the page.
+
+        Returns HTML including the doctype.
+        """
         frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
         return await frame.content()
 
     async def setContent(self, html: str) -> None:
-        """Set content to this page."""
+        """Set content to this page.
+
+        :arg str html: HTML markup to assign to the page.
+        """
         frame = self.mainFrame
         if frame is None:
             raise PageError('No main frame.')
@@ -692,6 +775,17 @@ function deliverResult(name, seq, result) {
         """Wait for navigation.
 
         Available options are same as :meth:`goto` method.
+
+        This returns :class:`~pyppeteer.network_manager.Response` when the page
+        navigates to a new URL or reloads. It is useful for when you run code
+        which will indirectly cause the page to navigate.
+        Consider this example:
+
+        .. code::
+
+            navigationPromise = page.waitForNavigation()
+            await page.click('a.my-link')  # indirectly cause a navigation
+            await navigationPromise  # wait until navigation finishes
         """
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
@@ -720,6 +814,8 @@ function deliverResult(name, seq, result) {
         """Navigate to the previous page in history.
 
         Available options are same as :meth:`goto` method.
+
+        If cannot go back, return ``None``.
         """
         options = merge_dict(options, kwargs)
         return await self._go(-1, options)
@@ -729,6 +825,8 @@ function deliverResult(name, seq, result) {
         """Navigate to the next page in history.
 
         Available options are same as :meth:`goto` method.
+
+        If cannot go forward, return ``None``.
         """
         options = merge_dict(options, kwargs)
         return await self._go(+1, options)
@@ -753,7 +851,30 @@ function deliverResult(name, seq, result) {
         await self._client.send('Page.bringToFront')
 
     async def emulate(self, options: dict = None, **kwargs: Any) -> None:
-        """Emulate viewport and user agent."""
+        """Emulate given device metrics and user agent.
+
+        This method is a shortcut for calling two methods:
+
+        * :meth:`setUserAgent`
+        * :meth:`setViewport`
+
+        ``options`` is a dictionary containing these fields:
+
+        * ``viewport`` (dict)
+
+          * ``width`` (int): page width in pixels.
+          * ``height`` (int): page width in pixels.
+          * ``deviceScaleFactor`` (float): Specify device scale factor (can be
+            thought as dpr). Defaults to 1.
+          * ``isMobile`` (bool): Whether the ``meta viewport`` tag is taken
+            into account. Defaults to ``False``.
+          * ``hasTouch`` (bool): Specifies if viewport supports touch events.
+            Defaults to ``False``.
+          * ``isLandscape`` (bool): Specifies if viewport is in landscape mode.
+            Defaults to ``False``.
+
+        * ``userAgent`` (str): user agent string.
+        """
         options = merge_dict(options, kwargs)
         # TODO: if options does not have viewport or userAgent,
         # skip its setting.
@@ -767,7 +888,13 @@ function deliverResult(name, seq, result) {
         })
 
     async def emulateMedia(self, mediaType: str = None) -> None:
-        """Emulate css media type of the page."""
+        """Emulate css media type of the page.
+
+        :arg str mediaType: Changes the CSS media type of the page. The only
+                            allowed values are ``'screen'``, ``'print'``, and
+                            ``None``. Passing ``None`` disables media
+                            emulation.
+        """
         if mediaType not in ['screen', 'print', None, '']:
             raise ValueError(f'Unsupported media type: {mediaType}')
         await self._client.send('Emulation.setEmulatedMedia', {
@@ -792,9 +919,9 @@ function deliverResult(name, seq, result) {
 
     @property
     def viewport(self) -> dict:
-        """Get viewport dict.
+        """Get viewport as a dictionary.
 
-        Field of returned dict is same as :meth:`setViewport`.
+        Fields of returned dictionary is same as :meth:`setViewport`.
         """
         return self._viewport
 
@@ -1027,14 +1154,14 @@ function deliverResult(name, seq, result) {
         return await self.evaluate('() => document.body.innerText')
 
     async def title(self) -> str:
-        """Get page title."""
+        """Get page's title."""
         frame = self.mainFrame
         if not frame:
             raise PageError('no main frame.')
         return await frame.title()
 
     async def close(self) -> None:
-        """Close connection."""
+        """Close this page."""
         conn = self._client._connection
         if conn is None:
             raise PageError('Protocol Error: Connectoin Closed. '
