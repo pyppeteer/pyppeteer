@@ -196,6 +196,14 @@ class TestWaitForFunction(BaseTestCase):
         await fut
         self.assertTrue(self.result)
 
+    @sync
+    async def test_disable_timeout(self):
+        res = await self.page.waitForFunction(
+            '() => new Promise(res => setTimeout(() => res(42), 100))',
+            timeout=0,
+        )
+        self.assertEqual(await res.jsonValue(), 42)
+
 
 class TestWaitForSelector(BaseTestCase):
     @sync

@@ -236,7 +236,8 @@ class Page(EventEmitter):
         * :meth:`reload`
         * :meth:`waitForNavigation`
 
-        :arg int timeout: Maximum navigation time in milliseconds.
+        :arg int timeout: Maximum navigation time in milliseconds. Pass ``0``
+                          to disable timeout.
         """
         self._defaultNavigationTimeout = timeout
 
@@ -1306,7 +1307,7 @@ function deliverResult(name, seq, result) {
           be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
           properties. Defaults to ``False``.
         * ``timeout`` (int|float): Maximum time to wait for in milliseconds.
-          Defaults to 30000 (30 seconds).
+          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
         frame = self.mainFrame
         if not frame:
@@ -1336,7 +1337,7 @@ function deliverResult(name, seq, result) {
           be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
           properties. Defaults to ``False``.
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
-          Defaults to 30000 (30 seconds).
+          Defaults to 30000 (30 seconds). Pass ``0`` to diable timeout.
         """
         frame = self.mainFrame
         if not frame:
@@ -1367,6 +1368,7 @@ function deliverResult(name, seq, result) {
           * ``mutation``: to execute ``pageFunction`` on every DOM mutation.
 
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
+          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
         frame = self.mainFrame
         if not frame:

@@ -7,6 +7,7 @@ History
 * Raise error correctly when connection failed (PR#91)
 
 * Add page `close` event
+* Add an option to disable timeout for `waitFor` functions
 
 
 ## Version 0.0.19 (2018-07-05)
