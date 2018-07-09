@@ -8,6 +8,7 @@ History
 
 * Introduce `PYPPETEER_CHROMIUM_REVISION`
 * Add page `close` event
+* Add `ElementHandle.boxModel` method
 * Add an option to disable timeout for `waitFor` functions
 
 

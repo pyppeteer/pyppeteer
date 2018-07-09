@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
+import unittest
 
 from syncer import sync
 
@@ -42,6 +43,38 @@ class TestBoundingBox(BaseTestCase):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
+
+
+class TestBoxModel(BaseTestCase):
+    @unittest.skip('This test is unstable due to frame order.')
+    @sync
+    async def test_box_model(self):
+        leftTop = {'x': 28, 'y': 260}
+        rightTop = {'x': 292, 'y': 260}
+        leftBottom = {'x': 28, 'y': 276}
+        rightBottom = {'x': 292, 'y': 276}
+
+        await self.page.setViewport({'width': 500, 'height': 500})
+        await self.page.goto(self.url + 'static/nested-frames.html')
+        nestedFrame = self.page.frames[1].childFrames[1]
+        elementHandle = await nestedFrame.J('div')
+        box = await elementHandle.boxModel()
+        self.assertEqual(
+            box['content'], [leftTop, rightTop, rightBottom, leftBottom])
+        self.assertEqual(
+            box['padding'], [leftTop, rightTop, rightBottom, leftBottom])
+        self.assertEqual(
+            box['border'], [leftTop, rightTop, rightBottom, leftBottom])
+        self.assertEqual(
+            box['margin'], [leftTop, rightTop, rightBottom, leftBottom])
+        self.assertEqual(box['width'], 264)
+        self.assertEqual(box['height'], 16)
+
+    @sync
+    async def test_box_model_invisible(self):
+        await self.page.setContent('<div style="display:none;">hi</div>')
+        element = await self.page.J('div')
+        self.assertIsNone(await element.boxModel())
 
 
 class TestContentFrame(BaseTestCase):
