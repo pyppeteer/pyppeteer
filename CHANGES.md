@@ -6,6 +6,7 @@ History
 * Run on msys/cygwin, anyway
 * Raise error correctly when connection failed (PR#91)
 
+* Introduce `PYPPETEER_DOWNLAOD_HOST`
 * Add page `close` event
 * Add an option to disable timeout for `waitFor` functions
 

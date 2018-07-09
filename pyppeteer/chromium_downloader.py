@@ -12,14 +12,18 @@ import sys
 from urllib import request
 from zipfile import ZipFile
 
-from pyppeteer import __chromimum_revision__ as REVISION
+from pyppeteer import __chromimum_revision__
 
 logger = logging.getLogger(__name__)
+
 DOWNLOADS_FOLDER = Path.home() / '.pyppeteer' / 'local-chromium'
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get(
     'PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
+
+REVISION = os.environ.get(
+    'PYPPETEER_CHROMIUM_REVISION', __chromimum_revision__)
 
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
