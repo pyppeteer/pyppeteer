@@ -6,12 +6,15 @@ History
 * Run on msys/cygwin, anyway
 * Raise error correctly when connection failed (PR#91)
 * Change browser download location and temporary user data directory to:
-    * `'C:\Users\<username>\AppData\Local\pyppeteer'` (Windows)
-    * `'/Users/<username>/Library/Application Support/pyppeteer'` (OS X)
-    * `'/home/<username>/.local/share/pyppeteer'` (Linux)
-        * or in `'$XDG_DATA_HOME/pyppeteer'` if `$XDG_DATA_HOME` is defined
+    * If `$PYPPETEER_HOME` environment variable is defined, use this location.
+    * Otherwise, use platform dependent locations, based on [appdirs](https://pypi.org/project/appdirs/):
+        * `'C:\Users\<username>\AppData\Local\pyppeteer'` (Windows)
+        * `'/Users/<username>/Library/Application Support/pyppeteer'` (OS X)
+        * `'/home/<username>/.local/share/pyppeteer'` (Linux)
+            * or in `'$XDG_DATA_HOME/pyppeteer'` if `$XDG_DATA_HOME` is defined
 
-* Introduce `PYPPETEER_CHROMIUM_REVISION`
+* Introduce `$PYPPETEER_CHROMIUM_REVISION`
+* Introduce `$PYPPETEER_HOME`
 * Add page `close` event
 * Add `ElementHandle.boxModel` method
 * Add an option to disable timeout for `waitFor` functions

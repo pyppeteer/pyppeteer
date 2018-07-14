@@ -4,6 +4,7 @@
 """Meta data for pyppeteer."""
 
 import logging
+import os
 
 from appdirs import AppDirs
 
@@ -12,7 +13,8 @@ __email__ = 'miyako.dev@gmail.com'
 __version__ = '0.0.19'
 __chromimum_revision__ = '571375'
 __base_puppeteer_version__ = 'v1.2.0'
-__pyppeteer_home__ = AppDirs('pyppeteer').user_data_dir  # type: str
+__pyppeteer_home__ = os.environ.get(
+    'PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 # Setup root logger
 _logger = logging.getLogger('pyppeteer')
