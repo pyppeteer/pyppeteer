@@ -12,11 +12,11 @@ import sys
 from urllib import request
 from zipfile import ZipFile
 
-from pyppeteer import __chromimum_revision__
+from pyppeteer import __chromimum_revision__, __pyppeteer_home__
 
 logger = logging.getLogger(__name__)
 
-DOWNLOADS_FOLDER = Path.home() / '.pyppeteer' / 'local-chromium'
+DOWNLOADS_FOLDER = Path(__pyppeteer_home__) / 'local-chromium'
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get(
     'PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)

@@ -44,6 +44,7 @@ except ImportError:
 requirements = [
     'pyee',
     'websockets',
+    'appdirs',
 ]
 
 test_requirements = [

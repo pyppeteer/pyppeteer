@@ -20,6 +20,7 @@ import tempfile
 import time
 from typing import Any, Dict, List, TYPE_CHECKING
 
+from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-pyppeteer_home = Path.home() / '.pyppeteer'
+pyppeteer_home = Path(__pyppeteer_home__)
 CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 
 DEFAULT_ARGS = [
