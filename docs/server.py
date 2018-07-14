@@ -12,7 +12,7 @@ watcher.pyinotify = None  # disable pyinotify
 docsdir = path.dirname(path.abspath(__file__))
 builddir = path.join(docsdir, '_build')
 build_cmd = [
-    'sphinx-build', '-q', '-j', '4', '-b', 'html',
+    'sphinx-build', '-q', '-j', 'auto', '-b', 'html',
     '-d', path.join(builddir, 'doctrees'),
     docsdir, path.join(builddir, 'html'),
 ]
