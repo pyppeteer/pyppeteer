@@ -45,6 +45,8 @@ requirements = [
     'pyee',
     'websockets',
     'appdirs',
+    'urllib3',
+    'tqdm'
 ]
 
 test_requirements = [
