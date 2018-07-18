@@ -71,26 +71,26 @@ def download_zip(url: str) -> BytesIO:
     # disable warnings so that we don't need a cert.
     # see https://urllib3.readthedocs.io/en/latest/advanced-usage.html for more
     urllib3.disable_warnings()
-    http = urllib3.PoolManager()
 
-    # Get data from url.
-    # set preload_content=False means using stream later.
-    data = http.request('GET', url, preload_content=False)
+    with urllib3.PoolManager() as http:
+        # Get data from url.
+        # set preload_content=False means using stream later.
+        data = http.request('GET', url, preload_content=False)
 
-    try:
-        total_length = int(data.headers['content-length'])
-    except (KeyError, ValueError, AttributeError):
-        total_length = 0
+        try:
+            total_length = int(data.headers['content-length'])
+        except (KeyError, ValueError, AttributeError):
+            total_length = 0
 
-    process_bar = tqdm(total=total_length)
+        process_bar = tqdm(total=total_length)
 
-    # 10 * 1024
-    _data = BytesIO()
-    for chunk in data.stream(10240):
-        _data.write(chunk)
-        process_bar.update(len(chunk))
+        # 10 * 1024
+        _data = BytesIO()
+        for chunk in data.stream(10240):
+            _data.write(chunk)
+            process_bar.update(len(chunk))
 
-    logger.warning('chromium download done.')
+    logger.warning('\nchromium download done.')
     return _data
 
 
