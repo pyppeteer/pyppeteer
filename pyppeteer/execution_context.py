@@ -174,7 +174,7 @@ class JSHandle(object):
                 'functionDeclaration': 'function() { return this; }',
                 'objectId': objectId,
                 'returnByValue': True,
-                'awaitPromiss': True,
+                'awaitPromise': True,
             })
             return helper.valueFromRemoteObject(response['result'])
         return helper.valueFromRemoteObject(self._remoteObject)
