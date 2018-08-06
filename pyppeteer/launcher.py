@@ -72,6 +72,10 @@ class Launcher(object):
         self.url = f'http://127.0.0.1:{self.port}'
         self.chrome_args: List[str] = []
 
+        logLevel = self.options.get('logLevel')
+        if logLevel:
+            logging.getLogger('pyppeteer').setLevel(logLevel)
+
         if not self.options.get('ignoreDefaultArgs', False):
             self.chrome_args.extend(DEFAULT_ARGS)
             self.chrome_args.append(
@@ -247,6 +251,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
     * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
       If this option is ``True``, the ``headless`` option will be set
       ``False``.
+    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
+      root logger.
     * ``appMode`` (bool): Deprecated.
 
     .. note::
@@ -273,8 +279,14 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
       milliseconds.
+    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
+      root logger.
     """
     options = merge_dict(options, kwargs)
+    logLevel = options.get('logLevel')
+    if logLevel:
+        logging.getLogger('pyppeteer').setLevel(logLevel)
+
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')

@@ -15,6 +15,7 @@ History
 
 * Introduce `$PYPPETEER_CHROMIUM_REVISION`
 * Introduce `$PYPPETEER_HOME`
+* Add `logLevel` option to `launch` and `connect` functions
 * Add page `close` event
 * Add `ElementHandle.boxModel` method
 * Add an option to disable timeout for `waitFor` functions
