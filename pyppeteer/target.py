@@ -30,6 +30,7 @@ class Target(object):
         self._page = None
 
         self._initializedPromise = asyncio.get_event_loop().create_future()
+        self._isClosedPromise = asyncio.get_event_loop().create_future()
         self._isInitialized = (self._targetInfo['type'] != 'page'
                                or self._targetInfo['url'] != '')
         if self._isInitialized:
@@ -40,6 +41,9 @@ class Target(object):
         if self._initializedPromise.done():
             self._initializedPromise = asyncio.get_event_loop().create_future()
         self._initializedPromise.set_result(bl)
+
+    def _closedCallback(self) -> None:
+        self._isClosedPromise.set_result(None)
 
     async def createCDPSession(self) -> CDPSession:
         """Create a Chrome Devtools Protocol session attached to the target."""

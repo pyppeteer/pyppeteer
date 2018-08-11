@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import glob
+import logging
 import os
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 from syncer import sync
 import websockets
@@ -140,6 +142,71 @@ class TestLauncher(unittest.TestCase):
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
 
 
+class TestLogLevel(unittest.TestCase):
+    def setUp(self):
+        self.logger = logging.getLogger('pyppeteer')
+        self.mock = mock.Mock()
+        self._orig_stderr = sys.stderr.write
+        sys.stderr.write = self.mock
+
+    def tearDown(self):
+        sys.stderr.write = self._orig_stderr
+        logging.getLogger('pyppeteer').setLevel(logging.NOTSET)
+
+    @sync
+    async def test_level_default(self):
+        browser = await launch(args=['--no-sandbox'])
+        await browser.close()
+
+        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
+        self.assertFalse(self.logger.isEnabledFor(logging.INFO))
+        self.assertFalse(self.logger.isEnabledFor(logging.DEBUG))
+        self.mock.assert_not_called()
+
+    @sync
+    async def test_level_info(self):
+        browser = await launch(args=['--no-sandbox'], logLevel=logging.INFO)
+        await browser.close()
+
+        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
+        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
+        self.assertFalse(self.logger.isEnabledFor(logging.DEBUG))
+
+        self.assertIn('listening on', self.mock.call_args_list[0][0][0])
+
+    @sync
+    async def test_level_debug(self):
+        browser = await launch(args=['--no-sandbox'], logLevel=logging.DEBUG)
+        await browser.close()
+
+        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
+        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
+        self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
+
+        self.assertIn('listening on', self.mock.call_args_list[0][0][0])
+        self.assertIn('SEND', self.mock.call_args_list[2][0][0])
+        self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+
+    @sync
+    async def test_connect_debug(self):
+        browser = await launch(args=['--no-sandbox'])
+        browser2 = await connect(
+            browserWSEndpoint=browser.wsEndpoint,
+            logLevel=logging.DEBUG,
+        )
+        page = await browser2.newPage()
+        await page.close()
+        await browser2.disconnect()
+        await browser.close()
+
+        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
+        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
+        self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
+
+        self.assertIn('SEND', self.mock.call_args_list[0][0][0])
+        self.assertIn('RECV', self.mock.call_args_list[2][0][0])
+
+
 class TestUserDataDir(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -167,6 +234,7 @@ class TestUserDataDir(unittest.TestCase):
     def tearDownClass(cls):
         cls.server.stop()
 
+    @unittest.skipIf(sys.platform.startswith('cyg'), 'Fails on cygwin')
     @sync
     async def test_user_data_dir_option(self):
         browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
@@ -174,6 +242,7 @@ class TestUserDataDir(unittest.TestCase):
         await browser.close()
         self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
 
+    @unittest.skipIf(sys.platform.startswith('cyg'), 'Fails on cygwin')
     @sync
     async def test_user_data_dir_args(self):
         options = {}

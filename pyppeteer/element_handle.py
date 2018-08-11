@@ -95,6 +95,24 @@ class ElementHandle(JSHandle):
         raise ElementHandleError(
             'Node is either not visible or not an HTMLElement')
 
+    async def _getBoxModel(self) -> Optional[Dict]:
+        try:
+            result: Optional[Dict] = await self._client.send(
+                'DOM.getBoxModel',
+                {'objectId': self._remoteObject.get('objectId')},
+            )
+        except NetworkError:
+            result = None
+        return result
+
+    def _fromProtocolQuad(self, quad: List[int]) -> List[Dict[str, int]]:
+        return [
+            {'x': quad[0], 'y': quad[1]},
+            {'x': quad[2], 'y': quad[3]},
+            {'x': quad[4], 'y': quad[5]},
+            {'x': quad[6], 'y': quad[7]},
+        ]
+
     async def hover(self) -> None:
         """Move mouse over to center of this element.
 
@@ -194,13 +212,7 @@ class ElementHandle(JSHandle):
         * ``width`` (int): The width of the element in pixels.
         * ``height`` (int): The height of the element in pixels.
         """
-        try:
-            result: Optional[Dict] = await self._client.send(
-                'DOM.getBoxModel',
-                {'objectId': self._remoteObject.get('objectId')},
-            )
-        except NetworkError:
-            result = None
+        result = await self._getBoxModel()
 
         if not result:
             return None
@@ -211,6 +223,37 @@ class ElementHandle(JSHandle):
         width = max(quad[0], quad[2], quad[4], quad[6]) - x
         height = max(quad[1], quad[3], quad[5], quad[7]) - y
         return {'x': x, 'y': y, 'width': width, 'height': height}
+
+    async def boxModel(self) -> Optional[Dict]:
+        """Return boxes of element.
+
+        Return ``None`` if element is not visivle. Boxes are represented as an
+        list of dictionaries, {x, y} for each point, points clock-wise as
+        below:
+
+        Returned value is a dictionary with the following fields:
+
+        * ``content`` (List[Dict]): Content box.
+        * ``padding`` (List[Dict]): Padding box.
+        * ``border`` (List[Dict]): Border box.
+        * ``margin`` (List[Dict]): Margin box.
+        * ``width`` (int): Element's width.
+        * ``heidht`` (int): Element's height.
+        """
+        result = await self._getBoxModel()
+
+        if not result:
+            return None
+
+        model = result.get('model', {})
+        return {
+            'content': self._fromProtocolQuad(model.get('content')),
+            'padding': self._fromProtocolQuad(model.get('padding')),
+            'border': self._fromProtocolQuad(model.get('border')),
+            'margin': self._fromProtocolQuad(model.get('margin')),
+            'width': model.get('width'),
+            'height': model.get('height'),
+        }
 
     async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
         """Take a screenshot of this element.

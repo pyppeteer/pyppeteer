@@ -20,6 +20,7 @@ import tempfile
 import time
 from typing import Any, Dict, List, TYPE_CHECKING
 
+from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-pyppeteer_home = Path.home() / '.pyppeteer'
+pyppeteer_home = Path(__pyppeteer_home__)
 CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 
 DEFAULT_ARGS = [
@@ -40,7 +41,9 @@ DEFAULT_ARGS = [
     '--disable-browser-side-navigation',
     '--disable-client-side-phishing-detection',
     '--disable-default-apps',
+    '--disable-dev-shm-usage',
     '--disable-extensions',
+    '--disable-features=site-per-process',
     '--disable-hang-monitor',
     '--disable-popup-blocking',
     '--disable-prompt-on-repost',
@@ -68,6 +71,10 @@ class Launcher(object):
         self.port = get_free_port()
         self.url = f'http://127.0.0.1:{self.port}'
         self.chrome_args: List[str] = []
+
+        logLevel = self.options.get('logLevel')
+        if logLevel:
+            logging.getLogger('pyppeteer').setLevel(logLevel)
 
         if not self.options.get('ignoreDefaultArgs', False):
             self.chrome_args.extend(DEFAULT_ARGS)
@@ -188,8 +195,12 @@ class Launcher(object):
         """Terminate chrome."""
         if self.proc.poll() is None and not self.chromeClosed:
             self.chromeClosed = True
-            self.proc.terminate()
-            self.proc.wait()
+            try:
+                self.proc.terminate()
+                self.proc.wait()
+            except Exception:
+                # browser process may be already closed
+                pass
 
     async def killChrome(self) -> None:
         """Terminate chromium process."""
@@ -240,6 +251,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
     * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
       If this option is ``True``, the ``headless`` option will be set
       ``False``.
+    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
+      root logger.
     * ``appMode`` (bool): Deprecated.
 
     .. note::
@@ -266,8 +279,14 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
       milliseconds.
+    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
+      root logger.
     """
     options = merge_dict(options, kwargs)
+    logLevel = options.get('logLevel')
+    if logLevel:
+        logging.getLogger('pyppeteer').setLevel(logLevel)
+
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')

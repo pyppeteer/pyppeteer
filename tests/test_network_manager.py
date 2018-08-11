@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import sys
 import unittest
 
 from syncer import sync
@@ -116,6 +117,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(responses['style.css'].status, 200)
         self.assertTrue(responses['style.css'].fromServiceWorker)
 
+    @unittest.skipIf(sys.platform.startswith('msys'), 'Fails on MSYS')
     @sync
     async def test_reponse_body(self):
         responses = []

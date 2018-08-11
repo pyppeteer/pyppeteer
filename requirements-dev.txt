@@ -7,4 +7,5 @@ mypy
 pydocstyle
 readme_renderer
 doit
-green
+pytest
+pytest-xdist

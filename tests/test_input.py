@@ -291,6 +291,10 @@ class TestClick(BaseTestCase):
 
 
 class TestFileUpload(BaseTestCase):
+    @unittest.skipIf(
+        sys.platform.startswith('cyg') or sys.platform.startswith('msys'),
+        'Hangs on cygwin/msys',
+    )
     @sync
     async def test_file_upload(self):
         await self.page.goto(self.url + 'static/fileupload.html')

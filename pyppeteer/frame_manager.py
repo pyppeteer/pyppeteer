@@ -752,7 +752,7 @@ class WaitTask(object):
     Instance of this class is awaitable.
     """
 
-    def __init__(self, frame: Frame, predicateBody: str,
+    def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
                  polling: Union[str, int], timeout: float, *args: Any) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
@@ -788,7 +788,8 @@ class WaitTask(object):
                 TimeoutError(f'Waiting failed: timeout {timeout}ms exceeds.')
             )
 
-        self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
+        if timeout:
+            self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
         self._runningTask = asyncio.ensure_future(self.rerun())
 
     def __await__(self) -> Generator:
@@ -855,7 +856,7 @@ class WaitTask(object):
         self._cleanup()
 
     def _cleanup(self) -> None:
-        if not self._timeoutError:
+        if self._timeout and not self._timeoutError:
             self._timeoutTimer.cancel()
         self._frame._waitTasks.remove(self)
 

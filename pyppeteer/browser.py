@@ -99,6 +99,7 @@ class Browser(EventEmitter):
     async def _targetDestroyed(self, event: Dict) -> None:
         target = self._targets[event['targetId']]
         del self._targets[event['targetId']]
+        target._closedCallback()
         if await target._initializedPromise:
             self.emit(Browser.Events.TargetDestroyed, target)
         target._initializedCallback(False)

@@ -1,6 +1,28 @@
 API Reference
 =============
 
+Environment Variables
+---------------------
+
+* ``$PYPPETEER_HOME``: Specify the directory to be used by pyppeteer.
+  Pyppeteer uses this directory for extracting downloaded Chromium, and for
+  making temporary user data directory.
+  Default location depends on platform:
+  * Windows: `C:\Users\<username>\AppData\Local\pyppeteer`
+  * OS X: `/Users/<username>/Library/Application Support/pyppeteer`
+  * Linux: `/home/<username>/.local/share/pyppeteer`
+    * or in `$XDG_DATA_HOME/pyppeteer` if `$XDG_DATA_HOME` is defined.
+
+  Details see [appdirs](https://pypi.org/project/appdirs/)'s `user_data_dir`.
+
+* ``$PYPPETEER_DOWNLOAD_HOST``: Overwrite host part of URL that is used to
+  download Chromium. Defaults to ``https://storage.googleapis.com``.
+
+* ``$PYPPETEER_CHROMIUM_REVISION``: Specify a certain version of chromium you'd
+  like pyppeteer to use. Default value can be checked by
+  ``pyppeteer.__chromium_revision__``.
+
+
 Launcher
 --------
 

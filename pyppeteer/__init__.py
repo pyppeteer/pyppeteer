@@ -4,12 +4,17 @@
 """Meta data for pyppeteer."""
 
 import logging
+import os
+
+from appdirs import AppDirs
 
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
-__version__ = '0.0.19'
+__version__ = '0.0.20'
 __chromimum_revision__ = '571375'
 __base_puppeteer_version__ = 'v1.2.0'
+__pyppeteer_home__ = os.environ.get(
+    'PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 # Setup root logger
 _logger = logging.getLogger('pyppeteer')
@@ -20,7 +25,6 @@ _log_handler.setFormatter(_formatter)
 _log_handler.setLevel(logging.DEBUG)
 _logger.addHandler(_log_handler)
 _logger.propagate = False
-# logger.setLevel(logging.DEBUG)
 
 from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
 from pyppeteer.launcher import defaultArgs  # noqa: E402
