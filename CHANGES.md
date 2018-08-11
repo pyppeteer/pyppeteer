@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.20 (next version)
+## Version 0.0.20 (2018-08-11)
 
 * Run on msys/cygwin, anyway
 * Raise error correctly when connection failed (PR#91)
