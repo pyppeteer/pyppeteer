@@ -57,6 +57,7 @@ class Connection(EventEmitter):
                 except (websockets.ConnectionClosed, ConnectionResetError):
                     logger.info('connection closed')
                     break
+                await asyncio.sleep(0)
         if self._connected:
             asyncio.ensure_future(self.dispose())
 
