@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Reference &#8212; Pyppeteer 0.0.19 documentation</title>
+    <title>API Reference &#8212; Pyppeteer 0.0.20 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -37,10 +37,38 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <div class="section" id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">$PYPPETEER_HOME</span></code>: Specify the directory to be used by pyppeteer.
+Pyppeteer uses this directory for extracting downloaded Chromium, and for
+making temporary user data directory.
+Default location depends on platform:</p>
+<ul class="simple">
+<li>Windows: <code class="docutils literal notranslate"><span class="pre">C:\Users\&lt;username&gt;\AppData\Local\pyppeteer</span></code></li>
+<li>OS X: <code class="docutils literal notranslate"><span class="pre">/Users/&lt;username&gt;/Library/Application</span> <span class="pre">Support/pyppeteer</span></code></li>
+<li>Linux: <code class="docutils literal notranslate"><span class="pre">/home/&lt;username&gt;/.local/share/pyppeteer</span></code><ul>
+<li>or in <code class="docutils literal notranslate"><span class="pre">$XDG_DATA_HOME/pyppeteer</span></code> if <code class="docutils literal notranslate"><span class="pre">$XDG_DATA_HOME</span></code> is defined.</li>
+</ul>
+</li>
+</ul>
+<p>Details see <a class="reference external" href="https://pypi.org/project/appdirs/">appdirs</a>’s <code class="docutils literal notranslate"><span class="pre">user_data_dir</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">$PYPPETEER_DOWNLOAD_HOST</span></code>: Overwrite host part of URL that is used to
+download Chromium. Defaults to <code class="docutils literal notranslate"><span class="pre">https://storage.googleapis.com</span></code>.</p>
+</li>
+<li><p class="first"><code class="docutils literal notranslate"><span class="pre">$PYPPETEER_CHROMIUM_REVISION</span></code>: Specify a certain version of chromium you’d
+like pyppeteer to use. Default value can be checked by
+<code class="docutils literal notranslate"><span class="pre">pyppeteer.__chromium_revision__</span></code>.</p>
+</li>
+</ul>
+</div>
 <div class="section" id="launcher">
 <h2>Launcher<a class="headerlink" href="#launcher" title="Permalink to this headline">¶</a></h2>
 <dl class="function">
@@ -76,6 +104,8 @@ browser. Defaults to same as python process.</li>
 <li><code class="docutils literal notranslate"><span class="pre">devtools</span></code> (bool): Whether to auto-open a DevTools panel for each tab.
 If this option is <code class="docutils literal notranslate"><span class="pre">True</span></code>, the <code class="docutils literal notranslate"><span class="pre">headless</span></code> option will be set
 <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">logLevel</span></code> (int|str): Log level to print logs. Defaults to same as the
+root logger.</li>
 <li><code class="docutils literal notranslate"><span class="pre">appMode</span></code> (bool): Deprecated.</li>
 </ul>
 <div class="admonition note">
@@ -102,6 +132,8 @@ get by <a class="reference internal" href="#pyppeteer.browser.Browser.wsEndpoint
 <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">slowMo</span></code> (int|float): Slow down pyppeteer’s by the specified amount of
 milliseconds.</li>
+<li><code class="docutils literal notranslate"><span class="pre">logLevel</span></code> (int|str): Log level to print logs. Defaults to same as the
+root logger.</li>
 </ul>
 </dd></dl>
 
@@ -200,7 +232,7 @@ handled by using <code class="docutils literal notranslate"><span class="pre">on
 <a class="reference external" href="https://pyee.readthedocs.io/en/latest/">pyee</a>’s <code class="docutils literal notranslate"><span class="pre">EventEmitter</span></code> class.</p>
 <dl class="attribute">
 <dt id="pyppeteer.page.Page.Events">
-<code class="descname">Events</code><em class="property"> = namespace(Console=’console’, DOMContentLoaded=’domcontentloaded’, Dialog=’dialog’, Error=’error’, FrameAttached=’frameattached’, FrameDetached=’framedetached’, FrameNavigated=’framenavigated’, Load=’load’, Metrics=’metrics’, PageError=’pageerror’, Request=’request’, RequestFailed=’requestfailed’, RequestFinished=’requestfinished’, Response=’response’)</em><a class="headerlink" href="#pyppeteer.page.Page.Events" title="Permalink to this definition">¶</a></dt>
+<code class="descname">Events</code><em class="property"> = namespace(Close=’close’, Console=’console’, DOMContentLoaded=’domcontentloaded’, Dialog=’dialog’, Error=’error’, FrameAttached=’frameattached’, FrameDetached=’framedetached’, FrameNavigated=’framenavigated’, Load=’load’, Metrics=’metrics’, PageError=’pageerror’, Request=’request’, RequestFailed=’requestfailed’, RequestFinished=’requestfinished’, Response=’response’)</em><a class="headerlink" href="#pyppeteer.page.Page.Events" title="Permalink to this definition">¶</a></dt>
 <dd><p>Available events.</p>
 </dd></dl>
 
@@ -334,19 +366,36 @@ click and wait for navigation is the following:</p>
 <dl class="method">
 <dt id="pyppeteer.page.Page.close">
 <em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.close" title="Permalink to this definition">¶</a></dt>
-<dd><p>Close connection.</p>
+<dd><p>Close this page.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.content">
 <em class="property">coroutine </em><code class="descname">content</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/pyppeteer/page.html#Page.content"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.content" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the whole HTML contents of the page.</p>
+<dd><p>Get the full HTML contents of the page.</p>
+<p>Returns HTML including the doctype.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.cookies">
 <em class="property">coroutine </em><code class="descname">cookies</code><span class="sig-paren">(</span><em>*urls</em><span class="sig-paren">)</span> &#x2192; dict<a class="reference internal" href="_modules/pyppeteer/page.html#Page.cookies"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.cookies" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get cookies.</p>
+<p>If no URLs are specified, this method returns cookies for the current
+page URL. If URLs are specified, only cookies for those URLs are
+returned.</p>
+<p>Returned cookies are list of dictionaries which contain these fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">value</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">path</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">expires</span></code> (number): Unix time in seconds</li>
+<li><code class="docutils literal notranslate"><span class="pre">httpOnly</span></code> (bool)</li>
+<li><code class="docutils literal notranslate"><span class="pre">secure</span></code> (bool)</li>
+<li><code class="docutils literal notranslate"><span class="pre">session</span></code> (bool)</li>
+<li><code class="docutils literal notranslate"><span class="pre">sameSite</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'Strict'</span></code> or <code class="docutils literal notranslate"><span class="pre">'Lax'</span></code></li>
+</ul>
 </dd></dl>
 
 <dl class="attribute">
@@ -359,18 +408,59 @@ click and wait for navigation is the following:</p>
 <dt id="pyppeteer.page.Page.deleteCookie">
 <em class="property">coroutine </em><code class="descname">deleteCookie</code><span class="sig-paren">(</span><em>*cookies</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.deleteCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.deleteCookie" title="Permalink to this definition">¶</a></dt>
 <dd><p>Delete cookie.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cookies</span></code> should be dictionaries which contain these fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code> (str): <strong>requiered</strong></li>
+<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">path</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">secure</span></code> (bool)</li>
+</ul>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.emulate">
 <em class="property">coroutine </em><code class="descname">emulate</code><span class="sig-paren">(</span><em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulate" title="Permalink to this definition">¶</a></dt>
-<dd><p>Emulate viewport and user agent.</p>
+<dd><p>Emulate given device metrics and user agent.</p>
+<p>This method is a shortcut for calling two methods:</p>
+<ul class="simple">
+<li><a class="reference internal" href="#pyppeteer.page.Page.setUserAgent" title="pyppeteer.page.Page.setUserAgent"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setUserAgent()</span></code></a></li>
+<li><a class="reference internal" href="#pyppeteer.page.Page.setViewport" title="pyppeteer.page.Page.setViewport"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setViewport()</span></code></a></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">options</span></code> is a dictionary containing these fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">viewport</span></code> (dict)<ul>
+<li><code class="docutils literal notranslate"><span class="pre">width</span></code> (int): page width in pixels.</li>
+<li><code class="docutils literal notranslate"><span class="pre">height</span></code> (int): page width in pixels.</li>
+<li><code class="docutils literal notranslate"><span class="pre">deviceScaleFactor</span></code> (float): Specify device scale factor (can be
+thought as dpr). Defaults to 1.</li>
+<li><code class="docutils literal notranslate"><span class="pre">isMobile</span></code> (bool): Whether the <code class="docutils literal notranslate"><span class="pre">meta</span> <span class="pre">viewport</span></code> tag is taken
+into account. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">hasTouch</span></code> (bool): Specifies if viewport supports touch events.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+<li><code class="docutils literal notranslate"><span class="pre">isLandscape</span></code> (bool): Specifies if viewport is in landscape mode.
+Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
+</ul>
+</li>
+<li><code class="docutils literal notranslate"><span class="pre">userAgent</span></code> (str): user agent string.</li>
+</ul>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.emulateMedia">
 <em class="property">coroutine </em><code class="descname">emulateMedia</code><span class="sig-paren">(</span><em>mediaType: str = None</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.emulateMedia"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.emulateMedia" title="Permalink to this definition">¶</a></dt>
 <dd><p>Emulate css media type of the page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mediaType</strong> (<em>str</em>) – Changes the CSS media type of the page. The only
+allowed values are <code class="docutils literal notranslate"><span class="pre">'screen'</span></code>, <code class="docutils literal notranslate"><span class="pre">'print'</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">None</span></code>. Passing <code class="docutils literal notranslate"><span class="pre">None</span></code> disables media
+emulation.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -462,6 +552,7 @@ python process.</li>
 <em class="property">coroutine </em><code class="descname">goBack</code><span class="sig-paren">(</span><em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; Union[pyppeteer.network_manager.Response, NoneType]<a class="reference internal" href="_modules/pyppeteer/page.html#Page.goBack"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goBack" title="Permalink to this definition">¶</a></dt>
 <dd><p>Navigate to the previous page in history.</p>
 <p>Available options are same as <a class="reference internal" href="#pyppeteer.page.Page.goto" title="pyppeteer.page.Page.goto"><code class="xref py py-meth docutils literal notranslate"><span class="pre">goto()</span></code></a> method.</p>
+<p>If cannot go back, return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -469,6 +560,7 @@ python process.</li>
 <em class="property">coroutine </em><code class="descname">goForward</code><span class="sig-paren">(</span><em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; Union[pyppeteer.network_manager.Response, NoneType]<a class="reference internal" href="_modules/pyppeteer/page.html#Page.goForward"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.goForward" title="Permalink to this definition">¶</a></dt>
 <dd><p>Navigate to the next page in history.</p>
 <p>Available options are same as <a class="reference internal" href="#pyppeteer.page.Page.goto" title="pyppeteer.page.Page.goto"><code class="xref py py-meth docutils literal notranslate"><span class="pre">goto()</span></code></a> method.</p>
+<p>If cannot go forward, return <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -534,6 +626,27 @@ for at least 500 ms.</li>
 <dt id="pyppeteer.page.Page.metrics">
 <em class="property">coroutine </em><code class="descname">metrics</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Dict[str, Any]<a class="reference internal" href="_modules/pyppeteer/page.html#Page.metrics"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.metrics" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get metrics.</p>
+<p>Returns dictionary containing metrics as key/value pairs:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">Timestamp</span></code> (number): The timestamp when the metrics sample was
+taken.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Documents</span></code> (int): Number of documents in the page.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Frames</span></code> (int): Number of frames in the page.</li>
+<li><code class="docutils literal notranslate"><span class="pre">JSEventListeners</span></code> (int): Number of events in the page.</li>
+<li><code class="docutils literal notranslate"><span class="pre">Nodes</span></code> (int): Number of DOM nodes in the page.</li>
+<li><code class="docutils literal notranslate"><span class="pre">LayoutCount</span></code> (int): Total number of full partial page layout.</li>
+<li><code class="docutils literal notranslate"><span class="pre">RecalcStyleCount</span></code> (int): Total number of page style
+recalculations.</li>
+<li><code class="docutils literal notranslate"><span class="pre">LayoutDuration</span></code> (int): Combined duration of page duration.</li>
+<li><code class="docutils literal notranslate"><span class="pre">RecalcStyleDuration</span></code> (int): Combined duration of all page style
+recalculations.</li>
+<li><code class="docutils literal notranslate"><span class="pre">ScriptDuration</span></code> (int): Combined duration of JavaScript
+execution.</li>
+<li><code class="docutils literal notranslate"><span class="pre">TaskDuration</span></code> (int): Combined duration of all tasks performed by
+the browser.</li>
+<li><code class="docutils literal notranslate"><span class="pre">JSHeapUsedSize</span></code> (float): Used JavaScript heap size.</li>
+<li><code class="docutils literal notranslate"><span class="pre">JSHeapTotalSize</span></code> (float): Total JavaScript heap size.</li>
+</ul>
 </dd></dl>
 
 <dl class="attribute">
@@ -745,12 +858,32 @@ capturing screenshot with transparency.</li>
 <dt id="pyppeteer.page.Page.setContent">
 <em class="property">coroutine </em><code class="descname">setContent</code><span class="sig-paren">(</span><em>html: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setContent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setContent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set content to this page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>html</strong> (<em>str</em>) – HTML markup to assign to the page.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.setCookie">
 <em class="property">coroutine </em><code class="descname">setCookie</code><span class="sig-paren">(</span><em>*cookies</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setCookie"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setCookie" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set cookies.</p>
+<p><code class="docutils literal notranslate"><span class="pre">coockies</span></code> should be dictionaries which contain these fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">name</span></code> (str): <strong>requiered</strong></li>
+<li><code class="docutils literal notranslate"><span class="pre">value</span></code> (str): <strong>requiered</strong></li>
+<li><code class="docutils literal notranslate"><span class="pre">url</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">domain</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">path</span></code> (str)</li>
+<li><code class="docutils literal notranslate"><span class="pre">expires</span></code> (number): Unix time in seconds</li>
+<li><code class="docutils literal notranslate"><span class="pre">httpOnly</span></code> (bool)</li>
+<li><code class="docutils literal notranslate"><span class="pre">secure</span></code> (bool)</li>
+<li><code class="docutils literal notranslate"><span class="pre">sameSite</span></code> (str): <code class="docutils literal notranslate"><span class="pre">'Strict'</span></code> or <code class="docutils literal notranslate"><span class="pre">'Lax'</span></code></li>
+</ul>
 </dd></dl>
 
 <dl class="method">
@@ -770,7 +903,8 @@ methods:</p>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeout</strong> (<em>int</em>) – Maximum navigation time in milliseconds.</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>timeout</strong> (<em>int</em>) – Maximum navigation time in milliseconds. Pass <code class="docutils literal notranslate"><span class="pre">0</span></code>
+to disable timeout.</td>
 </tr>
 </tbody>
 </table>
@@ -779,7 +913,24 @@ methods:</p>
 <dl class="method">
 <dt id="pyppeteer.page.Page.setExtraHTTPHeaders">
 <em class="property">coroutine </em><code class="descname">setExtraHTTPHeaders</code><span class="sig-paren">(</span><em>headers: Dict[str, str]</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setExtraHTTPHeaders"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setExtraHTTPHeaders" title="Permalink to this definition">¶</a></dt>
-<dd><p>Set extra http headers.</p>
+<dd><p>Set extra HTTP headers.</p>
+<p>The extra HTTP headers will be sent with every request the page
+initiates.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">page.setExtraHTTPHeaders</span></code> does not guarantee the order of
+headers in the outgoing requests.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>headers</strong> (<em>Dict</em>) – A dictionary containing additional http headrs to be
+sent with every requests. All header values must be
+string.</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -804,6 +955,14 @@ methods:</p>
 <dt id="pyppeteer.page.Page.setUserAgent">
 <em class="property">coroutine </em><code class="descname">setUserAgent</code><span class="sig-paren">(</span><em>userAgent: str</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.setUserAgent"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.setUserAgent" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set user agent to use in this page.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>userAgent</strong> (<em>str</em>) – Specific user agent to use in this page</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -847,7 +1006,7 @@ methods:</p>
 <dl class="method">
 <dt id="pyppeteer.page.Page.title">
 <em class="property">coroutine </em><code class="descname">title</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; str<a class="reference internal" href="_modules/pyppeteer/page.html#Page.title"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.title" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get page title.</p>
+<dd><p>Get page’s title.</p>
 </dd></dl>
 
 <dl class="attribute">
@@ -873,14 +1032,14 @@ methods:</p>
 <dl class="attribute">
 <dt id="pyppeteer.page.Page.url">
 <code class="descname">url</code><a class="headerlink" href="#pyppeteer.page.Page.url" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get url of this page.</p>
+<dd><p>Get URL of this page.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyppeteer.page.Page.viewport">
 <code class="descname">viewport</code><a class="headerlink" href="#pyppeteer.page.Page.viewport" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get viewport dict.</p>
-<p>Field of returned dict is same as <a class="reference internal" href="#pyppeteer.page.Page.setViewport" title="pyppeteer.page.Page.setViewport"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setViewport()</span></code></a>.</p>
+<dd><p>Get viewport as a dictionary.</p>
+<p>Fields of returned dictionary is same as <a class="reference internal" href="#pyppeteer.page.Page.setViewport" title="pyppeteer.page.Page.setViewport"><code class="xref py py-meth docutils literal notranslate"><span class="pre">setViewport()</span></code></a>.</p>
 </dd></dl>
 
 <dl class="method">
@@ -953,7 +1112,8 @@ mode which is suitable to observe styling changes.</li>
 <li><code class="docutils literal notranslate"><span class="pre">mutation</span></code>: to execute <code class="docutils literal notranslate"><span class="pre">pageFunction</span></code> on every DOM mutation.</li>
 </ul>
 </li>
-<li><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (int|float): maximum time to wait for in milliseconds.</li>
+<li><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (int|float): maximum time to wait for in milliseconds.
+Defaults to 30000 (30 seconds). Pass <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable timeout.</li>
 </ul>
 </dd></dl>
 
@@ -962,6 +1122,15 @@ mode which is suitable to observe styling changes.</li>
 <em class="property">coroutine </em><code class="descname">waitForNavigation</code><span class="sig-paren">(</span><em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; Union[pyppeteer.network_manager.Response, NoneType]<a class="reference internal" href="_modules/pyppeteer/page.html#Page.waitForNavigation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.waitForNavigation" title="Permalink to this definition">¶</a></dt>
 <dd><p>Wait for navigation.</p>
 <p>Available options are same as <a class="reference internal" href="#pyppeteer.page.Page.goto" title="pyppeteer.page.Page.goto"><code class="xref py py-meth docutils literal notranslate"><span class="pre">goto()</span></code></a> method.</p>
+<p>This returns <a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> when the page
+navigates to a new URL or reloads. It is useful for when you run code
+which will indirectly cause the page to navigate.
+Consider this example:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">navigationPromise</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s1">&#39;a.my-link&#39;</span><span class="p">)</span>  <span class="c1"># indirectly cause a navigation</span>
+<span class="k">await</span> <span class="n">navigationPromise</span>  <span class="c1"># wait until navigation finishes</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -992,7 +1161,7 @@ CSS properties. Defaults to <code class="docutils literal notranslate"><span cla
 be hidden, i.e. have <code class="docutils literal notranslate"><span class="pre">display:</span> <span class="pre">none</span></code> or <code class="docutils literal notranslate"><span class="pre">visibility:</span> <span class="pre">hidden</span></code> CSS
 properties. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (int|float): Maximum time to wait for in milliseconds.
-Defaults to 30000 (30 seconds).</li>
+Defaults to 30000 (30 seconds). Pass <code class="docutils literal notranslate"><span class="pre">0</span></code> to disable timeout.</li>
 </ul>
 </dd></dl>
 
@@ -1024,7 +1193,7 @@ CSS properties. Defaults to <code class="docutils literal notranslate"><span cla
 be hidden, i.e. have <code class="docutils literal notranslate"><span class="pre">display:</span> <span class="pre">none</span></code> or <code class="docutils literal notranslate"><span class="pre">visibility:</span> <span class="pre">hidden</span></code> CSS
 properties. Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>.</li>
 <li><code class="docutils literal notranslate"><span class="pre">timeout</span></code> (int|float): maximum time to wait for in milliseconds.
-Defaults to 30000 (30 seconds).</li>
+Defaults to 30000 (30 seconds). Pass <code class="docutils literal notranslate"><span class="pre">0</span></code> to diable timeout.</li>
 </ul>
 </dd></dl>
 
@@ -1706,6 +1875,24 @@ origin frame gets navigated.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.element_handle.ElementHandle.boxModel">
+<em class="property">coroutine </em><code class="descname">boxModel</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Union[typing.Dict, NoneType]<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle.boxModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.boxModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return boxes of element.</p>
+<p>Return <code class="docutils literal notranslate"><span class="pre">None</span></code> if element is not visivle. Boxes are represented as an
+list of dictionaries, {x, y} for each point, points clock-wise as
+below:</p>
+<p>Returned value is a dictionary with the following fields:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">content</span></code> (List[Dict]): Content box.</li>
+<li><code class="docutils literal notranslate"><span class="pre">padding</span></code> (List[Dict]): Padding box.</li>
+<li><code class="docutils literal notranslate"><span class="pre">border</span></code> (List[Dict]): Border box.</li>
+<li><code class="docutils literal notranslate"><span class="pre">margin</span></code> (List[Dict]): Margin box.</li>
+<li><code class="docutils literal notranslate"><span class="pre">width</span></code> (int): Element’s width.</li>
+<li><code class="docutils literal notranslate"><span class="pre">heidht</span></code> (int): Element’s height.</li>
+</ul>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.element_handle.ElementHandle.click">
 <em class="property">coroutine </em><code class="descname">click</code><span class="sig-paren">(</span><em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle.click"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.click" title="Permalink to this definition">¶</a></dt>
 <dd><p>Click the center of this element.</p>
@@ -2220,6 +2407,7 @@ scripts with sourceURLs are reported.</p>
 
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -2245,6 +2433,7 @@ scripts with sourceURLs are reported.</p>
 <h3>Navigation</h3>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">Environment Variables</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#launcher">Launcher</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#browser-class">Browser Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#page-class">Page Class</a></li>
@@ -2296,8 +2485,8 @@ scripts with sourceURLs are reported.</p>
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |
       <a href="_sources/reference.md.txt"

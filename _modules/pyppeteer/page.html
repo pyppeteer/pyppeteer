@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.19 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.20 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -35,6 +35,8 @@
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
+          
+
           <div class="body" role="main">
             
   <h1>Source code for pyppeteer.page</h1><div class="highlight"><pre>
@@ -90,6 +92,7 @@
 
     <span class="c1">#: Available events.</span>
     <span class="n">Events</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
+        <span class="n">Close</span><span class="o">=</span><span class="s1">&#39;close&#39;</span><span class="p">,</span>
         <span class="n">Console</span><span class="o">=</span><span class="s1">&#39;console&#39;</span><span class="p">,</span>
         <span class="n">Dialog</span><span class="o">=</span><span class="s1">&#39;dialog&#39;</span><span class="p">,</span>
         <span class="n">DOMContentLoaded</span><span class="o">=</span><span class="s1">&#39;domcontentloaded&#39;</span><span class="p">,</span>
@@ -202,6 +205,11 @@
         <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Performance.metrics&#39;</span><span class="p">,</span>
                   <span class="k">lambda</span> <span class="n">event</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_emitMetrics</span><span class="p">(</span><span class="n">event</span><span class="p">))</span>
 
+        <span class="k">def</span> <span class="nf">closed</span><span class="p">(</span><span class="n">fut</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Close</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">_isClosedPromise</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">closed</span><span class="p">)</span>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">target</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Target&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Return a target this page created from.&quot;&quot;&quot;</span>
@@ -270,7 +278,8 @@
 <span class="sd">        * :meth:`reload`</span>
 <span class="sd">        * :meth:`waitForNavigation`</span>
 
-<span class="sd">        :arg int timeout: Maximum navigation time in milliseconds.</span>
+<span class="sd">        :arg int timeout: Maximum navigation time in milliseconds. Pass ``0``</span>
+<span class="sd">                          to disable timeout.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_defaultNavigationTimeout</span> <span class="o">=</span> <span class="n">timeout</span></div>
 
@@ -397,7 +406,25 @@
     <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span>
 
 <div class="viewcode-block" id="Page.cookies"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.cookies">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">cookies</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">urls</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get cookies.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get cookies.</span>
+
+<span class="sd">        If no URLs are specified, this method returns cookies for the current</span>
+<span class="sd">        page URL. If URLs are specified, only cookies for those URLs are</span>
+<span class="sd">        returned.</span>
+
+<span class="sd">        Returned cookies are list of dictionaries which contain these fields:</span>
+
+<span class="sd">        * ``name`` (str)</span>
+<span class="sd">        * ``value`` (str)</span>
+<span class="sd">        * ``url`` (str)</span>
+<span class="sd">        * ``domain`` (str)</span>
+<span class="sd">        * ``path`` (str)</span>
+<span class="sd">        * ``expires`` (number): Unix time in seconds</span>
+<span class="sd">        * ``httpOnly`` (bool)</span>
+<span class="sd">        * ``secure`` (bool)</span>
+<span class="sd">        * ``session`` (bool)</span>
+<span class="sd">        * ``sameSite`` (str): ``&#39;Strict&#39;`` or ``&#39;Lax&#39;``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">urls</span><span class="p">:</span>
             <span class="n">urls</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="p">)</span>
         <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.getCookies&#39;</span><span class="p">,</span> <span class="p">{</span>
@@ -406,7 +433,16 @@
         <span class="k">return</span> <span class="n">resp</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;cookies&#39;</span><span class="p">,</span> <span class="p">{})</span></div>
 
 <div class="viewcode-block" id="Page.deleteCookie"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.deleteCookie">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">deleteCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">cookies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Delete cookie.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Delete cookie.</span>
+
+<span class="sd">        ``cookies`` should be dictionaries which contain these fields:</span>
+
+<span class="sd">        * ``name`` (str): **requiered**</span>
+<span class="sd">        * ``url`` (str)</span>
+<span class="sd">        * ``domain`` (str)</span>
+<span class="sd">        * ``path`` (str)</span>
+<span class="sd">        * ``secure`` (bool)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pageURL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
         <span class="k">for</span> <span class="n">cookie</span> <span class="ow">in</span> <span class="n">cookies</span><span class="p">:</span>
             <span class="n">item</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="o">**</span><span class="n">cookie</span><span class="p">)</span>
@@ -415,7 +451,20 @@
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.deleteCookies&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.setCookie"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setCookie">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">cookies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set cookies.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Set cookies.</span>
+
+<span class="sd">        ``coockies`` should be dictionaries which contain these fields:</span>
+
+<span class="sd">        * ``name`` (str): **requiered**</span>
+<span class="sd">        * ``value`` (str): **requiered**</span>
+<span class="sd">        * ``url`` (str)</span>
+<span class="sd">        * ``domain`` (str)</span>
+<span class="sd">        * ``path`` (str)</span>
+<span class="sd">        * ``expires`` (number): Unix time in seconds</span>
+<span class="sd">        * ``httpOnly`` (bool)</span>
+<span class="sd">        * ``secure`` (bool)</span>
+<span class="sd">        * ``sameSite`` (str): ``&#39;Strict&#39;`` or ``&#39;Lax&#39;``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pageURL</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
         <span class="n">startsWithHTTP</span> <span class="o">=</span> <span class="n">pageURL</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">)</span>
         <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
@@ -534,15 +583,52 @@
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span><span class="n">credentials</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.setExtraHTTPHeaders"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setExtraHTTPHeaders">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setExtraHTTPHeaders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set extra http headers.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Set extra HTTP headers.</span>
+
+<span class="sd">        The extra HTTP headers will be sent with every request the page</span>
+<span class="sd">        initiates.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            ``page.setExtraHTTPHeaders`` does not guarantee the order of</span>
+<span class="sd">            headers in the outgoing requests.</span>
+
+<span class="sd">        :arg Dict headers: A dictionary containing additional http headrs to be</span>
+<span class="sd">                           sent with every requests. All header values must be</span>
+<span class="sd">                           string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setExtraHTTPHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.setUserAgent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setUserAgent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setUserAgent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">userAgent</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set user agent to use in this page.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Set user agent to use in this page.</span>
+
+<span class="sd">        :arg str userAgent: Specific user agent to use in this page</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setUserAgent</span><span class="p">(</span><span class="n">userAgent</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.metrics"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.metrics">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get metrics.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get metrics.</span>
+
+<span class="sd">        Returns dictionary containing metrics as key/value pairs:</span>
+
+<span class="sd">        * ``Timestamp`` (number): The timestamp when the metrics sample was</span>
+<span class="sd">          taken.</span>
+<span class="sd">        * ``Documents`` (int): Number of documents in the page.</span>
+<span class="sd">        * ``Frames`` (int): Number of frames in the page.</span>
+<span class="sd">        * ``JSEventListeners`` (int): Number of events in the page.</span>
+<span class="sd">        * ``Nodes`` (int): Number of DOM nodes in the page.</span>
+<span class="sd">        * ``LayoutCount`` (int): Total number of full partial page layout.</span>
+<span class="sd">        * ``RecalcStyleCount`` (int): Total number of page style</span>
+<span class="sd">          recalculations.</span>
+<span class="sd">        * ``LayoutDuration`` (int): Combined duration of page duration.</span>
+<span class="sd">        * ``RecalcStyleDuration`` (int): Combined duration of all page style</span>
+<span class="sd">          recalculations.</span>
+<span class="sd">        * ``ScriptDuration`` (int): Combined duration of JavaScript</span>
+<span class="sd">          execution.</span>
+<span class="sd">        * ``TaskDuration`` (int): Combined duration of all tasks performed by</span>
+<span class="sd">          the browser.</span>
+<span class="sd">        * ``JSHeapUsedSize`` (float): Used JavaScript heap size.</span>
+<span class="sd">        * ``JSHeapTotalSize`` (float): Total JavaScript heap size.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Performance.getMetrics&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buildMetricsObject</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="s1">&#39;metrics&#39;</span><span class="p">])</span></div>
 
@@ -624,21 +710,27 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get url of this page.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get URL of this page.&quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">frame</span><span class="o">.</span><span class="n">url</span>
 
 <div class="viewcode-block" id="Page.content"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.content">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get the whole HTML contents of the page.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get the full HTML contents of the page.</span>
+
+<span class="sd">        Returns HTML including the doctype.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No main frame.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">content</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Page.setContent"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setContent">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setContent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">html</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Set content to this page.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Set content to this page.</span>
+
+<span class="sd">        :arg str html: HTML markup to assign to the page.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="n">frame</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;No main frame.&#39;</span><span class="p">)</span>
@@ -726,6 +818,17 @@
         <span class="sd">&quot;&quot;&quot;Wait for navigation.</span>
 
 <span class="sd">        Available options are same as :meth:`goto` method.</span>
+
+<span class="sd">        This returns :class:`~pyppeteer.network_manager.Response` when the page</span>
+<span class="sd">        navigates to a new URL or reloads. It is useful for when you run code</span>
+<span class="sd">        which will indirectly cause the page to navigate.</span>
+<span class="sd">        Consider this example:</span>
+
+<span class="sd">        .. code::</span>
+
+<span class="sd">            navigationPromise = page.waitForNavigation()</span>
+<span class="sd">            await page.click(&#39;a.my-link&#39;)  # indirectly cause a navigation</span>
+<span class="sd">            await navigationPromise  # wait until navigation finishes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">mainFrame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">mainFrame</span>
@@ -754,6 +857,8 @@
         <span class="sd">&quot;&quot;&quot;Navigate to the previous page in history.</span>
 
 <span class="sd">        Available options are same as :meth:`goto` method.</span>
+
+<span class="sd">        If cannot go back, return ``None``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_go</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
@@ -763,6 +868,8 @@
         <span class="sd">&quot;&quot;&quot;Navigate to the next page in history.</span>
 
 <span class="sd">        Available options are same as :meth:`goto` method.</span>
+
+<span class="sd">        If cannot go forward, return ``None``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_go</span><span class="p">(</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
@@ -787,7 +894,30 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.bringToFront&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.emulate"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.emulate">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">emulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Emulate viewport and user agent.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Emulate given device metrics and user agent.</span>
+
+<span class="sd">        This method is a shortcut for calling two methods:</span>
+
+<span class="sd">        * :meth:`setUserAgent`</span>
+<span class="sd">        * :meth:`setViewport`</span>
+
+<span class="sd">        ``options`` is a dictionary containing these fields:</span>
+
+<span class="sd">        * ``viewport`` (dict)</span>
+
+<span class="sd">          * ``width`` (int): page width in pixels.</span>
+<span class="sd">          * ``height`` (int): page width in pixels.</span>
+<span class="sd">          * ``deviceScaleFactor`` (float): Specify device scale factor (can be</span>
+<span class="sd">            thought as dpr). Defaults to 1.</span>
+<span class="sd">          * ``isMobile`` (bool): Whether the ``meta viewport`` tag is taken</span>
+<span class="sd">            into account. Defaults to ``False``.</span>
+<span class="sd">          * ``hasTouch`` (bool): Specifies if viewport supports touch events.</span>
+<span class="sd">            Defaults to ``False``.</span>
+<span class="sd">          * ``isLandscape`` (bool): Specifies if viewport is in landscape mode.</span>
+<span class="sd">            Defaults to ``False``.</span>
+
+<span class="sd">        * ``userAgent`` (str): user agent string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="c1"># TODO: if options does not have viewport or userAgent,</span>
         <span class="c1"># skip its setting.</span>
@@ -801,7 +931,13 @@
         <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Page.emulateMedia"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.emulateMedia">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">emulateMedia</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mediaType</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Emulate css media type of the page.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Emulate css media type of the page.</span>
+
+<span class="sd">        :arg str mediaType: Changes the CSS media type of the page. The only</span>
+<span class="sd">                            allowed values are ``&#39;screen&#39;``, ``&#39;print&#39;``, and</span>
+<span class="sd">                            ``None``. Passing ``None`` disables media</span>
+<span class="sd">                            emulation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">mediaType</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;screen&#39;</span><span class="p">,</span> <span class="s1">&#39;print&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">]:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Unsupported media type: </span><span class="si">{mediaType}</span><span class="s1">&#39;</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Emulation.setEmulatedMedia&#39;</span><span class="p">,</span> <span class="p">{</span>
@@ -826,9 +962,9 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">viewport</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get viewport dict.</span>
+        <span class="sd">&quot;&quot;&quot;Get viewport as a dictionary.</span>
 
-<span class="sd">        Field of returned dict is same as :meth:`setViewport`.</span>
+<span class="sd">        Fields of returned dictionary is same as :meth:`setViewport`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span>
 
@@ -1061,14 +1197,14 @@
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;() =&gt; document.body.innerText&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.title"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.title">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Get page title.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get page&#39;s title.&quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;no main frame.&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">title</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Page.close"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Close connection.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Close this page.&quot;&quot;&quot;</span>
         <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_connection</span>
         <span class="k">if</span> <span class="n">conn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;Protocol Error: Connectoin Closed. &#39;</span>
@@ -1213,7 +1349,7 @@
 <span class="sd">          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS</span>
 <span class="sd">          properties. Defaults to ``False``.</span>
 <span class="sd">        * ``timeout`` (int|float): Maximum time to wait for in milliseconds.</span>
-<span class="sd">          Defaults to 30000 (30 seconds).</span>
+<span class="sd">          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
@@ -1243,7 +1379,7 @@
 <span class="sd">          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS</span>
 <span class="sd">          properties. Defaults to ``False``.</span>
 <span class="sd">        * ``timeout`` (int|float): maximum time to wait for in milliseconds.</span>
-<span class="sd">          Defaults to 30000 (30 seconds).</span>
+<span class="sd">          Defaults to 30000 (30 seconds). Pass ``0`` to diable timeout.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
@@ -1274,6 +1410,7 @@
 <span class="sd">          * ``mutation``: to execute ``pageFunction`` on every DOM mutation.</span>
 
 <span class="sd">        * ``timeout`` (int|float): maximum time to wait for in milliseconds.</span>
+<span class="sd">          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
@@ -1367,6 +1504,7 @@
 </pre></div>
 
           </div>
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -1424,8 +1562,8 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
 
