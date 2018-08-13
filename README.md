@@ -37,6 +37,7 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 ## Usage
 
 > **Note**: When you run pyppeteer first time, it downloads a recent version of Chromium (~100MB).
+> If you don't prefer this behavior, run `pyppeteer-install` command before running scripts which uses pyppeteer.
 
 **Example**: open web page and take a screenshot.
 

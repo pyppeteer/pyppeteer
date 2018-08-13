@@ -3,6 +3,7 @@ History
 
 ## Version 0.0.21 (next version)
 
+* Add `pyppeteer-install` command.
 * Continue to find WS URL while process is alive
 
 ## Version 0.0.20 (2018-08-11)
