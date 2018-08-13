@@ -159,7 +159,8 @@ class Launcher(object):
                 asyncio.get_event_loop().run_until_complete(self.killChrome())
 
         # dont forget to close browser process
-        atexit.register(_close_process)
+        if self.options.get('autoClose', True):
+            atexit.register(_close_process)
         if self.options.get('handleSIGINT', True):
             signal.signal(signal.SIGINT, _close_process)
         if self.options.get('handleSIGTERM', True):
@@ -256,6 +257,8 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
+    * ``autoClose`` (bool): Automatically close browser process when sctipt
+      completed. Defaults to ``True``.
     * ``appMode`` (bool): Deprecated.
 
     .. note::

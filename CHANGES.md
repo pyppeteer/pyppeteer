@@ -3,7 +3,8 @@ History
 
 ## Version 0.0.21 (next version)
 
-* Add `pyppeteer-install` command.
+* Add `pyppeteer-install` command
+* Add `autoClose` option to `launch` fucntion
 * Continue to find WS URL while process is alive
 
 ## Version 0.0.20 (2018-08-11)
@@ -11,7 +12,7 @@ History
 * Run on msys/cygwin, anyway
 * Raise error correctly when connection failed (PR#91)
 * Change browser download location and temporary user data directory to:
-    * If `$PYPPETEER_HOME` environment variable is defined, use this location.
+    * If `$PYPPETEER_HOME` environment variable is defined, use this location
     * Otherwise, use platform dependent locations, based on [appdirs](https://pypi.org/project/appdirs/):
         * `'C:\Users\<username>\AppData\Local\pyppeteer'` (Windows)
         * `'/Users/<username>/Library/Application Support/pyppeteer'` (OS X)
