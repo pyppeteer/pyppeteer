@@ -146,8 +146,8 @@ class Launcher(object):
         options = {}
         options['env'] = self.options.get('env')
         if not self.options.get('dumpio'):
-            options['stdout'] = subprocess.DEVNULL
-            options['stderr'] = subprocess.DEVNULL
+            options['stdout'] = subprocess.PIPE
+            options['stderr'] = subprocess.STDOUT
 
         self.proc = subprocess.Popen(  # type: ignore
             self.cmd,
@@ -178,7 +178,7 @@ class Launcher(object):
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
-        for i in range(100):
+        while self.proc.poll() is None:
             time.sleep(0.1)
             try:
                 with urlopen(url) as f:
@@ -187,8 +187,11 @@ class Launcher(object):
             except URLError as e:
                 continue
         else:
-            # cannot connet to browser for 10 seconds
-            raise BrowserError(f'Failed to connect to browser port: {url}')
+            raise BrowserError(
+                'Browser closed unexpectedly:\n{}'.format(
+                    self.proc.stdout.read().decode()
+                )
+            )
         return data['webSocketDebuggerUrl']
 
     def waitForChromeToClose(self) -> None:
