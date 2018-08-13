@@ -6,7 +6,7 @@
 import asyncio
 import concurrent.futures
 
-from typing import Any, Awaitable, Dict, List
+from typing import Any, Awaitable, Dict, List, Union
 from typing import TYPE_CHECKING
 
 from pyppeteer import helper
@@ -42,10 +42,10 @@ class NavigatorWatcher:
                 self._checkLifecycleComplete,
             ),
         ]
-        loop = asyncio.get_event_loop()
-        self._lifecycleCompletePromise = loop.create_future()
+        self._loop = self._frameManeger._client._loop
+        self._lifecycleCompletePromise = self._loop.create_future()
 
-        self._navigationPromise = asyncio.ensure_future(asyncio.wait([
+        self._navigationPromise = self._loop.create_task(asyncio.wait([
             self._lifecycleCompletePromise,
             self._createTimeoutPromise(),
         ], return_when=concurrent.futures.FIRST_COMPLETED))
@@ -77,7 +77,7 @@ class NavigatorWatcher:
             self._expectedLifecycle.append(protocolEvent)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
-        self._maximumTimer = asyncio.get_event_loop().create_future()
+        self._maximumTimer = self._loop.create_future()
         if self._timeout:
             errorMessage = f'Navigation Timeout Exceeded: {self._timeout} ms exceeded.'  # noqa: E501
 
@@ -85,9 +85,9 @@ class NavigatorWatcher:
                 await asyncio.sleep(self._timeout / 1000)
                 self._maximumTimer.set_exception(TimeoutError(errorMessage))
 
-            self._timeout_timer = asyncio.ensure_future(_timeout_func())
+            self._timeout_timer: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(_timeout_func())  # noqa: E501
         else:
-            self._timeout_timer = asyncio.get_event_loop().create_future()
+            self._timeout_timer = self._loop.create_future()
         return self._maximumTimer
 
     def navigationPromise(self) -> Any:

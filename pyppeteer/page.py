@@ -244,7 +244,7 @@ class Page(EventEmitter):
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
-        asyncio.ensure_future(
+        self._client._loop.create_task(
             self._client.send('Security.handleCertificateError', {
                 'eventId': event.get('eventId'),
                 'action': 'continue'
@@ -625,15 +625,18 @@ function deliverResult(name, seq, result) {
             '''
             expression = helper.evaluationString(
                 deliverResult, name, seq, result)
-            asyncio.ensure_future(self._client.send('Runtime.evaluate', {
-                'expression': expression,
-                'contextId': event['executionContextId'],
-            }))
+            self._client._loop.create_task(self._client.send(
+                'Runtime.evaluate', {
+                    'expression': expression,
+                    'contextId': event['executionContextId'],
+                }
+            ))
             return
 
         if not self.listeners(Page.Events.Console):
             for arg in _args:
-                asyncio.ensure_future(helper.releaseObject(self._client, arg))
+                self._client._loop.create_task(
+                    helper.releaseObject(self._client, arg))
             return
 
         _id = event['executionContextId']

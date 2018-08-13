@@ -3,7 +3,6 @@
 
 """Tracing module."""
 
-import asyncio
 from pathlib import Path
 from typing import Any, Awaitable
 
@@ -54,10 +53,10 @@ class Tracing(object):
 
     async def stop(self) -> Awaitable:
         """Stop tracing."""
-        contentPromise = asyncio.get_event_loop().create_future()
+        contentPromise = self._client._loop.create_future()
         self._client.once(
             'Tracing.tracingComplete',
-            lambda event: asyncio.ensure_future(
+            lambda event: self._client._loop.create_task(
                 self._readStream(event.get('stream'), self._path)
             ).add_done_callback(
                 lambda fut: contentPromise.set_result(

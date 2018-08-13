@@ -3,7 +3,6 @@
 
 """Coverage module."""
 
-import asyncio
 from functools import cmp_to_key
 from typing import Any, Dict, List
 
@@ -135,7 +134,8 @@ class JSCoverage(object):
         self._eventListeners = [
             helper.addEventListener(
                 self._client, 'Debugger.scriptParsed',
-                lambda e: asyncio.ensure_future(self._onScriptParsed(e))),
+                lambda e: self._client._loop.create_task(
+                    self._onScriptParsed(e))),
             helper.addEventListener(
                 self._client, 'Runtime.executionContextsCleared',
                 self._onExecutionContextsCleared),
@@ -218,7 +218,8 @@ class CSSCoverage(object):
         self._eventListeners = [
             helper.addEventListener(
                 self._client, 'CSS.styleSheetAdded',
-                lambda e: asyncio.ensure_future(self._onStyleSheet(e))),
+                lambda e: self._client._loop.create_task(
+                    self._onStyleSheet(e))),
             helper.addEventListener(
                 self._client, 'Runtime.executionContextsCleared',
                 self._onExecutionContextsCleared),

@@ -233,10 +233,10 @@ class Frame(object):
             self._contextResolveCallback(context)  # type: ignore
             self._contextResolveCallback = lambda _: None
             for waitTask in self._waitTasks:
-                asyncio.ensure_future(waitTask.rerun())
+                self._client._loop.create_task(waitTask.rerun())
         else:
             self._documentPromise = None
-            self._contextPromise = asyncio.get_event_loop().create_future()
+            self._contextPromise = self._client._loop.create_future()
             self._contextResolveCallback = (
                 lambda _context: self._contextPromise.set_result(_context)
             )
@@ -635,11 +635,11 @@ function(html) {
         """
         options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            fut: Awaitable[None] = asyncio.ensure_future(
+            fut: Awaitable[None] = self._client._loop.create_task(
                 asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
-            fut = asyncio.get_event_loop().create_future()
+            fut = self._client._loop.create_future()
             fut.set_exception(TypeError(
                 'Unsupported target type: ' +
                 str(type(selectorOrFunctionOrTimeout))
@@ -680,7 +680,8 @@ function(html) {
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
-        return WaitTask(self, pageFunction, polling, timeout, *args)
+        return WaitTask(self, pageFunction, polling, timeout,
+                        self._client._loop, *args)
 
     def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
                                 options: dict = None, **kwargs: Any
@@ -753,7 +754,8 @@ class WaitTask(object):
     """
 
     def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
-                 polling: Union[str, int], timeout: float, *args: Any) -> None:
+                 polling: Union[str, int], timeout: float,
+                 loop: asyncio.AbstractEventLoop, *args: Any) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
                 raise ValueError(f'Unknown polling: {polling}')
@@ -768,6 +770,7 @@ class WaitTask(object):
         self._frame = frame
         self._polling = polling
         self._timeout = timeout
+        self._loop = loop
         if args or helper.is_jsfunc(predicateBody):
             self._predicateBody = f'return ({predicateBody})(...args)'
         else:
@@ -778,8 +781,7 @@ class WaitTask(object):
         self._timeoutError = False
         frame._waitTasks.add(self)
 
-        loop = asyncio.get_event_loop()
-        self.promise = loop.create_future()
+        self.promise = self._loop.create_future()
 
         async def timer(timeout: Union[int, float]) -> None:
             await asyncio.sleep(timeout / 1000)
@@ -789,8 +791,8 @@ class WaitTask(object):
             )
 
         if timeout:
-            self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
-        self._runningTask = asyncio.ensure_future(self.rerun())
+            self._timeoutTimer = self._loop.create_task(timer(self._timeout))
+        self._runningTask = self._loop.create_task(self.rerun())
 
     def __await__(self) -> Generator:
         """Make this class **awaitable**."""
