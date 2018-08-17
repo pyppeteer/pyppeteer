@@ -9,6 +9,7 @@ from syncer import sync
 from pyppeteer import connect, launch
 
 from .base import BaseTestCase, DEFAULT_OPTIONS
+from .utils import waitEvent
 
 
 class TestBrowser(unittest.TestCase):
@@ -38,7 +39,6 @@ class TestBrowser(unittest.TestCase):
         self.assertIn('WebKit', userAgent)
         await browser.close()
 
-    @unittest.skip('Could not pass this test')
     @sync
     async def test_disconnect(self):
         browser = await launch(DEFAULT_OPTIONS)
@@ -52,12 +52,19 @@ class TestBrowser(unittest.TestCase):
         browser1.on('disconnected', lambda: discon1.append(1))
         browser2.on('disconnected', lambda: discon2.append(1))
 
-        await browser2.disconnect()
+        await asyncio.wait([
+            browser2.disconnect(),
+            waitEvent(browser2, 'disconnected'),
+        ])
         self.assertEqual(len(discon), 0)
         self.assertEqual(len(discon1), 0)
         self.assertEqual(len(discon2), 1)
 
-        await browser.close()
+        await asyncio.wait([
+            waitEvent(browser1, 'disconnected'),
+            waitEvent(browser, 'disconnected'),
+            browser.close(),
+        ])
         self.assertEqual(len(discon), 1)
         self.assertEqual(len(discon1), 1)
         self.assertEqual(len(discon2), 1)
