@@ -54,7 +54,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(len(responses), 1)
         response = responses[0]
         self.assertEqual(response.url, self.url + 'empty')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         # self.assertTrue(response.ok)
         self.assertFalse(response.fromCache)
         self.assertFalse(response.fromServiceWorker)
@@ -169,7 +169,7 @@ class TestNetworkEvent(BaseTestCase):
         response = await pageResponse
         self.assertTrue(serverResponses)
         self.assertTrue(response)
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertFalse(finishedRequests)
 
         responseText = response.text()
@@ -236,16 +236,14 @@ class TestNetworkEvent(BaseTestCase):
         self.page.on('requestfailed', lambda req: events.append(
             'FAIL {}'.format(req.url)))
         response = await self.page.goto(self.url + 'redirect1')
-        self.assertIn('GET {}'.format(self.url + 'redirect1'), events)
-        self.assertIn('302 {}'.format(self.url + 'redirect1'), events)
-        self.assertIn('DONE {}'.format(self.url + 'redirect1'), events)
-        self.assertIn('GET {}'.format(self.url + 'redirect2'), events)
-        self.assertIn('DONE {}'.format(self.url + 'redirect2'), events)
-        try:
-            self.assertIn('200 {}'.format(self.url + 'redirect2'), events)
-        except AssertionError:
-            # this access may be second time
-            self.assertIn('304 {}'.format(self.url + 'redirect2'), events)
+        self.assertEqual(events, [
+            'GET {}'.format(self.url + 'redirect1'),
+            '302 {}'.format(self.url + 'redirect1'),
+            'DONE {}'.format(self.url + 'redirect1'),
+            'GET {}'.format(self.url + 'redirect2'),
+            '200 {}'.format(self.url + 'redirect2'),
+            'DONE {}'.format(self.url + 'redirect2'),
+        ])
 
         # check redirect chain
         redirectChain = response.request.redirectChain

@@ -218,7 +218,7 @@ class TestOfflineMode(BaseTestCase):
             await self.page.goto(self.url)
         await self.page.setOfflineMode(False)
         res = await self.page.reload()
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_emulate_navigator_offline(self):
@@ -400,7 +400,7 @@ class TestGoto(BaseTestCase):
     async def test_goto_documentloaded(self):
         response = await self.page.goto(self.url + 'empty',
                                         waitUntil='documentloaded')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_goto_networkidle(self):
@@ -411,13 +411,13 @@ class TestGoto(BaseTestCase):
     async def test_nav_networkidle0(self):
         response = await self.page.goto(self.url + 'empty',
                                         waitUntil='networkidle0')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_nav_networkidle2(self):
         response = await self.page.goto(self.url + 'empty',
                                         waitUntil='networkidle2')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_goto_bad_url(self):
@@ -447,7 +447,7 @@ class TestGoto(BaseTestCase):
     @sync
     async def test_valid_url(self):
         response = await self.page.goto(self.url + 'empty')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_data_url(self):
@@ -487,7 +487,7 @@ class TestGoto(BaseTestCase):
         requests = []
         self.page.on('request', lambda req: requests.append(req))
         response = await self.page.goto(self.url + 'empty#hash')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
@@ -495,7 +495,7 @@ class TestGoto(BaseTestCase):
     @sync
     async def test_self_request_page(self):
         response = await self.page.goto(self.url + 'static/self-request.html')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertIn('self-request.html', response.url)
 
     @sync
@@ -516,7 +516,7 @@ class TestWaitForNavigation(BaseTestCase):
             self.page.evaluate('(url) => window.location.href = url', self.url)
         )
         response = results[0]
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url)
 
     @unittest.skip('Need server-side implementation')
@@ -702,7 +702,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_stop(self):
@@ -725,7 +725,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_custom_referer_header(self):
@@ -740,7 +740,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_abort(self):
@@ -811,7 +811,7 @@ class TestRequestInterception(BaseTestCase):
 
         self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
         response = await self.page.goto(self.url + 'redirect1')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @unittest.skip('This test is not implemented')
     @sync
@@ -863,7 +863,7 @@ class TestRequestInterception(BaseTestCase):
 
         self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
         response = await self.page.goto(self.url + 'empty#hash')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
@@ -1109,7 +1109,7 @@ class TestAuthenticate(BaseTestCase):
         self.assertEqual(response.status, 401)
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
 
 class TestAuthenticateFaile(BaseTestCase):
@@ -1125,7 +1125,7 @@ class TestAuthenticateDisable(BaseTestCase):
     async def test_disable_auth(self):
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         await self.page.authenticate(None)
         response = await self.page.goto(
             'http://127.0.0.1:{}/auth'.format(self.port))
