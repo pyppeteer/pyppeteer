@@ -87,7 +87,7 @@ More APIs are listed in the
 [document](https://miyakogi.github.io/pyppeteer/reference.html).
 
 [Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
-is also useful for pyppeteer users.
+and [troubleshooting](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also useful for pyppeteer users.
 
 ## Differences between puppeteer and pyppeteer
 
