@@ -56,7 +56,7 @@ class Connection(EventEmitter):
                 try:
                     resp = await self.connection.recv()
                     if resp:
-                        self._on_message(resp)
+                        await self._on_message(resp)
                 except (websockets.ConnectionClosed, ConnectionResetError):
                     logger.info('connection closed')
                     break
@@ -97,7 +97,7 @@ class Connection(EventEmitter):
         callback.method = method  # type: ignore
         return callback
 
-    def _on_response(self, msg: dict) -> None:
+    async def _on_response(self, msg: dict) -> None:
         callback = self._callbacks.pop(msg.get('id', -1))
         if 'error' in msg:
             error = msg['error']
@@ -106,14 +106,14 @@ class Connection(EventEmitter):
         else:
             callback.set_result(msg.get('result'))
 
-    def _on_query(self, msg: dict) -> None:
+    async def _on_query(self, msg: dict) -> None:
         params = msg.get('params', {})
         method = msg.get('method', '')
         sessionId = params.get('sessionId')
         if method == 'Target.receivedMessageFromTarget':
             session = self._sessions.get(sessionId)
             if session:
-                session._on_message(params.get('message'))
+                await session._on_message(params.get('message'))
         elif method == 'Target.detachedFromTarget':
             session = self._sessions.get(sessionId)
             if session:
@@ -126,13 +126,14 @@ class Connection(EventEmitter):
         """Set closed callback."""
         self._closeCallback = callback
 
-    def _on_message(self, message: str) -> None:
+    async def _on_message(self, message: str) -> None:
+        await asyncio.sleep(self._delay)
         logger.debug(f'RECV: {message}')
         msg = json.loads(message)
         if msg.get('id') in self._callbacks:
-            self._on_response(msg)
+            await self._on_response(msg)
         else:
-            self._on_query(msg)
+            await self._on_query(msg)
 
     async def _on_close(self) -> None:
         if self._closeCallback:
@@ -218,22 +219,24 @@ class CDPSession(EventEmitter):
             raise NetworkError("connection unexpectedly closed")
         return await callback
 
-    def _on_message(self, msg: str) -> None:
+    async def _on_message(self, msg: str) -> None:
         obj = json.loads(msg)
         _id = obj.get('id')
-        if _id and _id in self._callbacks:
-            callback = self._callbacks.pop(_id)
-            if 'error' in obj:
-                error = obj['error']
-                msg = error.get('message')
-                data = error.get('data')
-                callback.set_exception(
-                    NetworkError(f'Protocol Error: {msg} {data}')
-                )
-            else:
-                result = obj.get('result')
-                if callback and not callback.done():
-                    callback.set_result(result)
+        if _id:
+            callback = self._callbacks.get(_id)
+            if callback:
+                del self._callbacks[_id]
+                if 'error' in obj:
+                    error = obj['error']
+                    msg = error.get('message')
+                    data = error.get('data')
+                    callback.set_exception(
+                        NetworkError(f'Protocol Error: {msg} {data}')
+                    )
+                else:
+                    result = obj.get('result')
+                    if callback and not callback.done():
+                        callback.set_result(result)
         else:
             self.emit(obj.get('method'), obj.get('params'))
 
