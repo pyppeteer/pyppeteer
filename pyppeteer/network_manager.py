@@ -128,7 +128,7 @@ class NetworkManager(EventEmitter):
                 self._attemptedAuthentications.add(event['interceptionId'])
             username = getattr(self, '_credentials', {}).get('username')
             password = getattr(self, '_credentials', {}).get('password')
-            asyncio.ensure_future(self._client.send(
+            self._client._loop.create_task(self._client.send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                     'authChallengeResponse': {
@@ -142,7 +142,7 @@ class NetworkManager(EventEmitter):
 
         if (not self._userRequestInterceptionEnabled and
                 self._protocolRequestInterceptionEnabled):
-            asyncio.ensure_future(self._client.send(
+            self._client._loop.create_task(self._client.send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                 }
@@ -333,7 +333,7 @@ class Request(object):
         self._interceptionHandled = False
         self._response: Optional[Response] = None
         self._failureText: Optional[str] = None
-        self._completePromise = asyncio.get_event_loop().create_future()
+        self._completePromise = self._client._loop.create_future()
 
         self._url = url
         self._resourceType = resourceType.lower()
@@ -569,7 +569,7 @@ class Response(object):
         self._client = client
         self._request = request
         self._status = status
-        self._contentPromise = asyncio.get_event_loop().create_future()
+        self._contentPromise = self._client._loop.create_future()
         self._url = request.url
         self._fromDiskCache = fromDiskCache
         self._fromServiceWorker = fromServiceWorker
@@ -628,7 +628,7 @@ class Response(object):
     def buffer(self) -> Awaitable[bytes]:
         """Retrun awaitable which resolves to bytes with response body."""
         if not self._contentPromise.done():
-            return asyncio.ensure_future(self._bufread())
+            return self._client._loop.create_task(self._bufread())
         return self._contentPromise
 
     async def text(self) -> str:

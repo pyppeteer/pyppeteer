@@ -20,17 +20,19 @@ class Target(object):
     def __init__(self, targetInfo: Dict,
                  sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
                  ignoreHTTPSErrors: bool, appMode: bool,
-                 screenshotTaskQueue: List) -> None:
+                 screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
+                 ) -> None:
         self._targetInfo = targetInfo
         self._targetId = targetInfo.get('targetId', '')
         self._sessionFactory = sessionFactory
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._appMode = appMode
         self._screenshotTaskQueue = screenshotTaskQueue
+        self._loop = loop
         self._page = None
 
-        self._initializedPromise = asyncio.get_event_loop().create_future()
-        self._isClosedPromise = asyncio.get_event_loop().create_future()
+        self._initializedPromise = self._loop.create_future()
+        self._isClosedPromise = self._loop.create_future()
         self._isInitialized = (self._targetInfo['type'] != 'page'
                                or self._targetInfo['url'] != '')
         if self._isInitialized:
@@ -39,7 +41,7 @@ class Target(object):
     def _initializedCallback(self, bl: bool) -> None:
         # TODO: this may cause error on page close
         if self._initializedPromise.done():
-            self._initializedPromise = asyncio.get_event_loop().create_future()
+            self._initializedPromise = self._loop.create_future()
         self._initializedPromise.set_result(bl)
 
     def _closedCallback(self) -> None:

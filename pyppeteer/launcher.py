@@ -71,6 +71,7 @@ class Launcher(object):
         self.port = get_free_port()
         self.url = f'http://127.0.0.1:{self.port}'
         self.chrome_args: List[str] = []
+        self._loop = self.options.get('loop', asyncio.get_event_loop())
 
         logLevel = self.options.get('logLevel')
         if logLevel:
@@ -156,7 +157,7 @@ class Launcher(object):
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
-                asyncio.get_event_loop().run_until_complete(self.killChrome())
+                self._loop.run_until_complete(self.killChrome())
 
         # dont forget to close browser process
         if self.options.get('autoClose', True):
@@ -173,7 +174,8 @@ class Launcher(object):
         connectionDelay = self.options.get('slowMo', 0)
         self.browserWSEndpoint = self._get_ws_endpoint()
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
-        self.connection = Connection(self.browserWSEndpoint, connectionDelay)
+        self.connection = Connection(
+            self.browserWSEndpoint, self._loop, connectionDelay)
         return await Browser.create(
             self.connection, self.options, self.proc, self.killChrome)
 
@@ -259,6 +261,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       root logger.
     * ``autoClose`` (bool): Automatically close browser process when sctipt
       completed. Defaults to ``True``.
+    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.
 
     .. note::
@@ -287,6 +290,7 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
       milliseconds.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
+    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     """
     options = merge_dict(options, kwargs)
     logLevel = options.get('logLevel')
@@ -297,7 +301,9 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')
     connectionDelay = options.get('slowMo', 0)
-    connection = Connection(browserWSEndpoint, connectionDelay)
+    connection = Connection(browserWSEndpoint,
+                            options.get('loop', asyncio.get_event_loop()),
+                            connectionDelay)
     return await Browser.create(
         connection, options, None, lambda: connection.send('Browser.close'))
 

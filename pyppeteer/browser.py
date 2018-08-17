@@ -3,7 +3,6 @@
 
 """Browser module."""
 
-import asyncio
 from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
@@ -45,7 +44,7 @@ class Browser(EventEmitter):
         self._connection = connection
 
         def _dummy_callback() -> Awaitable[None]:
-            fut = asyncio.get_event_loop().create_future()
+            fut = self._connection._loop.create_future()
             fut.set_result(None)
             return fut
 
@@ -89,6 +88,7 @@ class Browser(EventEmitter):
             self._ignoreHTTPSErrors,
             self._appMode,
             self._screenshotTaskQueue,
+            self._connection._loop,
         )
         if targetInfo['targetId'] in self._targets:
             raise BrowserError('target should not exist before create.')
