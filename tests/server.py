@@ -59,6 +59,12 @@ class RedirectHandler2(web.RequestHandler):
         self.write('<h1 id="red2">redirect2</h1>')
 
 
+class CSPHandler(web.RequestHandler):
+    def get(self) -> None:
+        self.set_header('Content-Security-Policy', 'script-src \'self\'')
+        self.write('')
+
+
 def auth_api(username: str, password: str) -> bool:
     if username == 'user' and password == 'pass':
         return True
@@ -120,6 +126,7 @@ def get_application() -> web.Application:
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
         ('/long', LongHandler),
+        ('/csp', CSPHandler),
         ('/static', web.StaticFileHandler, dict(path=static_path)),
     ]
     return web.Application(

@@ -162,6 +162,16 @@ class TestWaitForFunction(BaseTestCase):
         self.assertTrue(result)
 
     @sync
+    async def test_csp(self):
+        await self.page.goto(self.url + 'csp')
+        fut = asyncio.ensure_future(self.page.waitForFunction(
+            '() => window.__FOO === "hit"',
+            polling='raf',
+        ))
+        await self.page.evaluate('window.__FOO = "hit"')
+        await fut
+
+    @sync
     async def test_bad_polling_value(self):
         with self.assertRaises(ValueError) as cm:
             await self.page.waitForFunction('() => true', polling='unknown')

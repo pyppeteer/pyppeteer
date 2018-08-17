@@ -1345,6 +1345,14 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         await self.page.goto(self.url + 'static/temperable.html')
         self.assertEqual(await self.page.evaluate('window.result'), 123)
 
+    @sync
+    async def test_csp(self):
+        await self.page.evaluateOnNewDocument('() => window.injected = 123')
+        await self.page.goto(self.url + 'csp')
+        self.assertEqual(await self.page.evaluate('window.injected'), 123)
+        await self.page.addScriptTag(content='window.e = 10;')
+        self.assertIsNone(await self.page.evaluate('window.e'))
+
 
 class TestCacheEnabled(BaseTestCase):
     @sync
