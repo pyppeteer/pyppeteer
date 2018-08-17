@@ -16,6 +16,7 @@ from pyppeteer.errors import TimeoutError
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame
+from .utils import waitEvent
 
 iPhone = {
     'name': 'iPhone 6',
@@ -589,6 +590,21 @@ class TestWaitForNavigation(BaseTestCase):
             self.page.waitForNavigation(),
         ])
         self.assertEqual(self.page.url, self.url + 'second.html')
+
+    @sync
+    async def test_subframe_issues(self) -> None:
+        navigationPromise = asyncio.ensure_future(
+            self.page.goto(self.url + 'static/one-frame.html'))
+        frame = await waitEvent(self.page, 'frameattached')
+        fut = asyncio.get_event_loop().create_future()
+
+        def is_same_frame(f):
+            if f == frame:
+                fut.set_result(True)
+
+        self.page.on('framenavigated', is_same_frame)
+        asyncio.ensure_future(frame.evaluate('window.stop()'))
+        await navigationPromise
 
 
 class TestGoBack(BaseTestCase):

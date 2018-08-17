@@ -143,6 +143,19 @@ class TestLauncher(unittest.TestCase):
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
 
 
+class TestMixedContent(unittest.TestCase):
+    @unittest.skip('need server-side implementation')
+    @sync
+    async def test_mixed_content(self) -> None:
+        options = {'ignoreHTTPSErrors': True}
+        options.update(DEFAULT_OPTIONS)
+        browser = await launch(options)
+        page = await browser.newPage()
+        page.goto()
+        await page.close()
+        await browser.close()
+
+
 class TestLogLevel(unittest.TestCase):
     def setUp(self):
         self.logger = logging.getLogger('pyppeteer')

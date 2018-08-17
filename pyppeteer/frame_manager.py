@@ -58,6 +58,10 @@ class FrameManager(EventEmitter):
                   ))
         client.on('Page.frameDetached',
                   lambda event: self._onFrameDetached(event.get('frameId')))
+        client.on('Page.frameStoppedLoading',
+                  lambda event: self._onFrameStoppedLoading(
+                      event.get('frameId')
+                  ))
         client.on('Runtime.executionContextCreated',
                   lambda event: self._onExecutionContextCreated(
                       event.get('context')))
@@ -76,6 +80,13 @@ class FrameManager(EventEmitter):
         if not frame:
             return
         frame._onLifecycleEvent(event['loaderId'], event['name'])
+        self.emit(FrameManager.Events.LifecycleEvent, frame)
+
+    def _onFrameStoppedLoading(self, frameId: str) -> None:
+        frame = self._frames.get(frameId)
+        if not frame:
+            return
+        frame._onLoadingStopped()
         self.emit(FrameManager.Events.LifecycleEvent, frame)
 
     def _handleFrameTree(self, frameTree: Dict) -> None:
@@ -768,6 +779,10 @@ function(html) {
             self._lifecycleEvents.clear()
         else:
             self._lifecycleEvents.add(name)
+
+    def _onLoadingStopped(self) -> None:
+        self._lifecycleEvents.add('DOMContentLoaded')
+        self._lifecycleEvents.add('load')
 
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
