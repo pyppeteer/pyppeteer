@@ -43,7 +43,7 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 56)
 
     @sync
-    async def test_error_on_reload(self) -> None:
+    async def test_error_on_reload(self):
         with self.assertRaises(Exception) as cm:
             await self.page.evaluate('''() => {
                 location.reload();
@@ -137,7 +137,7 @@ class TestEvaluate(BaseTestCase):
         self.assertIsNone(result)
 
     @sync
-    async def test_fail_for_circular_object(self) -> None:
+    async def test_fail_for_circular_object(self):
         result = await self.page.evaluate('''() => {
             const a = {};
             const b = {a};
@@ -1056,6 +1056,44 @@ class TestSetContent(BaseTestCase):
         await self.page.setContent(doctype + '<div>hello</div>')
         result = await self.page.content()
         self.assertEqual(result, doctype + self.expectedOutput)
+
+
+class TestSetBypassCSP(BaseTestCase):
+    @sync
+    async def test_bypass_csp_meta_tag(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertIsNone(await self.page.evaluate('window.__injected'))
+
+        await self.page.setBypassCSP(True)
+        await self.page.reload()
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+    @sync
+    async def test_bypass_csp_header(self):
+        await self.page.goto(self.url + 'csp')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertIsNone(await self.page.evaluate('window.__injected'))
+
+        await self.page.setBypassCSP(True)
+        await self.page.reload()
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+    @sync
+    async def test_bypass_scp_cross_process(self):
+        await self.page.setBypassCSP(True)
+        await self.page.goto(self.url + 'static/csp.html')
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+        await self.page.goto(
+            'http://127.0.0.1:{}/static/csp.html'.format(self.port))
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
 
 
 class TestAddScriptTag(BaseTestCase):

@@ -891,6 +891,16 @@ function deliverResult(name, seq, result) {
             'value': not enabled,
         })
 
+    async def setBypassCSP(self, enabled: bool) -> None:
+        """Toggles bypassing page's Content-Security-Policy.
+
+        .. note::
+            CSP bypassing happens at the moment of CSP initialization rather
+            then evaluation. Usually this means that ``page.setBypassCSP``
+            should be called before navigating to the domain.
+        """
+        await self._client.send('Page.setBypassCSP', {'enabled': enabled})
+
     async def emulateMedia(self, mediaType: str = None) -> None:
         """Emulate css media type of the page.
 
