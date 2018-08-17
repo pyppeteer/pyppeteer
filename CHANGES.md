@@ -8,6 +8,7 @@ History
 * Add `loop` option to `launch` function (experimental)
 * Add `Page.setBypassCSP` method
 * Fix `slowMo` option
+* Fix anchor navigation
 * Continue to find WS URL while process is alive
 
 ## Version 0.0.20 (2018-08-11)

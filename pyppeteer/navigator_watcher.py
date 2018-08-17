@@ -30,11 +30,17 @@ class NavigatorWatcher:
         self._frame = frame
         self._initialLoaderId = frame._loaderId
         self._timeout = timeout
+        self._hasSameDocumentNavigation = False
         self._eventListeners = [
             helper.addEventListener(
                 self._frameManeger,
                 FrameManager.Events.LifecycleEvent,
                 self._checkLifecycleComplete,
+            ),
+            helper.addEventListener(
+                self._frameManeger,
+                FrameManager.Events.FrameNavigatedWithinDocument,
+                self._navigatedWithinDocument,
             ),
             helper.addEventListener(
                 self._frameManeger,
@@ -94,8 +100,15 @@ class NavigatorWatcher:
         """Return navigation promise."""
         return self._navigationPromise
 
+    def _navigatedWithinDocument(self, frame: Frame = None) -> None:
+        if frame != self._frame:
+            return
+        self._hasSameDocumentNavigation = True
+        self._checkLifecycleComplete()
+
     def _checkLifecycleComplete(self, frame: Frame = None) -> None:
-        if self._frame._loaderId == self._initialLoaderId:
+        if (self._frame._loaderId == self._initialLoaderId and
+                not self._hasSameDocumentNavigation):
             return
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return

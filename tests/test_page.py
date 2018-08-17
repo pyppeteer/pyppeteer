@@ -518,10 +518,77 @@ class TestWaitForNavigation(BaseTestCase):
         self.assertIn(response.status, [200, 304])
         self.assertEqual(response.url, self.url)
 
-    @unittest.skip('This test is not implemented')
+    @unittest.skip('Need server-side implementation')
     @sync
     async def test_both_documentloaded_loaded(self):
         pass
+
+    @sync
+    async def test_click_anchor_link(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('<a href="#foobar">foobar</a>')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'empty#foobar')
+
+    @sync
+    async def test_history_push_state(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a onclick='javascript:pushState()'>SPA</a>
+            <script>
+                function pushState() { history.pushState({}, '', 'wow.html') }
+            </script>
+        ''')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'wow.html')
+
+    @sync
+    async def test_history_replace_state(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a onclick='javascript:replaceState()'>SPA</a>
+            <script>
+                function replaceState() {
+                    history.replaceState({}, '', 'replaced.html');
+                }
+            </script>
+        ''')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'replaced.html')
+
+    @sync
+    async def test_dom_history_back_forward(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a id="back" onclick='javascript:goBack()'>back</a>
+            <a id="forward" onclick='javascript:goForward()'>forward</a>
+            <script>
+                function goBack() { history.back(); }
+                function goForward() { history.forward(); }
+                history.pushState({}, '', '/first.html');
+                history.pushState({}, '', '/second.html');
+            </script>
+        ''')
+        self.assertEqual(self.page.url, self.url + 'second.html')
+        await asyncio.wait([
+            self.page.click('a#back'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'first.html')
+        await asyncio.wait([
+            self.page.click('a#forward'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'second.html')
 
 
 class TestGoBack(BaseTestCase):
@@ -540,6 +607,22 @@ class TestGoBack(BaseTestCase):
 
         response = await self.page.goForward()
         self.assertIsNone(response)
+
+    @sync
+    async def test_history_api(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('''() => {
+            history.pushState({}, '', '/first.html');
+            history.pushState({}, '', '/second.html');
+        }''')
+        self.assertEqual(self.page.url, self.url + 'second.html')
+
+        await self.page.goBack()
+        self.assertEqual(self.page.url, self.url + 'first.html')
+        await self.page.goBack()
+        self.assertEqual(self.page.url, self.url + 'empty')
+        await self.page.goForward()
+        self.assertEqual(self.page.url, self.url + 'first.html')
 
 
 class TestExposeFunctoin(BaseTestCase):

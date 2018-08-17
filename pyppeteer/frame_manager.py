@@ -34,6 +34,7 @@ class FrameManager(EventEmitter):
         FrameNavigated='framenavigated',
         FrameDetached='framedetached',
         LifecycleEvent='lifecycleevent',
+        FrameNavigatedWithinDocument='framenavigatedwithindocument',
     )
 
     def __init__(self, client: CDPSession, frameTree: Dict, page: Any) -> None:
@@ -51,6 +52,10 @@ class FrameManager(EventEmitter):
                   )
         client.on('Page.frameNavigated',
                   lambda event: self._onFrameNavigated(event.get('frame')))
+        client.on('Page.navigatedWithinDocument',
+                  lambda event: self._onFrameNavigatedWithinDocument(
+                      event.get('frameId'), event.get('url')
+                  ))
         client.on('Page.frameDetached',
                   lambda event: self._onFrameDetached(event.get('frameId')))
         client.on('Runtime.executionContextCreated',
@@ -137,6 +142,14 @@ class FrameManager(EventEmitter):
 
         # Update frame payload.
         frame._navigated(framePayload)  # type: ignore
+        self.emit(FrameManager.Events.FrameNavigated, frame)
+
+    def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
+        frame = self._frames.get(frameId)
+        if not frame:
+            return
+        frame._navigatedWithinDocument(url)
+        self.emit(FrameManager.Events.FrameNavigatedWithinDocument, frame)
         self.emit(FrameManager.Events.FrameNavigated, frame)
 
     def _onFrameDetached(self, frameId: str) -> None:
@@ -745,6 +758,9 @@ function(html) {
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
         self._url = framePayload.get('url', '')
+
+    def _navigatedWithinDocument(self, url: str) -> None:
+        self._url = url
 
     def _onLifecycleEvent(self, loaderId: str, name: str) -> None:
         if name == 'init':
