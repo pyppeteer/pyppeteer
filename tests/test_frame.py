@@ -197,6 +197,15 @@ class TestWaitForFunction(BaseTestCase):
         self.assertTrue(self.result)
 
     @sync
+    async def test_respect_timeout(self):
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForFunction('false', {'timeout': 10})
+        self.assertIn(
+            'Waiting for function failed: timeout',
+            cm.exception.args[0],
+        )
+
+    @sync
     async def test_disable_timeout(self):
         res = await self.page.waitForFunction(
             '() => new Promise(res => setTimeout(() => res(42), 100))',
@@ -382,8 +391,12 @@ class TestWaitForSelector(BaseTestCase):
 
     @sync
     async def test_wait_for_selector_timeout(self):
-        with self.assertRaises(TimeoutError):
+        with self.assertRaises(TimeoutError) as cm:
             await self.page.waitForSelector('div', timeout=10)
+        self.assertIn(
+            'Waiting for selector "div" failed: timeout',
+            cm.exception.args[0],
+        )
 
     @sync
     async def test_wait_for_selector_node_mutation(self):
@@ -416,6 +429,15 @@ class TestWaitForXPath(BaseTestCase):
         self.assertEqual(
             await self.page.evaluate('x => x.textContent', waitForXPath),
             'hello world  '
+        )
+
+    @sync
+    async def test_timeout(self):
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForXPath('//div', timeout=10)
+        self.assertIn(
+            'Waiting for XPath "//div" failed: timeout',
+            cm.exception.args[0],
         )
 
     @sync

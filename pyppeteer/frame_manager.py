@@ -680,7 +680,7 @@ function(html) {
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
-        return WaitTask(self, pageFunction, polling, timeout,
+        return WaitTask(self, pageFunction, 'function', polling, timeout,
                         self._client._loop, *args)
 
     def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
@@ -713,9 +713,14 @@ function(html) {
     }
 }
         '''  # noqa: E501
-        return self.waitForFunction(
+        timeout = options.get('timeout', 30000)
+        return WaitTask(
+            self,
             predicate,
-            {'timeout': timeout, 'polling': polling},
+            f'{"XPath" if isXPath else "selector"} "{selectorOrXPath}"',
+            polling,
+            timeout,
+            self._client._loop,
             selectorOrXPath,
             isXPath,
             waitForVisible,
@@ -754,7 +759,7 @@ class WaitTask(object):
     """
 
     def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
-                 polling: Union[str, int], timeout: float,
+                 title: str, polling: Union[str, int], timeout: float,
                  loop: asyncio.AbstractEventLoop, *args: Any) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
@@ -786,9 +791,9 @@ class WaitTask(object):
         async def timer(timeout: Union[int, float]) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
-            self.terminate(
-                TimeoutError(f'Waiting failed: timeout {timeout}ms exceeds.')
-            )
+            self.terminate(TimeoutError(
+                f'Waiting for {title} failed: timeout {timeout}ms exceeds.'
+            ))
 
         if timeout:
             self._timeoutTimer = self._loop.create_task(timer(self._timeout))
