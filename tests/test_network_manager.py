@@ -7,6 +7,8 @@ import unittest
 
 from syncer import sync
 
+from pyppeteer.errors import NetworkError
+
 from .base import BaseTestCase
 
 
@@ -129,6 +131,20 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(await res.text(), '{"foo": "bar"}\n')
         self.assertEqual(await res.json(), {'foo': 'bar'})
 
+    @sync
+    async def test_fail_get_redirected_body(self):
+        response = await self.page.goto(self.url + 'redirect1')
+        redirectChain = response.request.redirectChain
+        self.assertEqual(len(redirectChain), 1)
+        redirected = redirectChain[0].response
+        self.assertEqual(redirected.status, 302)
+        with self.assertRaises(NetworkError) as cm:
+            await redirected.text()
+        self.assertIn(
+            'Response body is unavailable for redirect response',
+            cm.exception.args[0],
+        )
+
     @unittest.skip('This test hangs')
     @sync
     async def test_not_report_body_unless_finished(self):
@@ -220,14 +236,16 @@ class TestNetworkEvent(BaseTestCase):
         self.page.on('requestfailed', lambda req: events.append(
             'FAIL {}'.format(req.url)))
         response = await self.page.goto(self.url + 'redirect1')
-        self.assertEqual(events, [
-            'GET {}'.format(self.url + 'redirect1'),
-            '302 {}'.format(self.url + 'redirect1'),
-            'DONE {}'.format(self.url + 'redirect1'),
-            'GET {}'.format(self.url + 'redirect2'),
-            '200 {}'.format(self.url + 'redirect2'),
-            'DONE {}'.format(self.url + 'redirect2'),
-        ])
+        self.assertIn('GET {}'.format(self.url + 'redirect1'), events)
+        self.assertIn('302 {}'.format(self.url + 'redirect1'), events)
+        self.assertIn('DONE {}'.format(self.url + 'redirect1'), events)
+        self.assertIn('GET {}'.format(self.url + 'redirect2'), events)
+        self.assertIn('DONE {}'.format(self.url + 'redirect2'), events)
+        try:
+            self.assertIn('200 {}'.format(self.url + 'redirect2'), events)
+        except AssertionError:
+            # this access may be second time
+            self.assertIn('304 {}'.format(self.url + 'redirect2'), events)
 
         # check redirect chain
         redirectChain = response.request.redirectChain

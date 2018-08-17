@@ -201,6 +201,9 @@ class NetworkManager(EventEmitter):
                             securityDetails)
         request._response = response
         request._redirectChain.append(request)
+        response._bodyLoadedPromiseFulfill(
+            NetworkError('Response body is unavailable for redirect response')
+        )
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
@@ -287,7 +290,9 @@ class NetworkManager(EventEmitter):
         # @see https://crbug.com/750469
         if not request:
             return
-        request._completePromiseFulfill()
+        response = request.response
+        if response:
+            response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
@@ -300,7 +305,9 @@ class NetworkManager(EventEmitter):
         if not request:
             return
         request._failureText = event.get('errorText')
-        request._completePromiseFulfill()
+        response = request.response
+        if response:
+            response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
@@ -333,7 +340,6 @@ class Request(object):
         self._interceptionHandled = False
         self._response: Optional[Response] = None
         self._failureText: Optional[str] = None
-        self._completePromise = self._client._loop.create_future()
 
         self._url = url
         self._resourceType = resourceType.lower()
@@ -345,9 +351,6 @@ class Request(object):
         self._redirectChain = redirectChain
 
         self._fromMemoryCache = False
-
-    def _completePromiseFulfill(self) -> None:
-        self._completePromise.set_result(None)
 
     @property
     def url(self) -> str:
@@ -570,6 +573,8 @@ class Response(object):
         self._request = request
         self._status = status
         self._contentPromise = self._client._loop.create_future()
+        self._bodyLoadedPromise = self._client._loop.create_future()
+
         self._url = request.url
         self._fromDiskCache = fromDiskCache
         self._fromServiceWorker = fromServiceWorker
@@ -583,6 +588,9 @@ class Response(object):
                 securityDetails['validTo'],
                 securityDetails['protocol'],
             )
+
+    def _bodyLoadedPromiseFulfill(self, value: Optional[Exception]) -> None:
+        self._bodyLoadedPromise.set_result(value)
 
     @property
     def url(self) -> str:
@@ -617,6 +625,9 @@ class Response(object):
         return self._securityDetails
 
     async def _bufread(self) -> bytes:
+        result = await self._bodyLoadedPromise
+        if isinstance(result, Exception):
+            raise result
         response = await self._client.send('Network.getResponseBody', {
             'requestId': self._request._requestId
         })
