@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import sys
-import unittest
 
 from syncer import sync
 
@@ -46,29 +45,61 @@ class TestBoundingBox(BaseTestCase):
 
 
 class TestBoxModel(BaseTestCase):
-    @unittest.skip('This test is unstable due to frame order.')
     @sync
     async def test_box_model(self):
-        leftTop = {'x': 28, 'y': 260}
-        rightTop = {'x': 292, 'y': 260}
-        leftBottom = {'x': 28, 'y': 276}
-        rightBottom = {'x': 292, 'y': 276}
+        await self.page.goto(self.url + 'static/resetcss.html')
 
-        await self.page.setViewport({'width': 500, 'height': 500})
-        await self.page.goto(self.url + 'static/nested-frames.html')
-        nestedFrame = self.page.frames[1].childFrames[1]
-        elementHandle = await nestedFrame.J('div')
-        box = await elementHandle.boxModel()
-        self.assertEqual(
-            box['content'], [leftTop, rightTop, rightBottom, leftBottom])
-        self.assertEqual(
-            box['padding'], [leftTop, rightTop, rightBottom, leftBottom])
-        self.assertEqual(
-            box['border'], [leftTop, rightTop, rightBottom, leftBottom])
-        self.assertEqual(
-            box['margin'], [leftTop, rightTop, rightBottom, leftBottom])
-        self.assertEqual(box['width'], 264)
-        self.assertEqual(box['height'], 16)
+        # add frame and position it absolutely
+        await attachFrame(
+            self.page, 'frame1', self.url + 'static/resetcss.html')
+        await self.page.evaluate('''() => {
+            const frame = document.querySelector('#frame1');
+            frame.style = `
+                position: absolute;
+                left: 1px;
+                top: 2px;
+            `;
+        }''')
+
+        # add div and position it absolutely inside frame
+        frame = self.page.frames[1]
+        divHandle = (await frame.evaluateHandle('''() => {
+            const div = document.createElement('div');
+            document.body.appendChild(div);
+            div.style = `
+                box-sizing: border-box;
+                position: absolute;
+                border-left: 1px solid black;
+                padding-left: 2px;
+                margin-left: 3px;
+                left: 4px;
+                top: 5px;
+                width: 6px;
+                height: 7px;
+            `
+            return div
+        }''')).asElement()
+
+        # query div's boxModel and assert box balues
+        box = await divHandle.boxModel()
+        self.assertEqual(box['width'], 6)
+        self.assertEqual(box['height'], 7)
+        self.assertEqual(box['margin'][0], {
+            'x': 1 + 4,
+            'y': 2 + 5,
+        })
+        self.assertEqual(box['border'][0], {
+            'x': 1 + 4 + 3,
+            'y': 2 + 5,
+        })
+        self.assertEqual(box['padding'][0], {
+            'x': 1 + 4 + 3 + 1,
+            'y': 2 + 5,
+        })
+        self.assertEqual(box['content'][0], {
+            'x': 1 + 4 + 3 + 1 + 2,
+            'y': 2 + 5,
+        })
 
     @sync
     async def test_box_model_invisible(self):

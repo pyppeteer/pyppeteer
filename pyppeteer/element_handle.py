@@ -228,8 +228,8 @@ class ElementHandle(JSHandle):
         """Return boxes of element.
 
         Return ``None`` if element is not visivle. Boxes are represented as an
-        list of dictionaries, {x, y} for each point, points clock-wise as
-        below:
+        list of points; each Point is a dictionary ``{x, y}``. Box points are
+        sorted clock-wise.
 
         Returned value is a dictionary with the following fields:
 
