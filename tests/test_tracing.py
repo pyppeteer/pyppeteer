@@ -4,6 +4,7 @@
 import asyncio
 import json
 from pathlib import Path
+import unittest
 
 from syncer import sync
 
@@ -58,3 +59,25 @@ class TestTracing(BaseTestCase):
             await new_page.tracing.start({'path': str(self.outfile)})
         await new_page.close()
         await self.page.tracing.stop()
+
+    @sync
+    async def test_return_buffer(self):
+        await self.page.tracing.start(screenshots=True, path=str(self.outfile))
+        await self.page.goto(self.url + 'static/grid.html')
+        trace = await self.page.tracing.stop()
+        with self.outfile.open('r') as f:
+            buf = f.read()
+        self.assertEqual(trace, buf)
+
+    @unittest.skip('Not implemented')
+    @sync
+    async def test_return_null_on_error(self):
+        await self.page.tracing.start(screenshots=True)
+        await self.page.goto(self.url + 'static/grid.html')
+
+    @sync
+    async def test_without_path(self):
+        await self.page.tracing.start(screenshots=True)
+        await self.page.goto(self.url + 'static/grid.html')
+        trace = await self.page.tracing.stop()
+        self.assertIn('screenshot', trace)

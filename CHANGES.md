@@ -7,6 +7,7 @@ History
 * Add `autoClose` option to `launch` fucntion
 * Add `loop` option to `launch` function (experimental)
 * Add `Page.setBypassCSP` method
+* `Page.tracing.stop` returns result data
 * Fix `slowMo` option
 * Fix anchor navigation
 * Continue to find WS URL while process is alive
