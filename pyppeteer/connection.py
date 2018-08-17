@@ -27,13 +27,13 @@ class Connection(EventEmitter):
         """Make connection.
 
         :arg str url: WebSocket url to connect devtool.
-        :arg int delay: delay to wait until send messages.
+        :arg int delay: delay to wait before processing recieved messages.
         """
         super().__init__()
         self._url = url
         self._lastId = 0
         self._callbacks: Dict[int, asyncio.Future] = dict()
-        self._delay = delay
+        self._delay = delay / 1000
         self._loop = loop
         self._sessions: Dict[str, CDPSession] = dict()
         self.connection: CDPSession
