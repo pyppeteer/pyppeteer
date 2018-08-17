@@ -133,8 +133,8 @@ class TestEvaluate(BaseTestCase):
 
     @sync
     async def test_fail_window_object(self):
-        result = await self.page.evaluate('() => window')
-        self.assertIsNone(result)
+        self.assertIsNone(await self.page.evaluate('() => window'))
+        self.assertIsNone(await self.page.evaluate('() => [Symbol("foo4")]'))
 
     @sync
     async def test_fail_for_circular_object(self):
