@@ -433,11 +433,12 @@ function(html) {
             script.src = url;
             if (type)
                 script.type = type;
-            document.head.appendChild(script);
-            await new Promise((res, rej) => {
+            const promise = new Promise((res, rej) => {
                 script.onload = res;
                 script.onerror = rej;
             });
+            document.head.appendChild(script);
+            await promise;
             return script;
         }'''
 
@@ -446,7 +447,11 @@ function(html) {
             const script = document.createElement('script');
             script.type = type;
             script.text = content;
+            let error = null;
+            script.onerror = e => error = e;
             document.head.appendChild(script);
+            if (error)
+                throw error;
             return script;
         }'''
 
@@ -496,20 +501,26 @@ function(html) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = url;
-            document.head.appendChild(link);
-            await new Promise((res, rej) => {
+            const promise = new Promise((res, rej) => {
                 link.onload = res;
                 link.onerror = rej;
             });
+            document.head.appendChild(link);
+            await promise;
             return link;
         }'''
 
         addStyleContent = '''
-        function (content) {
+        async function (content) {
             const style = document.createElement('style');
             style.type = 'text/css';
             style.appendChild(document.createTextNode(content));
+            const promise = new Promise((res, rej) => {
+                style.onload = res;
+                style.onerror = rej;
+            });
             document.head.appendChild(style);
+            await promise;
             return style;
         }'''
 

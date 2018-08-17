@@ -1108,6 +1108,20 @@ class TestAddScriptTag(BaseTestCase):
         self.assertEqual(await self.page.evaluate('__injected'), 35)
 
     @sync
+    async def test_scp_error_content(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 35;')
+
+    @sync
+    async def test_scp_error_url(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(PageError):
+            await self.page.addScriptTag(
+                url='http://127.0.0.1:{}/static/injectedfile.js'.format(self.port)  # noqa: E501
+            )
+
+    @sync
     async def test_module_url(self):
         await self.page.goto(self.url + 'empty')
         await self.page.addScriptTag(
@@ -1189,6 +1203,21 @@ class TestAddStyleTag(BaseTestCase):
         styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
+
+    @sync
+    async def test_csp_error_content(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addStyleTag(
+                content='body { background-color: green; }')
+
+    @sync
+    async def test_csp_error_url(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(PageError):
+            await self.page.addStyleTag(
+                url='http://127.0.0.1:{}/static/injectedstyle.css'.format(self.port)  # noqa: E501
+            )
 
 
 class TestUrl(BaseTestCase):
@@ -1350,7 +1379,8 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         await self.page.evaluateOnNewDocument('() => window.injected = 123')
         await self.page.goto(self.url + 'csp')
         self.assertEqual(await self.page.evaluate('window.injected'), 123)
-        await self.page.addScriptTag(content='window.e = 10;')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.e = 10;')
         self.assertIsNone(await self.page.evaluate('window.e'))
 
 
