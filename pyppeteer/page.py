@@ -499,7 +499,8 @@ class Page(EventEmitter):
 
         :arg string name: Name of the function on the window object.
         :arg Callable pyppeteerFunction: Function which will be called on
-                                         python process.
+                                         python process. This function should
+                                         not be asynchronous function.
         """
         if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '

@@ -69,7 +69,7 @@ class TestEvaluate(BaseTestCase):
         await frameEvaluation
         self.assertEqual(frameEvaluation.result(), 42)
 
-    @unittest.skip('Cannot pass this test')
+    @unittest.skip('Pyppeteer does not support async for exposeFunction')
     @sync
     async def test_inside_expose_function(self):
         async def callController(a, b):
