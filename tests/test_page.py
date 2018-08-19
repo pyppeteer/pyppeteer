@@ -397,8 +397,16 @@ class TestGoto(BaseTestCase):
 
     @sync
     async def test_goto_documentloaded(self):
+        import logging
+        with self.assertLogs('pyppeteer', logging.WARNING):
+            response = await self.page.goto(
+                self.url + 'empty', waitUntil='documentloaded')
+        self.assertEqual(response.status, 200)
+
+    @sync
+    async def test_goto_domcontentloaded(self):
         response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='documentloaded')
+                                        waitUntil='domcontentloaded')
         self.assertEqual(response.status, 200)
 
     @sync
@@ -520,7 +528,7 @@ class TestWaitForNavigation(BaseTestCase):
 
     @unittest.skip('Need server-side implementation')
     @sync
-    async def test_both_documentloaded_loaded(self):
+    async def test_both_domcontentloaded_loaded(self):
         pass
 
     @sync

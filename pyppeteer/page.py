@@ -716,7 +716,7 @@ function deliverResult(name, seq, result) {
           can be either:
 
           * ``load``: when ``load`` event is fired.
-          * ``documentloaded``: when the ``DOMContentLoaded`` event is fired.
+          * ``domcontentloaded``: when the ``DOMContentLoaded`` event is fired.
           * ``networkidle0``: when there are no more than 0 network connections
             for at least 500 ms.
           * ``networkidle2``: when there are no more than 2 network connections

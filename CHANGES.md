@@ -4,10 +4,11 @@ History
 ## Version 0.0.21 (next version)
 
 * Add `pyppeteer-install` command
-* Add `autoClose` option to `launch` fucntion
+* Add `autoClose` option to `launch` function
 * Add `loop` option to `launch` function (experimental)
 * Add `Page.setBypassCSP` method
 * `Page.tracing.stop` returns result data
+* Rename `documentloaded` to `domcontentloaded` on `waitUntil` option
 * Fix `slowMo` option
 * Fix anchor navigation
 * Fix to return response via redirects
@@ -112,10 +113,10 @@ Catch up puppeteer v0.13.0
 
 * `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function
-* `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to downlaod chromium
+* `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to download chromium
 * Rename `setRequestInterceptionEnable` to `setRequestInterception`
 * Rename `Page.getMetrics` to `Page.metrics`
-* Implement `Browser.pages` to acccess all pages
+* Implement `Browser.pages` to access all pages
     * Add `Target` class and some new method on Browser
 * Add `ElementHandle.querySelector` and `ElementHandle.querySelectorAll`
 * Refactor NavigatoinWatcher
@@ -132,7 +133,7 @@ Catch up puppeteer v0.13.0
     * `Page.queryObjects`
     * `Page.exposeFunction`
     * Request interception
-    * Console api
+    * Console API
     * websocket error on closing browser (#24)
 
 ## Version 0.0.12 (2018-03-01)
