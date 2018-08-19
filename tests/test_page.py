@@ -798,7 +798,6 @@ class TestRequestInterception(BaseTestCase):
             await self.page.goto(self.url + 'empty')
         self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
-    @unittest.skip('Failed to get response in redirect')
     @sync
     async def test_request_interception_redirects(self):
         await self.page.setRequestInterception(True)

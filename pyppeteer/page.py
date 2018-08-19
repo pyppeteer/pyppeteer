@@ -722,6 +722,10 @@ function deliverResult(name, seq, result) {
             for at least 500 ms.
         """
         options = merge_dict(options, kwargs)
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
 
@@ -730,13 +734,11 @@ function deliverResult(name, seq, result) {
                 requests[request.url] = request
 
         eventListeners = [helper.addEventListener(
-            self._networkManager, NetworkManager.Events.Request,
+            self._networkManager,
+            NetworkManager.Events.Request,
             set_request,
         )]
 
-        mainFrame = self._frameManager.mainFrame
-        if mainFrame is None:
-            raise PageError('No main frame.')
         timeout = options.get('timeout', self._defaultNavigationTimeout)
         watcher = NavigatorWatcher(self._frameManager, mainFrame, timeout,
                                    options)

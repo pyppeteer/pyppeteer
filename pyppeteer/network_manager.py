@@ -148,7 +148,7 @@ class NetworkManager(EventEmitter):
                 }
             ))
 
-        if 'redirectURL' in event:
+        if 'redirectUrl' in event:
             request = self._interceptionIdToRequest.get(
                 event.get('interceptionId', ''))
             if request:

@@ -10,6 +10,7 @@ History
 * `Page.tracing.stop` returns result data
 * Fix `slowMo` option
 * Fix anchor navigation
+* Fix to return response via redirects
 * Continue to find WS URL while process is alive
 
 ## Version 0.0.20 (2018-08-11)
