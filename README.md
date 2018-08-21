@@ -15,8 +15,6 @@ chrome/chromium browser automation library.
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
-**Note**: Currently not all features are tested and some APIs are unstable
-
 ## Installation
 
 Pyppeteer requires python 3.6+.
@@ -148,7 +146,6 @@ title = await page.evaluate('(element) => element.textContent', element)
 
 1. Catch up development of puppeteer
     * Not intend to add original API which puppeteer does not have
-2. Add more tests and fix bugs
 
 ## Credits
 
