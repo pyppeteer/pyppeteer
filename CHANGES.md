@@ -15,7 +15,7 @@ History
 
 ## Version 0.0.21 (2018-08-21)
 
-Catch up puppeteer v1.2.0
+Catch up puppeteer v1.3.0
 
 * Add `pyppeteer-install` command
 * Add `autoClose` option to `launch` function
