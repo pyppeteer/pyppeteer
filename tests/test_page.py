@@ -396,6 +396,16 @@ class TestGoto(BaseTestCase):
         self.assertIsNone(response)
 
     @sync
+    async def test_goto_subframe_204(self):
+        await self.page.goto(self.url + 'static/frame-204.html')
+
+    @sync
+    async def test_goto_fail_204(self):
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto('http://httpstat.us/204')
+        self.assertIn('net::ERR_ABORTED', cm.exception.args[0])
+
+    @sync
     async def test_goto_documentloaded(self):
         import logging
         with self.assertLogs('pyppeteer', logging.WARNING):
