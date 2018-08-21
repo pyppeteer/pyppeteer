@@ -843,14 +843,16 @@ class WaitTask(object):
 
     def __await__(self) -> Generator:
         """Make this class **awaitable**."""
-        yield from self.promise
-        return self.promise.result()
+        result = yield from self.promise
+        if isinstance(result, Exception):
+            raise result
+        return result
 
     def terminate(self, error: Exception) -> None:
         """Terminate this task."""
         self._terminated = True
         if not self.promise.done():
-            self.promise.set_exception(error)
+            self.promise.set_result(error)
         self._cleanup()
 
     async def rerun(self) -> None:  # noqa: C901

@@ -7,7 +7,7 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.errors import ElementHandleError, TimeoutError
+from pyppeteer.errors import ElementHandleError, NetworkError, TimeoutError
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
@@ -300,6 +300,22 @@ class TestWaitForSelector(BaseTestCase):
         with self.assertRaises(ElementHandleError):
             await self.page.waitForSelector('*')
 
+    @sync
+    async def test_wait_for_page_navigation(self):
+        await self.page.goto(self.url + 'empty')
+        task = self.page.waitForSelector('h1')
+        await self.page.goto(self.url + '1')
+        await task
+
+    @sync
+    async def test_fail_page_closed(self):
+        page = await self.browser.newPage()
+        await page.goto(self.url + 'empty')
+        task = page.waitForSelector('.box')
+        await page.close()
+        with self.assertRaises(NetworkError):
+            await task
+
     @unittest.skip('Cannot catch error.')
     @sync
     async def test_fail_frame_detached(self):
@@ -476,6 +492,7 @@ class TestWaitForXPath(BaseTestCase):
     @unittest.skip('Cannot catch error')
     @sync
     async def test_frame_detached(self):
+        await self.page.goto(self.url + 'empty')
         await attachFrame(self.page, 'frame1', self.url + 'empty')
         frame = self.page.frames[1]
         waitPromise = frame.waitForXPath('//*[@class="box"]', timeout=1000)
