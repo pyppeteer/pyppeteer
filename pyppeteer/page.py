@@ -1203,6 +1203,13 @@ function deliverResult(name, seq, result) {
         * ``runBeforeUnload`` (bool): Defaults to ``False``. Whether to run the
           `before unload <https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload>`_
           page handlers.
+
+        By defaults, :meth:`close` **does not** run beforeunload handlers.
+
+        .. note::
+           If ``runBeforeUnload`` is passed as ``True``, a ``beforeunload``
+           dialog might be summoned and should be handled manually via page's
+           ``dialog`` event.
         """  # noqa: E501
         options = merge_dict(options, kwargs)
         conn = self._client._connection
