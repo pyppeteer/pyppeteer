@@ -16,6 +16,7 @@ from pyppeteer.errors import TimeoutError
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame
+from .utils import waitEvent
 
 iPhone = {
     'name': 'iPhone 6',
@@ -43,7 +44,7 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 56)
 
     @sync
-    async def test_error_on_reload(self) -> None:
+    async def test_error_on_reload(self):
         with self.assertRaises(Exception) as cm:
             await self.page.evaluate('''() => {
                 location.reload();
@@ -68,7 +69,7 @@ class TestEvaluate(BaseTestCase):
         await frameEvaluation
         self.assertEqual(frameEvaluation.result(), 42)
 
-    @unittest.skip('Cannot pass this test')
+    @unittest.skip('Pyppeteer does not support async for exposeFunction')
     @sync
     async def test_inside_expose_function(self):
         async def callController(a, b):
@@ -125,19 +126,18 @@ class TestEvaluate(BaseTestCase):
         )
         self.assertTrue(result)
 
-    @unittest.skip('Cannot pass this  test')
     @sync
     async def test_serialize_null_field(self):
-        result = await self.page.evaluate('() => {a: undefined}')
+        result = await self.page.evaluate('() => ({a: undefined})')
         self.assertEqual(result, {})
 
     @sync
     async def test_fail_window_object(self):
-        result = await self.page.evaluate('() => window')
-        self.assertIsNone(result)
+        self.assertIsNone(await self.page.evaluate('() => window'))
+        self.assertIsNone(await self.page.evaluate('() => [Symbol("foo4")]'))
 
     @sync
-    async def test_fail_for_circular_object(self) -> None:
+    async def test_fail_for_circular_object(self):
         result = await self.page.evaluate('''() => {
             const a = {};
             const b = {a};
@@ -217,7 +217,7 @@ class TestOfflineMode(BaseTestCase):
             await self.page.goto(self.url)
         await self.page.setOfflineMode(False)
         res = await self.page.reload()
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_emulate_navigator_offline(self):
@@ -397,9 +397,17 @@ class TestGoto(BaseTestCase):
 
     @sync
     async def test_goto_documentloaded(self):
+        import logging
+        with self.assertLogs('pyppeteer', logging.WARNING):
+            response = await self.page.goto(
+                self.url + 'empty', waitUntil='documentloaded')
+        self.assertEqual(response.status, 200)
+
+    @sync
+    async def test_goto_domcontentloaded(self):
         response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='documentloaded')
-        self.assertIn(response.status, [200, 304])
+                                        waitUntil='domcontentloaded')
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_goto_networkidle(self):
@@ -410,13 +418,13 @@ class TestGoto(BaseTestCase):
     async def test_nav_networkidle0(self):
         response = await self.page.goto(self.url + 'empty',
                                         waitUntil='networkidle0')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_nav_networkidle2(self):
         response = await self.page.goto(self.url + 'empty',
                                         waitUntil='networkidle2')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_goto_bad_url(self):
@@ -446,7 +454,7 @@ class TestGoto(BaseTestCase):
     @sync
     async def test_valid_url(self):
         response = await self.page.goto(self.url + 'empty')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_data_url(self):
@@ -486,7 +494,7 @@ class TestGoto(BaseTestCase):
         requests = []
         self.page.on('request', lambda req: requests.append(req))
         response = await self.page.goto(self.url + 'empty#hash')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
@@ -494,7 +502,7 @@ class TestGoto(BaseTestCase):
     @sync
     async def test_self_request_page(self):
         response = await self.page.goto(self.url + 'static/self-request.html')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertIn('self-request.html', response.url)
 
     @sync
@@ -515,13 +523,95 @@ class TestWaitForNavigation(BaseTestCase):
             self.page.evaluate('(url) => window.location.href = url', self.url)
         )
         response = results[0]
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url)
 
-    @unittest.skip('This test is not implemented')
+    @unittest.skip('Need server-side implementation')
     @sync
-    async def test_both_documentloaded_loaded(self):
+    async def test_both_domcontentloaded_loaded(self):
         pass
+
+    @sync
+    async def test_click_anchor_link(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('<a href="#foobar">foobar</a>')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'empty#foobar')
+
+    @sync
+    async def test_history_push_state(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a onclick='javascript:pushState()'>SPA</a>
+            <script>
+                function pushState() { history.pushState({}, '', 'wow.html') }
+            </script>
+        ''')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'wow.html')
+
+    @sync
+    async def test_history_replace_state(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a onclick='javascript:replaceState()'>SPA</a>
+            <script>
+                function replaceState() {
+                    history.replaceState({}, '', 'replaced.html');
+                }
+            </script>
+        ''')
+        await asyncio.wait([
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'replaced.html')
+
+    @sync
+    async def test_dom_history_back_forward(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setContent('''
+            <a id="back" onclick='javascript:goBack()'>back</a>
+            <a id="forward" onclick='javascript:goForward()'>forward</a>
+            <script>
+                function goBack() { history.back(); }
+                function goForward() { history.forward(); }
+                history.pushState({}, '', '/first.html');
+                history.pushState({}, '', '/second.html');
+            </script>
+        ''')
+        self.assertEqual(self.page.url, self.url + 'second.html')
+        await asyncio.wait([
+            self.page.click('a#back'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'first.html')
+        await asyncio.wait([
+            self.page.click('a#forward'),
+            self.page.waitForNavigation(),
+        ])
+        self.assertEqual(self.page.url, self.url + 'second.html')
+
+    @sync
+    async def test_subframe_issues(self) -> None:
+        navigationPromise = asyncio.ensure_future(
+            self.page.goto(self.url + 'static/one-frame.html'))
+        frame = await waitEvent(self.page, 'frameattached')
+        fut = asyncio.get_event_loop().create_future()
+
+        def is_same_frame(f):
+            if f == frame:
+                fut.set_result(True)
+
+        self.page.on('framenavigated', is_same_frame)
+        asyncio.ensure_future(frame.evaluate('window.stop()'))
+        await navigationPromise
 
 
 class TestGoBack(BaseTestCase):
@@ -540,6 +630,22 @@ class TestGoBack(BaseTestCase):
 
         response = await self.page.goForward()
         self.assertIsNone(response)
+
+    @sync
+    async def test_history_api(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('''() => {
+            history.pushState({}, '', '/first.html');
+            history.pushState({}, '', '/second.html');
+        }''')
+        self.assertEqual(self.page.url, self.url + 'second.html')
+
+        await self.page.goBack()
+        self.assertEqual(self.page.url, self.url + 'first.html')
+        await self.page.goBack()
+        self.assertEqual(self.page.url, self.url + 'empty')
+        await self.page.goForward()
+        self.assertEqual(self.page.url, self.url + 'first.html')
 
 
 class TestExposeFunctoin(BaseTestCase):
@@ -603,7 +709,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_stop(self):
@@ -626,7 +732,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_custom_referer_header(self):
@@ -641,7 +747,7 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request',
                      lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
-        self.assertIn(res.status, [200, 304])
+        self.assertEqual(res.status, 200)
 
     @sync
     async def test_request_interception_abort(self):
@@ -700,7 +806,6 @@ class TestRequestInterception(BaseTestCase):
             await self.page.goto(self.url + 'empty')
         self.assertIn('net::ERR_FAILED', cm.exception.args[0])
 
-    @unittest.skip('Failed to get response in redirect')
     @sync
     async def test_request_interception_redirects(self):
         await self.page.setRequestInterception(True)
@@ -712,7 +817,7 @@ class TestRequestInterception(BaseTestCase):
 
         self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
         response = await self.page.goto(self.url + 'redirect1')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
     @unittest.skip('This test is not implemented')
     @sync
@@ -764,7 +869,7 @@ class TestRequestInterception(BaseTestCase):
 
         self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
         response = await self.page.goto(self.url + 'empty#hash')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertEqual(response.url, self.url + 'empty')
         self.assertEqual(len(requests), 1)
         self.assertEqual(requests[0].url, self.url + 'empty')
@@ -1010,7 +1115,7 @@ class TestAuthenticate(BaseTestCase):
         self.assertEqual(response.status, 401)
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
 
 
 class TestAuthenticateFaile(BaseTestCase):
@@ -1026,7 +1131,7 @@ class TestAuthenticateDisable(BaseTestCase):
     async def test_disable_auth(self):
         await self.page.authenticate({'username': 'user', 'password': 'pass'})
         response = await self.page.goto(self.url + 'auth')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         await self.page.authenticate(None)
         response = await self.page.goto(
             'http://127.0.0.1:{}/auth'.format(self.port))
@@ -1056,6 +1161,44 @@ class TestSetContent(BaseTestCase):
         await self.page.setContent(doctype + '<div>hello</div>')
         result = await self.page.content()
         self.assertEqual(result, doctype + self.expectedOutput)
+
+
+class TestSetBypassCSP(BaseTestCase):
+    @sync
+    async def test_bypass_csp_meta_tag(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertIsNone(await self.page.evaluate('window.__injected'))
+
+        await self.page.setBypassCSP(True)
+        await self.page.reload()
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+    @sync
+    async def test_bypass_csp_header(self):
+        await self.page.goto(self.url + 'csp')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertIsNone(await self.page.evaluate('window.__injected'))
+
+        await self.page.setBypassCSP(True)
+        await self.page.reload()
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+    @sync
+    async def test_bypass_scp_cross_process(self):
+        await self.page.setBypassCSP(True)
+        await self.page.goto(self.url + 'static/csp.html')
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+
+        await self.page.goto(
+            'http://127.0.0.1:{}/static/csp.html'.format(self.port))
+        await self.page.addScriptTag(content='window.__injected = 42;')
+        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
 
 
 class TestAddScriptTag(BaseTestCase):
@@ -1106,6 +1249,20 @@ class TestAddScriptTag(BaseTestCase):
             content='window.__injected = 35;')
         self.assertIsNotNone(scriptHandle.asElement())
         self.assertEqual(await self.page.evaluate('__injected'), 35)
+
+    @sync
+    async def test_scp_error_content(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.__injected = 35;')
+
+    @sync
+    async def test_scp_error_url(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(PageError):
+            await self.page.addScriptTag(
+                url='http://127.0.0.1:{}/static/injectedfile.js'.format(self.port)  # noqa: E501
+            )
 
     @sync
     async def test_module_url(self):
@@ -1189,6 +1346,21 @@ class TestAddStyleTag(BaseTestCase):
         styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
         self.assertIsNotNone(styleHandle.asElement())
         self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
+
+    @sync
+    async def test_csp_error_content(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(ElementHandleError):
+            await self.page.addStyleTag(
+                content='body { background-color: green; }')
+
+    @sync
+    async def test_csp_error_url(self):
+        await self.page.goto(self.url + 'static/csp.html')
+        with self.assertRaises(PageError):
+            await self.page.addStyleTag(
+                url='http://127.0.0.1:{}/static/injectedstyle.css'.format(self.port)  # noqa: E501
+            )
 
 
 class TestUrl(BaseTestCase):
@@ -1344,6 +1516,15 @@ class TestEvaluateOnNewDocument(BaseTestCase):
         await self.page.evaluateOnNewDocument('() => window.injected = 123')
         await self.page.goto(self.url + 'static/temperable.html')
         self.assertEqual(await self.page.evaluate('window.result'), 123)
+
+    @sync
+    async def test_csp(self):
+        await self.page.evaluateOnNewDocument('() => window.injected = 123')
+        await self.page.goto(self.url + 'csp')
+        self.assertEqual(await self.page.evaluate('window.injected'), 123)
+        with self.assertRaises(ElementHandleError):
+            await self.page.addScriptTag(content='window.e = 10;')
+        self.assertIsNone(await self.page.evaluate('window.e'))
 
 
 class TestCacheEnabled(BaseTestCase):

@@ -7,10 +7,11 @@ import unittest
 
 from syncer import sync
 
-from pyppeteer.errors import ElementHandleError, TimeoutError
+from pyppeteer.errors import ElementHandleError, NetworkError, TimeoutError
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
+from .utils import waitEvent
 
 addElement = 'tag=>document.body.appendChild(document.createElement(tag))'
 
@@ -162,6 +163,16 @@ class TestWaitForFunction(BaseTestCase):
         self.assertTrue(result)
 
     @sync
+    async def test_csp(self):
+        await self.page.goto(self.url + 'csp')
+        fut = asyncio.ensure_future(self.page.waitForFunction(
+            '() => window.__FOO === "hit"',
+            polling='raf',
+        ))
+        await self.page.evaluate('window.__FOO = "hit"')
+        await fut
+
+    @sync
     async def test_bad_polling_value(self):
         with self.assertRaises(ValueError) as cm:
             await self.page.waitForFunction('() => true', polling='unknown')
@@ -195,6 +206,15 @@ class TestWaitForFunction(BaseTestCase):
         await self.page.evaluate('e => e.remove()', div)
         await fut
         self.assertTrue(self.result)
+
+    @sync
+    async def test_respect_timeout(self):
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForFunction('false', {'timeout': 10})
+        self.assertIn(
+            'Waiting for function failed: timeout',
+            cm.exception.args[0],
+        )
 
     @sync
     async def test_disable_timeout(self):
@@ -279,6 +299,22 @@ class TestWaitForSelector(BaseTestCase):
         await self.page.evaluate('() => document.querySelector = null')
         with self.assertRaises(ElementHandleError):
             await self.page.waitForSelector('*')
+
+    @sync
+    async def test_wait_for_page_navigation(self):
+        await self.page.goto(self.url + 'empty')
+        task = self.page.waitForSelector('h1')
+        await self.page.goto(self.url + '1')
+        await task
+
+    @sync
+    async def test_fail_page_closed(self):
+        page = await self.browser.newPage()
+        await page.goto(self.url + 'empty')
+        task = page.waitForSelector('.box')
+        await page.close()
+        with self.assertRaises(NetworkError):
+            await task
 
     @unittest.skip('Cannot catch error.')
     @sync
@@ -382,8 +418,12 @@ class TestWaitForSelector(BaseTestCase):
 
     @sync
     async def test_wait_for_selector_timeout(self):
-        with self.assertRaises(TimeoutError):
+        with self.assertRaises(TimeoutError) as cm:
             await self.page.waitForSelector('div', timeout=10)
+        self.assertIn(
+            'Waiting for selector "div" failed: timeout',
+            cm.exception.args[0],
+        )
 
     @sync
     async def test_wait_for_selector_node_mutation(self):
@@ -419,6 +459,15 @@ class TestWaitForXPath(BaseTestCase):
         )
 
     @sync
+    async def test_timeout(self):
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForXPath('//div', timeout=10)
+        self.assertIn(
+            'Waiting for XPath "//div" failed: timeout',
+            cm.exception.args[0],
+        )
+
+    @sync
     async def test_specified_frame(self):
         await attachFrame(self.page, 'frame1', self.url + 'empty')
         await attachFrame(self.page, 'frame2', self.url + 'empty')
@@ -443,6 +492,7 @@ class TestWaitForXPath(BaseTestCase):
     @unittest.skip('Cannot catch error')
     @sync
     async def test_frame_detached(self):
+        await self.page.goto(self.url + 'empty')
         await attachFrame(self.page, 'frame1', self.url + 'empty')
         frame = self.page.frames[1]
         waitPromise = frame.waitForXPath('//*[@class="box"]', timeout=1000)
@@ -529,6 +579,15 @@ http://localhost:{port}/static/nested-frames.html
         await detachFrame(self.page, 'frame1')
         self.assertEqual(len(detachedFrames), 1)
         self.assertTrue(detachedFrames[0].isDetached())
+
+    @sync
+    async def test_anchor_url(self):
+        await self.page.goto(self.url + 'empty')
+        await asyncio.wait([
+            self.page.goto(self.url + 'empty#foo'),
+            waitEvent(self.page, 'framenavigated'),
+        ])
+        self.assertEqual(self.page.url, self.url+'empty#foo')
 
     @sync
     async def test_frame_cross_process(self):

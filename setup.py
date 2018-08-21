@@ -56,7 +56,7 @@ test_requirements = [
 
 setup(
     name='pyppeteer',
-    version='0.0.20',
+    version='0.0.21',
     description=('Headless chrome/chromium automation library '
                  '(unofficial port of puppeteer)'),
     long_description=readme,
@@ -69,6 +69,11 @@ setup(
     package_dir=package_dir,
     include_package_data=True,
     install_requires=requirements,
+    entry_points={
+        'console_scripts': [
+            'pyppeteer-install = pyppeteer.command:install',
+        ],
+    },
 
     license="MIT license",
     zip_safe=False,

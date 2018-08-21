@@ -15,8 +15,6 @@ chrome/chromium browser automation library.
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
-**Note**: Currently not all features are tested and some APIs are unstable
-
 ## Installation
 
 Pyppeteer requires python 3.6+.
@@ -37,6 +35,7 @@ python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
 ## Usage
 
 > **Note**: When you run pyppeteer first time, it downloads a recent version of Chromium (~100MB).
+> If you don't prefer this behavior, run `pyppeteer-install` command before running scripts which uses pyppeteer.
 
 **Example**: open web page and take a screenshot.
 
@@ -86,7 +85,7 @@ More APIs are listed in the
 [document](https://miyakogi.github.io/pyppeteer/reference.html).
 
 [Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
-is also useful for pyppeteer users.
+and [troubleshooting](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also useful for pyppeteer users.
 
 ## Differences between puppeteer and pyppeteer
 
@@ -147,7 +146,6 @@ title = await page.evaluate('(element) => element.textContent', element)
 
 1. Catch up development of puppeteer
     * Not intend to add original API which puppeteer does not have
-2. Add more tests and fix bugs
 
 ## Credits
 

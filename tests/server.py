@@ -23,24 +23,36 @@ BASE_HTML = '''
 '''
 
 
-class MainHandler(web.RequestHandler):
+class BaseHandler(web.RequestHandler):
     def get(self) -> None:
+        self.set_header(
+            'Cache-Control',
+            'no-store, no-cache, must-revalidate, max-age=0',
+        )
+
+
+class MainHandler(BaseHandler):
+    def get(self) -> None:
+        super().get()
         self.write(BASE_HTML)
 
 
-class EmptyHandler(web.RequestHandler):
+class EmptyHandler(BaseHandler):
     def get(self) -> None:
+        super().get()
         self.write('')
 
 
-class LongHandler(web.RequestHandler):
+class LongHandler(BaseHandler):
     async def get(self) -> None:
+        super().get()
         await asyncio.sleep(0.1)
         self.write('')
 
 
-class LinkHandler1(web.RequestHandler):
+class LinkHandler1(BaseHandler):
     def get(self) -> None:
+        super().get()
         self.set_status(200)
         self.write('''
 <head><title>link1</title></head>
@@ -49,14 +61,23 @@ class LinkHandler1(web.RequestHandler):
         ''')
 
 
-class RedirectHandler1(web.RequestHandler):
+class RedirectHandler1(BaseHandler):
     def get(self) -> None:
+        super().get()
         self.redirect('/redirect2')
 
 
-class RedirectHandler2(web.RequestHandler):
+class RedirectHandler2(BaseHandler):
     def get(self) -> None:
+        super().get()
         self.write('<h1 id="red2">redirect2</h1>')
+
+
+class CSPHandler(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.set_header('Content-Security-Policy', 'script-src \'self\'')
+        self.write('')
 
 
 def auth_api(username: str, password: str) -> bool:
@@ -95,9 +116,10 @@ def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
     return decore
 
 
-class AuthHandler(web.RequestHandler):
+class AuthHandler(BaseHandler):
     @basic_auth(auth_api)
     def get(self) -> None:
+        super().get()
         self.write('ok')
 
 
@@ -120,6 +142,7 @@ def get_application() -> web.Application:
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
         ('/long', LongHandler),
+        ('/csp', CSPHandler),
         ('/static', web.StaticFileHandler, dict(path=static_path)),
     ]
     return web.Application(
@@ -132,4 +155,5 @@ def get_application() -> web.Application:
 if __name__ == '__main__':
     app = get_application()
     app.listen(9000)
+    print('server running on http://localhost:9000')
     asyncio.get_event_loop().run_forever()

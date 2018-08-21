@@ -34,6 +34,7 @@ class FrameManager(EventEmitter):
         FrameNavigated='framenavigated',
         FrameDetached='framedetached',
         LifecycleEvent='lifecycleevent',
+        FrameNavigatedWithinDocument='framenavigatedwithindocument',
     )
 
     def __init__(self, client: CDPSession, frameTree: Dict, page: Any) -> None:
@@ -51,8 +52,16 @@ class FrameManager(EventEmitter):
                   )
         client.on('Page.frameNavigated',
                   lambda event: self._onFrameNavigated(event.get('frame')))
+        client.on('Page.navigatedWithinDocument',
+                  lambda event: self._onFrameNavigatedWithinDocument(
+                      event.get('frameId'), event.get('url')
+                  ))
         client.on('Page.frameDetached',
                   lambda event: self._onFrameDetached(event.get('frameId')))
+        client.on('Page.frameStoppedLoading',
+                  lambda event: self._onFrameStoppedLoading(
+                      event.get('frameId')
+                  ))
         client.on('Runtime.executionContextCreated',
                   lambda event: self._onExecutionContextCreated(
                       event.get('context')))
@@ -71,6 +80,13 @@ class FrameManager(EventEmitter):
         if not frame:
             return
         frame._onLifecycleEvent(event['loaderId'], event['name'])
+        self.emit(FrameManager.Events.LifecycleEvent, frame)
+
+    def _onFrameStoppedLoading(self, frameId: str) -> None:
+        frame = self._frames.get(frameId)
+        if not frame:
+            return
+        frame._onLoadingStopped()
         self.emit(FrameManager.Events.LifecycleEvent, frame)
 
     def _handleFrameTree(self, frameTree: Dict) -> None:
@@ -137,6 +153,14 @@ class FrameManager(EventEmitter):
 
         # Update frame payload.
         frame._navigated(framePayload)  # type: ignore
+        self.emit(FrameManager.Events.FrameNavigated, frame)
+
+    def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
+        frame = self._frames.get(frameId)
+        if not frame:
+            return
+        frame._navigatedWithinDocument(url)
+        self.emit(FrameManager.Events.FrameNavigatedWithinDocument, frame)
         self.emit(FrameManager.Events.FrameNavigated, frame)
 
     def _onFrameDetached(self, frameId: str) -> None:
@@ -233,10 +257,10 @@ class Frame(object):
             self._contextResolveCallback(context)  # type: ignore
             self._contextResolveCallback = lambda _: None
             for waitTask in self._waitTasks:
-                asyncio.ensure_future(waitTask.rerun())
+                self._client._loop.create_task(waitTask.rerun())
         else:
             self._documentPromise = None
-            self._contextPromise = asyncio.get_event_loop().create_future()
+            self._contextPromise = self._client._loop.create_future()
             self._contextResolveCallback = (
                 lambda _context: self._contextPromise.set_result(_context)
             )
@@ -433,11 +457,12 @@ function(html) {
             script.src = url;
             if (type)
                 script.type = type;
-            document.head.appendChild(script);
-            await new Promise((res, rej) => {
+            const promise = new Promise((res, rej) => {
                 script.onload = res;
                 script.onerror = rej;
             });
+            document.head.appendChild(script);
+            await promise;
             return script;
         }'''
 
@@ -446,7 +471,11 @@ function(html) {
             const script = document.createElement('script');
             script.type = type;
             script.text = content;
+            let error = null;
+            script.onerror = e => error = e;
             document.head.appendChild(script);
+            if (error)
+                throw error;
             return script;
         }'''
 
@@ -496,20 +525,26 @@ function(html) {
             const link = document.createElement('link');
             link.rel = 'stylesheet';
             link.href = url;
-            document.head.appendChild(link);
-            await new Promise((res, rej) => {
+            const promise = new Promise((res, rej) => {
                 link.onload = res;
                 link.onerror = rej;
             });
+            document.head.appendChild(link);
+            await promise;
             return link;
         }'''
 
         addStyleContent = '''
-        function (content) {
+        async function (content) {
             const style = document.createElement('style');
             style.type = 'text/css';
             style.appendChild(document.createTextNode(content));
+            const promise = new Promise((res, rej) => {
+                style.onload = res;
+                style.onerror = rej;
+            });
             document.head.appendChild(style);
+            await promise;
             return style;
         }'''
 
@@ -635,11 +670,11 @@ function(html) {
         """
         options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            fut: Awaitable[None] = asyncio.ensure_future(
+            fut: Awaitable[None] = self._client._loop.create_task(
                 asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
-            fut = asyncio.get_event_loop().create_future()
+            fut = self._client._loop.create_future()
             fut.set_exception(TypeError(
                 'Unsupported target type: ' +
                 str(type(selectorOrFunctionOrTimeout))
@@ -680,7 +715,8 @@ function(html) {
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout',  30000)  # msec
         polling = options.get('polling', 'raf')
-        return WaitTask(self, pageFunction, polling, timeout, *args)
+        return WaitTask(self, pageFunction, 'function', polling, timeout,
+                        self._client._loop, *args)
 
     def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
                                 options: dict = None, **kwargs: Any
@@ -712,9 +748,14 @@ function(html) {
     }
 }
         '''  # noqa: E501
-        return self.waitForFunction(
+        timeout = options.get('timeout', 30000)
+        return WaitTask(
+            self,
             predicate,
-            {'timeout': timeout, 'polling': polling},
+            f'{"XPath" if isXPath else "selector"} "{selectorOrXPath}"',
+            polling,
+            timeout,
+            self._client._loop,
             selectorOrXPath,
             isXPath,
             waitForVisible,
@@ -729,12 +770,19 @@ function(html) {
         self._name = framePayload.get('name', '')
         self._url = framePayload.get('url', '')
 
+    def _navigatedWithinDocument(self, url: str) -> None:
+        self._url = url
+
     def _onLifecycleEvent(self, loaderId: str, name: str) -> None:
         if name == 'init':
             self._loaderId = loaderId
             self._lifecycleEvents.clear()
         else:
             self._lifecycleEvents.add(name)
+
+    def _onLoadingStopped(self) -> None:
+        self._lifecycleEvents.add('DOMContentLoaded')
+        self._lifecycleEvents.add('load')
 
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
@@ -753,7 +801,8 @@ class WaitTask(object):
     """
 
     def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
-                 polling: Union[str, int], timeout: float, *args: Any) -> None:
+                 title: str, polling: Union[str, int], timeout: float,
+                 loop: asyncio.AbstractEventLoop, *args: Any) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
                 raise ValueError(f'Unknown polling: {polling}')
@@ -768,6 +817,7 @@ class WaitTask(object):
         self._frame = frame
         self._polling = polling
         self._timeout = timeout
+        self._loop = loop
         if args or helper.is_jsfunc(predicateBody):
             self._predicateBody = f'return ({predicateBody})(...args)'
         else:
@@ -778,30 +828,31 @@ class WaitTask(object):
         self._timeoutError = False
         frame._waitTasks.add(self)
 
-        loop = asyncio.get_event_loop()
-        self.promise = loop.create_future()
+        self.promise = self._loop.create_future()
 
         async def timer(timeout: Union[int, float]) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
-            self.terminate(
-                TimeoutError(f'Waiting failed: timeout {timeout}ms exceeds.')
-            )
+            self.terminate(TimeoutError(
+                f'Waiting for {title} failed: timeout {timeout}ms exceeds.'
+            ))
 
         if timeout:
-            self._timeoutTimer = asyncio.ensure_future(timer(self._timeout))
-        self._runningTask = asyncio.ensure_future(self.rerun())
+            self._timeoutTimer = self._loop.create_task(timer(self._timeout))
+        self._runningTask = self._loop.create_task(self.rerun())
 
     def __await__(self) -> Generator:
         """Make this class **awaitable**."""
-        yield from self.promise
-        return self.promise.result()
+        result = yield from self.promise
+        if isinstance(result, Exception):
+            raise result
+        return result
 
     def terminate(self, error: Exception) -> None:
         """Terminate this task."""
         self._terminated = True
         if not self.promise.done():
-            self.promise.set_exception(error)
+            self.promise.set_result(error)
         self._cleanup()
 
     async def rerun(self) -> None:  # noqa: C901

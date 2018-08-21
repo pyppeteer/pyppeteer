@@ -47,6 +47,8 @@ class ExecutionContext(object):
         except NetworkError as e:
             if 'Object reference chain is too long' in e.args[0]:
                 return
+            if 'Object couldn\'t be returned by value' in e.args[0]:
+                return
             raise
         await handle.dispose()
         return result

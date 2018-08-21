@@ -3,7 +3,6 @@
 
 """Tracing module."""
 
-import asyncio
 from pathlib import Path
 from typing import Any, Awaitable
 
@@ -26,7 +25,7 @@ class Tracing(object):
 
         This method accepts the following options:
 
-        * ``path`` (str): A path to write the trace file to. **required**
+        * ``path`` (str): A path to write the trace file to.
         * ``screenshots`` (bool): Capture screenshots in the trace.
         * ``categories`` (List[str]): Specify custom categories to use instead
           of default.
@@ -53,11 +52,14 @@ class Tracing(object):
         })
 
     async def stop(self) -> Awaitable:
-        """Stop tracing."""
-        contentPromise = asyncio.get_event_loop().create_future()
+        """Stop tracing.
+
+        :return: trace data.
+        """
+        contentPromise = self._client._loop.create_future()
         self._client.once(
             'Tracing.tracingComplete',
-            lambda event: asyncio.ensure_future(
+            lambda event: self._client._loop.create_task(
                 self._readStream(event.get('stream'), self._path)
             ).add_done_callback(
                 lambda fut: contentPromise.set_result(
@@ -68,15 +70,19 @@ class Tracing(object):
         self._recording = False
         return await contentPromise
 
-    async def _readStream(self, handle: str, path: str) -> None:
+    async def _readStream(self, handle: str, path: str) -> str:
+        # might be better to return as bytes
         eof = False
-        file = Path(path)
-        with file.open('w') as f:
-            while not eof:
-                response = await self._client.send('IO.read', {
-                    'handle': handle
-                })
-                eof = response.get('eof', False)
-                if path:
-                    f.write(response.get('data', ''))
+        bufs = []
+        while not eof:
+            response = await self._client.send('IO.read', {'handle': handle})
+            eof = response.get('eof', False)
+            bufs.append(response.get('data', ''))
         await self._client.send('IO.close', {'handle': handle})
+
+        result = ''.join(bufs)
+        if path:
+            file = Path(path)
+            with file.open('w') as f:
+                f.write(result)
+        return result

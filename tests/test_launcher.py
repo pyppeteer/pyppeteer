@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
 import glob
 import logging
 import os
@@ -140,6 +141,19 @@ class TestLauncher(unittest.TestCase):
         # console.log output is sent to stderr
         self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
+
+
+class TestMixedContent(unittest.TestCase):
+    @unittest.skip('need server-side implementation')
+    @sync
+    async def test_mixed_content(self) -> None:
+        options = {'ignoreHTTPSErrors': True}
+        options.update(DEFAULT_OPTIONS)
+        browser = await launch(options)
+        page = await browser.newPage()
+        page.goto()
+        await page.close()
+        await browser.close()
 
 
 class TestLogLevel(unittest.TestCase):
@@ -302,6 +316,22 @@ class TestClose(unittest.TestCase):
         # chrome should be already closed, so fail to connet websocket
         with self.assertRaises(OSError):
             await websockets.client.connect(wsEndPoint)
+
+
+class TestEventLoop(unittest.TestCase):
+    def test_event_loop(self):
+        loop = asyncio.new_event_loop()
+
+        async def inner(loop) -> None:
+            browser = await launch(args=['--no-sandbox'], loop=loop)
+            page = await browser.newPage()
+            await page.goto('http://example.com')
+            result = await page.evaluate('() => 1 + 2')
+            self.assertEqual(result, 3)
+            await page.close()
+            await browser.close()
+
+        loop.run_until_complete(inner(loop))
 
 
 class TestConnect(unittest.TestCase):

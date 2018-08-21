@@ -7,6 +7,8 @@ import unittest
 
 from syncer import sync
 
+from pyppeteer.errors import NetworkError
+
 from .base import BaseTestCase
 
 
@@ -52,7 +54,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(len(responses), 1)
         response = responses[0]
         self.assertEqual(response.url, self.url + 'empty')
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         # self.assertTrue(response.ok)
         self.assertFalse(response.fromCache)
         self.assertFalse(response.fromServiceWorker)
@@ -129,6 +131,20 @@ class TestNetworkEvent(BaseTestCase):
         self.assertEqual(await res.text(), '{"foo": "bar"}\n')
         self.assertEqual(await res.json(), {'foo': 'bar'})
 
+    @sync
+    async def test_fail_get_redirected_body(self):
+        response = await self.page.goto(self.url + 'redirect1')
+        redirectChain = response.request.redirectChain
+        self.assertEqual(len(redirectChain), 1)
+        redirected = redirectChain[0].response
+        self.assertEqual(redirected.status, 302)
+        with self.assertRaises(NetworkError) as cm:
+            await redirected.text()
+        self.assertIn(
+            'Response body is unavailable for redirect response',
+            cm.exception.args[0],
+        )
+
     @unittest.skip('This test hangs')
     @sync
     async def test_not_report_body_unless_finished(self):
@@ -153,7 +169,7 @@ class TestNetworkEvent(BaseTestCase):
         response = await pageResponse
         self.assertTrue(serverResponses)
         self.assertTrue(response)
-        self.assertIn(response.status, [200, 304])
+        self.assertEqual(response.status, 200)
         self.assertFalse(finishedRequests)
 
         responseText = response.text()

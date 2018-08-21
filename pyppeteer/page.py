@@ -19,7 +19,7 @@ from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
-from pyppeteer.element_handle import ElementHandle  # noqa: F401
+from pyppeteer.element_handle import ElementHandle
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import JSHandle  # noqa: F401
@@ -244,14 +244,14 @@ class Page(EventEmitter):
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
-        asyncio.ensure_future(
+        self._client._loop.create_task(
             self._client.send('Security.handleCertificateError', {
                 'eventId': event.get('eventId'),
                 'action': 'continue'
             })
         )
 
-    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+    async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get an Element which matches ``selector``.
 
         :arg str selector: A selector to search element.
@@ -295,7 +295,7 @@ class Page(EventEmitter):
         return await context.queryObjects(prototypeHandle)
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Optional[Any]:
+                                *args: Any) -> Any:
         """Execute function with an element which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -312,7 +312,7 @@ class Page(EventEmitter):
         return await frame.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Optional[Any]:
+                                   *args: Any) -> Any:
         """Execute function with all elements which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -326,7 +326,7 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorAllEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
         """Get all element which matches `selector` as a list.
 
         :arg str selector: A selector to search element.
@@ -499,7 +499,8 @@ class Page(EventEmitter):
 
         :arg string name: Name of the function on the window object.
         :arg Callable pyppeteerFunction: Function which will be called on
-                                         python process.
+                                         python process. This function should
+                                         not be asynchronous function.
         """
         if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: '
@@ -625,15 +626,18 @@ function deliverResult(name, seq, result) {
             '''
             expression = helper.evaluationString(
                 deliverResult, name, seq, result)
-            asyncio.ensure_future(self._client.send('Runtime.evaluate', {
-                'expression': expression,
-                'contextId': event['executionContextId'],
-            }))
+            self._client._loop.create_task(self._client.send(
+                'Runtime.evaluate', {
+                    'expression': expression,
+                    'contextId': event['executionContextId'],
+                }
+            ))
             return
 
         if not self.listeners(Page.Events.Console):
             for arg in _args:
-                asyncio.ensure_future(helper.releaseObject(self._client, arg))
+                self._client._loop.create_task(
+                    helper.releaseObject(self._client, arg))
             return
 
         _id = event['executionContextId']
@@ -712,13 +716,17 @@ function deliverResult(name, seq, result) {
           can be either:
 
           * ``load``: when ``load`` event is fired.
-          * ``documentloaded``: when the ``DOMContentLoaded`` event is fired.
+          * ``domcontentloaded``: when the ``DOMContentLoaded`` event is fired.
           * ``networkidle0``: when there are no more than 0 network connections
             for at least 500 ms.
           * ``networkidle2``: when there are no more than 2 network connections
             for at least 500 ms.
         """
         options = merge_dict(options, kwargs)
+        mainFrame = self._frameManager.mainFrame
+        if mainFrame is None:
+            raise PageError('No main frame.')
+
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
 
@@ -727,13 +735,11 @@ function deliverResult(name, seq, result) {
                 requests[request.url] = request
 
         eventListeners = [helper.addEventListener(
-            self._networkManager, NetworkManager.Events.Request,
+            self._networkManager,
+            NetworkManager.Events.Request,
             set_request,
         )]
 
-        mainFrame = self._frameManager.mainFrame
-        if mainFrame is None:
-            raise PageError('No main frame.')
         timeout = options.get('timeout', self._defaultNavigationTimeout)
         watcher = NavigatorWatcher(self._frameManager, mainFrame, timeout,
                                    options)
@@ -887,6 +893,16 @@ function deliverResult(name, seq, result) {
         await self._client.send('Emulation.setScriptExecutionDisabled', {
             'value': not enabled,
         })
+
+    async def setBypassCSP(self, enabled: bool) -> None:
+        """Toggles bypassing page's Content-Security-Policy.
+
+        .. note::
+            CSP bypassing happens at the moment of CSP initialization rather
+            then evaluation. Usually this means that ``page.setBypassCSP``
+            should be called before navigating to the domain.
+        """
+        await self._client.send('Page.setBypassCSP', {'enabled': enabled})
 
     async def emulateMedia(self, mediaType: str = None) -> None:
         """Emulate css media type of the page.

@@ -12,8 +12,8 @@ import logging
 import os
 import os.path
 from pathlib import Path
-import signal
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -71,6 +71,7 @@ class Launcher(object):
         self.port = get_free_port()
         self.url = f'http://127.0.0.1:{self.port}'
         self.chrome_args: List[str] = []
+        self._loop = self.options.get('loop', asyncio.get_event_loop())
 
         logLevel = self.options.get('logLevel')
         if logLevel:
@@ -146,8 +147,8 @@ class Launcher(object):
         options = {}
         options['env'] = self.options.get('env')
         if not self.options.get('dumpio'):
-            options['stdout'] = subprocess.DEVNULL
-            options['stderr'] = subprocess.DEVNULL
+            options['stdout'] = subprocess.PIPE
+            options['stderr'] = subprocess.STDOUT
 
         self.proc = subprocess.Popen(  # type: ignore
             self.cmd,
@@ -156,10 +157,11 @@ class Launcher(object):
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
-                asyncio.get_event_loop().run_until_complete(self.killChrome())
+                self._loop.run_until_complete(self.killChrome())
 
         # dont forget to close browser process
-        atexit.register(_close_process)
+        if self.options.get('autoClose', True):
+            atexit.register(_close_process)
         if self.options.get('handleSIGINT', True):
             signal.signal(signal.SIGINT, _close_process)
         if self.options.get('handleSIGTERM', True):
@@ -172,13 +174,14 @@ class Launcher(object):
         connectionDelay = self.options.get('slowMo', 0)
         self.browserWSEndpoint = self._get_ws_endpoint()
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
-        self.connection = Connection(self.browserWSEndpoint, connectionDelay)
+        self.connection = Connection(
+            self.browserWSEndpoint, self._loop, connectionDelay)
         return await Browser.create(
             self.connection, self.options, self.proc, self.killChrome)
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
-        for i in range(100):
+        while self.proc.poll() is None:
             time.sleep(0.1)
             try:
                 with urlopen(url) as f:
@@ -187,8 +190,11 @@ class Launcher(object):
             except URLError as e:
                 continue
         else:
-            # cannot connet to browser for 10 seconds
-            raise BrowserError(f'Failed to connect to browser port: {url}')
+            raise BrowserError(
+                'Browser closed unexpectedly:\n{}'.format(
+                    self.proc.stdout.read().decode()
+                )
+            )
         return data['webSocketDebuggerUrl']
 
     def waitForChromeToClose(self) -> None:
@@ -253,6 +259,9 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
+    * ``autoClose`` (bool): Automatically close browser process when sctipt
+      completed. Defaults to ``True``.
+    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.
 
     .. note::
@@ -281,6 +290,7 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
       milliseconds.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
+    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     """
     options = merge_dict(options, kwargs)
     logLevel = options.get('logLevel')
@@ -291,7 +301,9 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     if not browserWSEndpoint:
         raise BrowserError('Need `browserWSEndpoint` option.')
     connectionDelay = options.get('slowMo', 0)
-    connection = Connection(browserWSEndpoint, connectionDelay)
+    connection = Connection(browserWSEndpoint,
+                            options.get('loop', asyncio.get_event_loop()),
+                            connectionDelay)
     return await Browser.create(
         connection, options, None, lambda: connection.send('Browser.close'))
 

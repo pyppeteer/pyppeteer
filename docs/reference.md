@@ -1,6 +1,11 @@
 API Reference
 =============
 
+Commands
+--------
+
+* ``pyppeteer-install``: Download and install chromium for pyppeteer.
+
 Environment Variables
 ---------------------
 
