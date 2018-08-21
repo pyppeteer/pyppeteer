@@ -5,6 +5,7 @@ History
 
 * Add `Page.browser`
 * Add `Target.browser`
+* Add `runBeforeUnload` option to `Page.close` method
 * Report 'Log' domain entries as 'console' events
 * Fix `Page.goto` to return response when page pushes new state
 

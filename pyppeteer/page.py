@@ -1195,14 +1195,27 @@ function deliverResult(name, seq, result) {
             raise PageError('no main frame.')
         return await frame.title()
 
-    async def close(self) -> None:
-        """Close this page."""
+    async def close(self, options: Dict = None, **kwargs: Any) -> None:
+        """Close this page.
+
+        Available options:
+
+        * ``runBeforeUnload`` (bool): Defaults to ``False``. Whether to run the
+          `before unload <https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload>`_
+          page handlers.
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
         conn = self._client._connection
         if conn is None:
             raise PageError('Protocol Error: Connectoin Closed. '
                             'Most likely the page has been closed.')
-        await conn.send('Target.closeTarget',
-                        {'targetId': self._target._targetId})
+        runBeforeUnload = bool(options.get('runBeforeUnload'))
+        if runBeforeUnload:
+            await self._client.send('Page.close')
+        else:
+            await conn.send('Target.closeTarget',
+                            {'targetId': self._target._targetId})
+            await self._target._isClosedPromise
 
     @property
     def mouse(self) -> Mouse:
