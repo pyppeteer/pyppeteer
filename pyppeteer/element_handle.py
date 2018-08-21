@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING
 from pyppeteer.connection import CDPSession
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, NetworkError
+from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
@@ -100,7 +101,7 @@ class ElementHandle(JSHandle):
                 {'objectId': self._remoteObject.get('objectId')},
             )
         except NetworkError as e:
-            logger.debug(e)
+            debugError(logger, e)
             result = None
         return result
 

@@ -24,6 +24,7 @@ from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
+from pyppeteer.helper import debugError
 from pyppeteer.util import check_chromium, chromium_excutable
 from pyppeteer.util import download_chromium, merge_dict, get_free_port
 
@@ -217,7 +218,7 @@ class Launcher(object):
                 await self.connection.dispose()
             except Exception as e:
                 # ignore errors on browser termination process
-                logger.debug(e)
+                debugError(logger, e)
         if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
             # Force kill chrome only when using temporary userDataDir
             self.waitForChromeToClose()

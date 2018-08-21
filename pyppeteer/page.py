@@ -25,6 +25,7 @@ from pyppeteer.errors import PageError
 from pyppeteer.execution_context import JSHandle  # noqa: F401
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
+from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
@@ -263,7 +264,7 @@ class Page(EventEmitter):
         try:
             await self._client.send(method, msg)
         except Exception as e:
-            logger.debug(e)
+            debugError(logger, e)
 
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
@@ -552,10 +553,15 @@ function addPageBinding(bindingName) {
         expression = helper.evaluationString(addPageBinding, name)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
-        await asyncio.wait([
-            frame.evaluate(expression, force_expr=True)
-            for frame in self.frames
-        ])
+
+        async def _evaluate(frame: Frame, expression: str) -> None:
+            try:
+                await frame.evaluate(expression, force_expr=True)
+            except Exception as e:
+                debugError(logger, e)
+
+        await asyncio.wait([_evaluate(frame, expression)
+                            for frame in self.frames])
 
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
         """Provide credentials for http authentication.
@@ -650,7 +656,7 @@ function deliverResult(name, seq, result) {
             '''
             expression = helper.evaluationString(
                 deliverResult, name, seq, result)
-            self._client._loop.create_task(self._client.send(
+            self._client._loop.create_task(self._send(
                 'Runtime.evaluate', {
                     'expression': expression,
                     'contextId': event['executionContextId'],

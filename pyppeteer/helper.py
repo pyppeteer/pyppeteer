@@ -111,7 +111,7 @@ async def releaseObject(client: CDPSession, remoteObject: dict) -> None:
     except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
-        logger.debug(e)
+        debugError(logger, e)
 
 
 def get_positive_int(obj: dict, name: str) -> int:

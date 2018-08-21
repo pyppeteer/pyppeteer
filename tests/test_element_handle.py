@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 import sys
 
 from syncer import sync
 
+import pyppeteer
 from pyppeteer.errors import ElementHandleError
 
 from .base import BaseTestCase
@@ -45,6 +47,14 @@ class TestBoundingBox(BaseTestCase):
 
 
 class TestBoxModel(BaseTestCase):
+    def setUp(self):
+        self._old_debug = pyppeteer.DEBUG
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        pyppeteer.DEBUG = self._old_debug
+
     @sync
     async def test_box_model(self):
         await self.page.goto(self.url + 'static/resetcss.html')
@@ -105,7 +115,20 @@ class TestBoxModel(BaseTestCase):
     async def test_box_model_invisible(self):
         await self.page.setContent('<div style="display:none;">hi</div>')
         element = await self.page.J('div')
-        self.assertIsNone(await element.boxModel())
+        with self.assertLogs('pyppeteer.element_handle', logging.DEBUG):
+            self.assertIsNone(await element.boxModel())
+
+    @sync
+    async def test_debug_error(self):
+        await self.page.setContent('<div style="display:none;">hi</div>')
+        element = await self.page.J('div')
+        pyppeteer.DEBUG = True
+        with self.assertLogs('pyppeteer.element_handle', logging.ERROR):
+            self.assertIsNone(await element.boxModel())
+        pyppeteer.DEBUG = False
+        with self.assertRaises(AssertionError):
+            with self.assertLogs('pyppeteer.element_handle', logging.INFO):
+                self.assertIsNone(await element.boxModel())
 
 
 class TestContentFrame(BaseTestCase):

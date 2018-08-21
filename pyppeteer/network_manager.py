@@ -18,6 +18,7 @@ from pyee import EventEmitter
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.frame_manager import FrameManager, Frame
+from pyppeteer.helper import debugError
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
@@ -125,7 +126,7 @@ class NetworkManager(EventEmitter):
         try:
             await self._client.send(method, msg)
         except Exception as e:
-            logger.debug(e)
+            debugError(logger, e)
 
     def _onRequestIntercepted(self, event: dict) -> None:  # noqa: C901
         if event.get('authChallenge'):
@@ -467,7 +468,7 @@ class Request(object):
         try:
             await self._client.send('Network.continueInterceptedRequest', opt)
         except Exception as e:
-            logger.debug(e)
+            debugError(logger, e)
 
     async def respond(self, response: Dict) -> None:  # noqa: C901
         """Fulfills request with given response.
@@ -526,7 +527,7 @@ class Request(object):
                 'rawResponse': rawResponse,
             })
         except Exception as e:
-            logger.debug(e)
+            debugError(logger, e)
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
@@ -549,10 +550,13 @@ class Request(object):
         if self._interceptionHandled:
             raise NetworkError('Request is already handled.')
         self._interceptionHandled = True
-        await self._client.send('Network.continueInterceptedRequest', dict(
-            interceptionId=self._interceptionId,
-            errorReason=errorReason,
-        ))
+        try:
+            await self._client.send('Network.continueInterceptedRequest', dict(
+                interceptionId=self._interceptionId,
+                errorReason=errorReason,
+            ))
+        except Exception as e:
+            debugError(logger, e)
 
 
 errorReasons = {
