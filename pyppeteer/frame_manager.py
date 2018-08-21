@@ -891,7 +891,8 @@ class WaitTask(object):
                 await success.dispose()
                 return
         except NetworkError:
-            await success.dispose()
+            if success is not None:
+                await success.dispose()
             return
 
         # page is navigated and context is destroyed.
