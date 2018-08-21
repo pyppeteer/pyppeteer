@@ -1934,3 +1934,9 @@ class TestEvents(BaseTestCase):
         newPage.on('close', lambda: closedPromise.set_result(True))
         await newPage.close()
         await closedPromise
+
+
+class TestBrowser(BaseTestCase):
+    @sync
+    async def test_get_browser(self):
+        self.assertIs(self.page.browser, self.browser)

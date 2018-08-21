@@ -1,6 +1,12 @@
 History
 =======
 
+## Version 0.0.22 (next version)
+
+* Add `Page.browser`
+* Add `Target.browser`
+
+
 ## Version 0.0.21 (2018-08-21)
 
 Catch up puppeteer v1.2.0
@@ -15,6 +21,7 @@ Catch up puppeteer v1.2.0
 * Fix anchor navigation
 * Fix to return response via redirects
 * Continue to find WS URL while process is alive
+
 
 ## Version 0.0.20 (2018-08-11)
 

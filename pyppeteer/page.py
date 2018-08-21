@@ -32,7 +32,7 @@ from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Target  # noqa: F401
+    from pyppeteer.browser import Browser, Target  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -172,6 +172,11 @@ class Page(EventEmitter):
     def target(self) -> 'Target':
         """Return a target this page created from."""
         return self._target
+
+    @property
+    def browser(self) -> 'Browser':
+        """Get the browser the page belongs to."""
+        return self._target.browser
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))

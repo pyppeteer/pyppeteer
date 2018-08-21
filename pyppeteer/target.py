@@ -17,12 +17,13 @@ if TYPE_CHECKING:
 class Target(object):
     """Browser's target class."""
 
-    def __init__(self, targetInfo: Dict,
+    def __init__(self, targetInfo: Dict, browser: 'Browser',
                  sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
                  ignoreHTTPSErrors: bool, appMode: bool,
                  screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
                  ) -> None:
         self._targetInfo = targetInfo
+        self._browser = browser
         self._targetId = targetInfo.get('targetId', '')
         self._sessionFactory = sessionFactory
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
@@ -81,6 +82,11 @@ class Target(object):
         if _type in ['page', 'service_worker', 'browser']:
             return _type
         return 'other'
+
+    @property
+    def browser(self) -> 'Browser':
+        """Get the browser the target belongs to."""
+        return self._browser
 
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo
