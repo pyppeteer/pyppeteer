@@ -121,6 +121,12 @@ class NetworkManager(EventEmitter):
             )
         )
 
+    async def _send(self, method: str, msg: dict) -> None:
+        try:
+            await self._client.send(method, msg)
+        except Exception as e:
+            logger.debug(e)
+
     def _onRequestIntercepted(self, event: dict) -> None:  # noqa: C901
         if event.get('authChallenge'):
             response = 'Default'
@@ -132,8 +138,7 @@ class NetworkManager(EventEmitter):
             username = getattr(self, '_credentials', {}).get('username')
             password = getattr(self, '_credentials', {}).get('password')
 
-            # TODO: Catch and report error if possible
-            self._client._loop.create_task(self._client.send(
+            self._client._loop.create_task(self._send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                     'authChallengeResponse': {
@@ -147,8 +152,7 @@ class NetworkManager(EventEmitter):
 
         if (not self._userRequestInterceptionEnabled and
                 self._protocolRequestInterceptionEnabled):
-            # TODO: Catch and report error if possible
-            self._client._loop.create_task(self._client.send(
+            self._client._loop.create_task(self._send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                 }

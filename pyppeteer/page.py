@@ -259,12 +259,17 @@ class Page(EventEmitter):
         """
         self._defaultNavigationTimeout = timeout
 
+    async def _send(self, method: str, msg: dict) -> None:
+        try:
+            await self._client.send(method, msg)
+        except Exception as e:
+            logger.debug(e)
+
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
-        # TODO: Catch and report error if possible
         self._client._loop.create_task(
-            self._client.send('Security.handleCertificateError', {
+            self._send('Security.handleCertificateError', {
                 'eventId': event.get('eventId'),
                 'action': 'continue'
             })
