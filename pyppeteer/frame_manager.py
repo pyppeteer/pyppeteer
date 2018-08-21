@@ -893,7 +893,6 @@ class WaitTask(object):
             await success.dispose()
             return
 
-
         # page is navigated and context is destroyed.
         # Try again in the new execution context.
         if (isinstance(error, NetworkError) and
