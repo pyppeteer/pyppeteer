@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.20 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.21 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -42,13 +42,29 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-21-2018-08-21">
+<h2>Version 0.0.21 (2018-08-21)<a class="headerlink" href="#version-0-0-21-2018-08-21" title="Permalink to this headline">¶</a></h2>
+<p>Catch up puppeteer v1.2.0</p>
+<ul class="simple">
+<li>Add <code class="docutils literal notranslate"><span class="pre">pyppeteer-install</span></code> command</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">autoClose</span></code> option to <code class="docutils literal notranslate"><span class="pre">launch</span></code> function</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">loop</span></code> option to <code class="docutils literal notranslate"><span class="pre">launch</span></code> function (experimental)</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.setBypassCSP</span></code> method</li>
+<li><code class="docutils literal notranslate"><span class="pre">Page.tracing.stop</span></code> returns result data</li>
+<li>Rename <code class="docutils literal notranslate"><span class="pre">documentloaded</span></code> to <code class="docutils literal notranslate"><span class="pre">domcontentloaded</span></code> on <code class="docutils literal notranslate"><span class="pre">waitUntil</span></code> option</li>
+<li>Fix <code class="docutils literal notranslate"><span class="pre">slowMo</span></code> option</li>
+<li>Fix anchor navigation</li>
+<li>Fix to return response via redirects</li>
+<li>Continue to find WS URL while process is alive</li>
+</ul>
+</div>
 <div class="section" id="version-0-0-20-2018-08-11">
 <h2>Version 0.0.20 (2018-08-11)<a class="headerlink" href="#version-0-0-20-2018-08-11" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li>Run on msys/cygwin, anyway</li>
 <li>Raise error correctly when connection failed (PR#91)</li>
 <li>Change browser download location and temporary user data directory to:<ul>
-<li>If <code class="docutils literal notranslate"><span class="pre">$PYPPETEER_HOME</span></code> environment variable is defined, use this location.</li>
+<li>If <code class="docutils literal notranslate"><span class="pre">$PYPPETEER_HOME</span></code> environment variable is defined, use this location</li>
 <li>Otherwise, use platform dependent locations, based on <a class="reference external" href="https://pypi.org/project/appdirs/">appdirs</a>:<ul>
 <li><code class="docutils literal notranslate"><span class="pre">'C:\Users\&lt;username&gt;\AppData\Local\pyppeteer'</span></code> (Windows)</li>
 <li><code class="docutils literal notranslate"><span class="pre">'/Users/&lt;username&gt;/Library/Application</span> <span class="pre">Support/pyppeteer'</span></code> (OS X)</li>
@@ -153,10 +169,10 @@
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">pyppeteer.launch()</span></code> is now <strong>coroutine</strong></li>
 <li>Implement <code class="docutils literal notranslate"><span class="pre">connect</span></code> function</li>
-<li><code class="docutils literal notranslate"><span class="pre">PYPPETEER_DOWNLAOD_HOST</span></code> env variable specifies host part of URL to downlaod chromium</li>
+<li><code class="docutils literal notranslate"><span class="pre">PYPPETEER_DOWNLAOD_HOST</span></code> env variable specifies host part of URL to download chromium</li>
 <li>Rename <code class="docutils literal notranslate"><span class="pre">setRequestInterceptionEnable</span></code> to <code class="docutils literal notranslate"><span class="pre">setRequestInterception</span></code></li>
 <li>Rename <code class="docutils literal notranslate"><span class="pre">Page.getMetrics</span></code> to <code class="docutils literal notranslate"><span class="pre">Page.metrics</span></code></li>
-<li>Implement <code class="docutils literal notranslate"><span class="pre">Browser.pages</span></code> to acccess all pages<ul>
+<li>Implement <code class="docutils literal notranslate"><span class="pre">Browser.pages</span></code> to access all pages<ul>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Target</span></code> class and some new method on Browser</li>
 </ul>
 </li>
@@ -176,7 +192,7 @@
 <li><code class="docutils literal notranslate"><span class="pre">Page.queryObjects</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">Page.exposeFunction</span></code></li>
 <li>Request interception</li>
-<li>Console api</li>
+<li>Console API</li>
 <li>websocket error on closing browser (#24)</li>
 </ul>
 </li>
@@ -290,6 +306,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-21-2018-08-21">Version 0.0.21 (2018-08-21)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-20-2018-08-11">Version 0.0.20 (2018-08-11)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-19-2018-07-05">Version 0.0.19 (2018-07-05)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-18-2018-07-04">Version 0.0.18 (2018-07-04)</a></li>
@@ -333,7 +350,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |

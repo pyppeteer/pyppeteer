@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.20 documentation</title>
+    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.21 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -54,8 +54,8 @@
 <span class="kn">import</span> <span class="nn">os</span>
 <span class="kn">import</span> <span class="nn">os.path</span>
 <span class="kn">from</span> <span class="nn">pathlib</span> <span class="k">import</span> <span class="n">Path</span>
-<span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">signal</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
 <span class="kn">import</span> <span class="nn">sys</span>
 <span class="kn">import</span> <span class="nn">tempfile</span>
@@ -113,6 +113,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="n">get_free_port</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;http://127.0.0.1:</span><span class="si">{self.port}</span><span class="s1">&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">chrome_args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;loop&#39;</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">())</span>
 
         <span class="n">logLevel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logLevel&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">logLevel</span><span class="p">:</span>
@@ -188,8 +189,8 @@
         <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">options</span><span class="p">[</span><span class="s1">&#39;env&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;env&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dumpio&#39;</span><span class="p">):</span>
-            <span class="n">options</span><span class="p">[</span><span class="s1">&#39;stdout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>
-            <span class="n">options</span><span class="p">[</span><span class="s1">&#39;stderr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span>
+            <span class="n">options</span><span class="p">[</span><span class="s1">&#39;stdout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+            <span class="n">options</span><span class="p">[</span><span class="s1">&#39;stderr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">proc</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span><span class="p">,</span>
@@ -198,10 +199,11 @@
 
         <span class="k">def</span> <span class="nf">_close_process</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">chromeClosed</span><span class="p">:</span>
-                <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">killChrome</span><span class="p">())</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">killChrome</span><span class="p">())</span>
 
         <span class="c1"># dont forget to close browser process</span>
-        <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">_close_process</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;autoClose&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
+            <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">_close_process</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;handleSIGINT&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
             <span class="n">signal</span><span class="o">.</span><span class="n">signal</span><span class="p">(</span><span class="n">signal</span><span class="o">.</span><span class="n">SIGINT</span><span class="p">,</span> <span class="n">_close_process</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;handleSIGTERM&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
@@ -214,13 +216,14 @@
         <span class="n">connectionDelay</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;slowMo&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">browserWSEndpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_ws_endpoint</span><span class="p">()</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Browser listening on: </span><span class="si">{self.browserWSEndpoint}</span><span class="s1">&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">browserWSEndpoint</span><span class="p">,</span> <span class="n">connectionDelay</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">browserWSEndpoint</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span> <span class="n">connectionDelay</span><span class="p">)</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">Browser</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">killChrome</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_ws_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">+</span> <span class="s1">&#39;/json/version&#39;</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">poll</span><span class="p">()</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">with</span> <span class="n">urlopen</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -229,8 +232,11 @@
             <span class="k">except</span> <span class="n">URLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">continue</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># cannot connet to browser for 10 seconds</span>
-            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Failed to connect to browser port: </span><span class="si">{url}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span>
+                <span class="s1">&#39;Browser closed unexpectedly:</span><span class="se">\n</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;webSocketDebuggerUrl&#39;</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">waitForChromeToClose</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -295,6 +301,9 @@
 <span class="sd">      ``False``.</span>
 <span class="sd">    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the</span>
 <span class="sd">      root logger.</span>
+<span class="sd">    * ``autoClose`` (bool): Automatically close browser process when sctipt</span>
+<span class="sd">      completed. Defaults to ``True``.</span>
+<span class="sd">    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).</span>
 <span class="sd">    * ``appMode`` (bool): Deprecated.</span>
 
 <span class="sd">    .. note::</span>
@@ -323,6 +332,7 @@
 <span class="sd">      milliseconds.</span>
 <span class="sd">    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the</span>
 <span class="sd">      root logger.</span>
+<span class="sd">    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
     <span class="n">logLevel</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logLevel&#39;</span><span class="p">)</span>
@@ -333,7 +343,9 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">browserWSEndpoint</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Need `browserWSEndpoint` option.&#39;</span><span class="p">)</span>
     <span class="n">connectionDelay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;slowMo&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">connection</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="n">browserWSEndpoint</span><span class="p">,</span> <span class="n">connectionDelay</span><span class="p">)</span>
+    <span class="n">connection</span> <span class="o">=</span> <span class="n">Connection</span><span class="p">(</span><span class="n">browserWSEndpoint</span><span class="p">,</span>
+                            <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;loop&#39;</span><span class="p">,</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()),</span>
+                            <span class="n">connectionDelay</span><span class="p">)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">Browser</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
         <span class="n">connection</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Browser.close&#39;</span><span class="p">))</span></div>
 
@@ -407,7 +419,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

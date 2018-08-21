@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.20 documentation</title>
+    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.21 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -50,9 +50,9 @@
 <span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">json</span>
-<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="k">import</span> <span class="n">unquote</span>
 <span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">SimpleNamespace</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">urllib.parse</span> <span class="k">import</span> <span class="n">unquote</span>
 
 <span class="kn">from</span> <span class="nn">pyee</span> <span class="k">import</span> <span class="n">EventEmitter</span>
 
@@ -170,7 +170,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_attemptedAuthentications</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">])</span>
             <span class="n">username</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_credentials&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
             <span class="n">password</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_credentials&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;password&#39;</span><span class="p">)</span>
-            <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
                 <span class="s1">&#39;Network.continueInterceptedRequest&#39;</span><span class="p">,</span> <span class="p">{</span>
                     <span class="s1">&#39;interceptionId&#39;</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">],</span>
                     <span class="s1">&#39;authChallengeResponse&#39;</span><span class="p">:</span> <span class="p">{</span>
@@ -184,13 +184,13 @@
 
         <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_userRequestInterceptionEnabled</span> <span class="ow">and</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_protocolRequestInterceptionEnabled</span><span class="p">):</span>
-            <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
                 <span class="s1">&#39;Network.continueInterceptedRequest&#39;</span><span class="p">,</span> <span class="p">{</span>
                     <span class="s1">&#39;interceptionId&#39;</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">],</span>
                 <span class="p">}</span>
             <span class="p">))</span>
 
-        <span class="k">if</span> <span class="s1">&#39;redirectURL&#39;</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">&#39;redirectUrl&#39;</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
             <span class="n">request</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionIdToRequest</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
                 <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">request</span><span class="p">:</span>
@@ -243,6 +243,9 @@
                             <span class="n">securityDetails</span><span class="p">)</span>
         <span class="n">request</span><span class="o">.</span><span class="n">_response</span> <span class="o">=</span> <span class="n">response</span>
         <span class="n">request</span><span class="o">.</span><span class="n">_redirectChain</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">_bodyLoadedPromiseFulfill</span><span class="p">(</span>
+            <span class="n">NetworkError</span><span class="p">(</span><span class="s1">&#39;Response body is unavailable for redirect response&#39;</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_requestIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_requestId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_attemptedAuthentications</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">)</span>
@@ -329,7 +332,9 @@
         <span class="c1"># @see https://crbug.com/750469</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="p">:</span>
             <span class="k">return</span>
-        <span class="n">request</span><span class="o">.</span><span class="n">_completePromiseFulfill</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">response</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">_bodyLoadedPromiseFulfill</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_requestIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_requestId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_attemptedAuthentications</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">)</span>
@@ -342,7 +347,9 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">request</span><span class="p">:</span>
             <span class="k">return</span>
         <span class="n">request</span><span class="o">.</span><span class="n">_failureText</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errorText&#39;</span><span class="p">)</span>
-        <span class="n">request</span><span class="o">.</span><span class="n">_completePromiseFulfill</span><span class="p">()</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">response</span>
+        <span class="k">if</span> <span class="n">response</span><span class="p">:</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">_bodyLoadedPromiseFulfill</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_requestIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_requestId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionIdToRequest</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_attemptedAuthentications</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_interceptionId</span><span class="p">)</span>
@@ -375,7 +382,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionHandled</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_response</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Response</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_failureText</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_completePromise</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">=</span> <span class="n">url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_resourceType</span> <span class="o">=</span> <span class="n">resourceType</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
@@ -387,9 +393,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_redirectChain</span> <span class="o">=</span> <span class="n">redirectChain</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_fromMemoryCache</span> <span class="o">=</span> <span class="kc">False</span>
-
-    <span class="k">def</span> <span class="nf">_completePromiseFulfill</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_completePromise</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -611,7 +614,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request</span> <span class="o">=</span> <span class="n">request</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">=</span> <span class="n">status</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_contentPromise</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contentPromise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bodyLoadedPromise</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_future</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fromDiskCache</span> <span class="o">=</span> <span class="n">fromDiskCache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fromServiceWorker</span> <span class="o">=</span> <span class="n">fromServiceWorker</span>
@@ -625,6 +630,9 @@
                 <span class="n">securityDetails</span><span class="p">[</span><span class="s1">&#39;validTo&#39;</span><span class="p">],</span>
                 <span class="n">securityDetails</span><span class="p">[</span><span class="s1">&#39;protocol&#39;</span><span class="p">],</span>
             <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_bodyLoadedPromiseFulfill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">Exception</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bodyLoadedPromise</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -659,6 +667,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_securityDetails</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_bufread</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bodyLoadedPromise</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">result</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.getResponseBody&#39;</span><span class="p">,</span> <span class="p">{</span>
             <span class="s1">&#39;requestId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request</span><span class="o">.</span><span class="n">_requestId</span>
         <span class="p">})</span>
@@ -670,7 +681,7 @@
 <div class="viewcode-block" id="Response.buffer"><a class="viewcode-back" href="../../reference.html#pyppeteer.network_manager.Response.buffer">[docs]</a>    <span class="k">def</span> <span class="nf">buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Retrun awaitable which resolves to bytes with response body.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contentPromise</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
-            <span class="k">return</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bufread</span><span class="p">())</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_bufread</span><span class="p">())</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contentPromise</span></div>
 
 <div class="viewcode-block" id="Response.text"><a class="viewcode-back" href="../../reference.html#pyppeteer.network_manager.Response.text">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">text</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -892,7 +903,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

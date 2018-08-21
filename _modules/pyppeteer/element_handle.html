@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.20 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.21 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -51,7 +51,6 @@
 <span class="kn">import</span> <span class="nn">os.path</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
 
-<span class="c1"># from pyppeteer import helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">CDPSession</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.execution_context</span> <span class="k">import</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">JSHandle</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">ElementHandleError</span><span class="p">,</span> <span class="n">NetworkError</span>
@@ -59,7 +58,6 @@
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">Frame</span><span class="p">,</span> <span class="n">FrameManager</span>  <span class="c1"># noqa: F401</span>
-    <span class="c1"># from pyppeteer.page import Page  # noqa: F401</span>
 
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -270,8 +268,8 @@
         <span class="sd">&quot;&quot;&quot;Return boxes of element.</span>
 
 <span class="sd">        Return ``None`` if element is not visivle. Boxes are represented as an</span>
-<span class="sd">        list of dictionaries, {x, y} for each point, points clock-wise as</span>
-<span class="sd">        below:</span>
+<span class="sd">        list of points; each Point is a dictionary ``{x, y}``. Box points are</span>
+<span class="sd">        sorted clock-wise.</span>
 
 <span class="sd">        Returned value is a dictionary with the following fields:</span>
 
@@ -474,7 +472,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.6</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
