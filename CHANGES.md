@@ -5,6 +5,7 @@ History
 
 * Add `Page.browser`
 * Add `Target.browser`
+* Fix `Page.goto` to return response when page pushes new state
 
 
 ## Version 0.0.21 (2018-08-21)

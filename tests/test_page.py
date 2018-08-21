@@ -396,6 +396,12 @@ class TestGoto(BaseTestCase):
         self.assertIsNone(response)
 
     @sync
+    async def test_response_when_page_changes_url(self):
+        response = await self.page.goto(self.url + 'static/historyapi.html')
+        self.assertTrue(response)
+        self.assertEqual(response.status, 200)
+
+    @sync
     async def test_goto_subframe_204(self):
         await self.page.goto(self.url + 'static/frame-204.html')
 

@@ -759,7 +759,7 @@ function deliverResult(name, seq, result) {
         if error:
             raise error
 
-        request = requests.get(mainFrame.url)
+        request = requests.get(mainFrame._navigationURL)
         return request.response if request else None
 
     async def _navigate(self, url: str, referrer: str) -> Optional[str]:

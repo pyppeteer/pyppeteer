@@ -768,6 +768,7 @@ function(html) {
 
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
+        self._navigationURL = framePayload.get('url', '')
         self._url = framePayload.get('url', '')
 
     def _navigatedWithinDocument(self, url: str) -> None:
