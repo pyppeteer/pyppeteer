@@ -4,6 +4,7 @@
 """Helper functions."""
 
 import json
+import logging
 import math
 from typing import Any, Callable, Dict, List
 
@@ -11,6 +12,8 @@ from pyee import EventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
+
+logger = logging.getLogger(__name__)
 
 
 def evaluationString(fun: str, *args: Any) -> str:
@@ -96,10 +99,10 @@ async def releaseObject(client: CDPSession, remoteObject: dict) -> None:
         await client.send('Runtime.releaseObject', {
             'objectId': objectId
         })
-    except Exception:
+    except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
-        pass
+        logger.debug(e)
 
 
 def get_positive_int(obj: dict, name: str) -> int:

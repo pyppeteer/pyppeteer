@@ -8,6 +8,7 @@ import base64
 from collections import OrderedDict
 import copy
 import json
+import logging
 from types import SimpleNamespace
 from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 from urllib.parse import unquote
@@ -21,6 +22,8 @@ from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkManager(EventEmitter):
@@ -128,6 +131,8 @@ class NetworkManager(EventEmitter):
                 self._attemptedAuthentications.add(event['interceptionId'])
             username = getattr(self, '_credentials', {}).get('username')
             password = getattr(self, '_credentials', {}).get('password')
+
+            # TODO: Catch and report error if possible
             self._client._loop.create_task(self._client.send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
@@ -142,6 +147,7 @@ class NetworkManager(EventEmitter):
 
         if (not self._userRequestInterceptionEnabled and
                 self._protocolRequestInterceptionEnabled):
+            # TODO: Catch and report error if possible
             self._client._loop.create_task(self._client.send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
@@ -454,7 +460,10 @@ class Request(object):
         self._interceptionHandled = True
         opt = {'interceptionId': self._interceptionId}
         opt.update(overrides)
-        await self._client.send('Network.continueInterceptedRequest', opt)
+        try:
+            await self._client.send('Network.continueInterceptedRequest', opt)
+        except Exception as e:
+            logger.debug(e)
 
     async def respond(self, response: Dict) -> None:  # noqa: C901
         """Fulfills request with given response.
@@ -507,10 +516,13 @@ class Request(object):
             responseBuffer = responseBuffer + responseBody
 
         rawResponse = base64.b64encode(responseBuffer).decode('ascii')
-        await self._client.send('Network.continueInterceptedRequest', {
-            'interceptionId': self._interceptionId,
-            'rawResponse': rawResponse,
-        })
+        try:
+            await self._client.send('Network.continueInterceptedRequest', {
+                'interceptionId': self._interceptionId,
+                'rawResponse': rawResponse,
+            })
+        except Exception as e:
+            logger.debug(e)
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.

@@ -262,6 +262,7 @@ class Page(EventEmitter):
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
+        # TODO: Catch and report error if possible
         self._client._loop.create_task(
             self._client.send('Security.handleCertificateError', {
                 'eventId': event.get('eventId'),

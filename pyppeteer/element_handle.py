@@ -99,7 +99,8 @@ class ElementHandle(JSHandle):
                 'DOM.getBoxModel',
                 {'objectId': self._remoteObject.get('objectId')},
             )
-        except NetworkError:
+        except NetworkError as e:
+            logger.debug(e)
             result = None
         return result
 
