@@ -336,6 +336,19 @@ console.log(Promise.resolve('should not wait until resolved!'));
         msg = messages[0]
         self.assertEqual(msg.text, 'JSHandle@object')
 
+    @sync
+    async def test_trigger_correct_log(self):
+        await self.page.goto('about:blank')
+        messages = []
+        self.page.on('console', lambda m: messages.append(m))
+        asyncio.ensure_future(self.page.evaluate(
+            'async url => fetch(url).catch(e => {})', self.url + 'empty'))
+        await waitEvent(self.page, 'console')
+        self.assertEqual(len(messages), 1)
+        message = messages[0]
+        self.assertIn('No \'Access-Control-Allow-Origin\'', message.text)
+        self.assertEqual(message.type, 'error')
+
 
 class TestDOMContentLoaded(BaseTestCase):
     @sync

@@ -96,6 +96,7 @@ class Page(EventEmitter):
             client.send('Runtime.enable', {}),
             client.send('Security.enable', {}),
             client.send('Performance.enable', {}),
+            client.send('Log.enable', {}),
         )
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
@@ -162,6 +163,8 @@ class Page(EventEmitter):
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
+        client.on('Log.entryAdded',
+                  lambda event: self._onLogEntryAdded(event))
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
@@ -180,6 +183,16 @@ class Page(EventEmitter):
 
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
+
+    def _onLogEntryAdded(self, event: Dict) -> None:
+        entry = event.get('entry', {})
+        level = entry.get('level', '')
+        text = entry.get('text', '')
+        args = entry.get('args', [])
+        for arg in args:
+            helper.releaseObject(self._client, arg)
+
+        self.emit(Page.Events.Console, ConsoleMessage(level, text))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -1454,13 +1467,14 @@ class ConsoleMessage(object):
     ConsoleMessage objects are dispatched by page via the ``console`` event.
     """
 
-    def __init__(self, type: str, text: str, args: List[JSHandle]) -> None:
+    def __init__(self, type: str, text: str, args: List[JSHandle] = None
+                 ) -> None:
         #: (str) type of console message
         self._type = type
         #: (str) console message string
         self._text = text
         #: list of JSHandle
-        self._args = args
+        self._args = args if args is not None else []
 
     @property
     def type(self) -> str:
