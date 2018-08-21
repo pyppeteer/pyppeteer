@@ -10,10 +10,19 @@ from typing import Any, Callable, Dict, List
 
 from pyee import EventEmitter
 
+import pyppeteer
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 
 logger = logging.getLogger(__name__)
+
+
+def debugError(_logger: logging.Logger, msg: Any) -> None:
+    """Log error messages."""
+    if pyppeteer.DEBUG:
+        _logger.error(msg)
+    else:
+        _logger.debug(msg)
 
 
 def evaluationString(fun: str, *args: Any) -> str:

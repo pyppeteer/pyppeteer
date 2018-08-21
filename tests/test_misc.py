@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 import unittest
 
 import pyppeteer
-from pyppeteer.helper import get_positive_int
+from pyppeteer.helper import debugError, get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
 
 
@@ -62,3 +63,40 @@ class TestPositiveInt(unittest.TestCase):
     def test_negative_int(self):
         with self.assertRaises(ValueError):
             get_positive_int({'a': -1}, 'a')
+
+
+class TestDebugError(unittest.TestCase):
+    def setUp(self):
+        self._old_debug = pyppeteer.DEBUG
+        self.logger = logging.getLogger('pyppeteer.test')
+
+    def tearDown(self):
+        pyppeteer.DEBUG = self._old_debug
+
+    def test_debug_default(self):
+        with self.assertLogs('pyppeteer.test', logging.DEBUG):
+            debugError(self.logger, 'test')
+        with self.assertRaises(AssertionError):
+            with self.assertLogs('pyppeteer', logging.INFO):
+                debugError(self.logger, 'test')
+
+    def test_debug_enabled(self):
+        pyppeteer.DEBUG = True
+        with self.assertLogs('pyppeteer.test', logging.ERROR):
+            debugError(self.logger, 'test')
+
+    def test_debug_enable_disable(self):
+        pyppeteer.DEBUG = True
+        with self.assertLogs('pyppeteer.test', logging.ERROR):
+            debugError(self.logger, 'test')
+        pyppeteer.DEBUG = False
+        with self.assertLogs('pyppeteer.test', logging.DEBUG):
+            debugError(self.logger, 'test')
+        with self.assertRaises(AssertionError):
+            with self.assertLogs('pyppeteer.test', logging.INFO):
+                debugError(self.logger, 'test')
+
+    def test_debug_logger(self):
+        with self.assertRaises(AssertionError):
+            with self.assertLogs('pyppeteer', logging.DEBUG):
+                debugError(logging.getLogger('test'), 'test message')

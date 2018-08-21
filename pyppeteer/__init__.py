@@ -15,6 +15,7 @@ __chromimum_revision__ = '571375'
 __base_puppeteer_version__ = 'v1.2.0'
 __pyppeteer_home__ = os.environ.get(
     'PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+DEBUG = False
 
 # Setup root logger
 _logger = logging.getLogger('pyppeteer')
