@@ -5,7 +5,9 @@ History
 
 * Add `Page.browser`
 * Add `Target.browser`
+* Add `ElementHandle.querySelectorEval` and `ElementHandle.Jeval`
 * Add `runBeforeUnload` option to `Page.close` method
+* Change `Page.querySelectorEval` to raise `ElementHandleError` when element which matches `selector` is not found
 * Report 'Log' domain entries as 'console' events
 * Fix `Page.goto` to return response when page pushes new state
 

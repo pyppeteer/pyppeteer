@@ -687,7 +687,7 @@ class TestGoBack(BaseTestCase):
         self.assertEqual(self.page.url, self.url + 'first.html')
 
 
-class TestExposeFunctoin(BaseTestCase):
+class TestExposeFunction(BaseTestCase):
     @sync
     async def test_expose_function(self):
         await self.page.goto(self.url + 'empty')
@@ -1064,7 +1064,7 @@ class TestQuerySelector(BaseTestCase):
     @sync
     async def test_jeval_not_found(self):
         await self.page.goto(self.url + 'empty')
-        with self.assertRaises(PageError) as cm:
+        with self.assertRaises(ElementHandleError) as cm:
             await self.page.Jeval('section', 'e => e.id')
         self.assertIn(
             'failed to find element matching selector "section"',

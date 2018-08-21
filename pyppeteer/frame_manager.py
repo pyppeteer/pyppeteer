@@ -328,19 +328,14 @@ class Frame(object):
         return value
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Optional[Any]:
+                                *args: Any) -> Any:
         """Execute function on element which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
         """
-        elementHandle = await self.querySelector(selector)
-        if elementHandle is None:
-            raise PageError(
-                f'Error: failed to find element matching selector "{selector}"'
-            )
-        result = await self.evaluate(pageFunction, elementHandle, *args)
-        await elementHandle.dispose()
-        return result
+        document = await self._document()
+        value = await document.querySelectorEval(selector, pageFunction, *args)
+        return value
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
                                    *args: Any) -> Optional[Dict]:

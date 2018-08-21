@@ -334,10 +334,44 @@ class ElementHandle(JSHandle):
                 result.append(elementHandle)
         return result  # type: ignore
 
+    async def querySelectorEval(self, selector: str, pageFunction: str,
+                                *args: Any) -> Any:
+        """Run ``Page.querySelectorEval`` within the element.
+
+        This method runs ``document.querySelector`` within the element and
+        passes it as the first argument to ``pageFunction``. If there is no
+        element matching ``selector``, the method raises
+        ``ElementHandleError``.
+
+        If ``pageFunction`` returns a promise, then wait for the proimse to
+        resolve and return its value.
+
+        ``ElementHandle.Jeval`` is a shortcut of this method.
+
+        Example:
+
+        .. code:: python
+
+            tweetHandle = await page.querySelector('.tweet')
+            assert (await tweetHandle.querySelectorEval('.like', 'node => node.innerText')) == 100
+            assert (await tweetHandle.Jeval('.retweets', 'node => node.innerText')) == 10
+        """  # noqa: E501
+        elementHandle = await self.querySelector(selector)
+        if not elementHandle:
+            raise ElementHandleError(
+                f'Error: failed to find element matching selector "{selector}"'
+            )
+        result = await self.executionContext.evaluate(
+            pageFunction, elementHandle, *args)
+        await elementHandle.dispose()
+        return result
+
     #: alias to :meth:`querySelector`
     J = querySelector
     #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
+    #: alias to :meth:`querySelectorEval`
+    Jeval = querySelectorEval
 
     async def xpath(self, expression: str) -> List['ElementHandle']:
         """Evaluate XPath expression relative to this elementHandle.

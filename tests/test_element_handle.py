@@ -250,6 +250,26 @@ class TestQuerySelector(BaseTestCase):
         self.assertIsNone(second)
 
     @sync
+    async def test_element_handle_Jeval(self):
+        await self.page.setContent('''<html><body>
+            <div class="tweet">
+                <div class="like">100</div>
+                <div class="retweets">10</div>
+            </div>
+        </body></html>''')
+        tweet = await self.page.J('.tweet')
+        content = await tweet.Jeval('.like', 'node => node.innerText')
+        self.assertEqual(content, '100')
+
+    @sync
+    async def test_element_handle_Jeval_subtree(self):
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
+        await self.page.setContent(htmlContent)
+        elementHandle = await self.page.J('#myId')
+        content = await elementHandle.Jeval('.a', 'node => node.innerText')
+        self.assertEqual(content, 'a-child-div')
+
+    @sync
     async def test_element_handle_JJ(self):
         await self.page.setContent('''
 <html><body><div>A</div><br/><div>B</div></body></html>
