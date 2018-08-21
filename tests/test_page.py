@@ -927,6 +927,30 @@ class TestRequestInterception(BaseTestCase):
         self.assertIn('Request interception is not enabled', error.args[0])
 
     @sync
+    async def test_request_interception_with_file_url(self):
+        await self.page.setRequestInterception(True)
+        urls = []
+
+        async def set_urls(req):
+            urls.append(req.url.split('/').pop())
+            await req.continue_()
+
+        self.page.on(
+            'request', lambda req: asyncio.ensure_future(set_urls(req)))
+
+        def pathToFileURL(path: Path):
+            pathName = str(path).replace('\\', '/')
+            if not pathName.startswith('/'):
+                pathName = '/{}'.format(pathName)
+            return 'file://{}'.format(pathName)
+
+        target = Path(__file__).parent / 'static' / 'one-style.html'
+        await self.page.goto(pathToFileURL(target))
+        self.assertEqual(len(urls), 2)
+        self.assertIn('one-style.html', urls)
+        self.assertIn('one-style.css', urls)
+
+    @sync
     async def test_request_respond(self):
         await self.page.setRequestInterception(True)
 
