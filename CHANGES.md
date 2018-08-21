@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.21 (next version)
+## Version 0.0.21 (2018-08-21)
 
 * Add `pyppeteer-install` command
 * Add `autoClose` option to `launch` function
