@@ -4,10 +4,11 @@
 """Connection/Session management module."""
 
 import asyncio
+import concurrent.futures
 import json
 import logging
 from typing import Awaitable, Callable, TYPE_CHECKING
-import concurrent.futures
+
 from pyee import EventEmitter
 import websockets
 

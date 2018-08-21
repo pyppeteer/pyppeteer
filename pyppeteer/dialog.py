@@ -4,6 +4,7 @@
 """Dialog module."""
 
 from types import SimpleNamespace
+
 from pyppeteer.connection import CDPSession
 
 

@@ -12,8 +12,8 @@ import logging
 import os
 import os.path
 from pathlib import Path
-import signal
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile

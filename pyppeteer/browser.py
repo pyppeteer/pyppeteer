@@ -134,7 +134,7 @@ class Browser(EventEmitter):
             raise BrowserError('Failed to create page.')
         return page
 
-    def targets(self) -> List['Target']:
+    def targets(self) -> List[Target]:
         """Get all targets of this browser."""
         return [target for target in self._targets.values()
                 if target._isInitialized]

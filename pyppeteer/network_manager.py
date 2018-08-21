@@ -8,9 +8,9 @@ import base64
 from collections import OrderedDict
 import copy
 import json
-from urllib.parse import unquote
 from types import SimpleNamespace
 from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
+from urllib.parse import unquote
 
 from pyee import EventEmitter
 

@@ -9,7 +9,6 @@ import math
 import os.path
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
-# from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, NetworkError
@@ -17,7 +16,6 @@ from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
     from pyppeteer.frame_manager import Frame, FrameManager  # noqa: F401
-    # from pyppeteer.page import Page  # noqa: F401
 
 
 logger = logging.getLogger(__name__)

@@ -19,7 +19,7 @@ from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
-from pyppeteer.element_handle import ElementHandle  # noqa: F401
+from pyppeteer.element_handle import ElementHandle
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import JSHandle  # noqa: F401
@@ -251,7 +251,7 @@ class Page(EventEmitter):
             })
         )
 
-    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
+    async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get an Element which matches ``selector``.
 
         :arg str selector: A selector to search element.
@@ -295,7 +295,7 @@ class Page(EventEmitter):
         return await context.queryObjects(prototypeHandle)
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Optional[Any]:
+                                *args: Any) -> Any:
         """Execute function with an element which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -312,7 +312,7 @@ class Page(EventEmitter):
         return await frame.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Optional[Any]:
+                                   *args: Any) -> Any:
         """Execute function with all elements which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -326,7 +326,7 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.querySelectorAllEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
+    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
         """Get all element which matches `selector` as a list.
 
         :arg str selector: A selector to search element.
