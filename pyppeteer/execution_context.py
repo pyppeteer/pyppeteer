@@ -65,6 +65,7 @@ class ExecutionContext(object):
                 'contextId': self._contextId,
                 'returnByValue': False,
                 'awaitPromise': True,
+                'userGesture': True,
             })
             exceptionDetails = _obj.get('exceptionDetails')
             if exceptionDetails:
@@ -80,6 +81,7 @@ class ExecutionContext(object):
             'arguments': [self._convertArgument(arg) for arg in args],
             'returnByValue': False,
             'awaitPromise': True,
+            'userGesture': True,
         })
         exceptionDetails = _obj.get('exceptionDetails')
         if exceptionDetails:

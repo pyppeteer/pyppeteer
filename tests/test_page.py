@@ -208,6 +208,16 @@ class TestEvaluate(BaseTestCase):
         isFive = await self.page.evaluate('(e) => Object.is(e, 5)', aHandle)
         self.assertTrue(isFive)
 
+    @sync
+    async def test_simulate_user_gesture(self):
+        playAudio = '''function playAudio() {
+            const audio = document.createElement('audio');
+            audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            return audio.play();
+        }'''  # noqa: E501
+        await self.page.evaluate(playAudio)
+        await self.page.evaluate('({})()'.format(playAudio), force_expr=True)
+
 
 class TestOfflineMode(BaseTestCase):
     @sync
