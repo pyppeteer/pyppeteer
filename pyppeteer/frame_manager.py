@@ -884,8 +884,13 @@ class WaitTask(object):
                 await success.dispose()
             return
 
-        if not error and success and (
-                await self._frame.evaluate('s => !s', success)):
+        # Add try/except referring to puppeteer.
+        try:
+            if not error and success and (
+                    await self._frame.evaluate('s => !s', success)):
+                await success.dispose()
+                return
+        except NetworkError:
             await success.dispose()
             return
 
