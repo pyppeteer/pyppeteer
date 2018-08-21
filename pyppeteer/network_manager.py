@@ -8,6 +8,7 @@ import base64
 from collections import OrderedDict
 import copy
 import json
+import logging
 from types import SimpleNamespace
 from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
 from urllib.parse import unquote
@@ -17,10 +18,13 @@ from pyee import EventEmitter
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.frame_manager import FrameManager, Frame
+from pyppeteer.helper import debugError
 from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkManager(EventEmitter):
@@ -118,6 +122,12 @@ class NetworkManager(EventEmitter):
             )
         )
 
+    async def _send(self, method: str, msg: dict) -> None:
+        try:
+            await self._client.send(method, msg)
+        except Exception as e:
+            debugError(logger, e)
+
     def _onRequestIntercepted(self, event: dict) -> None:  # noqa: C901
         if event.get('authChallenge'):
             response = 'Default'
@@ -128,7 +138,8 @@ class NetworkManager(EventEmitter):
                 self._attemptedAuthentications.add(event['interceptionId'])
             username = getattr(self, '_credentials', {}).get('username')
             password = getattr(self, '_credentials', {}).get('password')
-            self._client._loop.create_task(self._client.send(
+
+            self._client._loop.create_task(self._send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                     'authChallengeResponse': {
@@ -142,7 +153,7 @@ class NetworkManager(EventEmitter):
 
         if (not self._userRequestInterceptionEnabled and
                 self._protocolRequestInterceptionEnabled):
-            self._client._loop.create_task(self._client.send(
+            self._client._loop.create_task(self._send(
                 'Network.continueInterceptedRequest', {
                     'interceptionId': event['interceptionId'],
                 }
@@ -454,7 +465,10 @@ class Request(object):
         self._interceptionHandled = True
         opt = {'interceptionId': self._interceptionId}
         opt.update(overrides)
-        await self._client.send('Network.continueInterceptedRequest', opt)
+        try:
+            await self._client.send('Network.continueInterceptedRequest', opt)
+        except Exception as e:
+            debugError(logger, e)
 
     async def respond(self, response: Dict) -> None:  # noqa: C901
         """Fulfills request with given response.
@@ -507,10 +521,13 @@ class Request(object):
             responseBuffer = responseBuffer + responseBody
 
         rawResponse = base64.b64encode(responseBuffer).decode('ascii')
-        await self._client.send('Network.continueInterceptedRequest', {
-            'interceptionId': self._interceptionId,
-            'rawResponse': rawResponse,
-        })
+        try:
+            await self._client.send('Network.continueInterceptedRequest', {
+                'interceptionId': self._interceptionId,
+                'rawResponse': rawResponse,
+            })
+        except Exception as e:
+            debugError(logger, e)
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
@@ -533,10 +550,13 @@ class Request(object):
         if self._interceptionHandled:
             raise NetworkError('Request is already handled.')
         self._interceptionHandled = True
-        await self._client.send('Network.continueInterceptedRequest', dict(
-            interceptionId=self._interceptionId,
-            errorReason=errorReason,
-        ))
+        try:
+            await self._client.send('Network.continueInterceptedRequest', dict(
+                interceptionId=self._interceptionId,
+                errorReason=errorReason,
+            ))
+        except Exception as e:
+            debugError(logger, e)
 
 
 errorReasons = {

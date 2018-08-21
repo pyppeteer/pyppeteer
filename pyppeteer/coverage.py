@@ -4,12 +4,16 @@
 """Coverage module."""
 
 from functools import cmp_to_key
+import logging
 from typing import Any, Dict, List
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
+from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
+
+logger = logging.getLogger(__name__)
 
 
 class Coverage(object):
@@ -164,9 +168,9 @@ class JSCoverage(object):
             )
             self._scriptURLs[scriptId] = url
             self._scriptSources[scriptId] = response.get('scriptSource')
-        except Exception:
+        except Exception as e:
             # This might happen if the page has already navigated away.
-            pass
+            debugError(logger, e)
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
@@ -246,9 +250,9 @@ class CSSCoverage(object):
             )
             self._stylesheetURLs[header['styleSheetId']] = header['sourceURL']
             self._stylesheetSources[header['styleSheetId']] = response['text']
-        except Exception:
+        except Exception as e:
             # This might happen if the page has already navigated away.
-            pass
+            debugError(logger, e)
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""

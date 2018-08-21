@@ -3,6 +3,7 @@ History
 
 ## Version 0.0.22 (next version)
 
+* Add `pyppeteer.DEBUG` variable
 * Add `Page.browser`
 * Add `Target.browser`
 * Add `ElementHandle.querySelectorEval` and `ElementHandle.Jeval`
