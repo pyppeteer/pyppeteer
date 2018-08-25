@@ -581,6 +581,14 @@ class TestWaitForNavigation(BaseTestCase):
         self.assertEqual(self.page.url, self.url + 'empty#foobar')
 
     @sync
+    async def test_return_nevigated_response_reload(self):
+        await self.page.goto(self.url + 'empty')
+        navPromise = asyncio.ensure_future(self.page.waitForNavigation())
+        await self.page.reload()
+        response = await navPromise
+        self.assertEqual(response.url, self.url + 'empty')
+
+    @sync
     async def test_history_push_state(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('''

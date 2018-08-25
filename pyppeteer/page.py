@@ -815,15 +815,32 @@ function deliverResult(name, seq, result) {
 
         This returns :class:`~pyppeteer.network_manager.Response` when the page
         navigates to a new URL or reloads. It is useful for when you run code
-        which will indirectly cause the page to navigate.
+        which will indirectly cause the page to navigate. In case of navigation
+        to a different anchor or navigation due to
+        `History API <https://developer.mozilla.org/en-US/docs/Web/API/History_API>`_
+        usage, the
+        navigation will return ``None``.
         Consider this example:
 
         .. code::
 
-            navigationPromise = page.waitForNavigation()
+            navigationPromise = async.ensure_future(page.waitForNavigation())
             await page.click('a.my-link')  # indirectly cause a navigation
             await navigationPromise  # wait until navigation finishes
-        """
+
+        or,
+
+        .. code::
+
+            await asyncio.wait([
+                page.click('a.my-link'),
+                page.waitForNavigation(),
+            ])
+
+        .. note::
+            Usage of the History API to chage the URL is considered a
+            navigation.
+        """  # noqa: E501
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
         if mainFrame is None:
