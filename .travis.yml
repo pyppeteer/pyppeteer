@@ -23,10 +23,10 @@ matrix:
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade python; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python3 --version; fi
 
 install:
-  - pip install tox
+  - python3 -m pip install tox
 
 script:
-  - tox
+  - python3 -m tox
