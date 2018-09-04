@@ -22,7 +22,7 @@ matrix:
       env: TOXENV="py37"
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrage python; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade python; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python --version; fi
 
 install:
