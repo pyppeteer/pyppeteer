@@ -11,6 +11,7 @@ History
 * Change `Page.querySelectorEval` to raise `ElementHandleError` when element which matches `selector` is not found
 * Report 'Log' domain entries as 'console' events
 * Fix `Page.goto` to return response when page pushes new state
+* (OS X) Suppress long log when extracting chromium
 
 
 ## Version 0.0.21 (2018-08-21)
