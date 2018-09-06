@@ -3,6 +3,8 @@ History
 
 ## Version 0.0.22 (next version)
 
+Catch up puppeteer v1.4.0
+
 * Add `pyppeteer.DEBUG` variable
 * Add `Page.browser`
 * Add `Target.browser`
