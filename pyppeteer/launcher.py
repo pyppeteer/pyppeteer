@@ -177,8 +177,11 @@ class Launcher(object):
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(
             self.browserWSEndpoint, self._loop, connectionDelay)
+        ignoreHTTPSErrors = bool(self.options.get('ignoreHTTPSErrors', False))
+        setDefaultViewport = not self.options.get('appMode', False)
         return await Browser.create(
-            self.connection, [], self.options, self.proc, self.killChrome)
+            self.connection, [], ignoreHTTPSErrors, setDefaultViewport,
+            self.proc, self.killChrome)
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
@@ -307,8 +310,9 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
                             connectionDelay)
     browserContextIds = (await connection.send('Target.getBrowserContexts')
                          ).get('browserContextIds', [])
+    ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
     return await Browser.create(
-        connection, browserContextIds, options, None,
+        connection, browserContextIds, ignoreHTTPSErrors, True, None,
         lambda: connection.send('Browser.close'))
 
 

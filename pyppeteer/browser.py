@@ -13,7 +13,6 @@ from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.page import Page
 from pyppeteer.target import Target
-from pyppeteer.util import merge_dict
 
 
 class Browser(EventEmitter):
@@ -32,13 +31,13 @@ class Browser(EventEmitter):
     )
 
     def __init__(self, connection: Connection, contextIds: List[str],
-                 options: Dict = None, process: Optional[Popen] = None,
+                 ignoreHTTPSErrors: bool, setDefaultViewport: bool,
+                 process: Optional[Popen] = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
-        options = merge_dict(options, kwargs)
-        self._ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
-        self._appMode = bool(options.get('appMode', False))
+        self._ignoreHTTPSErrors = ignoreHTTPSErrors
+        self._setDefaultViewport = setDefaultViewport
         self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
@@ -114,12 +113,13 @@ class Browser(EventEmitter):
 
     @staticmethod
     async def create(connection: Connection, contextIds: List[str],
-                     options: dict = None, process: Optional[Popen] = None,
+                     ignoreHTTPSErrors: bool, appMode: bool,
+                     process: Optional[Popen] = None,
                      closeCallback: Callable[[], Awaitable[None]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
-        options = merge_dict(options, kwargs)
-        browser = Browser(connection, contextIds, options, process, closeCallback)  # noqa: E501
+        browser = Browser(connection, contextIds, ignoreHTTPSErrors, appMode,
+                          process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -137,7 +137,7 @@ class Browser(EventEmitter):
             context,
             lambda: self._connection.createSession(targetInfo['targetId']),
             self._ignoreHTTPSErrors,
-            self._appMode,
+            self._setDefaultViewport,
             self._screenshotTaskQueue,
             self._connection._loop,
         )

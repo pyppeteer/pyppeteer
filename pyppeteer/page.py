@@ -83,7 +83,7 @@ class Page(EventEmitter):
 
     @staticmethod
     async def create(client: CDPSession, target: 'Target',
-                     ignoreHTTPSErrors: bool = False, appMode: bool = False,
+                     ignoreHTTPSErrors: bool, setDefaultViewport: bool,
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which makes new page object."""
         await client.send('Page.enable'),
@@ -102,13 +102,12 @@ class Page(EventEmitter):
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
-        if not appMode:
+        if setDefaultViewport:
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
     def __init__(self, client: CDPSession, target: 'Target', frameTree: Dict,
-                 ignoreHTTPSErrors: bool = False,
-                 screenshotTaskQueue: list = None,
+                 ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None,
                  ) -> None:
         super().__init__()
         self._client = client
