@@ -85,7 +85,7 @@ class TestBrowser(unittest.TestCase):
         await browser.close()
         self.assertTrue(errors)
 
-    @unittest.skipIf(os.environ.get('CI'), 'Skip headful test on CI')
+    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
     @sync
     async def test_background_target_type(self):
         extensionPath = Path(__file__).parent / 'static' / 'simple-extension'

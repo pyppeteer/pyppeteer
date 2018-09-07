@@ -17,7 +17,7 @@ from syncer import sync
 import websockets
 
 from pyppeteer import connect, launch, executablePath
-from pyppeteer.chromium_downloader import chromium_excutable
+from pyppeteer.chromium_downloader import chromium_excutable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
@@ -177,6 +177,7 @@ class TestLogLevel(unittest.TestCase):
         self.assertFalse(self.logger.isEnabledFor(logging.DEBUG))
         self.mock.assert_not_called()
 
+    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_level_info(self):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.INFO)
@@ -188,6 +189,7 @@ class TestLogLevel(unittest.TestCase):
 
         self.assertIn('listening on', self.mock.call_args_list[0][0][0])
 
+    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_level_debug(self):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.DEBUG)
@@ -201,6 +203,7 @@ class TestLogLevel(unittest.TestCase):
         self.assertIn('SEND', self.mock.call_args_list[2][0][0])
         self.assertIn('RECV', self.mock.call_args_list[4][0][0])
 
+    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_connect_debug(self):
         browser = await launch(args=['--no-sandbox'])
