@@ -293,6 +293,16 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, 'a-child-div')
 
     @sync
+    async def test_element_handle_with_missing_selector(self):
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
+        await self.page.setContent(htmlContent)
+        elementHandle = await self.page.J('#myId')
+        with self.assertRaises(ElementHandleError) as cm:
+            await elementHandle.Jeval('.a', 'node => node.innerText')
+        self.assertIn('Error: failed to find element matching selector ".a"',
+                      cm.exception.args[0])
+
+    @sync
     async def test_element_handle_JJ(self):
         await self.page.setContent('''
 <html><body><div>A</div><br/><div>B</div></body></html>
