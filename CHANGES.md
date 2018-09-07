@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.22 (next version)
+## Version 0.0.22 (2018-09-06)
 
 Catch up puppeteer v1.4.0
 
