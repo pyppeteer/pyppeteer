@@ -46,6 +46,13 @@ Browser Class
    :members:
    :exclude-members: create
 
+BrowserContext Class
+--------------------
+
+.. currentmodule:: pyppeteer.browser
+
+.. autoclass:: pyppeteer.browser.BrowserContext
+   :members:
 
 Page Class
 ----------
