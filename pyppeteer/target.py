@@ -75,11 +75,11 @@ class Target(object):
     def type(self) -> str:
         """Get type of this target.
 
-        Type can be ``'page'``, ``'service_worker'``, ``'browser'``, or
-        ``'other'``.
+        Type can be ``'page'``, ``'background_page'``, ``'service_worker'``,
+        ``'browser'``, or ``'other'``.
         """
         _type = self._targetInfo['type']
-        if _type in ['page', 'service_worker', 'browser']:
+        if _type in ['page', 'background_page', 'service_worker', 'browser']:
             return _type
         return 'other'
 

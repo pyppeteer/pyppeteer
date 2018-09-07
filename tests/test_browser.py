@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import os
+from pathlib import Path
 import unittest
 
 from syncer import sync
@@ -82,6 +84,25 @@ class TestBrowser(unittest.TestCase):
                 break
         await browser.close()
         self.assertTrue(errors)
+
+    @unittest.skipIf(os.environ.get('CI'), 'Skip headful test on CI')
+    @sync
+    async def test_background_target_type(self):
+        extensionPath = Path(__file__).parent / 'static' / 'simple-extension'
+        browser = await launch(
+            headless=False,
+            args=[
+                '--no-sandbox',
+                '--disable-extensions-except={}'.format(extensionPath),
+                '--load-extensions={}'.format(extensionPath),
+            ]
+        )
+        page = await browser.newPage()
+        targets = browser.targets()
+        backgroundPageTargets = [t for t in targets if t.type == 'background_page']  # noqa: E501
+        await page.close()
+        await browser.close()
+        self.assertTrue(backgroundPageTargets)
 
 
 class TestPageClose(BaseTestCase):
