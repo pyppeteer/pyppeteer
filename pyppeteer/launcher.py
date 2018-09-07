@@ -178,7 +178,7 @@ class Launcher(object):
         self.connection = Connection(
             self.browserWSEndpoint, self._loop, connectionDelay)
         return await Browser.create(
-            self.connection, self.options, self.proc, self.killChrome)
+            self.connection, [], self.options, self.proc, self.killChrome)
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
@@ -305,8 +305,11 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     connection = Connection(browserWSEndpoint,
                             options.get('loop', asyncio.get_event_loop()),
                             connectionDelay)
+    browserContextIds = (await connection.send('Target.getBrowserContexts')
+                         ).get('browserContextIds', [])
     return await Browser.create(
-        connection, options, None, lambda: connection.send('Browser.close'))
+        connection, browserContextIds, options, None,
+        lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:

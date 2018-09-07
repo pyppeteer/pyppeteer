@@ -11,19 +11,19 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.page import Page
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Browser  # noqa: F401
+    from pyppeteer.browser import Browser, BrowserContext  # noqa: F401
 
 
 class Target(object):
     """Browser's target class."""
 
-    def __init__(self, targetInfo: Dict, browser: 'Browser',
+    def __init__(self, targetInfo: Dict, browserContext: 'BrowserContext',
                  sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
                  ignoreHTTPSErrors: bool, appMode: bool,
                  screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
                  ) -> None:
         self._targetInfo = targetInfo
-        self._browser = browser
+        self._browserContext = browserContext
         self._targetId = targetInfo.get('targetId', '')
         self._sessionFactory = sessionFactory
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
@@ -86,7 +86,12 @@ class Target(object):
     @property
     def browser(self) -> 'Browser':
         """Get the browser the target belongs to."""
-        return self._browser
+        return self._browserContext.browser
+
+    @property
+    def browserContext(self) -> 'BrowserContext':
+        """Return the browser context the target belongs to."""
+        return self._browserContext
 
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo

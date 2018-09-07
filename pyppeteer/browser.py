@@ -31,8 +31,8 @@ class Browser(EventEmitter):
         Disconnected='disconnected',
     )
 
-    def __init__(self, connection: Connection, options: Dict = None,
-                 process: Optional[Popen] = None,
+    def __init__(self, connection: Connection, contextIds: List[str],
+                 options: Dict = None, process: Optional[Popen] = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
@@ -52,6 +52,12 @@ class Browser(EventEmitter):
             self._closeCallback = closeCallback
         else:
             self._closeCallback = _dummy_callback
+
+        self._defaultContext = BrowserContext(self, None)
+        self._contexts: Dict[str, BrowserContext] = dict()
+        for contextId in contextIds:
+            self._contexts[contextId] = BrowserContext(self, contextId)
+
         self._targets: Dict[str, Target] = dict()
         self._connection.setClosedCallback(
             lambda: self.emit(Browser.Events.Disconnected)
@@ -69,22 +75,66 @@ class Browser(EventEmitter):
         """
         return self._process
 
+    async def createIncogniteBrowserContext(self) -> 'BrowserContext':
+        """Create a new incognite browser context.
+
+        This won't share cookies/cache with other browser contexts.
+
+        .. code::
+
+            browser = await launch()
+            # Create a new incognite browser context.
+            context = await browser.createIncogniteBrowserContext()
+            # Create a new page in a pristine context.
+            page = await context.newPage()
+            # Do stuff
+            await page.goto('https://example.com')
+            ...
+        """
+        obj = await self._connection.send('Target.createBrowserContext')
+        browserContextId = obj['browserContextId']
+        context = BrowserContext(self, browserContextId)  # noqa: E501
+        self._contexts[browserContextId] = context
+        return context
+
+    @property
+    def browserContexts(self) -> List['BrowserContext']:
+        """Return a list of all open browser contexts.
+
+        In a newly created browser, this will return a single instance of
+        ``[BrowserContext]``
+        """
+        return [self._defaultContext] + [context for context in self._contexts.values()]  # noqa: E501
+
+    async def _disposeContext(self, contextId: str) -> None:
+        await self._connection.send('Target.disposeBrowserContext', {
+            'browserContextId': contextId,
+        })
+        self._contexts.pop(contextId, None)
+
     @staticmethod
-    async def create(connection: Connection, options: dict = None,
-                     process: Optional[Popen] = None,
+    async def create(connection: Connection, contextIds: List[str],
+                     options: dict = None, process: Optional[Popen] = None,
                      closeCallback: Callable[[], Awaitable[None]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
         options = merge_dict(options, kwargs)
-        browser = Browser(connection, options, process, closeCallback)
+        browser = Browser(connection, contextIds, options, process, closeCallback)  # noqa: E501
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
     async def _targetCreated(self, event: Dict) -> None:
         targetInfo = event['targetInfo']
+        browserContextId = targetInfo.get('browserContextId')
+
+        if browserContextId and browserContextId in self._contexts:
+            context = self._contexts[browserContextId]
+        else:
+            context = self._defaultContext
+
         target = Target(
             targetInfo,
-            self,
+            context,
             lambda: self._connection.createSession(targetInfo['targetId']),
             self._ignoreHTTPSErrors,
             self._appMode,
@@ -96,6 +146,7 @@ class Browser(EventEmitter):
         self._targets[targetInfo['targetId']] = target
         if await target._initializedPromise:
             self.emit(Browser.Events.TargetCreated, target)
+            context.emit(BrowserContext.Events.TargetCreated, target)
 
     async def _targetDestroyed(self, event: Dict) -> None:
         target = self._targets[event['targetId']]
@@ -103,6 +154,7 @@ class Browser(EventEmitter):
         target._closedCallback()
         if await target._initializedPromise:
             self.emit(Browser.Events.TargetDestroyed, target)
+            target.browserContext.emit(BrowserContext.Events.TargetDestroyed, target)  # noqa: E501
         target._initializedCallback(False)
 
     async def _targetInfoChanged(self, event: Dict) -> None:
@@ -114,6 +166,7 @@ class Browser(EventEmitter):
         target._targetInfoChanged(event['targetInfo'])
         if wasInitialized and previousURL != target.url:
             self.emit(Browser.Events.TargetChanged, target)
+            target.browserContext.emit(BrowserContext.Events.TargetChanged, target)  # noqa: E501
 
     @property
     def wsEndpoint(self) -> str:
@@ -122,9 +175,15 @@ class Browser(EventEmitter):
 
     async def newPage(self) -> Page:
         """Make new page on this browser and return its object."""
+        return await self._defaultContext.newPage()
+
+    async def _createPageInContext(self, contextId: Optional[str]) -> Page:
+        options = {'url': 'about:blank'}
+        if contextId:
+            options['browserContextId'] = contextId
+
         targetId = (await self._connection.send(
-            'Target.createTarget',
-            {'url': 'about:blank'})).get('targetId')
+            'Target.createTarget', options)).get('targetId')
         target = self._targets.get(targetId)
         if target is None:
             raise BrowserError('Failed to create target for page.')
@@ -136,7 +195,11 @@ class Browser(EventEmitter):
         return page
 
     def targets(self) -> List[Target]:
-        """Get all targets of this browser."""
+        """Get a list of all active targets inside the browser.
+
+        In case of multiple browser contexts, the method will return a list
+        with all the targets in all browser contexts.
+        """
         return [target for target in self._targets.values()
                 if target._isInitialized]
 
@@ -174,3 +237,80 @@ class Browser(EventEmitter):
 
     def _getVersion(self) -> Awaitable:
         return self._connection.send('Browser.getVersion')
+
+
+class BrowserContext(EventEmitter):
+    """BrowserContext provides multiple independent browser sessions.
+
+    When a browser is launched, it has a single BrowserContext used by defualt.
+    The method `browser.newPage()` creates a page in the default browser
+    context.
+
+    If a page opens another page, e.g. with a ``window.open`` call, the popup
+    will belong to the parent page's borwser context.
+
+    Pyppeteer allows creation of "incognite" browser context with
+    ``browser.createIncogniteBrowserContext()`` method.
+    "Incognite" borwser contexts don't write any browser data to disk.
+
+    .. code::
+
+        # Create new incognite browser context
+        context = await browser.createIncogniteBrowserContext()
+        # Create a new page inside context
+        page = await context.newPage()
+        # ... do stuff with page ...
+        await page.goto('https://example.com')
+        # Dispose context once it's no longer needed
+        await context.close()
+    """
+
+    Events = SimpleNamespace(
+        TargetCreated='targetcreated',
+        TargetDestroyed='targetdestroyed',
+        TargetChanged='targetchanged',
+    )
+
+    def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
+        super().__init__()
+        self._browser = browser
+        self._id = contextId
+
+    def targets(self) -> List[Target]:
+        """Return a list of all active targets inside the browser context."""
+        targets = []
+        for target in self._browser.targets():
+            if target.browserContext == self:
+                targets.append(target)
+        return targets
+
+    def isIncognite(self) -> bool:
+        """Return whether BrowserContext is incognite.
+
+        The default browser context is the only non-incognite browser context.
+
+        .. note::
+            The default borwser context cannot be closed.
+        """
+        return bool(self._id)
+
+    async def newPage(self) -> Page:
+        """Create a new page in the browser context."""
+        return await self._browser._createPageInContext(self._id)
+
+    @property
+    def browser(self) -> Browser:
+        """Return the browser this browser context belongs to."""
+        return self._browser
+
+    async def close(self) -> None:
+        """Close the browser context.
+
+        All the targets that belongs to the browser context will be closed.
+
+        .. note::
+            Only incognite browser context can be closed.
+        """
+        if self._id is None:
+            raise BrowserError('Non-incognite profile cannot be closed')
+        await self._browser._disposeContext(self._id)

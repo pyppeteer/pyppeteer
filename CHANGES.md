@@ -1,6 +1,10 @@
 History
 =======
 
+## Version 0.0.23 (next version)
+
+* Add `BrowserContext`
+
 ## Version 0.0.22 (2018-09-06)
 
 Catch up puppeteer v1.4.0
