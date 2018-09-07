@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>API Reference &#8212; Pyppeteer 0.0.21 documentation</title>
+    <title>API Reference &#8212; Pyppeteer 0.0.22 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -342,6 +342,12 @@ of added tag.</td>
 <dd><p>Bring page to front (activate tab).</p>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="pyppeteer.page.Page.browser">
+<code class="descname">browser</code><a class="headerlink" href="#pyppeteer.page.Page.browser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the browser the page belongs to.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="pyppeteer.page.Page.click">
 <em class="property">coroutine </em><code class="descname">click</code><span class="sig-paren">(</span><em>selector: str</em>, <em>options: dict = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.click"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.click" title="Permalink to this definition">¶</a></dt>
@@ -375,8 +381,21 @@ click and wait for navigation is the following:</p>
 
 <dl class="method">
 <dt id="pyppeteer.page.Page.close">
-<em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.close" title="Permalink to this definition">¶</a></dt>
+<em class="property">coroutine </em><code class="descname">close</code><span class="sig-paren">(</span><em>options: Dict[KT</em>, <em>VT] = None</em>, <em>**kwargs</em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="_modules/pyppeteer/page.html#Page.close"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.Page.close" title="Permalink to this definition">¶</a></dt>
 <dd><p>Close this page.</p>
+<p>Available options:</p>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">runBeforeUnload</span></code> (bool): Defaults to <code class="docutils literal notranslate"><span class="pre">False</span></code>. Whether to run the
+<a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload">before unload</a>
+page handlers.</li>
+</ul>
+<p>By defaults, <a class="reference internal" href="#pyppeteer.page.Page.close" title="pyppeteer.page.Page.close"><code class="xref py py-meth docutils literal notranslate"><span class="pre">close()</span></code></a> <strong>does not</strong> run beforeunload handlers.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">If <code class="docutils literal notranslate"><span class="pre">runBeforeUnload</span></code> is passed as <code class="docutils literal notranslate"><span class="pre">True</span></code>, a <code class="docutils literal notranslate"><span class="pre">beforeunload</span></code>
+dialog might be summoned and should be handled manually via page’s
+<code class="docutils literal notranslate"><span class="pre">dialog</span></code> event.</p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -1147,12 +1166,28 @@ Defaults to 30000 (30 seconds). Pass <code class="docutils literal notranslate">
 <p>Available options are same as <a class="reference internal" href="#pyppeteer.page.Page.goto" title="pyppeteer.page.Page.goto"><code class="xref py py-meth docutils literal notranslate"><span class="pre">goto()</span></code></a> method.</p>
 <p>This returns <a class="reference internal" href="#pyppeteer.network_manager.Response" title="pyppeteer.network_manager.Response"><code class="xref py py-class docutils literal notranslate"><span class="pre">Response</span></code></a> when the page
 navigates to a new URL or reloads. It is useful for when you run code
-which will indirectly cause the page to navigate.
+which will indirectly cause the page to navigate. In case of navigation
+to a different anchor or navigation due to
+<a class="reference external" href="https://developer.mozilla.org/en-US/docs/Web/API/History_API">History API</a>
+usage, the
+navigation will return <code class="docutils literal notranslate"><span class="pre">None</span></code>.
 Consider this example:</p>
-<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">navigationPromise</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">()</span>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">navigationPromise</span> <span class="o">=</span> <span class="k">async</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">())</span>
 <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s1">&#39;a.my-link&#39;</span><span class="p">)</span>  <span class="c1"># indirectly cause a navigation</span>
 <span class="k">await</span> <span class="n">navigationPromise</span>  <span class="c1"># wait until navigation finishes</span>
 </pre></div>
+</div>
+<p>or,</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">([</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="s1">&#39;a.my-link&#39;</span><span class="p">),</span>
+    <span class="n">page</span><span class="o">.</span><span class="n">waitForNavigation</span><span class="p">(),</span>
+<span class="p">])</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Usage of the History API to chage the URL is considered a
+navigation.</p>
 </div>
 </dd></dl>
 
@@ -1490,7 +1525,7 @@ is not prompt, this does not cause any effect.</li>
 <h2>ConsoleMessage Class<a class="headerlink" href="#consolemessage-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.page.ConsoleMessage">
-<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">ConsoleMessage</code><span class="sig-paren">(</span><em>type: str, text: str, args: List[pyppeteer.execution_context.JSHandle]</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#ConsoleMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.ConsoleMessage" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.page.</code><code class="descname">ConsoleMessage</code><span class="sig-paren">(</span><em>type: str</em>, <em>text: str</em>, <em>args: List[pyppeteer.execution_context.JSHandle] = None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/page.html#ConsoleMessage"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.page.ConsoleMessage" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Console message class.</p>
 <p>ConsoleMessage objects are dispatched by page via the <code class="docutils literal notranslate"><span class="pre">console</span></code> event.</p>
@@ -1543,7 +1578,7 @@ is not prompt, this does not cause any effect.</li>
 
 <dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.Jeval">
-<em class="property">coroutine </em><code class="descname">Jeval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Optional[Any]<a class="headerlink" href="#pyppeteer.frame_manager.Frame.Jeval" title="Permalink to this definition">¶</a></dt>
+<em class="property">coroutine </em><code class="descname">Jeval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Any<a class="headerlink" href="#pyppeteer.frame_manager.Frame.Jeval" title="Permalink to this definition">¶</a></dt>
 <dd><p>Alias to <a class="reference internal" href="#pyppeteer.frame_manager.Frame.querySelectorEval" title="pyppeteer.frame_manager.Frame.querySelectorEval"><code class="xref py py-meth docutils literal notranslate"><span class="pre">querySelectorEval()</span></code></a></p>
 </dd></dl>
 
@@ -1671,7 +1706,7 @@ associated to this frame.</p>
 
 <dl class="method">
 <dt id="pyppeteer.frame_manager.Frame.querySelectorEval">
-<em class="property">coroutine </em><code class="descname">querySelectorEval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Optional[Any]<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.querySelectorEval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.querySelectorEval" title="Permalink to this definition">¶</a></dt>
+<em class="property">coroutine </em><code class="descname">querySelectorEval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/pyppeteer/frame_manager.html#Frame.querySelectorEval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.frame_manager.Frame.querySelectorEval" title="Permalink to this definition">¶</a></dt>
 <dd><p>Execute function on element which matches selector.</p>
 <p>Details see <a class="reference internal" href="#pyppeteer.page.Page.querySelectorEval" title="pyppeteer.page.Page.querySelectorEval"><code class="xref py py-meth docutils literal notranslate"><span class="pre">pyppeteer.page.Page.querySelectorEval()</span></code></a>.</p>
 </dd></dl>
@@ -1880,6 +1915,12 @@ origin frame gets navigated.</p>
 </dd></dl>
 
 <dl class="method">
+<dt id="pyppeteer.element_handle.ElementHandle.Jeval">
+<em class="property">coroutine </em><code class="descname">Jeval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Any<a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.Jeval" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias to <a class="reference internal" href="#pyppeteer.element_handle.ElementHandle.querySelectorEval" title="pyppeteer.element_handle.ElementHandle.querySelectorEval"><code class="xref py py-meth docutils literal notranslate"><span class="pre">querySelectorEval()</span></code></a></p>
+</dd></dl>
+
+<dl class="method">
 <dt id="pyppeteer.element_handle.ElementHandle.Jx">
 <em class="property">coroutine </em><code class="descname">Jx</code><span class="sig-paren">(</span><em>expression: str</em><span class="sig-paren">)</span> &#x2192; List[pyppeteer.element_handle.ElementHandle]<a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.Jx" title="Permalink to this definition">¶</a></dt>
 <dd><p>alias to <a class="reference internal" href="#pyppeteer.element_handle.ElementHandle.xpath" title="pyppeteer.element_handle.ElementHandle.xpath"><code class="xref py py-meth docutils literal notranslate"><span class="pre">xpath()</span></code></a></p>
@@ -1996,6 +2037,25 @@ text.</li>
 <em class="property">coroutine </em><code class="descname">querySelectorAll</code><span class="sig-paren">(</span><em>selector: str</em><span class="sig-paren">)</span> &#x2192; List[pyppeteer.element_handle.ElementHandle]<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle.querySelectorAll"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.querySelectorAll" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return all elements which match <code class="docutils literal notranslate"><span class="pre">selector</span></code> under this element.</p>
 <p>If no element matches the <code class="docutils literal notranslate"><span class="pre">selector</span></code>, returns empty list (<code class="docutils literal notranslate"><span class="pre">[]</span></code>).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyppeteer.element_handle.ElementHandle.querySelectorEval">
+<em class="property">coroutine </em><code class="descname">querySelectorEval</code><span class="sig-paren">(</span><em>selector: str</em>, <em>pageFunction: str</em>, <em>*args</em><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/pyppeteer/element_handle.html#ElementHandle.querySelectorEval"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.element_handle.ElementHandle.querySelectorEval" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run <code class="docutils literal notranslate"><span class="pre">Page.querySelectorEval</span></code> within the element.</p>
+<p>This method runs <code class="docutils literal notranslate"><span class="pre">document.querySelector</span></code> within the element and
+passes it as the first argument to <code class="docutils literal notranslate"><span class="pre">pageFunction</span></code>. If there is no
+element matching <code class="docutils literal notranslate"><span class="pre">selector</span></code>, the method raises
+<code class="docutils literal notranslate"><span class="pre">ElementHandleError</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">pageFunction</span></code> returns a promise, then wait for the proimse to
+resolve and return its value.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ElementHandle.Jeval</span></code> is a shortcut of this method.</p>
+<p>Example:</p>
+<div class="code python highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">tweetHandle</span> <span class="o">=</span> <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="s1">&#39;.tweet&#39;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">tweetHandle</span><span class="o">.</span><span class="n">querySelectorEval</span><span class="p">(</span><span class="s1">&#39;.like&#39;</span><span class="p">,</span> <span class="s1">&#39;node =&gt; node.innerText&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">100</span>
+<span class="k">assert</span> <span class="p">(</span><span class="k">await</span> <span class="n">tweetHandle</span><span class="o">.</span><span class="n">Jeval</span><span class="p">(</span><span class="s1">&#39;.retweets&#39;</span><span class="p">,</span> <span class="s1">&#39;node =&gt; node.innerText&#39;</span><span class="p">))</span> <span class="o">==</span> <span class="mi">10</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2255,9 +2315,15 @@ connection, or <cite>None</cite> otherwise.</p>
 <h2>Target Class<a class="headerlink" href="#target-class" title="Permalink to this headline">¶</a></h2>
 <dl class="class">
 <dt id="pyppeteer.browser.Target">
-<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Target</code><span class="sig-paren">(</span><em>targetInfo: Dict[KT, VT], sessionFactory: Callable[[], Coroutine[Any, Any, pyppeteer.connection.CDPSession]], ignoreHTTPSErrors: bool, appMode: bool, screenshotTaskQueue: List[T], loop: asyncio.events.AbstractEventLoop</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/target.html#Target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Target" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">pyppeteer.browser.</code><code class="descname">Target</code><span class="sig-paren">(</span><em>targetInfo: Dict[KT, VT], browser: Browser, sessionFactory: Callable[[], Coroutine[Any, Any, pyppeteer.connection.CDPSession]], ignoreHTTPSErrors: bool, appMode: bool, screenshotTaskQueue: List[T], loop: asyncio.events.AbstractEventLoop</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyppeteer/target.html#Target"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Target" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Browser’s target class.</p>
+<dl class="attribute">
+<dt id="pyppeteer.browser.Target.browser">
+<code class="descname">browser</code><a class="headerlink" href="#pyppeteer.browser.Target.browser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the browser the target belongs to.</p>
+</dd></dl>
+
 <dl class="method">
 <dt id="pyppeteer.browser.Target.createCDPSession">
 <em class="property">coroutine </em><code class="descname">createCDPSession</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; pyppeteer.connection.CDPSession<a class="reference internal" href="_modules/pyppeteer/target.html#Target.createCDPSession"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyppeteer.browser.Target.createCDPSession" title="Permalink to this definition">¶</a></dt>
@@ -2432,7 +2498,28 @@ scripts with sourceURLs are reported.</p>
 
 </dd></dl>
 
-<p>.</p>
+</div>
+<div class="section" id="debugging">
+<h2>Debugging<a class="headerlink" href="#debugging" title="Permalink to this headline">¶</a></h2>
+<p>For debugging, you can set <code class="docutils literal notranslate"><span class="pre">logLevel</span></code> option to <code class="docutils literal notranslate"><span class="pre">logging.DEBUG</span></code> for
+<a class="reference internal" href="#pyppeteer.launcher.launch" title="pyppeteer.launcher.launch"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyppeteer.launcher.launch()</span></code></a> and <a class="reference internal" href="#pyppeteer.launcher.connect" title="pyppeteer.launcher.connect"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyppeteer.launcher.connect()</span></code></a>
+functions. However, this option prints too many logs including SEND/RECV
+messages of pyppeteer. In order to only show suppressed error messages, you
+should set <code class="docutils literal notranslate"><span class="pre">pyppeteer.DEBUG</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">import</span> <span class="nn">pyppeteer</span>
+<span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="kn">import</span> <span class="n">launch</span>
+
+<span class="n">pyppeteer</span><span class="o">.</span><span class="n">DEBUG</span> <span class="o">=</span> <span class="bp">True</span>  <span class="c1"># print suppressed errors as error log</span>
+
+<span class="n">async</span> <span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">browser</span> <span class="o">=</span> <span class="n">await</span> <span class="n">launch</span><span class="p">()</span>
+    <span class="o">...</span>  <span class="c1"># do something</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+</div>
 </div>
 </div>
 
@@ -2483,6 +2570,7 @@ scripts with sourceURLs are reported.</p>
 <li class="toctree-l2"><a class="reference internal" href="#target-class">Target Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#cdpsession-class">CDPSession Class</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#coverage-class">Coverage Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging">Debugging</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="changes.html">History</a></li>
@@ -2517,7 +2605,7 @@ scripts with sourceURLs are reported.</p>
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |

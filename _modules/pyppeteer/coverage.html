@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.21 documentation</title>
+    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.22 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -46,12 +46,16 @@
 <span class="sd">&quot;&quot;&quot;Coverage module.&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">functools</span> <span class="k">import</span> <span class="n">cmp_to_key</span>
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">CDPSession</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">PageError</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.helper</span> <span class="k">import</span> <span class="n">debugError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="Coverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage">[docs]</a><span class="k">class</span> <span class="nc">Coverage</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -206,9 +210,9 @@
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="p">[</span><span class="n">scriptId</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="p">[</span><span class="n">scriptId</span><span class="p">]</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptSource&#39;</span><span class="p">)</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="c1"># This might happen if the page has already navigated away.</span>
-            <span class="k">pass</span>
+            <span class="n">debugError</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Stop coverage measurement and return results.&quot;&quot;&quot;</span>
@@ -288,9 +292,9 @@
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetURLs</span><span class="p">[</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="s1">&#39;sourceURL&#39;</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_stylesheetSources</span><span class="p">[</span><span class="n">header</span><span class="p">[</span><span class="s1">&#39;styleSheetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span>
-        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="c1"># This might happen if the page has already navigated away.</span>
-            <span class="k">pass</span>
+            <span class="n">debugError</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Stop coverage measurement and return results.&quot;&quot;&quot;</span>
@@ -436,7 +440,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

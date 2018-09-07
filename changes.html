@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.21 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.22 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -42,9 +42,24 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-22-next-version">
+<h2>Version 0.0.22 (next version)<a class="headerlink" href="#version-0-0-22-next-version" title="Permalink to this headline">¶</a></h2>
+<p>Catch up puppeteer v1.4.0</p>
+<ul class="simple">
+<li>Add <code class="docutils literal notranslate"><span class="pre">pyppeteer.DEBUG</span></code> variable</li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Page.browser</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">Target.browser</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.querySelectorEval</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.Jeval</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">runBeforeUnload</span></code> option to <code class="docutils literal notranslate"><span class="pre">Page.close</span></code> method</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Page.querySelectorEval</span></code> to raise <code class="docutils literal notranslate"><span class="pre">ElementHandleError</span></code> when element which matches <code class="docutils literal notranslate"><span class="pre">selector</span></code> is not found</li>
+<li>Report ‘Log’ domain entries as ‘console’ events</li>
+<li>Fix <code class="docutils literal notranslate"><span class="pre">Page.goto</span></code> to return response when page pushes new state</li>
+<li>(OS X) Suppress long log when extracting chromium</li>
+</ul>
+</div>
 <div class="section" id="version-0-0-21-2018-08-21">
 <h2>Version 0.0.21 (2018-08-21)<a class="headerlink" href="#version-0-0-21-2018-08-21" title="Permalink to this headline">¶</a></h2>
-<p>Catch up puppeteer v1.2.0</p>
+<p>Catch up puppeteer v1.3.0</p>
 <ul class="simple">
 <li>Add <code class="docutils literal notranslate"><span class="pre">pyppeteer-install</span></code> command</li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">autoClose</span></code> option to <code class="docutils literal notranslate"><span class="pre">launch</span></code> function</li>
@@ -306,6 +321,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-22-next-version">Version 0.0.22 (next version)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-21-2018-08-21">Version 0.0.21 (2018-08-21)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-20-2018-08-11">Version 0.0.20 (2018-08-11)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-19-2018-07-05">Version 0.0.19 (2018-07-05)</a></li>
@@ -350,7 +366,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
       |

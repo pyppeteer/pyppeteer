@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.21 documentation</title>
+    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.22 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -370,19 +370,14 @@
         <span class="k">return</span> <span class="n">value</span></div>
 
 <div class="viewcode-block" id="Frame.querySelectorEval"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.querySelectorEval">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorEval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                                <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+                                <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Execute function on element which matches selector.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.querySelectorEval`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">elementHandle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">querySelector</span><span class="p">(</span><span class="n">selector</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">elementHandle</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span>
-                <span class="n">f</span><span class="s1">&#39;Error: failed to find element matching selector &quot;</span><span class="si">{selector}</span><span class="s1">&quot;&#39;</span>
-            <span class="p">)</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="n">elementHandle</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
-        <span class="k">await</span> <span class="n">elementHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">result</span></div>
+        <span class="n">document</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_document</span><span class="p">()</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">document</span><span class="o">.</span><span class="n">querySelectorEval</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span></div>
 
 <div class="viewcode-block" id="Frame.querySelectorAllEval"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.querySelectorAllEval">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAllEval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                                    <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
@@ -810,6 +805,7 @@
 
     <span class="k">def</span> <span class="nf">_navigated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">framePayload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">framePayload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_navigationURL</span> <span class="o">=</span> <span class="n">framePayload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">=</span> <span class="n">framePayload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_navigatedWithinDocument</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -925,9 +921,15 @@
                 <span class="k">await</span> <span class="n">success</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">error</span> <span class="ow">and</span> <span class="n">success</span> <span class="ow">and</span> <span class="p">(</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;s =&gt; !s&#39;</span><span class="p">,</span> <span class="n">success</span><span class="p">)):</span>
-            <span class="k">await</span> <span class="n">success</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+        <span class="c1"># Add try/except referring to puppeteer.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">error</span> <span class="ow">and</span> <span class="n">success</span> <span class="ow">and</span> <span class="p">(</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;s =&gt; !s&#39;</span><span class="p">,</span> <span class="n">success</span><span class="p">)):</span>
+                <span class="k">await</span> <span class="n">success</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+                <span class="k">return</span>
+        <span class="k">except</span> <span class="n">NetworkError</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">success</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">success</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
             <span class="k">return</span>
 
         <span class="c1"># page is navigated and context is destroyed.</span>
@@ -1102,7 +1104,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.7</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
