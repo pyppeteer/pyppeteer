@@ -25,6 +25,7 @@ from pyppeteer.errors import PageError
 from pyppeteer.execution_context import JSHandle  # noqa: F401
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
+from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
@@ -32,7 +33,7 @@ from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Target  # noqa: F401
+    from pyppeteer.browser import Browser, Target  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +97,7 @@ class Page(EventEmitter):
             client.send('Runtime.enable', {}),
             client.send('Security.enable', {}),
             client.send('Performance.enable', {}),
+            client.send('Log.enable', {}),
         )
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
@@ -162,6 +164,8 @@ class Page(EventEmitter):
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
+        client.on('Log.entryAdded',
+                  lambda event: self._onLogEntryAdded(event))
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
@@ -173,8 +177,23 @@ class Page(EventEmitter):
         """Return a target this page created from."""
         return self._target
 
+    @property
+    def browser(self) -> 'Browser':
+        """Get the browser the page belongs to."""
+        return self._target.browser
+
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
+
+    def _onLogEntryAdded(self, event: Dict) -> None:
+        entry = event.get('entry', {})
+        level = entry.get('level', '')
+        text = entry.get('text', '')
+        args = entry.get('args', [])
+        for arg in args:
+            helper.releaseObject(self._client, arg)
+
+        self.emit(Page.Events.Console, ConsoleMessage(level, text))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -241,11 +260,17 @@ class Page(EventEmitter):
         """
         self._defaultNavigationTimeout = timeout
 
+    async def _send(self, method: str, msg: dict) -> None:
+        try:
+            await self._client.send(method, msg)
+        except Exception as e:
+            debugError(logger, e)
+
     def _onCertificateError(self, event: Any) -> None:
         if not self._ignoreHTTPSErrors:
             return
         self._client._loop.create_task(
-            self._client.send('Security.handleCertificateError', {
+            self._send('Security.handleCertificateError', {
                 'eventId': event.get('eventId'),
                 'action': 'continue'
             })
@@ -528,10 +553,15 @@ function addPageBinding(bindingName) {
         expression = helper.evaluationString(addPageBinding, name)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
-        await asyncio.wait([
-            frame.evaluate(expression, force_expr=True)
-            for frame in self.frames
-        ])
+
+        async def _evaluate(frame: Frame, expression: str) -> None:
+            try:
+                await frame.evaluate(expression, force_expr=True)
+            except Exception as e:
+                debugError(logger, e)
+
+        await asyncio.wait([_evaluate(frame, expression)
+                            for frame in self.frames])
 
     async def authenticate(self, credentials: Dict[str, str]) -> Any:
         """Provide credentials for http authentication.
@@ -626,7 +656,7 @@ function deliverResult(name, seq, result) {
             '''
             expression = helper.evaluationString(
                 deliverResult, name, seq, result)
-            self._client._loop.create_task(self._client.send(
+            self._client._loop.create_task(self._send(
                 'Runtime.evaluate', {
                     'expression': expression,
                     'contextId': event['executionContextId'],
@@ -754,7 +784,7 @@ function deliverResult(name, seq, result) {
         if error:
             raise error
 
-        request = requests.get(mainFrame.url)
+        request = requests.get(mainFrame._navigationURL)
         return request.response if request else None
 
     async def _navigate(self, url: str, referrer: str) -> Optional[str]:
@@ -785,15 +815,32 @@ function deliverResult(name, seq, result) {
 
         This returns :class:`~pyppeteer.network_manager.Response` when the page
         navigates to a new URL or reloads. It is useful for when you run code
-        which will indirectly cause the page to navigate.
+        which will indirectly cause the page to navigate. In case of navigation
+        to a different anchor or navigation due to
+        `History API <https://developer.mozilla.org/en-US/docs/Web/API/History_API>`_
+        usage, the
+        navigation will return ``None``.
         Consider this example:
 
         .. code::
 
-            navigationPromise = page.waitForNavigation()
+            navigationPromise = async.ensure_future(page.waitForNavigation())
             await page.click('a.my-link')  # indirectly cause a navigation
             await navigationPromise  # wait until navigation finishes
-        """
+
+        or,
+
+        .. code::
+
+            await asyncio.wait([
+                page.click('a.my-link'),
+                page.waitForNavigation(),
+            ])
+
+        .. note::
+            Usage of the History API to chage the URL is considered a
+            navigation.
+        """  # noqa: E501
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
         if mainFrame is None:
@@ -1177,14 +1224,34 @@ function deliverResult(name, seq, result) {
             raise PageError('no main frame.')
         return await frame.title()
 
-    async def close(self) -> None:
-        """Close this page."""
+    async def close(self, options: Dict = None, **kwargs: Any) -> None:
+        """Close this page.
+
+        Available options:
+
+        * ``runBeforeUnload`` (bool): Defaults to ``False``. Whether to run the
+          `before unload <https://developer.mozilla.org/en-US/docs/Web/Events/beforeunload>`_
+          page handlers.
+
+        By defaults, :meth:`close` **does not** run beforeunload handlers.
+
+        .. note::
+           If ``runBeforeUnload`` is passed as ``True``, a ``beforeunload``
+           dialog might be summoned and should be handled manually via page's
+           ``dialog`` event.
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
         conn = self._client._connection
         if conn is None:
             raise PageError('Protocol Error: Connectoin Closed. '
                             'Most likely the page has been closed.')
-        await conn.send('Target.closeTarget',
-                        {'targetId': self._target._targetId})
+        runBeforeUnload = bool(options.get('runBeforeUnload'))
+        if runBeforeUnload:
+            await self._client.send('Page.close')
+        else:
+            await conn.send('Target.closeTarget',
+                            {'targetId': self._target._targetId})
+            await self._target._isClosedPromise
 
     @property
     def mouse(self) -> Mouse:
@@ -1449,13 +1516,14 @@ class ConsoleMessage(object):
     ConsoleMessage objects are dispatched by page via the ``console`` event.
     """
 
-    def __init__(self, type: str, text: str, args: List[JSHandle]) -> None:
+    def __init__(self, type: str, text: str, args: List[JSHandle] = None
+                 ) -> None:
         #: (str) type of console message
         self._type = type
         #: (str) console message string
         self._text = text
         #: list of JSHandle
-        self._args = args
+        self._args = args if args is not None else []
 
     @property
     def type(self) -> str:

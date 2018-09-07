@@ -208,6 +208,16 @@ class TestEvaluate(BaseTestCase):
         isFive = await self.page.evaluate('(e) => Object.is(e, 5)', aHandle)
         self.assertTrue(isFive)
 
+    @sync
+    async def test_simulate_user_gesture(self):
+        playAudio = '''function playAudio() {
+            const audio = document.createElement('audio');
+            audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            return audio.play();
+        }'''  # noqa: E501
+        await self.page.evaluate(playAudio)
+        await self.page.evaluate('({})()'.format(playAudio), force_expr=True)
+
 
 class TestOfflineMode(BaseTestCase):
     @sync
@@ -336,6 +346,19 @@ console.log(Promise.resolve('should not wait until resolved!'));
         msg = messages[0]
         self.assertEqual(msg.text, 'JSHandle@object')
 
+    @sync
+    async def test_trigger_correct_log(self):
+        await self.page.goto('about:blank')
+        messages = []
+        self.page.on('console', lambda m: messages.append(m))
+        asyncio.ensure_future(self.page.evaluate(
+            'async url => fetch(url).catch(e => {})', self.url + 'empty'))
+        await waitEvent(self.page, 'console')
+        self.assertEqual(len(messages), 1)
+        message = messages[0]
+        self.assertIn('No \'Access-Control-Allow-Origin\'', message.text)
+        self.assertEqual(message.type, 'error')
+
 
 class TestDOMContentLoaded(BaseTestCase):
     @sync
@@ -394,6 +417,22 @@ class TestGoto(BaseTestCase):
     async def test_goto_blank(self):
         response = await self.page.goto('about:blank')
         self.assertIsNone(response)
+
+    @sync
+    async def test_response_when_page_changes_url(self):
+        response = await self.page.goto(self.url + 'static/historyapi.html')
+        self.assertTrue(response)
+        self.assertEqual(response.status, 200)
+
+    @sync
+    async def test_goto_subframe_204(self):
+        await self.page.goto(self.url + 'static/frame-204.html')
+
+    @sync
+    async def test_goto_fail_204(self):
+        with self.assertRaises(PageError) as cm:
+            await self.page.goto('http://httpstat.us/204')
+        self.assertIn('net::ERR_ABORTED', cm.exception.args[0])
 
     @sync
     async def test_goto_documentloaded(self):
@@ -542,6 +581,14 @@ class TestWaitForNavigation(BaseTestCase):
         self.assertEqual(self.page.url, self.url + 'empty#foobar')
 
     @sync
+    async def test_return_nevigated_response_reload(self):
+        await self.page.goto(self.url + 'empty')
+        navPromise = asyncio.ensure_future(self.page.waitForNavigation())
+        await self.page.reload()
+        response = await navPromise
+        self.assertEqual(response.url, self.url + 'empty')
+
+    @sync
     async def test_history_push_state(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('''
@@ -648,7 +695,7 @@ class TestGoBack(BaseTestCase):
         self.assertEqual(self.page.url, self.url + 'first.html')
 
 
-class TestExposeFunctoin(BaseTestCase):
+class TestExposeFunction(BaseTestCase):
     @sync
     async def test_expose_function(self):
         await self.page.goto(self.url + 'empty')
@@ -917,6 +964,30 @@ class TestRequestInterception(BaseTestCase):
         self.assertIn('Request interception is not enabled', error.args[0])
 
     @sync
+    async def test_request_interception_with_file_url(self):
+        await self.page.setRequestInterception(True)
+        urls = []
+
+        async def set_urls(req):
+            urls.append(req.url.split('/').pop())
+            await req.continue_()
+
+        self.page.on(
+            'request', lambda req: asyncio.ensure_future(set_urls(req)))
+
+        def pathToFileURL(path: Path):
+            pathName = str(path).replace('\\', '/')
+            if not pathName.startswith('/'):
+                pathName = '/{}'.format(pathName)
+            return 'file://{}'.format(pathName)
+
+        target = Path(__file__).parent / 'static' / 'one-style.html'
+        await self.page.goto(pathToFileURL(target))
+        self.assertEqual(len(urls), 2)
+        self.assertIn('one-style.html', urls)
+        self.assertIn('one-style.css', urls)
+
+    @sync
     async def test_request_respond(self):
         await self.page.setRequestInterception(True)
 
@@ -1001,7 +1072,7 @@ class TestQuerySelector(BaseTestCase):
     @sync
     async def test_jeval_not_found(self):
         await self.page.goto(self.url + 'empty')
-        with self.assertRaises(PageError) as cm:
+        with self.assertRaises(ElementHandleError) as cm:
             await self.page.Jeval('section', 'e => e.id')
         self.assertIn(
             'failed to find element matching selector "section"',
@@ -1934,3 +2005,9 @@ class TestEvents(BaseTestCase):
         newPage.on('close', lambda: closedPromise.set_result(True))
         await newPage.close()
         await closedPromise
+
+
+class TestBrowser(BaseTestCase):
+    @sync
+    async def test_get_browser(self):
+        self.assertIs(self.page.browser, self.browser)

@@ -92,6 +92,19 @@ class TestPageClose(BaseTestCase):
         await newPage.close()
         self.assertNotIn(newPage, await self.browser.pages())
 
+    @sync
+    async def test_before_unload(self):
+        newPage = await self.browser.newPage()
+        await newPage.goto(self.url + 'static/beforeunload.html')
+        await newPage.click('body')
+        asyncio.ensure_future(newPage.close(runBeforeUnload=True))
+        dialog = await waitEvent(newPage, 'dialog')
+        self.assertEqual(dialog.type, 'beforeunload')
+        self.assertEqual(dialog.defaultValue, '')
+        self.assertEqual(dialog.message, '')
+        asyncio.ensure_future(dialog.accept())
+        await waitEvent(newPage, 'close')
+
 
 class TestTarget(BaseTestCase):
     @sync

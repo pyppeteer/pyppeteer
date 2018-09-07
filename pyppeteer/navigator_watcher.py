@@ -26,29 +26,29 @@ class NavigatorWatcher:
         """Make new navigator watcher."""
         options = merge_dict(options, kwargs)
         self._validate_options(options)
-        self._frameManeger = frameManager
+        self._frameManager = frameManager
         self._frame = frame
         self._initialLoaderId = frame._loaderId
         self._timeout = timeout
         self._hasSameDocumentNavigation = False
         self._eventListeners = [
             helper.addEventListener(
-                self._frameManeger,
+                self._frameManager,
                 FrameManager.Events.LifecycleEvent,
                 self._checkLifecycleComplete,
             ),
             helper.addEventListener(
-                self._frameManeger,
+                self._frameManager,
                 FrameManager.Events.FrameNavigatedWithinDocument,
                 self._navigatedWithinDocument,
             ),
             helper.addEventListener(
-                self._frameManeger,
+                self._frameManager,
                 FrameManager.Events.FrameDetached,
                 self._checkLifecycleComplete,
             ),
         ]
-        self._loop = self._frameManeger._client._loop
+        self._loop = self._frameManager._client._loop
         self._lifecycleCompletePromise = self._loop.create_future()
 
         self._navigationPromise = self._loop.create_task(asyncio.wait([

@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import logging
 import sys
 
 from syncer import sync
 
+import pyppeteer
 from pyppeteer.errors import ElementHandleError
 
 from .base import BaseTestCase
@@ -45,6 +47,14 @@ class TestBoundingBox(BaseTestCase):
 
 
 class TestBoxModel(BaseTestCase):
+    def setUp(self):
+        self._old_debug = pyppeteer.DEBUG
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        pyppeteer.DEBUG = self._old_debug
+
     @sync
     async def test_box_model(self):
         await self.page.goto(self.url + 'static/resetcss.html')
@@ -105,7 +115,20 @@ class TestBoxModel(BaseTestCase):
     async def test_box_model_invisible(self):
         await self.page.setContent('<div style="display:none;">hi</div>')
         element = await self.page.J('div')
-        self.assertIsNone(await element.boxModel())
+        with self.assertLogs('pyppeteer.element_handle', logging.DEBUG):
+            self.assertIsNone(await element.boxModel())
+
+    @sync
+    async def test_debug_error(self):
+        await self.page.setContent('<div style="display:none;">hi</div>')
+        element = await self.page.J('div')
+        pyppeteer.DEBUG = True
+        with self.assertLogs('pyppeteer.element_handle', logging.ERROR):
+            self.assertIsNone(await element.boxModel())
+        pyppeteer.DEBUG = False
+        with self.assertRaises(AssertionError):
+            with self.assertLogs('pyppeteer.element_handle', logging.INFO):
+                self.assertIsNone(await element.boxModel())
 
 
 class TestContentFrame(BaseTestCase):
@@ -248,6 +271,26 @@ class TestQuerySelector(BaseTestCase):
         html = await self.page.J('html')
         second = await html.J('.third')
         self.assertIsNone(second)
+
+    @sync
+    async def test_element_handle_Jeval(self):
+        await self.page.setContent('''<html><body>
+            <div class="tweet">
+                <div class="like">100</div>
+                <div class="retweets">10</div>
+            </div>
+        </body></html>''')
+        tweet = await self.page.J('.tweet')
+        content = await tweet.Jeval('.like', 'node => node.innerText')
+        self.assertEqual(content, '100')
+
+    @sync
+    async def test_element_handle_Jeval_subtree(self):
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
+        await self.page.setContent(htmlContent)
+        elementHandle = await self.page.J('#myId')
+        content = await elementHandle.Jeval('.a', 'node => node.innerText')
+        self.assertEqual(content, 'a-child-div')
 
     @sync
     async def test_element_handle_JJ(self):

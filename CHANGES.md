@@ -1,9 +1,24 @@
 History
 =======
 
+## Version 0.0.22 (next version)
+
+Catch up puppeteer v1.4.0
+
+* Add `pyppeteer.DEBUG` variable
+* Add `Page.browser`
+* Add `Target.browser`
+* Add `ElementHandle.querySelectorEval` and `ElementHandle.Jeval`
+* Add `runBeforeUnload` option to `Page.close` method
+* Change `Page.querySelectorEval` to raise `ElementHandleError` when element which matches `selector` is not found
+* Report 'Log' domain entries as 'console' events
+* Fix `Page.goto` to return response when page pushes new state
+* (OS X) Suppress long log when extracting chromium
+
+
 ## Version 0.0.21 (2018-08-21)
 
-Catch up puppeteer v1.2.0
+Catch up puppeteer v1.3.0
 
 * Add `pyppeteer-install` command
 * Add `autoClose` option to `launch` function
@@ -15,6 +30,7 @@ Catch up puppeteer v1.2.0
 * Fix anchor navigation
 * Fix to return response via redirects
 * Continue to find WS URL while process is alive
+
 
 ## Version 0.0.20 (2018-08-11)
 

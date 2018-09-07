@@ -5,17 +5,28 @@ sudo: false
 dist: trusty
 
 language: python
+
 matrix:
   include:
-    - python: "3.5"
+    - os: linux
+      python: "3.5"
       env: TOXENV="py35"
-    - python: "3.6"
+    - os: linux
+      python: "3.6"
       env: TOXENV="py36"
-    - python: "3.7-dev"
+    - os: linux
+      python: "3.7-dev"
       env: TOXENV="py37,doit,codecov"
+    - os: osx
+      language: generic
+      env: TOXENV="py37"
+
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade python; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python3 --version; fi
 
 install:
-  - pip install tox
+  - python3 -m pip install tox
 
 script:
-  - tox
+  - python3 -m tox

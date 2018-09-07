@@ -84,6 +84,7 @@ class Browser(EventEmitter):
         targetInfo = event['targetInfo']
         target = Target(
             targetInfo,
+            self,
             lambda: self._connection.createSession(targetInfo['targetId']),
             self._ignoreHTTPSErrors,
             self._appMode,

@@ -106,9 +106,17 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         with zip_path.open('wb') as f:
             f.write(data.getvalue())
         if not shutil.which('unzip'):
-            raise OSError('Failed to automatically extract chrome.zip.'
+            raise OSError('Failed to automatically extract chromium.'
                           f'Please unzip {zip_path} manually.')
-        subprocess.run(['unzip', str(zip_path)], cwd=str(path))
+        proc = subprocess.run(
+            ['unzip', str(zip_path)],
+            cwd=str(path),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if proc.returncode != 0:
+            logger.error(proc.stdout.decode())
+            raise OSError(f'Failed to unzip {zip_path}.')
         if chromium_excutable().exists() and zip_path.exists():
             zip_path.unlink()
     else:

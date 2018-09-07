@@ -328,19 +328,14 @@ class Frame(object):
         return value
 
     async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Optional[Any]:
+                                *args: Any) -> Any:
         """Execute function on element which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
         """
-        elementHandle = await self.querySelector(selector)
-        if elementHandle is None:
-            raise PageError(
-                f'Error: failed to find element matching selector "{selector}"'
-            )
-        result = await self.evaluate(pageFunction, elementHandle, *args)
-        await elementHandle.dispose()
-        return result
+        document = await self._document()
+        value = await document.querySelectorEval(selector, pageFunction, *args)
+        return value
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
                                    *args: Any) -> Optional[Dict]:
@@ -768,6 +763,7 @@ function(html) {
 
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
+        self._navigationURL = framePayload.get('url', '')
         self._url = framePayload.get('url', '')
 
     def _navigatedWithinDocument(self, url: str) -> None:
@@ -883,9 +879,15 @@ class WaitTask(object):
                 await success.dispose()
             return
 
-        if not error and success and (
-                await self._frame.evaluate('s => !s', success)):
-            await success.dispose()
+        # Add try/except referring to puppeteer.
+        try:
+            if not error and success and (
+                    await self._frame.evaluate('s => !s', success)):
+                await success.dispose()
+                return
+        except NetworkError:
+            if success is not None:
+                await success.dispose()
             return
 
         # page is navigated and context is destroyed.
