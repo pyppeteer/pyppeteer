@@ -255,6 +255,8 @@ class TestUserDataDir(unittest.TestCase):
     @sync
     async def test_user_data_dir_option(self):
         browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
+        # Open a page to make sure its functional
+        await browser.newPage()
         self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
         await browser.close()
         self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
