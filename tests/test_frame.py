@@ -219,11 +219,17 @@ class TestWaitForFunction(BaseTestCase):
 
     @sync
     async def test_disable_timeout(self):
-        res = await self.page.waitForFunction(
-            '() => new Promise(res => setTimeout(() => res(42), 100))',
+        watchdog = self.page.waitForFunction(
+            '''() => {
+                window.__counter = (window.__counter || 0) + 1;
+                return window.__injected;
+            }''',
             timeout=0,
+            polling=10,
         )
-        self.assertEqual(await res.jsonValue(), 42)
+        await self.page.waitForFunction('() => window.__counter > 10')
+        await self.page.evaluate('window.__injected = true')
+        await watchdog
 
 
 class TestWaitForSelector(BaseTestCase):
