@@ -277,3 +277,18 @@ class TestTarget(BaseTestCase):
     @sync
     async def test_crash_while_redirect(self):
         pass
+
+    @sync
+    async def test_opener(self):
+        await self.page.goto(self.url + 'empty')
+        targetPromise = asyncio.get_event_loop().create_future()
+        self.browser.once('targetcreated',
+                          lambda target: targetPromise.set_result(target))
+        await self.page.goto(self.url + 'static/popup/window-open.html')
+        createdTarget = await targetPromise
+        self.assertEqual(
+            (await createdTarget.page()).url,
+            self.url + 'static/popup/popup.html',
+        )
+        self.assertEqual(createdTarget.opener, self.page.target)
+        self.assertIsNone(self.page.target.opener)

@@ -93,6 +93,17 @@ class Target(object):
         """Return the browser context the target belongs to."""
         return self._browserContext
 
+    @property
+    def opener(self) -> Optional['Target']:
+        """Get the target that opened this target.
+
+        Top-level targets return ``None``.
+        """
+        openerId = self._targetInfo.get('openerId')
+        if openerId is None:
+            return None
+        return self.browser._targets.get(openerId)
+
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo
 
