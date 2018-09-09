@@ -3,16 +3,20 @@
 
 """Execut Context Module."""
 
+import logging
 import math
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, NetworkError
+from pyppeteer.helper import debugError
 
 if TYPE_CHECKING:
     from pyppeteer.element_handle import ElementHandle  # noqa: F401
     from pyppeteer.frame_manager import Frame  # noqa: F401
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionContext(object):
@@ -192,7 +196,10 @@ class JSHandle(object):
         if self._disposed:
             return
         self._disposed = True
-        await helper.releaseObject(self._client, self._remoteObject)
+        try:
+            await helper.releaseObject(self._client, self._remoteObject)
+        except Exception as e:
+            debugError(logger, e)
 
     def toString(self) -> str:
         """Get string representation."""

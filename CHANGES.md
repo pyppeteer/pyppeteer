@@ -4,6 +4,8 @@ History
 ## Version 0.0.23 (next version)
 
 * Add `BrowserContext`
+* Add `Worker`
+* Change `CDPSession.send` to a normal function which returns awaitable value
 
 ## Version 0.0.22 (2018-09-06)
 

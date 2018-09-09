@@ -6,7 +6,7 @@
 import json
 import logging
 import math
-from typing import Any, Callable, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List
 
 from pyee import EventEmitter
 
@@ -99,19 +99,23 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
     return remoteObject.get('value')
 
 
-async def releaseObject(client: CDPSession, remoteObject: dict) -> None:
+def releaseObject(client: CDPSession, remoteObject: dict
+                  ) -> Awaitable:
     """Release remote object."""
     objectId = remoteObject.get('objectId')
+    fut_none = client._loop.create_future()
+    fut_none.set_result(None)
     if not objectId:
-        return
+        return fut_none
     try:
-        await client.send('Runtime.releaseObject', {
+        return client.send('Runtime.releaseObject', {
             'objectId': objectId
         })
     except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
         debugError(logger, e)
+    return fut_none
 
 
 def get_positive_int(obj: dict, name: str) -> int:

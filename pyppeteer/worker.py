@@ -9,6 +9,7 @@ from typing import Callable, Dict, List, TYPE_CHECKING
 from pyee import EventEmitter
 
 from pyppeteer.execution_context import ExecutionContext, JSHandle
+from pyppeteer.helper import debugError
 
 if TYPE_CHECKING:
     from pyppeteer.connection import CDPSession  # noqa: F401
@@ -49,10 +50,18 @@ class Worker(EventEmitter):
 
         self._client.on('Runtime.executionContextCreated',
                         _on_execution_content_created)
-        self._loop.create_task(self._client.send('Runtime.enable', {}))
+        try:
+            # This might fail if the target is closed before we recieve all
+            # execution contexts.
+            self._client.send('Runtime.enable', {})
+        except Exception as e:
+            debugError(logger, e)
 
         self._client.on('Log.entryAdded', logEntryAdded)
-        self._loop.create_task(self._client.send('Log.enable', {}))
+        try:
+            self._client.send('Log.enable', {})
+        except Exception as e:
+            debugError(logger, e)
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
         self._executionContextPromise.set_result(value)

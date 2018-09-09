@@ -138,11 +138,9 @@ class Page(EventEmitter):
         def _onTargetAttached(event: Dict) -> None:
             targetInfo = event['targetInfo']
             if targetInfo['type'] != 'worker':
-                client._loop.create_task(
-                    client.send('Target.detachFromTarget', {
-                        'sessionId': event['sessionId'],
-                    })
-                )
+                client.send('Target.detachFromTarget', {
+                    'sessionId': event['sessionId'],
+                })
                 return
             sessionId = event['sessionId']
             session = client._createSession(targetInfo['targetId'], sessionId)
@@ -707,8 +705,7 @@ function deliverResult(name, seq, result) {
 
         if not self.listeners(Page.Events.Console):
             for arg in _args:
-                self._client._loop.create_task(
-                    helper.releaseObject(self._client, arg))
+                helper.releaseObject(self._client, arg)
             return
 
         _id = event['executionContextId']

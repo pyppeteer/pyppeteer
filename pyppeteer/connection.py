@@ -98,7 +98,7 @@ class Connection(EventEmitter):
         callback.method = method  # type: ignore
         return callback
 
-    async def _on_response(self, msg: dict) -> None:
+    def _on_response(self, msg: dict) -> None:
         callback = self._callbacks.pop(msg.get('id', -1))
         if 'error' in msg:
             error = msg['error']
@@ -107,7 +107,7 @@ class Connection(EventEmitter):
         else:
             callback.set_result(msg.get('result'))
 
-    async def _on_query(self, msg: dict) -> None:
+    def _on_query(self, msg: dict) -> None:
         params = msg.get('params', {})
         method = msg.get('method', '')
         sessionId = params.get('sessionId')
@@ -132,9 +132,9 @@ class Connection(EventEmitter):
         logger.debug(f'RECV: {message}')
         msg = json.loads(message)
         if msg.get('id') in self._callbacks:
-            await self._on_response(msg)
+            self._on_response(msg)
         else:
-            await self._on_query(msg)
+            self._on_query(msg)
 
     async def _on_close(self) -> None:
         if self._closeCallback:
@@ -198,7 +198,7 @@ class CDPSession(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self._loop = loop
 
-    async def send(self, method: str, params: dict = None) -> dict:
+    def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message to the connected session.
 
         :arg str method: Protocol method name.
@@ -214,13 +214,13 @@ class CDPSession(EventEmitter):
         if not self._connection:
             raise NetworkError('Connection closed.')
         try:
-            await self._connection.send('Target.sendMessageToTarget', {
+            self._connection.send('Target.sendMessageToTarget', {
                 'sessionId': self._sessionId,
                 'message': msg,
             })
         except concurrent.futures.CancelledError:
             raise NetworkError("connection unexpectedly closed")
-        return await callback
+        return callback
 
     def _on_message(self, msg: str) -> None:  # noqa: C901
         obj = json.loads(msg)
