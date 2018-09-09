@@ -249,3 +249,47 @@ class TestNetworkEvent(BaseTestCase):
         redirectChain = response.request.redirectChain
         self.assertEqual(len(redirectChain), 1)
         self.assertIn('redirect1', redirectChain[0].url)
+
+
+class TestNavigationRequest(BaseTestCase):
+    @sync
+    async def test_navigation_request(self):
+        requests = dict()
+
+        def set_request(req):
+            requests[req.url.split('/').pop()] = req
+
+        self.page.on('request', set_request)
+        await self.page.goto(self.url + 'redirect3')
+        self.assertTrue(requests['redirect3'].isNavigationRequest())
+        self.assertTrue(requests['one-frame.html'].isNavigationRequest())
+        self.assertTrue(requests['frame.html'].isNavigationRequest())
+        self.assertFalse(requests['script.js'].isNavigationRequest())
+        self.assertFalse(requests['style.css'].isNavigationRequest())
+
+    @sync
+    async def test_interception(self):
+        requests = dict()
+
+        async def on_request(req):
+            requests[req.url.split('/').pop()] = req
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(on_request(req)))
+
+        await self.page.setRequestInterception(True)
+        await self.page.goto(self.url + 'redirect3')
+        self.assertTrue(requests['redirect3'].isNavigationRequest())
+        self.assertTrue(requests['one-frame.html'].isNavigationRequest())
+        self.assertTrue(requests['frame.html'].isNavigationRequest())
+        self.assertFalse(requests['script.js'].isNavigationRequest())
+        self.assertFalse(requests['style.css'].isNavigationRequest())
+
+    @sync
+    async def test_image(self):
+        requests = []
+        self.page.on('request', lambda req: requests.append(req))
+        await self.page.goto(self.url + 'static/huge-image.png')
+        self.assertEqual(len(requests), 1)
+        self.assertTrue(requests[0].isNavigationRequest())

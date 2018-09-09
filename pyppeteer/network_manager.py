@@ -175,6 +175,7 @@ class NetworkManager(EventEmitter):
                     request._requestId,
                     event.get('interceptionId', ''),
                     event.get('redirectUrl', ''),
+                    event.get('isNavigationRequest', False),
                     event.get('resourceType', ''),
                     event.get('request', {}),
                     event.get('frameId'),
@@ -188,14 +189,16 @@ class NetworkManager(EventEmitter):
             self._requestHashToRequestIds.delete(requestHash, requestId)
             self._handleRequestStart(
                 requestId, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId'], [],
+                event['isNavigationRequest'], event['resourceType'],
+                event['request'], event['frameId'], [],
             )
         else:
             self._requestHashToInterceptionIds.set(
                 requestHash, event['interceptionId'])
             self._handleRequestStart(
                 None, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId'], [],
+                event['isNavigationRequest'], event['resourceType'],
+                event['request'], event['frameId'], [],
             )
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
@@ -222,7 +225,8 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _handleRequestStart(self, requestId: Optional[str],
-                            interceptionId: str, url: str, resourceType: str,
+                            interceptionId: str, url: str,
+                            isNavigationRequest: bool, resourceType: str,
                             requestPayload: Dict, frameId: Optional[str],
                             redirectChain: List['Request']
                             ) -> None:
@@ -231,6 +235,7 @@ class NetworkManager(EventEmitter):
             frame = self._frameManager.frame(frameId)
 
         request = Request(self._client, requestId, interceptionId,
+                          isNavigationRequest,
                           self._userRequestInterceptionEnabled, url,
                           resourceType, requestPayload, frame, redirectChain)
         if requestId:
@@ -271,9 +276,12 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('securityDetails'),
                 )
                 redirectChain = request._redirectChain
+        isNavigationRequest = (event['requestId'] == event['loaderId'] and
+                               event['type'] == 'Document')
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
+            isNavigationRequest,
             event.get('type', ''),
             event.get('request', {}),
             event.get('frameId'),
@@ -357,12 +365,14 @@ class Request(object):
     resourceType: str
 
     def __init__(self, client: CDPSession, requestId: Optional[str],
-                 interceptionId: str, allowInterception: bool, url: str,
-                 resourceType: str, payload: dict, frame: Optional[Frame],
+                 interceptionId: str, isNavigationRequest: bool,
+                 allowInterception: bool, url: str, resourceType: str,
+                 payload: dict, frame: Optional[Frame],
                  redirectChain: List['Request']
                  ) -> None:
         self._client = client
         self._requestId = requestId
+        self._isNavigationRequest = isNavigationRequest
         self._interceptionId = interceptionId
         self._allowInterception = allowInterception
         self._interceptionHandled = False
@@ -429,6 +439,10 @@ class Request(object):
         Return ``None`` if navigating to error page.
         """
         return self._frame
+
+    def isNavigationRequest(self) -> bool:
+        """Whether this request is driving frame's navigation."""
+        return self._isNavigationRequest
 
     @property
     def redirectChain(self) -> List['Request']:

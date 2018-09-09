@@ -9,6 +9,7 @@ History
 * Add `Page.isClosed` method
 * Add `ElementHandle.querySelectorAllEval` and `ElementHandle.JJeval`
 * Add `Target.opener`
+* Add `Request.isNavigationRequest`
 
 ## Version 0.0.22 (2018-09-06)
 

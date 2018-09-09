@@ -748,6 +748,7 @@ class TestRequestInterception(BaseTestCase):
             self.assertTrue(req.headers.get('user-agent'))
             self.assertEqual(req.method, 'GET')
             self.assertIsNone(req.postData)
+            self.assertTrue(req.isNavigationRequest())
             self.assertEqual(req.resourceType, 'document')
             self.assertEqual(req.frame, self.page.mainFrame)
             self.assertEqual(req.frame.url, 'about:blank')
