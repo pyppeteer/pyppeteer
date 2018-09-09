@@ -5,6 +5,7 @@
 
 import asyncio
 import base64
+from functools import partial
 import json
 import logging
 import math
@@ -31,6 +32,7 @@ from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
+from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
     from pyppeteer.browser import Browser, Target  # noqa: F401
@@ -66,6 +68,8 @@ class Page(EventEmitter):
         FrameNavigated='framenavigated',
         Load='load',
         Metrics='metrics',
+        WorkerCreated='workercreated',
+        WorkerDestroyed='workerdestroyed',
     )
 
     PaperFormats: Dict[str, Dict[str, float]] = dict(
@@ -92,6 +96,7 @@ class Page(EventEmitter):
                     screenshotTaskQueue)
 
         await asyncio.gather(
+            client.send('Target.setAutoAttach', {'autoAttach': True, 'waitForDebuggerOnStart': False}),  # noqa: E501
             client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
             client.send('Network.enable', {}),
             client.send('Runtime.enable', {}),
@@ -127,6 +132,38 @@ class Page(EventEmitter):
         if screenshotTaskQueue is None:
             screenshotTaskQueue = list()
         self._screenshotTaskQueue = screenshotTaskQueue
+
+        self._workers: Dict[str, Worker] = dict()
+
+        def _onTargetAttached(event: Dict) -> None:
+            targetInfo = event['targetInfo']
+            if targetInfo['type'] != 'worker':
+                client._loop.create_task(
+                    client.send('Target.detachFromTarget', {
+                        'sessionId': event['sessionId'],
+                    })
+                )
+                return
+            sessionId = event['sessionId']
+            session = client._createSession(targetInfo['targetId'], sessionId)
+            worker = Worker(
+                session,
+                targetInfo['url'],
+                partial(self._onLogEntryAdded, session),
+            )
+            self._workers[sessionId] = worker
+            self.emit(Page.Events.WorkerCreated, worker)
+
+        def _onTargetDetached(event: Dict) -> None:
+            sessionId = event['sessionId']
+            worker = self._workers.get(sessionId)
+            if worker is None:
+                return
+            self.emit(Page.Events.WorkerDestroyed, worker)
+            del self._workers[sessionId]
+
+        client.on('Target.attachedToTarget', _onTargetAttached)
+        client.on('Target.detachedFromTarget', _onTargetDetached)
 
         _fm = self._frameManager
         _fm.on(FrameManager.Events.FrameAttached,
@@ -164,7 +201,7 @@ class Page(EventEmitter):
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
         client.on('Log.entryAdded',
-                  lambda event: self._onLogEntryAdded(event))
+                  lambda event: self._onLogEntryAdded(self._client, event))
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
@@ -184,13 +221,13 @@ class Page(EventEmitter):
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
 
-    def _onLogEntryAdded(self, event: Dict) -> None:
+    def _onLogEntryAdded(self, session: CDPSession, event: Dict) -> None:
         entry = event.get('entry', {})
         level = entry.get('level', '')
         text = entry.get('text', '')
         args = entry.get('args', [])
         for arg in args:
-            helper.releaseObject(self._client, arg)
+            helper.releaseObject(session, arg)
 
         self.emit(Page.Events.Console, ConsoleMessage(level, text))
 
@@ -233,6 +270,11 @@ class Page(EventEmitter):
     def frames(self) -> List['Frame']:
         """Get all frames of this page."""
         return list(self._frameManager.frames())
+
+    @property
+    def workers(self) -> List[Worker]:
+        """Get all workers of this page."""
+        return list(self._workers.values())
 
     async def setRequestInterception(self, value: bool) -> None:
         """Enable/disable request interception."""

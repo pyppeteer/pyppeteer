@@ -7,7 +7,7 @@ import asyncio
 import concurrent.futures
 import json
 import logging
-from typing import Awaitable, Callable, TYPE_CHECKING
+from typing import Awaitable, Callable, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
@@ -114,7 +114,7 @@ class Connection(EventEmitter):
         if method == 'Target.receivedMessageFromTarget':
             session = self._sessions.get(sessionId)
             if session:
-                await session._on_message(params.get('message'))
+                session._on_message(params.get('message'))
         elif method == 'Target.detachedFromTarget':
             session = self._sessions.get(sessionId)
             if session:
@@ -185,7 +185,8 @@ class CDPSession(EventEmitter):
     `here <https://chromedevtools.github.io/devtools-protocol/>`_.
     """
 
-    def __init__(self, connection: Connection, targetId: str, sessionId: str,
+    def __init__(self, connection: Union[Connection, 'CDPSession'],
+                 targetId: str, sessionId: str,
                  loop: asyncio.AbstractEventLoop) -> None:
         """Make new session."""
         super().__init__()
@@ -194,6 +195,7 @@ class CDPSession(EventEmitter):
         self._connection: Optional[Connection] = connection
         self._targetId = targetId
         self._sessionId = sessionId
+        self._sessions: Dict[str, CDPSession] = dict()
         self._loop = loop
 
     async def send(self, method: str, params: dict = None) -> dict:
@@ -220,7 +222,7 @@ class CDPSession(EventEmitter):
             raise NetworkError("connection unexpectedly closed")
         return await callback
 
-    async def _on_message(self, msg: str) -> None:
+    def _on_message(self, msg: str) -> None:  # noqa: C901
         obj = json.loads(msg)
         _id = obj.get('id')
         if _id:
@@ -239,6 +241,17 @@ class CDPSession(EventEmitter):
                     if callback and not callback.done():
                         callback.set_result(result)
         else:
+            params = obj.get('params', {})
+            if obj.get('method') == 'Target.receivedMessageFromTarget':
+                session = self._sessions.get(params.get('sessionId'))
+                if session:
+                    session._on_message(params.get('message'))
+            elif obj.get('method') == 'Target.detachFromTarget':
+                sessionId = params.get('sessionId')
+                session = self._sessions.get(sessionId)
+                if session:
+                    session._on_closed()
+                    del self._sessions[sessionId]
             self.emit(obj.get('method'), obj.get('params'))
 
     async def detach(self) -> None:
@@ -257,3 +270,8 @@ class CDPSession(EventEmitter):
             cb.cancel()
         self._callbacks.clear()
         self._connection = None
+
+    def _createSession(self, targetId: str, sessionId: str) -> 'CDPSession':
+        session = CDPSession(self, targetId, sessionId, self._loop)
+        self._sessions[sessionId] = session
+        return session
