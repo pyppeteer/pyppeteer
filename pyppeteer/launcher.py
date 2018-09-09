@@ -39,6 +39,7 @@ CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 DEFAULT_ARGS = [
     '--disable-background-networking',
     '--disable-background-timer-throttling',
+    '--disable-breakpad',
     '--disable-browser-side-navigation',
     '--disable-client-side-phishing-detection',
     '--disable-default-apps',
