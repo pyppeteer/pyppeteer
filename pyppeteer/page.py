@@ -1078,7 +1078,8 @@ function deliverResult(name, seq, result) {
         await self._client.send('Network.setCacheDisabled',
                                 {'cacheDisabled': not enabled})
 
-    async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
+    async def screenshot(self, options: dict = None, **kwargs: Any
+                         ) -> Union[bytes, str]:
         """Take a screen shot.
 
         The following options are available:
@@ -1101,6 +1102,8 @@ function deliverResult(name, seq, result) {
 
         * ``omitBackground`` (bool): Hide default white background and allow
           capturing screenshot with transparency.
+        * ``encoding`` (str): The encoding of the image, can be either
+          ``'base64'`` or ``'binary'``. Defaults to ``'binary'``.
         """
         options = merge_dict(options, kwargs)
         screenshotType = None
@@ -1121,7 +1124,8 @@ function deliverResult(name, seq, result) {
             screenshotType = 'png'
         return await self._screenshotTask(screenshotType, options)
 
-    async def _screenshotTask(self, format: str, options: dict) -> bytes:  # noqa: C901,E501
+    async def _screenshotTask(self, format: str, options: dict  # noqa: C901
+                              ) -> Union[bytes, str]:
         await self._client.send('Target.activateTarget', {
             'targetId': self._target._targetId,
         })
@@ -1168,7 +1172,10 @@ function deliverResult(name, seq, result) {
         if options.get('fullPage'):
             await self.setViewport(self._viewport)
 
-        buffer = base64.b64decode(result.get('data', b''))
+        if options.get('encoding') == 'base64':
+            buffer = result.get('data', b'')
+        else:
+            buffer = base64.b64decode(result.get('data', b''))
         _path = options.get('path')
         if _path:
             with open(_path, 'wb') as f:
