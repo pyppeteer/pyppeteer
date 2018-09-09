@@ -334,8 +334,7 @@ class Frame(object):
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
         """
         document = await self._document()
-        value = await document.querySelectorEval(selector, pageFunction, *args)
-        return value
+        return await document.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
                                    *args: Any) -> Optional[Dict]:
