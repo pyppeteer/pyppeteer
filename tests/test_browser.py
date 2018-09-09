@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+from copy import deepcopy
 import os
 from pathlib import Path
 import unittest
@@ -103,6 +104,34 @@ class TestBrowser(unittest.TestCase):
         await page.close()
         await browser.close()
         self.assertTrue(backgroundPageTargets)
+
+    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @sync
+    async def test_OOPIF(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['headless'] = False
+        browser = await launch(options)
+        page = await browser.newPage()
+        example_page = 'http://example.com/'
+        await page.goto(example_page)
+        await page.setRequestInterception(True)
+
+        async def intercept(req):
+            await req.respond({'body': 'YO, GOOGLE.COM'})
+
+        page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
+        await page.evaluate('''() => {
+            const frame = document.createElement('iframe');
+            frame.setAttribute('src', 'https://google.com/');
+            document.body.appendChild(frame);
+            return new Promise(x => frame.onload = x);
+        }''')
+        await page.waitForSelector('iframe[src="https://google.com/"]')
+        urls = []
+        for frame in page.frames:
+            urls.append(frame.url)
+        urls.sort()
+        self.assertEqual(urls, [example_page, 'https://google.com/'])
 
 
 class TestPageClose(BaseTestCase):
