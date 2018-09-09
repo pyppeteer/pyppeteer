@@ -277,7 +277,16 @@ class Page(EventEmitter):
         return list(self._workers.values())
 
     async def setRequestInterception(self, value: bool) -> None:
-        """Enable/disable request interception."""
+        """Enable/disable request interception.
+
+        Activating request interception enables
+        :class:`~pyppeteer.network_manager.Request` class's
+        :meth:`~pyppeteer.network_manager.Request.abort`,
+        :meth:`~pyppeteer.network_manager.Request.continue_`, and
+        :meth:`~pyppeteer.network_manager.Request.response` methods.
+        This provides the capbility to modify network requests that are made by
+        a page.
+        """
         return await self._networkManager.setRequestInterception(value)
 
     async def setOfflineMode(self, enabled: bool) -> None:

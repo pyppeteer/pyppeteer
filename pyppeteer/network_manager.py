@@ -326,7 +326,24 @@ class NetworkManager(EventEmitter):
 
 
 class Request(object):
-    """Request class."""
+    """Request class.
+
+    Whenever the page sends a request, such as for a network resource, the
+    following events are emitted by pyppeteer's page:
+
+    - ``'request'``: emitted when the request is issued by the page.
+    - ``'response'``: emitted when/if the response is received for the request.
+    - ``'requestfinished'``: emitted when the response body is downloaded and
+      the request is complete.
+
+    If request fails at some point, then instead of ``'requestfinished'`` event
+    (and possibly instead of ``'response'`` event), the ``'requestfailed'``
+    event is emitted.
+
+    If request gets a ``'redirect'`` response, the request is successfully
+    finished with the ``'requestfinished'`` event, and a new request is issued
+    to a redirect url.
+    """
 
     #: url of this request.
     url: str
@@ -417,7 +434,7 @@ class Request(object):
     def redirectChain(self) -> List['Request']:
         """Return chain of requests initiated to fetch a resource.
 
-        * If there are no redirects and request was successfull, the chain will
+        * If there are no redirects and request was successful, the chain will
           be empty.
         * If a server responds with at least a single redirect, then the chain
           will contain all the requests that were redirected.
@@ -619,7 +636,7 @@ class Response(object):
 
     @property
     def ok(self) -> bool:
-        """Return bool whether this request is successfull (200-299) or not."""
+        """Return bool whether this request is successful (200-299) or not."""
         return self._status == 0 or 200 <= self._status <= 299
 
     @property
