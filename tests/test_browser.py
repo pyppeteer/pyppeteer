@@ -126,6 +126,13 @@ class TestPageClose(BaseTestCase):
         asyncio.ensure_future(dialog.accept())
         await waitEvent(newPage, 'close')
 
+    @sync
+    async def test_page_close_state(self):
+        newPage = await self.browser.newPage()
+        self.assertFalse(newPage.isClosed())
+        await newPage.close()
+        self.assertTrue(newPage.isClosed())
+
 
 class TestTarget(BaseTestCase):
     @sync

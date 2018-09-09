@@ -3,9 +3,10 @@ History
 
 ## Version 0.0.23 (next version)
 
-* Add `BrowserContext`
-* Add `Worker`
+* Add `BrowserContext` class
+* Add `Worker` class
 * Change `CDPSession.send` to a normal function which returns awaitable value
+* Add `Page.isClosed` method
 
 ## Version 0.0.22 (2018-09-06)
 

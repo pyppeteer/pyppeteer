@@ -115,6 +115,7 @@ class Page(EventEmitter):
                  ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None,
                  ) -> None:
         super().__init__()
+        self._closed = False
         self._client = client
         self._target = target
         self._keyboard = Keyboard(client)
@@ -203,6 +204,7 @@ class Page(EventEmitter):
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
+            self._closed = True
 
         self._target._isClosedPromise.add_done_callback(closed)
 
@@ -1290,6 +1292,10 @@ function deliverResult(name, seq, result) {
             await conn.send('Target.closeTarget',
                             {'targetId': self._target._targetId})
             await self._target._isClosedPromise
+
+    def isClosed(self) -> bool:
+        """Indicate that the page has been closed."""
+        return self._closed
 
     @property
     def mouse(self) -> Mouse:
