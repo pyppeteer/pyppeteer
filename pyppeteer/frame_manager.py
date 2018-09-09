@@ -343,16 +343,9 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
         """
-        context = await self.executionContext()
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await context.evaluateHandle(
-            'selector => Array.from(document.querySelectorAll(selector))',
-            selector,
-        )
-        result = await self.evaluate(pageFunction, arrayHandle, *args)
-        await arrayHandle.dispose()
-        return result
+        document = await self._document()
+        value = await document.JJeval(selector, pageFunction, *args)
+        return value
 
     async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
         """Get all elelments which matches `selector`.

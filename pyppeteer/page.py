@@ -393,7 +393,7 @@ class Page(EventEmitter):
         return await frame.querySelectorAllEval(selector, pageFunction, *args)
 
     async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
-        """Get all element which matches `selector` as a list.
+        """Get all element which matches ``selector`` as a list.
 
         :arg str selector: A selector to search element.
         :return List[ElementHandle]: List of

@@ -7,6 +7,7 @@ History
 * Add `Worker` class
 * Change `CDPSession.send` to a normal function which returns awaitable value
 * Add `Page.isClosed` method
+* Add `ElementHandle.querySelectorAllEval` and `ElementHandle.JJeval`
 
 ## Version 0.0.22 (2018-09-06)
 

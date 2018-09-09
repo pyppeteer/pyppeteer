@@ -368,12 +368,54 @@ class ElementHandle(JSHandle):
         await elementHandle.dispose()
         return result
 
+    async def querySelectorAllEval(self, selector: str, pageFunction: str,
+                                   *args: Any) -> Any:
+        """Run ``Page.querySelectorAllEval`` within the element.
+
+        This method runs ``Array.from(document.querySelectorAll)`` within the
+        element and passes it as the first argument to ``pageFunction``. If
+        there is no element matching ``selector``, the method raises
+        ``ElementHandleError``.
+
+        If ``pageFunction`` returns a promise, then wait for the promise to
+        resolve and return its value.
+
+        Example:
+
+        .. code:: html
+
+            <div class="feed">
+                <div class="tweet">Hello!</div>
+                <div class="tweet">Hi!</div>
+            </div>
+
+        .. code:: python
+
+            feedHandle = await page.J('.feed')
+            assert (await feedHandle.JJeval('.tweet', '(nodes => nodes.map(n => n.innerText))')) == ['Hello!', 'Hi!']
+        """  # noqa: E501
+        arrayHandle = await self.executionContext.evaluateHandle(
+            '(element, selector) => Array.from(element.querySelectorAll(selector))',  # noqa: E501
+            self, selector
+        )
+        if len(await arrayHandle.jsonValue()) == 0:
+            raise ElementHandleError(
+                f'Error: failed to find elements matching selector "{selector}"'  # noqa: E501
+            )
+
+        result = await self.executionContext.evaluate(
+            pageFunction, arrayHandle, *args)
+        await arrayHandle.dispose()
+        return result
+
     #: alias to :meth:`querySelector`
     J = querySelector
     #: alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
     #: alias to :meth:`querySelectorEval`
     Jeval = querySelectorEval
+    #: alias to :meth:`querySelectorAllEval`
+    JJeval = querySelectorAllEval
 
     async def xpath(self, expression: str) -> List['ElementHandle']:
         """Evaluate XPath expression relative to this elementHandle.
