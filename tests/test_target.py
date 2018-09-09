@@ -22,6 +22,8 @@ class TestTarget(BaseTestCase):
     @sync
     async def test_return_all_pages(self):
         pages = await self.browser.pages()
+        for page in pages:
+            print(page.url)
         self.assertEqual(len(pages), 2)
         self.assertIn(self.page, pages)
         self.assertNotEqual(pages[0], pages[1])
@@ -167,3 +169,4 @@ class TestTarget(BaseTestCase):
         )
         self.assertEqual(createdTarget.opener, self.page.target)
         self.assertIsNone(self.page.target.opener)
+        await (await createdTarget.page()).close()
