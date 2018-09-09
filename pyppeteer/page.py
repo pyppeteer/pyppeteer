@@ -111,9 +111,9 @@ class Page(EventEmitter):
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
-    def __init__(self, client: CDPSession, target: 'Target', frameTree: Dict,
-                 ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None,
-                 ) -> None:
+    def __init__(self, client: CDPSession, target: 'Target',  # noqa: C901
+                 frameTree: Dict, ignoreHTTPSErrors: bool,
+                 screenshotTaskQueue: list = None) -> None:
         super().__init__()
         self._closed = False
         self._client = client
@@ -139,9 +139,13 @@ class Page(EventEmitter):
         def _onTargetAttached(event: Dict) -> None:
             targetInfo = event['targetInfo']
             if targetInfo['type'] != 'worker':
-                client.send('Target.detachFromTarget', {
-                    'sessionId': event['sessionId'],
-                })
+                # If we don't detach from service workers, they will never die.
+                try:
+                    client.send('Target.detachFromTarget', {
+                        'sessionId': event['sessionId'],
+                    })
+                except Exception as e:
+                    debugError(logger, e)
                 return
             sessionId = event['sessionId']
             session = client._createSession(targetInfo['targetId'], sessionId)
