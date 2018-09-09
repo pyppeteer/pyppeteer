@@ -239,6 +239,10 @@ div.to-screenshot {
     height: 600px;
     margin-left: 50px;
 }
+
+::-webkit-scrollbar {
+    dispaly: none;
+}
 </style>
 
 <div class="to-screenshot"></div>
