@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+from copy import deepcopy
 import glob
 import logging
 import os
@@ -141,6 +142,44 @@ class TestLauncher(unittest.TestCase):
         # console.log output is sent to stderr
         self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
+
+
+class TestDefaultURL(unittest.TestCase):
+    @sync
+    async def test_defualt_url(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        pages = await browser.pages()
+        url_list = []
+        for page in pages:
+            url_list.append(page.url)
+        self.assertEqual(url_list, ['about:blank'])
+        await browser.close()
+
+    @unittest.skipIf('CI' in os.environ, 'Skip headful test on CI')
+    @sync
+    async def test_default_url_not_headless(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['headless'] = False
+        browser = await launch(options)
+        pages = await browser.pages()
+        url_list = []
+        for page in pages:
+            url_list.append(page.url)
+        self.assertEqual(url_list, ['about:blank'])
+        await browser.close()
+
+    @sync
+    async def test_custom_url(self):
+        customUrl = 'http://example.com/'
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['args'].append(customUrl)
+        browser = await launch(options)
+        pages = await browser.pages()
+        url_list = []
+        for page in pages:
+            url_list.append(page.url)
+        self.assertEqual(url_list, [customUrl])
+        await browser.close()
 
 
 class TestMixedContent(unittest.TestCase):

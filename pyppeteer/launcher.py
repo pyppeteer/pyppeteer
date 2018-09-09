@@ -105,6 +105,17 @@ class Launcher(object):
                 '--mute-audio',
             ])
 
+        def _is_default_url() -> bool:
+            for arg in self.options['args']:
+                if not arg.startswith('-'):
+                    return False
+            return True
+
+        if (not self.options.get('ignoreDefaultArgs') and
+                isinstance(self.options.get('args'), list) and
+                _is_default_url()):
+            self.chrome_args.append('about:blank')
+
         if 'executablePath' in self.options:
             self.exec = self.options['executablePath']
         else:
