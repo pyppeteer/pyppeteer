@@ -175,10 +175,10 @@ class TestDefaultURL(unittest.TestCase):
         options['args'].append(customUrl)
         browser = await launch(options)
         pages = await browser.pages()
-        url_list = []
-        for page in pages:
-            url_list.append(page.url)
-        self.assertEqual(url_list, [customUrl])
+        self.assertEqual(len(pages), 1)
+        if pages[0].url != customUrl:
+            await pages[0].waitForNavigation()
+        self.assertEqual(pages[0].url, customUrl)
         await browser.close()
 
 
