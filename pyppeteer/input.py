@@ -16,7 +16,39 @@ if TYPE_CHECKING:
 
 
 class Keyboard(object):
-    """Keyboard class."""
+    """Keyboard class provides as api for managing a virtual keyboard.
+
+    The high level api is :meth:`type`, which takes raw characters and
+    generate proper keydown, keypress/input, and keyup events on your page.
+
+    For finer control, you can use :meth:`down`, :meth:`up`, and
+    :meth:`sendCharacter` to manually fire events as if they were generated
+    from a real keyboard.
+
+    An example of holding down ``Shift`` in order to select and delete some
+    text:
+
+    .. code::
+
+        await page.keyboard.type('Hello, World!')
+        await page.keyboard.press('ArrowLeft')
+
+        await page.keyboard.down('Shift')
+        for i in ' World':
+            await page.keyboard.press('ArrowLeft')
+        await page.keyboard.up('Shift')
+
+        await page.keyboard.press('Backspace')
+        # Result text will end up saying 'Hello!'.
+
+    An example of pressing ``A``:
+
+    .. code::
+
+        await page.keyboard.down('Shift')
+        await page.keyboard.press('KeyA')
+        await page.keyboard.up('Shift')
+    """
 
     def __init__(self, client: CDPSession) -> None:
         self._client = client
@@ -25,9 +57,9 @@ class Keyboard(object):
 
     async def down(self, key: str, options: dict = None, **kwargs: Any
                    ) -> None:
-        """Dispatches a ``keydown`` event with ``key``.
+        """Dispatch a ``keydown`` event with ``key``.
 
-        If ``key`` is a single character and no modifier keys besides ``shift``
+        If ``key`` is a single character and no modifier keys besides ``Shift``
         are being held down, and a ``keyparess``/``input`` event will also
         generated. The ``text`` option can be specified to force an ``input``
         event to be generated.
@@ -39,6 +71,10 @@ class Keyboard(object):
         :arg str key: Name of key to press, such as ``ArrowLeft``.
         :arg dict options: Option can have ``text`` field, and if this option
             spedified, generate an input event with this text.
+
+        .. note::
+            Modifier keys DO influence :meth:`down`. Holding down ``shift``
+            will type the text in upper case.
         """
         options = merge_dict(options, kwargs)
 
@@ -119,7 +155,7 @@ class Keyboard(object):
         return description
 
     async def up(self, key: str) -> None:
-        """Dispatches a ``keyup`` event of the ``key``.
+        """Dispatch a ``keyup`` event of the ``key``.
 
         :arg str key: Name of key to release, such as ``ArrowLeft``.
         """
@@ -138,9 +174,14 @@ class Keyboard(object):
         })
 
     async def sendCharacter(self, char: str) -> None:
-        """Dispatches a ``keypress`` and ``input`` event.
+        """Send character into the page.
 
-        This does not send a ``keydown`` or ``keyup`` event.
+        This method dispatches a ``keypress`` and ``input`` event. This does
+        not send a ``keydown`` or ``keyup`` event.
+
+        .. note::
+            Modifier keys DO NOT effect :meth:`sendCharacter`. Holding down
+            ``shift`` will not type the text in upper case.
         """
         await self._client.send('Input.dispatchKeyEvent', {
             'type': 'char',
@@ -152,7 +193,7 @@ class Keyboard(object):
 
     async def type(self, text: str, options: Dict = None, **kwargs: Any
                    ) -> None:
-        """Type characters.
+        """Type characters into a focused element.
 
         This method sends ``keydown``, ``keypress``/``input``, and ``keyup``
         event for each character in the ``text``.
@@ -160,10 +201,14 @@ class Keyboard(object):
         To press a special key, like ``Control`` or ``ArrowDown``, use
         :meth:`press` method.
 
-        :arg str text: Text to type into this element.
+        :arg str text: Text to type into a focused element.
         :arg dict options: Options can have ``delay`` (int|float) field, which
           specifies time to wait between key presses in milliseconds. Defaults
           to 0.
+
+        .. note::
+            Modifier keys DO NOT effect :meth:`type`. Holding down ``shift``
+            will not type the text in upper case.
         """
         options = merge_dict(options, kwargs)
         delay = options.get('delay', 0)
@@ -192,6 +237,10 @@ class Keyboard(object):
           text.
         * ``delay`` (int|float): Time to wait between ``keydown`` and
           ``keyup``. Defaults to 0.
+
+        .. note::
+            Modifier keys DO effect :meth:`press`. Holding down ``shift`` will
+            type the text in upper case.
         """
         options = merge_dict(options, kwargs)
 
