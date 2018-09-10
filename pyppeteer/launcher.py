@@ -24,7 +24,8 @@ from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
-from pyppeteer.helper import debugError
+from pyppeteer.helper import addEventListener, debugError, removeEventListeners
+from pyppeteer.target import Target
 from pyppeteer.util import check_chromium, chromium_excutable
 from pyppeteer.util import download_chromium, merge_dict, get_free_port
 
@@ -39,6 +40,7 @@ CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
 DEFAULT_ARGS = [
     '--disable-background-networking',
     '--disable-background-timer-throttling',
+    '--disable-breakpad',
     '--disable-browser-side-navigation',
     '--disable-client-side-phishing-detection',
     '--disable-default-apps',
@@ -104,6 +106,17 @@ class Launcher(object):
                 '--hide-scrollbars',
                 '--mute-audio',
             ])
+
+        def _is_default_url() -> bool:
+            for arg in self.options['args']:
+                if not arg.startswith('-'):
+                    return False
+            return True
+
+        if (not self.options.get('ignoreDefaultArgs') and
+                isinstance(self.options.get('args'), list) and
+                _is_default_url()):
+            self.chrome_args.append('about:blank')
 
         if 'executablePath' in self.options:
             self.exec = self.options['executablePath']
@@ -177,8 +190,32 @@ class Launcher(object):
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(
             self.browserWSEndpoint, self._loop, connectionDelay)
-        return await Browser.create(
-            self.connection, self.options, self.proc, self.killChrome)
+        ignoreHTTPSErrors = bool(self.options.get('ignoreHTTPSErrors', False))
+        setDefaultViewport = not self.options.get('appMode', False)
+        browser = await Browser.create(
+            self.connection, [], ignoreHTTPSErrors, setDefaultViewport,
+            self.proc, self.killChrome)
+        await self.ensureInitialPage(browser)
+        return browser
+
+    async def ensureInitialPage(self, browser: Browser) -> None:
+        """Wait for initial page target to be created."""
+        for target in browser.targets():
+            if target.type == 'page':
+                return
+
+        initialPagePromise = self._loop.create_future()
+
+        def initialPageCallback() -> None:
+            initialPagePromise.set_result(True)
+
+        def check_target(target: Target) -> None:
+            if target.type == 'page':
+                initialPageCallback()
+
+        listeners = [addEventListener(browser, 'targetcreated', check_target)]
+        await initialPagePromise
+        removeEventListeners(listeners)
 
     def _get_ws_endpoint(self) -> str:
         url = self.url + '/json/version'
@@ -305,8 +342,12 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     connection = Connection(browserWSEndpoint,
                             options.get('loop', asyncio.get_event_loop()),
                             connectionDelay)
+    browserContextIds = (await connection.send('Target.getBrowserContexts')
+                         ).get('browserContextIds', [])
+    ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
     return await Browser.create(
-        connection, options, None, lambda: connection.send('Browser.close'))
+        connection, browserContextIds, ignoreHTTPSErrors, True, None,
+        lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:

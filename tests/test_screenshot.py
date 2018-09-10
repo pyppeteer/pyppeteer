@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import base64
 from pathlib import Path
 from unittest import TestCase
 
@@ -39,6 +40,25 @@ class TestScreenShot(TestCase):
         with blank_png_path.open('rb') as f:
             sample = f.read()
         self.assertEqual(result, sample)
+
+    @sync
+    async def test_screenshot_binary(self):
+        page = await self.browser.newPage()
+        await page.goto('about:blank')
+        result = await page.screenshot()
+        with blank_png_path.open('rb') as f:
+            sample = f.read()
+        self.assertEqual(result, sample)
+
+    @sync
+    async def test_screenshot_base64(self):
+        page = await self.browser.newPage()
+        await page.goto('about:blank')
+        options = {'encoding': 'base64'}
+        result = await page.screenshot(options)
+        with blank_png_path.open('rb') as f:
+            sample = f.read()
+        self.assertEqual(base64.b64decode(result), sample)
 
     @sync
     async def test_screenshot_element(self):

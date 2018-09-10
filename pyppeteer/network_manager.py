@@ -175,6 +175,7 @@ class NetworkManager(EventEmitter):
                     request._requestId,
                     event.get('interceptionId', ''),
                     event.get('redirectUrl', ''),
+                    event.get('isNavigationRequest', False),
                     event.get('resourceType', ''),
                     event.get('request', {}),
                     event.get('frameId'),
@@ -188,14 +189,16 @@ class NetworkManager(EventEmitter):
             self._requestHashToRequestIds.delete(requestHash, requestId)
             self._handleRequestStart(
                 requestId, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId'], [],
+                event['isNavigationRequest'], event['resourceType'],
+                event['request'], event['frameId'], [],
             )
         else:
             self._requestHashToInterceptionIds.set(
                 requestHash, event['interceptionId'])
             self._handleRequestStart(
                 None, event['interceptionId'], event['request']['url'],
-                event['resourceType'], event['request'], event['frameId'], [],
+                event['isNavigationRequest'], event['resourceType'],
+                event['request'], event['frameId'], [],
             )
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
@@ -222,7 +225,8 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.RequestFinished, request)
 
     def _handleRequestStart(self, requestId: Optional[str],
-                            interceptionId: str, url: str, resourceType: str,
+                            interceptionId: str, url: str,
+                            isNavigationRequest: bool, resourceType: str,
                             requestPayload: Dict, frameId: Optional[str],
                             redirectChain: List['Request']
                             ) -> None:
@@ -231,6 +235,7 @@ class NetworkManager(EventEmitter):
             frame = self._frameManager.frame(frameId)
 
         request = Request(self._client, requestId, interceptionId,
+                          isNavigationRequest,
                           self._userRequestInterceptionEnabled, url,
                           resourceType, requestPayload, frame, redirectChain)
         if requestId:
@@ -271,9 +276,12 @@ class NetworkManager(EventEmitter):
                     redirectResponse.get('securityDetails'),
                 )
                 redirectChain = request._redirectChain
+        isNavigationRequest = (event['requestId'] == event['loaderId'] and
+                               event['type'] == 'Document')
         self._handleRequestStart(
             event.get('requestId', ''), '',
             event.get('request', {}).get('url', ''),
+            isNavigationRequest,
             event.get('type', ''),
             event.get('request', {}),
             event.get('frameId'),
@@ -326,7 +334,24 @@ class NetworkManager(EventEmitter):
 
 
 class Request(object):
-    """Request class."""
+    """Request class.
+
+    Whenever the page sends a request, such as for a network resource, the
+    following events are emitted by pyppeteer's page:
+
+    - ``'request'``: emitted when the request is issued by the page.
+    - ``'response'``: emitted when/if the response is received for the request.
+    - ``'requestfinished'``: emitted when the response body is downloaded and
+      the request is complete.
+
+    If request fails at some point, then instead of ``'requestfinished'`` event
+    (and possibly instead of ``'response'`` event), the ``'requestfailed'``
+    event is emitted.
+
+    If request gets a ``'redirect'`` response, the request is successfully
+    finished with the ``'requestfinished'`` event, and a new request is issued
+    to a redirect url.
+    """
 
     #: url of this request.
     url: str
@@ -340,12 +365,14 @@ class Request(object):
     resourceType: str
 
     def __init__(self, client: CDPSession, requestId: Optional[str],
-                 interceptionId: str, allowInterception: bool, url: str,
-                 resourceType: str, payload: dict, frame: Optional[Frame],
+                 interceptionId: str, isNavigationRequest: bool,
+                 allowInterception: bool, url: str, resourceType: str,
+                 payload: dict, frame: Optional[Frame],
                  redirectChain: List['Request']
                  ) -> None:
         self._client = client
         self._requestId = requestId
+        self._isNavigationRequest = isNavigationRequest
         self._interceptionId = interceptionId
         self._allowInterception = allowInterception
         self._interceptionHandled = False
@@ -413,11 +440,15 @@ class Request(object):
         """
         return self._frame
 
+    def isNavigationRequest(self) -> bool:
+        """Whether this request is driving frame's navigation."""
+        return self._isNavigationRequest
+
     @property
     def redirectChain(self) -> List['Request']:
         """Return chain of requests initiated to fetch a resource.
 
-        * If there are no redirects and request was successfull, the chain will
+        * If there are no redirects and request was successful, the chain will
           be empty.
         * If a server responds with at least a single redirect, then the chain
           will contain all the requests that were redirected.
@@ -619,7 +650,7 @@ class Response(object):
 
     @property
     def ok(self) -> bool:
-        """Return bool whether this request is successfull (200-299) or not."""
+        """Return bool whether this request is successful (200-299) or not."""
         return self._status == 0 or 200 <= self._status <= 299
 
     @property

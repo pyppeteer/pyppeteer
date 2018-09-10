@@ -73,6 +73,12 @@ class RedirectHandler2(BaseHandler):
         self.write('<h1 id="red2">redirect2</h1>')
 
 
+class RedirectHandler3(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.redirect('/static/one-frame.html')
+
+
 class CSPHandler(BaseHandler):
     def get(self) -> None:
         super().get()
@@ -139,6 +145,7 @@ def get_application() -> web.Application:
         ('/1', LinkHandler1),
         ('/redirect1', RedirectHandler1),
         ('/redirect2', RedirectHandler2),
+        ('/redirect3', RedirectHandler3),
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
         ('/long', LongHandler),

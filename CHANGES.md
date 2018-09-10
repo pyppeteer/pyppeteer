@@ -1,6 +1,18 @@
 History
 =======
 
+## Version 0.0.23 (2018-09-10)
+
+Catch up puppeteer v1.5.0
+
+* Add `BrowserContext` class
+* Add `Worker` class
+* Change `CDPSession.send` to a normal function which returns awaitable value
+* Add `Page.isClosed` method
+* Add `ElementHandle.querySelectorAllEval` and `ElementHandle.JJeval`
+* Add `Target.opener`
+* Add `Request.isNavigationRequest`
+
 ## Version 0.0.22 (2018-09-06)
 
 Catch up puppeteer v1.4.0

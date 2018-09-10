@@ -31,6 +31,7 @@ from pyppeteer.navigator_watcher import NavigatorWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
+from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
     from pyppeteer.browser import Browser, Target  # noqa: F401
@@ -66,6 +67,8 @@ class Page(EventEmitter):
         FrameNavigated='framenavigated',
         Load='load',
         Metrics='metrics',
+        WorkerCreated='workercreated',
+        WorkerDestroyed='workerdestroyed',
     )
 
     PaperFormats: Dict[str, Dict[str, float]] = dict(
@@ -83,7 +86,7 @@ class Page(EventEmitter):
 
     @staticmethod
     async def create(client: CDPSession, target: 'Target',
-                     ignoreHTTPSErrors: bool = False, appMode: bool = False,
+                     ignoreHTTPSErrors: bool, setDefaultViewport: bool,
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which makes new page object."""
         await client.send('Page.enable'),
@@ -92,6 +95,7 @@ class Page(EventEmitter):
                     screenshotTaskQueue)
 
         await asyncio.gather(
+            client.send('Target.setAutoAttach', {'autoAttach': True, 'waitForDebuggerOnStart': False}),  # noqa: E501
             client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
             client.send('Network.enable', {}),
             client.send('Runtime.enable', {}),
@@ -102,15 +106,15 @@ class Page(EventEmitter):
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
-        if not appMode:
+        if setDefaultViewport:
             await page.setViewport({'width': 800, 'height': 600})
         return page
 
-    def __init__(self, client: CDPSession, target: 'Target', frameTree: Dict,
-                 ignoreHTTPSErrors: bool = False,
-                 screenshotTaskQueue: list = None,
-                 ) -> None:
+    def __init__(self, client: CDPSession, target: 'Target',  # noqa: C901
+                 frameTree: Dict, ignoreHTTPSErrors: bool,
+                 screenshotTaskQueue: list = None) -> None:
         super().__init__()
+        self._closed = False
         self._client = client
         self._target = target
         self._keyboard = Keyboard(client)
@@ -128,6 +132,40 @@ class Page(EventEmitter):
         if screenshotTaskQueue is None:
             screenshotTaskQueue = list()
         self._screenshotTaskQueue = screenshotTaskQueue
+
+        self._workers: Dict[str, Worker] = dict()
+
+        def _onTargetAttached(event: Dict) -> None:
+            targetInfo = event['targetInfo']
+            if targetInfo['type'] != 'worker':
+                # If we don't detach from service workers, they will never die.
+                try:
+                    client.send('Target.detachFromTarget', {
+                        'sessionId': event['sessionId'],
+                    })
+                except Exception as e:
+                    debugError(logger, e)
+                return
+            sessionId = event['sessionId']
+            session = client._createSession(targetInfo['type'], sessionId)
+            worker = Worker(
+                session,
+                targetInfo['url'],
+                self._addConsoleMessage,
+            )
+            self._workers[sessionId] = worker
+            self.emit(Page.Events.WorkerCreated, worker)
+
+        def _onTargetDetached(event: Dict) -> None:
+            sessionId = event['sessionId']
+            worker = self._workers.get(sessionId)
+            if worker is None:
+                return
+            self.emit(Page.Events.WorkerDestroyed, worker)
+            del self._workers[sessionId]
+
+        client.on('Target.attachedToTarget', _onTargetAttached)
+        client.on('Target.detachedFromTarget', _onTargetDetached)
 
         _fm = self._frameManager
         _fm.on(FrameManager.Events.FrameAttached,
@@ -169,6 +207,7 @@ class Page(EventEmitter):
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
+            self._closed = True
 
         self._target._isClosedPromise.add_done_callback(closed)
 
@@ -190,10 +229,12 @@ class Page(EventEmitter):
         level = entry.get('level', '')
         text = entry.get('text', '')
         args = entry.get('args', [])
+        source = entry.get('source', '')
         for arg in args:
             helper.releaseObject(self._client, arg)
 
-        self.emit(Page.Events.Console, ConsoleMessage(level, text))
+        if source != 'worker':
+            self.emit(Page.Events.Console, ConsoleMessage(level, text))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -235,8 +276,22 @@ class Page(EventEmitter):
         """Get all frames of this page."""
         return list(self._frameManager.frames())
 
+    @property
+    def workers(self) -> List[Worker]:
+        """Get all workers of this page."""
+        return list(self._workers.values())
+
     async def setRequestInterception(self, value: bool) -> None:
-        """Enable/disable request interception."""
+        """Enable/disable request interception.
+
+        Activating request interception enables
+        :class:`~pyppeteer.network_manager.Request` class's
+        :meth:`~pyppeteer.network_manager.Request.abort`,
+        :meth:`~pyppeteer.network_manager.Request.continue_`, and
+        :meth:`~pyppeteer.network_manager.Request.response` methods.
+        This provides the capbility to modify network requests that are made by
+        a page.
+        """
         return await self._networkManager.setRequestInterception(value)
 
     async def setOfflineMode(self, enabled: bool) -> None:
@@ -352,7 +407,7 @@ class Page(EventEmitter):
         return await frame.querySelectorAllEval(selector, pageFunction, *args)
 
     async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
-        """Get all element which matches `selector` as a list.
+        """Get all element which matches ``selector`` as a list.
 
         :arg str selector: A selector to search element.
         :return List[ElementHandle]: List of
@@ -664,25 +719,28 @@ function deliverResult(name, seq, result) {
             ))
             return
 
-        if not self.listeners(Page.Events.Console):
-            for arg in _args:
-                self._client._loop.create_task(
-                    helper.releaseObject(self._client, arg))
-            return
-
         _id = event['executionContextId']
         values = []
-        for arg in _args:
+        for arg in event.get('args', []):
             values.append(self._frameManager.createJSHandle(_id, arg))
+        self._addConsoleMessage(event['type'], values)
+
+    def _addConsoleMessage(self, type: str, args: List[JSHandle]) -> None:
+        if not self.listeners(Page.Events.Console):
+            for arg in args:
+                self._client._loop.create_task(arg.dispose())
+            return
 
         textTokens = []
-        for arg, value in zip(_args, values):
-            if arg.get('objectId'):
-                textTokens.append(value.toString())
+        for arg in args:
+            remoteObject = arg._remoteObject
+            if remoteObject.get('objectId'):
+                textTokens.append(arg.toString())
             else:
-                textTokens.append(str(helper.valueFromRemoteObject(arg)))
+                textTokens.append(
+                    str(helper.valueFromRemoteObject(remoteObject)))
 
-        message = ConsoleMessage(event['type'], ' '.join(textTokens), values)
+        message = ConsoleMessage(type, ' '.join(textTokens), args)
         self.emit(Page.Events.Console, message)
 
     def _onDialog(self, event: Any) -> None:
@@ -1029,7 +1087,8 @@ function deliverResult(name, seq, result) {
         await self._client.send('Network.setCacheDisabled',
                                 {'cacheDisabled': not enabled})
 
-    async def screenshot(self, options: dict = None, **kwargs: Any) -> bytes:
+    async def screenshot(self, options: dict = None, **kwargs: Any
+                         ) -> Union[bytes, str]:
         """Take a screen shot.
 
         The following options are available:
@@ -1052,6 +1111,8 @@ function deliverResult(name, seq, result) {
 
         * ``omitBackground`` (bool): Hide default white background and allow
           capturing screenshot with transparency.
+        * ``encoding`` (str): The encoding of the image, can be either
+          ``'base64'`` or ``'binary'``. Defaults to ``'binary'``.
         """
         options = merge_dict(options, kwargs)
         screenshotType = None
@@ -1072,7 +1133,8 @@ function deliverResult(name, seq, result) {
             screenshotType = 'png'
         return await self._screenshotTask(screenshotType, options)
 
-    async def _screenshotTask(self, format: str, options: dict) -> bytes:  # noqa: C901,E501
+    async def _screenshotTask(self, format: str, options: dict  # noqa: C901
+                              ) -> Union[bytes, str]:
         await self._client.send('Target.activateTarget', {
             'targetId': self._target._targetId,
         })
@@ -1119,7 +1181,10 @@ function deliverResult(name, seq, result) {
         if options.get('fullPage'):
             await self.setViewport(self._viewport)
 
-        buffer = base64.b64decode(result.get('data', b''))
+        if options.get('encoding') == 'base64':
+            buffer = result.get('data', b'')
+        else:
+            buffer = base64.b64decode(result.get('data', b''))
         _path = options.get('path')
         if _path:
             with open(_path, 'wb') as f:
@@ -1252,6 +1317,10 @@ function deliverResult(name, seq, result) {
             await conn.send('Target.closeTarget',
                             {'targetId': self._target._targetId})
             await self._target._isClosedPromise
+
+    def isClosed(self) -> bool:
+        """Indicate that the page has been closed."""
+        return self._closed
 
     @property
     def mouse(self) -> Mouse:

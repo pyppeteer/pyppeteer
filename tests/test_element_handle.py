@@ -239,6 +239,10 @@ div.to-screenshot {
     height: 600px;
     margin-left: 50px;
 }
+
+::-webkit-scrollbar {
+    dispaly: none;
+}
 </style>
 
 <div class="to-screenshot"></div>
@@ -293,6 +297,16 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, 'a-child-div')
 
     @sync
+    async def test_element_handle_with_missing_selector(self):
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
+        await self.page.setContent(htmlContent)
+        elementHandle = await self.page.J('#myId')
+        with self.assertRaises(ElementHandleError) as cm:
+            await elementHandle.Jeval('.a', 'node => node.innerText')
+        self.assertIn('Error: failed to find element matching selector ".a"',
+                      cm.exception.args[0])
+
+    @sync
     async def test_element_handle_JJ(self):
         await self.page.setContent('''
 <html><body><div>A</div><br/><div>B</div></body></html>
@@ -316,6 +330,42 @@ class TestQuerySelector(BaseTestCase):
         html = await self.page.J('html')
         elements = await html.JJ('div')
         self.assertEqual(len(elements), 0)
+
+    @sync
+    async def test_element_handle_JJEval(self):
+        await self.page.setContent(
+            '<html><body><div class="tweet"><div class="like">100</div>'
+            '<div class="like">10</div></div></body></html>'
+        )
+        tweet = await self.page.J('.tweet')
+        content = await tweet.JJeval(
+            '.like', 'nodes => nodes.map(n => n.innerText)')
+        self.assertEqual(content, ['100', '10'])
+
+    @sync
+    async def test_element_handle_JJEval_subtree(self):
+        await self.page.setContent(
+            '<div class="a">not-a-child-div</div>'
+            '<div id="myId">'
+            '<div class="a">a1-child-div</div>'
+            '<div class="a">a2-child-div</div>'
+            '</div>'
+        )
+        elementHandle = await self.page.J('#myId')
+        content = await elementHandle.JJeval(
+            '.a', 'nodes => nodes.map(n => n.innerText)')
+        self.assertEqual(content, ['a1-child-div', 'a2-child-div'])
+
+    @sync
+    async def test_element_handle_JJEval_missing_selector(self):
+        await self.page.setContent(
+            '<div class="a">not-a-child-div</div><div id="myId"></div>')
+        elementHandle = await self.page.J('#myId')
+        with self.assertRaises(ElementHandleError) as cm:
+            await elementHandle.JJeval(
+                '.a', 'nodes => nodes.map(n => n.innerText)')
+        self.assertIn('Error: failed to find elements matching selector ".a"',
+                      cm.exception.args[0])
 
     @sync
     async def test_element_handle_xpath(self):

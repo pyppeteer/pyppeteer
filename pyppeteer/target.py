@@ -11,23 +11,23 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.page import Page
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Browser  # noqa: F401
+    from pyppeteer.browser import Browser, BrowserContext  # noqa: F401
 
 
 class Target(object):
     """Browser's target class."""
 
-    def __init__(self, targetInfo: Dict, browser: 'Browser',
+    def __init__(self, targetInfo: Dict, browserContext: 'BrowserContext',
                  sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
-                 ignoreHTTPSErrors: bool, appMode: bool,
+                 ignoreHTTPSErrors: bool, setDefaultViewport: bool,
                  screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
                  ) -> None:
         self._targetInfo = targetInfo
-        self._browser = browser
+        self._browserContext = browserContext
         self._targetId = targetInfo.get('targetId', '')
         self._sessionFactory = sessionFactory
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
-        self._appMode = appMode
+        self._setDefaultViewport = setDefaultViewport
         self._screenshotTaskQueue = screenshotTaskQueue
         self._loop = loop
         self._page = None
@@ -59,7 +59,7 @@ class Target(object):
             new_page = await Page.create(
                 client, self,
                 self._ignoreHTTPSErrors,
-                self._appMode,
+                self._setDefaultViewport,
                 self._screenshotTaskQueue,
             )
             self._page = new_page
@@ -75,18 +75,34 @@ class Target(object):
     def type(self) -> str:
         """Get type of this target.
 
-        Type can be ``'page'``, ``'service_worker'``, ``'browser'``, or
-        ``'other'``.
+        Type can be ``'page'``, ``'background_page'``, ``'service_worker'``,
+        ``'browser'``, or ``'other'``.
         """
         _type = self._targetInfo['type']
-        if _type in ['page', 'service_worker', 'browser']:
+        if _type in ['page', 'background_page', 'service_worker', 'browser']:
             return _type
         return 'other'
 
     @property
     def browser(self) -> 'Browser':
         """Get the browser the target belongs to."""
-        return self._browser
+        return self._browserContext.browser
+
+    @property
+    def browserContext(self) -> 'BrowserContext':
+        """Return the browser context the target belongs to."""
+        return self._browserContext
+
+    @property
+    def opener(self) -> Optional['Target']:
+        """Get the target that opened this target.
+
+        Top-level targets return ``None``.
+        """
+        openerId = self._targetInfo.get('openerId')
+        if openerId is None:
+            return None
+        return self.browser._targets.get(openerId)
 
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo

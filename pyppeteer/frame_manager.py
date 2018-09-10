@@ -334,8 +334,7 @@ class Frame(object):
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
         """
         document = await self._document()
-        value = await document.querySelectorEval(selector, pageFunction, *args)
-        return value
+        return await document.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAllEval(self, selector: str, pageFunction: str,
                                    *args: Any) -> Optional[Dict]:
@@ -343,16 +342,9 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
         """
-        context = await self.executionContext()
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        arrayHandle = await context.evaluateHandle(
-            'selector => Array.from(document.querySelectorAll(selector))',
-            selector,
-        )
-        result = await self.evaluate(pageFunction, arrayHandle, *args)
-        await arrayHandle.dispose()
-        return result
+        document = await self._document()
+        value = await document.JJeval(selector, pageFunction, *args)
+        return value
 
     async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
         """Get all elelments which matches `selector`.
@@ -918,7 +910,8 @@ waitForPredicatePageFunction = """
 async function waitForPredicatePageFunction(predicateBody, polling, timeout, ...args) {
   const predicate = new Function('...args', predicateBody);
   let timedOut = false;
-  setTimeout(() => timedOut = true, timeout);
+  if (timeout)
+    setTimeout(() => timedOut = true, timeout);
   if (polling === 'raf')
     return await pollRaf();
   if (polling === 'mutation')
