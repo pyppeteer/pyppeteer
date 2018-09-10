@@ -18,6 +18,8 @@ if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
 
 logger = logging.getLogger(__name__)
+logger_connection = logging.getLogger(__name__ + '.Connection')
+logger_session = logging.getLogger(__name__ + '.CDPSession')
 
 
 class Connection(EventEmitter):
@@ -91,7 +93,7 @@ class Connection(EventEmitter):
             method=method,
             params=params,
         ))
-        logger.debug(f'SEND: {msg}')
+        logger_connection.debug(f'SEND: {msg}')
         self._loop.create_task(self._async_send(msg, _id))
         callback = self._loop.create_future()
         self._callbacks[_id] = callback
@@ -133,7 +135,7 @@ class Connection(EventEmitter):
 
     async def _on_message(self, message: str) -> None:
         await asyncio.sleep(self._delay)
-        logger.debug(f'RECV: {message}')
+        logger_connection.debug(f'RECV: {message}')
         msg = json.loads(message)
         if msg.get('id') in self._callbacks:
             self._on_response(msg)
@@ -216,6 +218,7 @@ class CDPSession(EventEmitter):
         self._lastId += 1
         _id = self._lastId
         msg = json.dumps(dict(id=_id, method=method, params=params))
+        logger_session.debug(f'SEND: {msg}')
 
         callback = self._loop.create_future()
         self._callbacks[_id] = callback
@@ -230,6 +233,7 @@ class CDPSession(EventEmitter):
         return callback
 
     def _on_message(self, msg: str) -> None:  # noqa: C901
+        logger_session.debug(f'RECV: {msg}')
         obj = json.loads(msg)
         _id = obj.get('id')
         if _id:
