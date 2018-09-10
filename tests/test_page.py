@@ -92,6 +92,18 @@ class TestEvaluate(BaseTestCase):
         self.assertIn('not is not defined', cm.exception.args[0])
 
     @sync
+    async def test_string_as_error_message(self):
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('() => { throw "qwerty"; }')
+        self.assertIn('qwerty', cm.exception.args[0])
+
+    @sync
+    async def test_number_as_error_message(self):
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('() => { throw 100500; }')
+        self.assertIn('100500', cm.exception.args[0])
+
+    @sync
     async def test_return_complex_object(self):
         obj = {'foo': 'bar!'}
         result = await self.page.evaluate('(a) => a', obj)

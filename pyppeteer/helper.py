@@ -38,7 +38,7 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     """Get exception message from `exceptionDetails` object."""
     exception = exceptionDetails.get('exception')
     if exception:
-        return exception.get('description')
+        return exception.get('description') or exception.get('value')
     message = exceptionDetails.get('text', '')
     stackTrace = exceptionDetails.get('stackTrace', dict())
     if stackTrace:
