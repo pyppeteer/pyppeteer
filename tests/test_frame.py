@@ -114,6 +114,15 @@ class TestWaitForFunction(BaseTestCase):
         await fut
 
     @sync
+    async def test_before_execution_context_resolved(self):
+        await self.page.evaluateOnNewDocument('() => window.__RELOADED = true')
+        await self.page.waitForFunction('''() => {
+            if (!window.__RELOADED)
+                window.location.reload();
+            return true;
+        }''')
+
+    @sync
     async def test_poll_on_interval(self):
         result = []
         start_time = time.perf_counter()
