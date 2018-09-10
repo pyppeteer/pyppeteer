@@ -718,7 +718,6 @@ class TestExposeFunction(BaseTestCase):
 
         await self.page.exposeFunction('compute', compute)
         result = await self.page.evaluate('() => compute(3, 5)')
-        print(result)
         self.assertEqual(result, 15)
 
     @sync
