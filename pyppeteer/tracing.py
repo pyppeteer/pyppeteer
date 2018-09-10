@@ -49,6 +49,7 @@ class Tracing(object):
             'blink.console', 'blink.user_timing', 'latencyInfo',
             'disabled-by-default-devtools.timeline.stack',
             'disabled-by-default-v8.cpu_profiler',
+            'disabled-by-default-v8.cpu_profiler.hires',
         ]
         categoriesArray = options.get('categories', defaultCategories)
 
