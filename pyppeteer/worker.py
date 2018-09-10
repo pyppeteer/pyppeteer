@@ -4,7 +4,7 @@
 """Worker module."""
 
 import logging
-from typing import Callable, Dict, List, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, TYPE_CHECKING
 
 from pyee import EventEmitter
 
@@ -40,7 +40,7 @@ class Worker(EventEmitter):
             _execution_contexts: List[ExecutionContext] = []
 
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
-                executionContext = _execution_contexts.pop()
+                executionContext = _execution_contexts[0]
                 return JSHandle(executionContext, client, remoteObject)
 
             executionContext = ExecutionContext(
@@ -74,3 +74,19 @@ class Worker(EventEmitter):
     async def executionContext(self) -> ExecutionContext:
         """Return ExecutionContext."""
         return await self._executionContextPromise
+
+    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+        """Evaluate ``pageFunction`` with ``args``.
+
+        Shortcut for ``(await worker.executionContext).evaluate(pageFunction, *args)``.
+        """  # noqa: E501
+        return await (await self._executionContextPromise).evaluate(
+            pageFunction, *args)
+
+    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
+        """Evaluate ``pageFunction`` with ``args`` and return :class:`~pyppeteer.execution_context.JSHandle`.
+
+        Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.
+        """  # noqa: E501
+        return await (await self._executionContextPromise).evaluateHandle(
+            pageFunction, *args)

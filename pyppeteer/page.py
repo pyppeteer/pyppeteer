@@ -148,7 +148,7 @@ class Page(EventEmitter):
                     debugError(logger, e)
                 return
             sessionId = event['sessionId']
-            session = client._createSession(targetInfo['targetId'], sessionId)
+            session = client._createSession(targetInfo['type'], sessionId)
             worker = Worker(
                 session,
                 targetInfo['url'],

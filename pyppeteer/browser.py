@@ -135,7 +135,7 @@ class Browser(EventEmitter):
         target = Target(
             targetInfo,
             context,
-            lambda: self._connection.createSession(targetInfo['targetId']),
+            lambda: self._connection.createSession(targetInfo),
             self._ignoreHTTPSErrors,
             self._setDefaultViewport,
             self._screenshotTaskQueue,

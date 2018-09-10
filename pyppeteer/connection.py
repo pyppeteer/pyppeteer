@@ -7,7 +7,7 @@ import asyncio
 import concurrent.futures
 import json
 import logging
-from typing import Awaitable, Callable, Union, TYPE_CHECKING
+from typing import Awaitable, Callable, Dict, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
@@ -15,7 +15,7 @@ import websockets
 from pyppeteer.errors import NetworkError
 
 if TYPE_CHECKING:
-    from typing import Dict, Optional  # noqa: F401
+    from typing import Optional  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +103,11 @@ class Connection(EventEmitter):
         if 'error' in msg:
             error = msg['error']
             callback.set_exception(
-                NetworkError(f'Protocol Error: {error}'))
+                NetworkError(
+                    f'Protocol Error ({callback.method}): '  # type: ignore
+                    f'{error["message"]} {error["data"]}'
+                )
+            )
         else:
             callback.set_result(msg.get('result'))
 
@@ -160,14 +164,14 @@ class Connection(EventEmitter):
         self._connected = False
         await self._on_close()
 
-    async def createSession(self, targetId: str) -> 'CDPSession':
+    async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
         resp = await self.send(
             'Target.attachToTarget',
-            {'targetId': targetId}
+            {'targetId': targetInfo['targetId']}
         )
         sessionId = resp.get('sessionId')
-        session = CDPSession(self, targetId, sessionId, self._loop)
+        session = CDPSession(self, targetInfo['type'], sessionId, self._loop)
         self._sessions[sessionId] = session
         return session
 
@@ -186,14 +190,14 @@ class CDPSession(EventEmitter):
     """
 
     def __init__(self, connection: Union[Connection, 'CDPSession'],
-                 targetId: str, sessionId: str,
+                 targetType: str, sessionId: str,
                  loop: asyncio.AbstractEventLoop) -> None:
         """Make new session."""
         super().__init__()
         self._lastId = 0
         self._callbacks: Dict[int, asyncio.Future] = {}
         self._connection: Optional[Connection] = connection
-        self._targetId = targetId
+        self._targetType = targetType
         self._sessionId = sessionId
         self._sessions: Dict[str, CDPSession] = dict()
         self._loop = loop
@@ -204,6 +208,11 @@ class CDPSession(EventEmitter):
         :arg str method: Protocol method name.
         :arg dict params: Optional method parameters.
         """
+        if not self._connection:
+            raise NetworkError(
+                f'Protocol Error ({method}): Session closed. Most likely the '
+                f'{self._targetType} has been closed.'
+            )
         self._lastId += 1
         _id = self._lastId
         msg = json.dumps(dict(id=_id, method=method, params=params))
@@ -211,8 +220,6 @@ class CDPSession(EventEmitter):
         callback = self._loop.create_future()
         self._callbacks[_id] = callback
         callback.method: str = method  # type: ignore
-        if not self._connection:
-            raise NetworkError('Connection closed.')
         try:
             self._connection.send('Target.sendMessageToTarget', {
                 'sessionId': self._sessionId,
@@ -271,7 +278,7 @@ class CDPSession(EventEmitter):
         self._callbacks.clear()
         self._connection = None
 
-    def _createSession(self, targetId: str, sessionId: str) -> 'CDPSession':
-        session = CDPSession(self, targetId, sessionId, self._loop)
+    def _createSession(self, targetType: str, sessionId: str) -> 'CDPSession':
+        session = CDPSession(self, targetType, sessionId, self._loop)
         self._sessions[sessionId] = session
         return session
