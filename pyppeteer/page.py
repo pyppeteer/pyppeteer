@@ -5,7 +5,6 @@
 
 import asyncio
 import base64
-from functools import partial
 import json
 import logging
 import math
@@ -152,7 +151,7 @@ class Page(EventEmitter):
             worker = Worker(
                 session,
                 targetInfo['url'],
-                partial(self._onLogEntryAdded, session),
+                self._addConsoleMessage,
             )
             self._workers[sessionId] = worker
             self.emit(Page.Events.WorkerCreated, worker)
@@ -204,7 +203,7 @@ class Page(EventEmitter):
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
         client.on('Log.entryAdded',
-                  lambda event: self._onLogEntryAdded(self._client, event))
+                  lambda event: self._onLogEntryAdded(event))
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
@@ -225,15 +224,17 @@ class Page(EventEmitter):
     def _onTargetCrashed(self, *args: Any, **kwargs: Any) -> None:
         self.emit('error', PageError('Page crashed!'))
 
-    def _onLogEntryAdded(self, session: CDPSession, event: Dict) -> None:
+    def _onLogEntryAdded(self, event: Dict) -> None:
         entry = event.get('entry', {})
         level = entry.get('level', '')
         text = entry.get('text', '')
         args = entry.get('args', [])
+        source = entry.get('source', '')
         for arg in args:
-            helper.releaseObject(session, arg)
+            helper.releaseObject(self._client, arg)
 
-        self.emit(Page.Events.Console, ConsoleMessage(level, text))
+        if source != 'worker':
+            self.emit(Page.Events.Console, ConsoleMessage(level, text))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -718,24 +719,28 @@ function deliverResult(name, seq, result) {
             ))
             return
 
-        if not self.listeners(Page.Events.Console):
-            for arg in _args:
-                helper.releaseObject(self._client, arg)
-            return
-
         _id = event['executionContextId']
         values = []
-        for arg in _args:
+        for arg in event.get('args', []):
             values.append(self._frameManager.createJSHandle(_id, arg))
+        self._addConsoleMessage(event['type'], values)
+
+    def _addConsoleMessage(self, type: str, args: List[JSHandle]) -> None:
+        if not self.listeners(Page.Events.Console):
+            for arg in args:
+                self._client._loop.create_task(arg.dispose())
+            return
 
         textTokens = []
-        for arg, value in zip(_args, values):
-            if arg.get('objectId'):
-                textTokens.append(value.toString())
+        for arg in args:
+            remoteObject = arg._remoteObject
+            if remoteObject.get('objectId'):
+                textTokens.append(arg.toString())
             else:
-                textTokens.append(str(helper.valueFromRemoteObject(arg)))
+                textTokens.append(
+                    str(helper.valueFromRemoteObject(remoteObject)))
 
-        message = ConsoleMessage(event['type'], ' '.join(textTokens), values)
+        message = ConsoleMessage(type, ' '.join(textTokens), args)
         self.emit(Page.Events.Console, message)
 
     def _onDialog(self, event: Any) -> None:

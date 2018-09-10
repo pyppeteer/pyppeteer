@@ -28,16 +28,20 @@ class Worker(EventEmitter):
         page.on('workercreated', lambda worker: print('Worker created:', worker.url))
     """  # noqa: E501
 
-    def __init__(self, client: 'CDPSession', url: str, logEntryAdded: Callable
-                 ) -> None:
+    def __init__(self, client: 'CDPSession', url: str,  # noqa: C901
+                 consoleAPICalled: Callable) -> None:
         super().__init__()
         self._client = client
         self._url = url
         self._loop = client._loop
         self._executionContextPromise = self._loop.create_future()
 
+        def jsHandleFactory(remoteObject: Dict) -> JSHandle:
+            return None  # type: ignore
+
         def _on_execution_content_created(event: Dict) -> None:
             _execution_contexts: List[ExecutionContext] = []
+            nonlocal jsHandleFactory
 
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 executionContext = _execution_contexts[0]
@@ -57,11 +61,13 @@ class Worker(EventEmitter):
         except Exception as e:
             debugError(logger, e)
 
-        self._client.on('Log.entryAdded', logEntryAdded)
-        try:
-            self._client.send('Log.enable', {})
-        except Exception as e:
-            debugError(logger, e)
+        def onConsoleAPICalled(event: Dict) -> None:
+            args = []
+            for arg in event.get('args', []):
+                args.append(jsHandleFactory(arg))
+            consoleAPICalled(event['type'], args)
+
+        self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
         self._executionContextPromise.set_result(value)

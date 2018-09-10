@@ -47,6 +47,20 @@ class TestWorker(BaseTestCase):
         self.assertEqual(log.text, '1')
 
     @sync
+    async def test_jshandle_for_console_log(self):
+        logPromise = asyncio.get_event_loop().create_future()
+        self.page.on('console', lambda m: logPromise.set_result(m))
+        await self.page.evaluate(
+            '() => new Worker("data:text/javascript,console.log(1,2,3,this)")')
+        log = await logPromise
+        self.assertEqual(log.text, '1 2 3 JSHandle@object')
+        self.assertEqual(len(log.args), 4)
+        self.assertEqual(
+            await (await log.args[3].getProperty('origin')).jsonValue(),
+            'null',
+        )
+
+    @sync
     async def test_execution_context(self):
         workerCreatedPromise = asyncio.get_event_loop().create_future()
         self.page.once('workercreated',
