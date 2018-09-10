@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.22 documentation</title>
+    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.23 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -55,7 +55,6 @@
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">BrowserError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.page</span> <span class="k">import</span> <span class="n">Page</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.target</span> <span class="k">import</span> <span class="n">Target</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
 
 
 <div class="viewcode-block" id="Browser"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser">[docs]</a><span class="k">class</span> <span class="nc">Browser</span><span class="p">(</span><span class="n">EventEmitter</span><span class="p">):</span>
@@ -73,14 +72,14 @@
         <span class="n">Disconnected</span><span class="o">=</span><span class="s1">&#39;disconnected&#39;</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connection</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">contextIds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                 <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">setDefaultViewport</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
                  <span class="n">process</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Popen</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">closeCallback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;ignoreHTTPSErrors&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_appMode</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;appMode&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span> <span class="o">=</span> <span class="n">ignoreHTTPSErrors</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setDefaultViewport</span> <span class="o">=</span> <span class="n">setDefaultViewport</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_process</span> <span class="o">=</span> <span class="n">process</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span><span class="p">:</span> <span class="n">List</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span> <span class="o">=</span> <span class="n">connection</span>
@@ -94,6 +93,12 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_closeCallback</span> <span class="o">=</span> <span class="n">closeCallback</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_closeCallback</span> <span class="o">=</span> <span class="n">_dummy_callback</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_defaultContext</span> <span class="o">=</span> <span class="n">BrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">BrowserContext</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">contextId</span> <span class="ow">in</span> <span class="n">contextIds</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">contextId</span><span class="p">]</span> <span class="o">=</span> <span class="n">BrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contextId</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Target</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">setClosedCallback</span><span class="p">(</span>
             <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Disconnected</span><span class="p">)</span>
@@ -111,25 +116,70 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span>
 
+<div class="viewcode-block" id="Browser.createIncogniteBrowserContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.createIncogniteBrowserContext">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">createIncogniteBrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BrowserContext&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new incognite browser context.</span>
+
+<span class="sd">        This won&#39;t share cookies/cache with other browser contexts.</span>
+
+<span class="sd">        .. code::</span>
+
+<span class="sd">            browser = await launch()</span>
+<span class="sd">            # Create a new incognite browser context.</span>
+<span class="sd">            context = await browser.createIncogniteBrowserContext()</span>
+<span class="sd">            # Create a new page in a pristine context.</span>
+<span class="sd">            page = await context.newPage()</span>
+<span class="sd">            # Do stuff</span>
+<span class="sd">            await page.goto(&#39;https://example.com&#39;)</span>
+<span class="sd">            ...</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.createBrowserContext&#39;</span><span class="p">)</span>
+        <span class="n">browserContextId</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;browserContextId&#39;</span><span class="p">]</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">BrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">browserContextId</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">browserContextId</span><span class="p">]</span> <span class="o">=</span> <span class="n">context</span>
+        <span class="k">return</span> <span class="n">context</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">browserContexts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;BrowserContext&#39;</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of all open browser contexts.</span>
+
+<span class="sd">        In a newly created browser, this will return a single instance of</span>
+<span class="sd">        ``[BrowserContext]``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_defaultContext</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="n">context</span> <span class="k">for</span> <span class="n">context</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>  <span class="c1"># noqa: E501</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_disposeContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contextId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.disposeBrowserContext&#39;</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s1">&#39;browserContextId&#39;</span><span class="p">:</span> <span class="n">contextId</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">contextId</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
     <span class="nd">@staticmethod</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">connection</span><span class="p">:</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">contextIds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+                     <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">appMode</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
                      <span class="n">process</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Popen</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                      <span class="n">closeCallback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                      <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Browser&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Create browser object.&quot;&quot;&quot;</span>
-        <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">browser</span> <span class="o">=</span> <span class="n">Browser</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">process</span><span class="p">,</span> <span class="n">closeCallback</span><span class="p">)</span>
+        <span class="n">browser</span> <span class="o">=</span> <span class="n">Browser</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">contextIds</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">,</span> <span class="n">appMode</span><span class="p">,</span>
+                          <span class="n">process</span><span class="p">,</span> <span class="n">closeCallback</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.setDiscoverTargets&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;discover&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">browser</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetCreated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">targetInfo</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">]</span>
+        <span class="n">browserContextId</span> <span class="o">=</span> <span class="n">targetInfo</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;browserContextId&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">browserContextId</span> <span class="ow">and</span> <span class="n">browserContextId</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">:</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contexts</span><span class="p">[</span><span class="n">browserContextId</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_defaultContext</span>
+
         <span class="n">target</span> <span class="o">=</span> <span class="n">Target</span><span class="p">(</span>
             <span class="n">targetInfo</span><span class="p">,</span>
-            <span class="bp">self</span><span class="p">,</span>
-            <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">createSession</span><span class="p">(</span><span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]),</span>
+            <span class="n">context</span><span class="p">,</span>
+            <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">createSession</span><span class="p">(</span><span class="n">targetInfo</span><span class="p">),</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_ignoreHTTPSErrors</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_appMode</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_setDefaultViewport</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span><span class="p">,</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">_loop</span><span class="p">,</span>
         <span class="p">)</span>
@@ -138,6 +188,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">target</span>
         <span class="k">if</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetCreated</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">context</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">BrowserContext</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetCreated</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetDestroyed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="p">[</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetId&#39;</span><span class="p">]]</span>
@@ -145,6 +196,7 @@
         <span class="n">target</span><span class="o">.</span><span class="n">_closedCallback</span><span class="p">()</span>
         <span class="k">if</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">_initializedPromise</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetDestroyed</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">target</span><span class="o">.</span><span class="n">browserContext</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">BrowserContext</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetDestroyed</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
         <span class="n">target</span><span class="o">.</span><span class="n">_initializedCallback</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_targetInfoChanged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -156,6 +208,7 @@
         <span class="n">target</span><span class="o">.</span><span class="n">_targetInfoChanged</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">wasInitialized</span> <span class="ow">and</span> <span class="n">previousURL</span> <span class="o">!=</span> <span class="n">target</span><span class="o">.</span><span class="n">url</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Browser</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetChanged</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+            <span class="n">target</span><span class="o">.</span><span class="n">browserContext</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">BrowserContext</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">TargetChanged</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>  <span class="c1"># noqa: E501</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">wsEndpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -164,9 +217,15 @@
 
 <div class="viewcode-block" id="Browser.newPage"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.newPage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">newPage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Make new page on this browser and return its object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_defaultContext</span><span class="o">.</span><span class="n">newPage</span><span class="p">()</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_createPageInContext</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contextId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="s1">&#39;about:blank&#39;</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">contextId</span><span class="p">:</span>
+            <span class="n">options</span><span class="p">[</span><span class="s1">&#39;browserContextId&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">contextId</span>
+
         <span class="n">targetId</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
-            <span class="s1">&#39;Target.createTarget&#39;</span><span class="p">,</span>
-            <span class="p">{</span><span class="s1">&#39;url&#39;</span><span class="p">:</span> <span class="s1">&#39;about:blank&#39;</span><span class="p">}))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;targetId&#39;</span><span class="p">)</span>
+            <span class="s1">&#39;Target.createTarget&#39;</span><span class="p">,</span> <span class="n">options</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;targetId&#39;</span><span class="p">)</span>
         <span class="n">target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">targetId</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">target</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Failed to create target for page.&#39;</span><span class="p">)</span>
@@ -175,10 +234,14 @@
         <span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">page</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">page</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Failed to create page.&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">page</span></div>
+        <span class="k">return</span> <span class="n">page</span>
 
 <div class="viewcode-block" id="Browser.targets"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.targets">[docs]</a>    <span class="k">def</span> <span class="nf">targets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Target</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all targets of this browser.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get a list of all active targets inside the browser.</span>
+
+<span class="sd">        In case of multiple browser contexts, the method will return a list</span>
+<span class="sd">        with all the targets in all browser contexts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">target</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_targets</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
                 <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">_isInitialized</span><span class="p">]</span></div>
 
@@ -216,6 +279,83 @@
 
     <span class="k">def</span> <span class="nf">_getVersion</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Browser.getVersion&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BrowserContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext">[docs]</a><span class="k">class</span> <span class="nc">BrowserContext</span><span class="p">(</span><span class="n">EventEmitter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;BrowserContext provides multiple independent browser sessions.</span>
+
+<span class="sd">    When a browser is launched, it has a single BrowserContext used by defualt.</span>
+<span class="sd">    The method `browser.newPage()` creates a page in the default browser</span>
+<span class="sd">    context.</span>
+
+<span class="sd">    If a page opens another page, e.g. with a ``window.open`` call, the popup</span>
+<span class="sd">    will belong to the parent page&#39;s borwser context.</span>
+
+<span class="sd">    Pyppeteer allows creation of &quot;incognite&quot; browser context with</span>
+<span class="sd">    ``browser.createIncogniteBrowserContext()`` method.</span>
+<span class="sd">    &quot;Incognite&quot; borwser contexts don&#39;t write any browser data to disk.</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        # Create new incognite browser context</span>
+<span class="sd">        context = await browser.createIncogniteBrowserContext()</span>
+<span class="sd">        # Create a new page inside context</span>
+<span class="sd">        page = await context.newPage()</span>
+<span class="sd">        # ... do stuff with page ...</span>
+<span class="sd">        await page.goto(&#39;https://example.com&#39;)</span>
+<span class="sd">        # Dispose context once it&#39;s no longer needed</span>
+<span class="sd">        await context.close()</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">Events</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
+        <span class="n">TargetCreated</span><span class="o">=</span><span class="s1">&#39;targetcreated&#39;</span><span class="p">,</span>
+        <span class="n">TargetDestroyed</span><span class="o">=</span><span class="s1">&#39;targetdestroyed&#39;</span><span class="p">,</span>
+        <span class="n">TargetChanged</span><span class="o">=</span><span class="s1">&#39;targetchanged&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">browser</span><span class="p">:</span> <span class="n">Browser</span><span class="p">,</span> <span class="n">contextId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span> <span class="o">=</span> <span class="n">browser</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">contextId</span>
+
+<div class="viewcode-block" id="BrowserContext.targets"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.targets">[docs]</a>    <span class="k">def</span> <span class="nf">targets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Target</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return a list of all active targets inside the browser context.&quot;&quot;&quot;</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">targets</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">browserContext</span> <span class="o">==</span> <span class="bp">self</span><span class="p">:</span>
+                <span class="n">targets</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">targets</span></div>
+
+<div class="viewcode-block" id="BrowserContext.isIncognite"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.isIncognite">[docs]</a>    <span class="k">def</span> <span class="nf">isIncognite</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return whether BrowserContext is incognite.</span>
+
+<span class="sd">        The default browser context is the only non-incognite browser context.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The default borwser context cannot be closed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BrowserContext.newPage"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.newPage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">newPage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new page in the browser context.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_createPageInContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">browser</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return the browser this browser context belongs to.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span>
+
+<div class="viewcode-block" id="BrowserContext.close"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.close">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Close the browser context.</span>
+
+<span class="sd">        All the targets that belongs to the browser context will be closed.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Only incognite browser context can be closed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Non-incognite profile cannot be closed&#39;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_disposeContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span></div></div>
 </pre></div>
 
           </div>
@@ -277,7 +417,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

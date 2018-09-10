@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.22 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.23 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -410,12 +410,54 @@
         <span class="k">await</span> <span class="n">elementHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
+<div class="viewcode-block" id="ElementHandle.querySelectorAllEval"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.querySelectorAllEval">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAllEval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                                   <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Run ``Page.querySelectorAllEval`` within the element.</span>
+
+<span class="sd">        This method runs ``Array.from(document.querySelectorAll)`` within the</span>
+<span class="sd">        element and passes it as the first argument to ``pageFunction``. If</span>
+<span class="sd">        there is no element matching ``selector``, the method raises</span>
+<span class="sd">        ``ElementHandleError``.</span>
+
+<span class="sd">        If ``pageFunction`` returns a promise, then wait for the promise to</span>
+<span class="sd">        resolve and return its value.</span>
+
+<span class="sd">        Example:</span>
+
+<span class="sd">        .. code:: html</span>
+
+<span class="sd">            &lt;div class=&quot;feed&quot;&gt;</span>
+<span class="sd">                &lt;div class=&quot;tweet&quot;&gt;Hello!&lt;/div&gt;</span>
+<span class="sd">                &lt;div class=&quot;tweet&quot;&gt;Hi!&lt;/div&gt;</span>
+<span class="sd">            &lt;/div&gt;</span>
+
+<span class="sd">        .. code:: python</span>
+
+<span class="sd">            feedHandle = await page.J(&#39;.feed&#39;)</span>
+<span class="sd">            assert (await feedHandle.JJeval(&#39;.tweet&#39;, &#39;(nodes =&gt; nodes.map(n =&gt; n.innerText))&#39;)) == [&#39;Hello!&#39;, &#39;Hi!&#39;]</span>
+<span class="sd">        &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+        <span class="n">arrayHandle</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluateHandle</span><span class="p">(</span>
+            <span class="s1">&#39;(element, selector) =&gt; Array.from(element.querySelectorAll(selector))&#39;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="n">selector</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">jsonValue</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="n">f</span><span class="s1">&#39;Error: failed to find elements matching selector &quot;</span><span class="si">{selector}</span><span class="s1">&quot;&#39;</span>  <span class="c1"># noqa: E501</span>
+            <span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
+            <span class="n">pageFunction</span><span class="p">,</span> <span class="n">arrayHandle</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
     <span class="c1">#: alias to :meth:`querySelector`</span>
     <span class="n">J</span> <span class="o">=</span> <span class="n">querySelector</span>
     <span class="c1">#: alias to :meth:`querySelectorAll`</span>
     <span class="n">JJ</span> <span class="o">=</span> <span class="n">querySelectorAll</span>
     <span class="c1">#: alias to :meth:`querySelectorEval`</span>
     <span class="n">Jeval</span> <span class="o">=</span> <span class="n">querySelectorEval</span>
+    <span class="c1">#: alias to :meth:`querySelectorAllEval`</span>
+    <span class="n">JJeval</span> <span class="o">=</span> <span class="n">querySelectorAllEval</span>
 
 <div class="viewcode-block" id="ElementHandle.xpath"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.xpath">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">xpath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Evaluate XPath expression relative to this elementHandle.</span>
@@ -508,7 +550,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

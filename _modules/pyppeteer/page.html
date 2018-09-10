@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.22 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.23 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -73,6 +73,7 @@
 <span class="kn">from</span> <span class="nn">pyppeteer.network_manager</span> <span class="k">import</span> <span class="n">NetworkManager</span><span class="p">,</span> <span class="n">Response</span><span class="p">,</span> <span class="n">Request</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.tracing</span> <span class="k">import</span> <span class="n">Tracing</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.worker</span> <span class="k">import</span> <span class="n">Worker</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">pyppeteer.browser</span> <span class="k">import</span> <span class="n">Browser</span><span class="p">,</span> <span class="n">Target</span>  <span class="c1"># noqa: F401</span>
@@ -108,6 +109,8 @@
         <span class="n">FrameNavigated</span><span class="o">=</span><span class="s1">&#39;framenavigated&#39;</span><span class="p">,</span>
         <span class="n">Load</span><span class="o">=</span><span class="s1">&#39;load&#39;</span><span class="p">,</span>
         <span class="n">Metrics</span><span class="o">=</span><span class="s1">&#39;metrics&#39;</span><span class="p">,</span>
+        <span class="n">WorkerCreated</span><span class="o">=</span><span class="s1">&#39;workercreated&#39;</span><span class="p">,</span>
+        <span class="n">WorkerDestroyed</span><span class="o">=</span><span class="s1">&#39;workerdestroyed&#39;</span><span class="p">,</span>
     <span class="p">)</span>
 
     <span class="n">PaperFormats</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
@@ -125,7 +128,7 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">async</span> <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="s1">&#39;Target&#39;</span><span class="p">,</span>
-                     <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">appMode</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                     <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">setDefaultViewport</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
                      <span class="n">screenshotTaskQueue</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Page&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Async function which makes new page object.&quot;&quot;&quot;</span>
         <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.enable&#39;</span><span class="p">),</span>
@@ -134,6 +137,7 @@
                     <span class="n">screenshotTaskQueue</span><span class="p">)</span>
 
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+            <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.setAutoAttach&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;autoAttach&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;waitForDebuggerOnStart&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}),</span>  <span class="c1"># noqa: E501</span>
             <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.setLifecycleEventsEnabled&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;enabled&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}),</span>
             <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.enable&#39;</span><span class="p">,</span> <span class="p">{}),</span>
@@ -144,15 +148,15 @@
         <span class="k">if</span> <span class="n">ignoreHTTPSErrors</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Security.setOverrideCertificateErrors&#39;</span><span class="p">,</span>
                               <span class="p">{</span><span class="s1">&#39;override&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">appMode</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">setDefaultViewport</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">page</span><span class="o">.</span><span class="n">setViewport</span><span class="p">({</span><span class="s1">&#39;width&#39;</span><span class="p">:</span> <span class="mi">800</span><span class="p">,</span> <span class="s1">&#39;height&#39;</span><span class="p">:</span> <span class="mi">600</span><span class="p">})</span>
         <span class="k">return</span> <span class="n">page</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="s1">&#39;Target&#39;</span><span class="p">,</span> <span class="n">frameTree</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
-                 <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                 <span class="n">screenshotTaskQueue</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">,</span> <span class="n">target</span><span class="p">:</span> <span class="s1">&#39;Target&#39;</span><span class="p">,</span>  <span class="c1"># noqa: C901</span>
+                 <span class="n">frameTree</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">ignoreHTTPSErrors</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                 <span class="n">screenshotTaskQueue</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_target</span> <span class="o">=</span> <span class="n">target</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_keyboard</span> <span class="o">=</span> <span class="n">Keyboard</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
@@ -170,6 +174,40 @@
         <span class="k">if</span> <span class="n">screenshotTaskQueue</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">screenshotTaskQueue</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTaskQueue</span> <span class="o">=</span> <span class="n">screenshotTaskQueue</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Worker</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="k">def</span> <span class="nf">_onTargetAttached</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">targetInfo</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;targetInfo&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;worker&#39;</span><span class="p">:</span>
+                <span class="c1"># If we don&#39;t detach from service workers, they will never die.</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.detachFromTarget&#39;</span><span class="p">,</span> <span class="p">{</span>
+                        <span class="s1">&#39;sessionId&#39;</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">],</span>
+                    <span class="p">})</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">debugError</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="n">sessionId</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">]</span>
+            <span class="n">session</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">_createSession</span><span class="p">(</span><span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">sessionId</span><span class="p">)</span>
+            <span class="n">worker</span> <span class="o">=</span> <span class="n">Worker</span><span class="p">(</span>
+                <span class="n">session</span><span class="p">,</span>
+                <span class="n">targetInfo</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_addConsoleMessage</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">[</span><span class="n">sessionId</span><span class="p">]</span> <span class="o">=</span> <span class="n">worker</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">WorkerCreated</span><span class="p">,</span> <span class="n">worker</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">_onTargetDetached</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sessionId</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;sessionId&#39;</span><span class="p">]</span>
+            <span class="n">worker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">sessionId</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">worker</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">WorkerDestroyed</span><span class="p">,</span> <span class="n">worker</span><span class="p">)</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="p">[</span><span class="n">sessionId</span><span class="p">]</span>
+
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Target.attachedToTarget&#39;</span><span class="p">,</span> <span class="n">_onTargetAttached</span><span class="p">)</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Target.detachedFromTarget&#39;</span><span class="p">,</span> <span class="n">_onTargetDetached</span><span class="p">)</span>
 
         <span class="n">_fm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span>
         <span class="n">_fm</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="n">FrameManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">FrameAttached</span><span class="p">,</span>
@@ -211,6 +249,7 @@
 
         <span class="k">def</span> <span class="nf">closed</span><span class="p">(</span><span class="n">fut</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">Future</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Close</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">_isClosedPromise</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">closed</span><span class="p">)</span>
 
@@ -232,10 +271,12 @@
         <span class="n">level</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;level&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="n">text</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="n">args</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="n">entry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;source&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
             <span class="n">helper</span><span class="o">.</span><span class="n">releaseObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">arg</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">,</span> <span class="n">ConsoleMessage</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="o">!=</span> <span class="s1">&#39;worker&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">,</span> <span class="n">ConsoleMessage</span><span class="p">(</span><span class="n">level</span><span class="p">,</span> <span class="n">text</span><span class="p">))</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mainFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
@@ -277,8 +318,22 @@
         <span class="sd">&quot;&quot;&quot;Get all frames of this page.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">frames</span><span class="p">())</span>
 
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">workers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Worker</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get all workers of this page.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_workers</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
 <div class="viewcode-block" id="Page.setRequestInterception"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setRequestInterception">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setRequestInterception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Enable/disable request interception.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Enable/disable request interception.</span>
+
+<span class="sd">        Activating request interception enables</span>
+<span class="sd">        :class:`~pyppeteer.network_manager.Request` class&#39;s</span>
+<span class="sd">        :meth:`~pyppeteer.network_manager.Request.abort`,</span>
+<span class="sd">        :meth:`~pyppeteer.network_manager.Request.continue_`, and</span>
+<span class="sd">        :meth:`~pyppeteer.network_manager.Request.response` methods.</span>
+<span class="sd">        This provides the capbility to modify network requests that are made by</span>
+<span class="sd">        a page.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setRequestInterception</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.setOfflineMode"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setOfflineMode">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setOfflineMode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -394,7 +449,7 @@
         <span class="k">return</span> <span class="k">await</span> <span class="n">frame</span><span class="o">.</span><span class="n">querySelectorAllEval</span><span class="p">(</span><span class="n">selector</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Page.querySelectorAll"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.querySelectorAll">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ElementHandle</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all element which matches `selector` as a list.</span>
+        <span class="sd">&quot;&quot;&quot;Get all element which matches ``selector`` as a list.</span>
 
 <span class="sd">        :arg str selector: A selector to search element.</span>
 <span class="sd">        :return List[ElementHandle]: List of</span>
@@ -706,25 +761,28 @@
             <span class="p">))</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">listeners</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">_args</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
-                    <span class="n">helper</span><span class="o">.</span><span class="n">releaseObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">arg</span><span class="p">))</span>
-            <span class="k">return</span>
-
         <span class="n">_id</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;executionContextId&#39;</span><span class="p">]</span>
         <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">_args</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">,</span> <span class="p">[]):</span>
             <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">createJSHandle</span><span class="p">(</span><span class="n">_id</span><span class="p">,</span> <span class="n">arg</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_addConsoleMessage</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="n">values</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_addConsoleMessage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">JSHandle</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">listeners</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">dispose</span><span class="p">())</span>
+            <span class="k">return</span>
 
         <span class="n">textTokens</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">arg</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">_args</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">):</span>
-                <span class="n">textTokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">toString</span><span class="p">())</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">remoteObject</span> <span class="o">=</span> <span class="n">arg</span><span class="o">.</span><span class="n">_remoteObject</span>
+            <span class="k">if</span> <span class="n">remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">):</span>
+                <span class="n">textTokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">toString</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">textTokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="n">arg</span><span class="p">)))</span>
+                <span class="n">textTokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="n">remoteObject</span><span class="p">)))</span>
 
-        <span class="n">message</span> <span class="o">=</span> <span class="n">ConsoleMessage</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">],</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">textTokens</span><span class="p">),</span> <span class="n">values</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">ConsoleMessage</span><span class="p">(</span><span class="nb">type</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">textTokens</span><span class="p">),</span> <span class="n">args</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">Page</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">Console</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_onDialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1071,7 +1129,8 @@
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Network.setCacheDisabled&#39;</span><span class="p">,</span>
                                 <span class="p">{</span><span class="s1">&#39;cacheDisabled&#39;</span><span class="p">:</span> <span class="ow">not</span> <span class="n">enabled</span><span class="p">})</span></div>
 
-<div class="viewcode-block" id="Page.screenshot"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.screenshot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<div class="viewcode-block" id="Page.screenshot"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.screenshot">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">screenshot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+                         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Take a screen shot.</span>
 
 <span class="sd">        The following options are available:</span>
@@ -1094,6 +1153,8 @@
 
 <span class="sd">        * ``omitBackground`` (bool): Hide default white background and allow</span>
 <span class="sd">          capturing screenshot with transparency.</span>
+<span class="sd">        * ``encoding`` (str): The encoding of the image, can be either</span>
+<span class="sd">          ``&#39;base64&#39;`` or ``&#39;binary&#39;``. Defaults to ``&#39;binary&#39;``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">screenshotType</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1114,7 +1175,8 @@
             <span class="n">screenshotType</span> <span class="o">=</span> <span class="s1">&#39;png&#39;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_screenshotTask</span><span class="p">(</span><span class="n">screenshotType</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_screenshotTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>  <span class="c1"># noqa: C901,E501</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_screenshotTask</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span>  <span class="c1"># noqa: C901</span>
+                              <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.activateTarget&#39;</span><span class="p">,</span> <span class="p">{</span>
             <span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">_targetId</span><span class="p">,</span>
         <span class="p">})</span>
@@ -1161,7 +1223,10 @@
         <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;fullPage&#39;</span><span class="p">):</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">setViewport</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_viewport</span><span class="p">)</span>
 
-        <span class="n">buffer</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;encoding&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;base64&#39;</span><span class="p">:</span>
+            <span class="n">buffer</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">buffer</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">))</span>
         <span class="n">_path</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;path&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">_path</span><span class="p">:</span>
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">_path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
@@ -1294,6 +1359,10 @@
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Target.closeTarget&#39;</span><span class="p">,</span>
                             <span class="p">{</span><span class="s1">&#39;targetId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">_targetId</span><span class="p">})</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="o">.</span><span class="n">_isClosedPromise</span></div>
+
+<div class="viewcode-block" id="Page.isClosed"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.isClosed">[docs]</a>    <span class="k">def</span> <span class="nf">isClosed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Indicate that the page has been closed.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_closed</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mouse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mouse</span><span class="p">:</span>
@@ -1646,7 +1715,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.22 documentation</title>
+    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.23 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -217,6 +217,7 @@
                     <span class="n">request</span><span class="o">.</span><span class="n">_requestId</span><span class="p">,</span>
                     <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
                     <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;redirectUrl&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+                    <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;isNavigationRequest&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
                     <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;resourceType&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
                     <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;request&#39;</span><span class="p">,</span> <span class="p">{}),</span>
                     <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;frameId&#39;</span><span class="p">),</span>
@@ -230,14 +231,16 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToRequestIds</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">requestHash</span><span class="p">,</span> <span class="n">requestId</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_handleRequestStart</span><span class="p">(</span>
                 <span class="n">requestId</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">],</span>
-                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;resourceType&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;frameId&#39;</span><span class="p">],</span> <span class="p">[],</span>
+                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;isNavigationRequest&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;resourceType&#39;</span><span class="p">],</span>
+                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;frameId&#39;</span><span class="p">],</span> <span class="p">[],</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_requestHashToInterceptionIds</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
                 <span class="n">requestHash</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">])</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_handleRequestStart</span><span class="p">(</span>
                 <span class="kc">None</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;interceptionId&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">],</span>
-                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;resourceType&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;frameId&#39;</span><span class="p">],</span> <span class="p">[],</span>
+                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;isNavigationRequest&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;resourceType&#39;</span><span class="p">],</span>
+                <span class="n">event</span><span class="p">[</span><span class="s1">&#39;request&#39;</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;frameId&#39;</span><span class="p">],</span> <span class="p">[],</span>
             <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_onRequestServedFromCache</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -264,7 +267,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">NetworkManager</span><span class="o">.</span><span class="n">Events</span><span class="o">.</span><span class="n">RequestFinished</span><span class="p">,</span> <span class="n">request</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_handleRequestStart</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requestId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                            <span class="n">interceptionId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resourceType</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                            <span class="n">interceptionId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                            <span class="n">isNavigationRequest</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">resourceType</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
                             <span class="n">requestPayload</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">frameId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
                             <span class="n">redirectChain</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Request&#39;</span><span class="p">]</span>
                             <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -273,6 +277,7 @@
             <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="n">frameId</span><span class="p">)</span>
 
         <span class="n">request</span> <span class="o">=</span> <span class="n">Request</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">requestId</span><span class="p">,</span> <span class="n">interceptionId</span><span class="p">,</span>
+                          <span class="n">isNavigationRequest</span><span class="p">,</span>
                           <span class="bp">self</span><span class="o">.</span><span class="n">_userRequestInterceptionEnabled</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span>
                           <span class="n">resourceType</span><span class="p">,</span> <span class="n">requestPayload</span><span class="p">,</span> <span class="n">frame</span><span class="p">,</span> <span class="n">redirectChain</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">requestId</span><span class="p">:</span>
@@ -313,9 +318,12 @@
                     <span class="n">redirectResponse</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;securityDetails&#39;</span><span class="p">),</span>
                 <span class="p">)</span>
                 <span class="n">redirectChain</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">_redirectChain</span>
+        <span class="n">isNavigationRequest</span> <span class="o">=</span> <span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;requestId&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;loaderId&#39;</span><span class="p">]</span> <span class="ow">and</span>
+                               <span class="n">event</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;Document&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_handleRequestStart</span><span class="p">(</span>
             <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;requestId&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span> <span class="s1">&#39;&#39;</span><span class="p">,</span>
             <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;request&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
+            <span class="n">isNavigationRequest</span><span class="p">,</span>
             <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">),</span>
             <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;request&#39;</span><span class="p">,</span> <span class="p">{}),</span>
             <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;frameId&#39;</span><span class="p">),</span>
@@ -368,7 +376,24 @@
 
 
 <div class="viewcode-block" id="Request"><a class="viewcode-back" href="../../reference.html#pyppeteer.network_manager.Request">[docs]</a><span class="k">class</span> <span class="nc">Request</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Request class.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Request class.</span>
+
+<span class="sd">    Whenever the page sends a request, such as for a network resource, the</span>
+<span class="sd">    following events are emitted by pyppeteer&#39;s page:</span>
+
+<span class="sd">    - ``&#39;request&#39;``: emitted when the request is issued by the page.</span>
+<span class="sd">    - ``&#39;response&#39;``: emitted when/if the response is received for the request.</span>
+<span class="sd">    - ``&#39;requestfinished&#39;``: emitted when the response body is downloaded and</span>
+<span class="sd">      the request is complete.</span>
+
+<span class="sd">    If request fails at some point, then instead of ``&#39;requestfinished&#39;`` event</span>
+<span class="sd">    (and possibly instead of ``&#39;response&#39;`` event), the ``&#39;requestfailed&#39;``</span>
+<span class="sd">    event is emitted.</span>
+
+<span class="sd">    If request gets a ``&#39;redirect&#39;`` response, the request is successfully</span>
+<span class="sd">    finished with the ``&#39;requestfinished&#39;`` event, and a new request is issued</span>
+<span class="sd">    to a redirect url.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1">#: url of this request.</span>
     <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
@@ -382,12 +407,14 @@
     <span class="n">resourceType</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">,</span> <span class="n">requestId</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-                 <span class="n">interceptionId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allowInterception</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-                 <span class="n">resourceType</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Frame</span><span class="p">],</span>
+                 <span class="n">interceptionId</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">isNavigationRequest</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                 <span class="n">allowInterception</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resourceType</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+                 <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Frame</span><span class="p">],</span>
                  <span class="n">redirectChain</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Request&#39;</span><span class="p">]</span>
                  <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_requestId</span> <span class="o">=</span> <span class="n">requestId</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_isNavigationRequest</span> <span class="o">=</span> <span class="n">isNavigationRequest</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionId</span> <span class="o">=</span> <span class="n">interceptionId</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_allowInterception</span> <span class="o">=</span> <span class="n">allowInterception</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_interceptionHandled</span> <span class="o">=</span> <span class="kc">False</span>
@@ -455,11 +482,15 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frame</span>
 
+<div class="viewcode-block" id="Request.isNavigationRequest"><a class="viewcode-back" href="../../reference.html#pyppeteer.network_manager.Request.isNavigationRequest">[docs]</a>    <span class="k">def</span> <span class="nf">isNavigationRequest</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Whether this request is driving frame&#39;s navigation.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_isNavigationRequest</span></div>
+
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">redirectChain</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Request&#39;</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Return chain of requests initiated to fetch a resource.</span>
 
-<span class="sd">        * If there are no redirects and request was successfull, the chain will</span>
+<span class="sd">        * If there are no redirects and request was successful, the chain will</span>
 <span class="sd">          be empty.</span>
 <span class="sd">        * If a server responds with at least a single redirect, then the chain</span>
 <span class="sd">          will contain all the requests that were redirected.</span>
@@ -661,7 +692,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">ok</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return bool whether this request is successfull (200-299) or not.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return bool whether this request is successful (200-299) or not.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="mi">200</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_status</span> <span class="o">&lt;=</span> <span class="mi">299</span>
 
     <span class="nd">@property</span>
@@ -923,7 +954,7 @@
       &copy;2017, Hiroyuki Takagi.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.8</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.9</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
       
     </div>
