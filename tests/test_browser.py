@@ -132,6 +132,7 @@ class TestBrowser(unittest.TestCase):
             urls.append(frame.url)
         urls.sort()
         self.assertEqual(urls, [example_page, 'https://google.com/'])
+        await browser.close()
 
 
 class TestPageClose(BaseTestCase):
