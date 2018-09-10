@@ -317,9 +317,9 @@ class Frame(object):
         return document
 
     async def xpath(self, expression: str) -> List[ElementHandle]:
-        """Evaluate XPath expression.
+        """Evaluate the XPath expression.
 
-        If there is no such element in this frame, return None.
+        If there are no such elements in this frame, return an empty list.
 
         :arg str expression: XPath string to be evaluated.
         """

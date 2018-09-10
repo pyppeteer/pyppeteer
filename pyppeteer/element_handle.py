@@ -418,9 +418,9 @@ class ElementHandle(JSHandle):
     JJeval = querySelectorAllEval
 
     async def xpath(self, expression: str) -> List['ElementHandle']:
-        """Evaluate XPath expression relative to this elementHandle.
+        """Evaluate the XPath expression relative to this elementHandle.
 
-        If there is no such element, return None.
+        If there are no such elements, return an empty list.
 
         :arg str expression: XPath string to be evaluated.
         """
