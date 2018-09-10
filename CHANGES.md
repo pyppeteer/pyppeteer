@@ -1,7 +1,9 @@
 History
 =======
 
-## Version 0.0.23 (next version)
+## Version 0.0.23 (2018-09-10)
+
+Catch up puppeteer v1.5.0
 
 * Add `BrowserContext` class
 * Add `Worker` class
