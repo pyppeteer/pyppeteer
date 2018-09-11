@@ -36,12 +36,35 @@ class TestJSCoverage(BaseTestCase):
         coverage = await self.page.coverage.stopJSCoverage()
         self.assertEqual(coverage, [])
 
-    @unittest.skip('Cannot pass this test')
     @sync
-    async def test_ignore_anonymous_script(self):
+    async def test_ignore_eval_script_by_default(self):
+        await self.page.coverage.startJSCoverage()
+        await self.page.goto(self.url + 'static/jscoverage/eval.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 1)
+
+    @sync
+    async def test_not_ignore_eval_script_with_reportAnonymousScript(self):
+        await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
+        await self.page.goto(self.url + 'static/jscoverage/eval.html')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 2)
+
+    @sync
+    async def test_ignore_injected_script(self):
         await self.page.coverage.startJSCoverage()
         await self.page.goto(self.url + 'empty')
-        await self.page.evaluate('() => console.log(1)')
+        await self.page.evaluate('console.log("foo")')
+        await self.page.evaluate('() => console.log("bar")')
+        coverage = await self.page.coverage.stopJSCoverage()
+        self.assertEqual(len(coverage), 0)
+
+    @sync
+    async def test_ignore_injected_script_with_reportAnonymousScript(self):
+        await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('console.log("foo")')
+        await self.page.evaluate('() => console.log("bar")')
         coverage = await self.page.coverage.stopJSCoverage()
         self.assertEqual(len(coverage), 0)
 

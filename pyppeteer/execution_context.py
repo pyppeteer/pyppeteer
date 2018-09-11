@@ -5,6 +5,7 @@
 
 import logging
 import math
+import re
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
@@ -17,6 +18,12 @@ if TYPE_CHECKING:
     from pyppeteer.frame_manager import Frame  # noqa: F401
 
 logger = logging.getLogger(__name__)
+
+EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
+SOURCE_URL_REGEX = re.compile(
+    r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$',
+    re.MULTILINE,
+)
 
 
 class ExecutionContext(object):
@@ -63,10 +70,16 @@ class ExecutionContext(object):
 
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
+        suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
+
         if force_expr or (not args and not helper.is_jsfunc(pageFunction)):
             try:
+                if SOURCE_URL_REGEX.match(pageFunction):
+                    expressionWithSourceUrl = pageFunction
+                else:
+                    expressionWithSourceUrl = f'{pageFunction}\n{suffix}'
                 _obj = await self._client.send('Runtime.evaluate', {
-                    'expression': pageFunction,
+                    'expression': expressionWithSourceUrl,
                     'contextId': self._contextId,
                     'returnByValue': False,
                     'awaitPromise': True,
@@ -85,7 +98,7 @@ class ExecutionContext(object):
 
         try:
             _obj = await self._client.send('Runtime.callFunctionOn', {
-                'functionDeclaration': pageFunction,
+                'functionDeclaration': f'{pageFunction}\n{suffix}\n',
                 'executionContextId': self._contextId,
                 'arguments': [self._convertArgument(arg) for arg in args],
                 'returnByValue': False,

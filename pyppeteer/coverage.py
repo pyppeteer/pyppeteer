@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
+from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
 from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
 
@@ -132,6 +133,7 @@ class JSCoverage(object):
             raise PageError('JSCoverage is always enabled.')
         self._resetOnNavigation = (True if 'resetOnNavigation' not in options
                                    else bool(options['resetOnNavigation']))
+        self._reportAnonymousScript = bool(options.get('reportAnonymousScript'))  # noqa: E501
         self._enabled = True
         self._scriptURLs.clear()
         self._scriptSources.clear()
@@ -157,8 +159,14 @@ class JSCoverage(object):
         self._scriptSources.clear()
 
     async def _onScriptParsed(self, event: Dict) -> None:
-        if 'url' not in event:
+        # Ignore pyppeteer-injected scripts
+        if event.get('url') == EVALUATION_SCRIPT_URL:
             return
+        # Ignore other anonymous scripts unleess the reportAnonymousScript
+        # option is True
+        if not event.get('url') and not self._reportAnonymousScript:
+            return
+
         scriptId = event.get('scriptId')
         url = event.get('url')
         try:
