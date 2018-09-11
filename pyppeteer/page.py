@@ -191,6 +191,8 @@ class Page(EventEmitter):
                   lambda event: self.emit(Page.Events.Load))
         client.on('Runtime.consoleAPICalled',
                   lambda event: self._onConsoleAPI(event))
+        client.on('Runtime.bindingCalled',
+                  lambda event: self._onBindingCalled(event))
         client.on('Page.javascriptDialogOpening',
                   lambda event: self._onDialog(event))
         client.on('Runtime.exceptionThrown',
@@ -589,6 +591,7 @@ class Page(EventEmitter):
 
         addPageBinding = '''
 function addPageBinding(bindingName) {
+  const binding = window[bindingName];
   window[bindingName] = async(...args) => {
     const me = window[bindingName];
     let callbacks = me['callbacks'];
@@ -599,13 +602,13 @@ function addPageBinding(bindingName) {
     const seq = (me['lastSeq'] || 0) + 1;
     me['lastSeq'] = seq;
     const promise = new Promise(fulfill => callbacks.set(seq, fulfill));
-    // eslint-disable-next-line no-console
-    console.debug('driver:page-binding', JSON.stringify({name: bindingName, seq, args}));
+    binding(JSON.stringify({name: bindingName, seq, args}));
     return promise;
   };
 }
         '''  # noqa: E501
         expression = helper.evaluationString(addPageBinding, name)
+        await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
 
@@ -694,36 +697,34 @@ function addPageBinding(bindingName) {
         self.emit(Page.Events.PageError, PageError(message))
 
     def _onConsoleAPI(self, event: dict) -> None:
-        _args = event.get('args', [])
-        if (event.get('type') == 'debug' and _args and
-                _args[0].get('value') == 'driver:page-binding'):
-            obj = json.loads(_args[1]['value'])
-            name = obj.get('name')
-            seq = obj.get('seq')
-            args = obj.get('args')
-            result = self._pageBindings[name](*args)
-
-            deliverResult = '''
-function deliverResult(name, seq, result) {
-  window[name]['callbacks'].get(seq)(result);
-  window[name]['callbacks'].delete(seq);
-}
-            '''
-            expression = helper.evaluationString(
-                deliverResult, name, seq, result)
-            self._client._loop.create_task(self._send(
-                'Runtime.evaluate', {
-                    'expression': expression,
-                    'contextId': event['executionContextId'],
-                }
-            ))
-            return
-
         _id = event['executionContextId']
         values = []
         for arg in event.get('args', []):
             values.append(self._frameManager.createJSHandle(_id, arg))
         self._addConsoleMessage(event['type'], values)
+
+    def _onBindingCalled(self, event: Dict) -> None:
+        obj = json.loads(event['payload'])
+        name = obj['name']
+        seq = obj['seq']
+        args = obj['args']
+        result = self._pageBindings[name](*args)
+
+        deliverResult = '''
+            function deliverResult(name, seq, result) {
+                window[name]['callbacks'].get(seq)(result);
+                window[name]['callbacks'].delete(seq);
+            }
+        '''
+
+        expression = helper.evaluationString(deliverResult, name, seq, result)
+        try:
+            self._client.send('Runtime.evaluate', {
+                'expression': expression,
+                'contextId': event['executionContextId'],
+            })
+        except Exception as e:
+            helper.debugError(logger, e)
 
     def _addConsoleMessage(self, type: str, args: List[JSHandle]) -> None:
         if not self.listeners(Page.Events.Console):
