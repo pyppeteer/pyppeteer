@@ -1245,8 +1245,62 @@ function addPageBinding(bindingName) {
           * ``bottom`` (str): Bottom margin, accepts values labeled with units.
           * ``left`` (str): Left margin, accepts values labeled with units.
 
-        :return bytes: Return generated PDF ``bytes`` object.
-        """
+        :return: Return generated PDF ``bytes`` object.
+
+        .. note::
+            Generating a pdf is currently only supported in headless mode.
+
+        :meth:`pdf` generates a pdf of the page with ``print`` css media. To
+        generate a pdf with ``screen`` media, call
+        ``page.emulateMedia('screen')`` before calling :meth:`pdf`.
+
+        .. note::
+            By default, :meth:`pdf` generates a pdf with modified colors for
+            printing. Use the ``--webkit-print-color-adjust`` property to force
+            rendering of exact colors.
+
+        .. code::
+
+            await page.emulateMedia('screen')
+            await page.pdf({'path': 'page.pdf'})
+
+        The ``width``, ``height``, and ``margin`` options accept values labeled
+        with units. Unlabeled values are treated as pixels.
+
+        A few exapmles:
+
+        - ``page.pdf({'width': 100})``: prints with width set to 100 pixels.
+        - ``page.pdf({'width': '100px'})``: prints with width set to 100 pixels.
+        - ``page.pdf({'width': '10cm'})``: prints with width set to 100 centimeters.
+
+        All available units are:
+
+        - ``px``: pixel
+        - ``in``: inch
+        - ``cm``: centimeter
+        - ``mm``: millimeter
+
+        The format options are:
+
+        - ``Letter``: 8.5in x 11in
+        - ``Legal``: 8.5in x 14in
+        - ``Tabloid``: 11in x 17in
+        - ``Ledger``: 17in x 11in
+        - ``A0``: 33.1in x 46.8in
+        - ``A1``: 23.4in x 33.1in
+        - ``A2``: 16.5in x 23.4in
+        - ``A3``: 11.7in x 16.5in
+        - ``A4``: 8.27in x 11.7in
+        - ``A5``: 5.83in x 8.27in
+        - ``A6``: 4.13in x 5.83in
+
+        .. note::
+            ``headerTemplate`` and ``footerTemplate`` markup have the following
+            limitations:
+
+            1. Script tags inside templates are not evaluated.
+            2. Page styles are not visible inside templates.
+        """  # noqa: E501
         options = merge_dict(options, kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))
