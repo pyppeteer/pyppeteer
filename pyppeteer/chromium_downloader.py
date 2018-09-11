@@ -89,6 +89,7 @@ def download_zip(url: str) -> BytesIO:
         for chunk in data.stream(10240):
             _data.write(chunk)
             process_bar.update(len(chunk))
+        process_bar.close()
 
     logger.warning('\nchromium download done.')
     return _data
