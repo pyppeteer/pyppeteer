@@ -473,6 +473,21 @@ class TestGoto(BaseTestCase):
                                         waitUntil='domcontentloaded')
         self.assertEqual(response.status, 200)
 
+    @unittest.skip('This test should be fixed')
+    @sync
+    async def test_goto_history_api_beforeunload(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('''() => {
+            window.addEventListener(
+                'beforeunload',
+                () => history.replaceState(null, 'initial', window.location.href),
+                false,
+            );
+        }''')  # noqa: E501
+        response = await self.page.goto(self.url + 'static/grid.html')
+        self.assertTrue(response)
+        self.assertEqual(response.status, 200)
+
     @sync
     async def test_goto_networkidle(self):
         with self.assertRaises(ValueError):
