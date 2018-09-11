@@ -398,11 +398,6 @@ class ElementHandle(JSHandle):
             '(element, selector) => Array.from(element.querySelectorAll(selector))',  # noqa: E501
             self, selector
         )
-        if len(await arrayHandle.jsonValue()) == 0:
-            raise ElementHandleError(
-                f'Error: failed to find elements matching selector "{selector}"'  # noqa: E501
-            )
-
         result = await self.executionContext.evaluate(
             pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()
