@@ -32,6 +32,27 @@ class TestClick(BaseTestCase):
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
     @sync
+    async def test_click_offscreen_button(self):
+        await self.page.goto(self.url + 'static/offscreenbuttons.html')
+        messages = []
+        self.page.on('console', lambda msg: messages.append(msg.text))
+        for i in range(10):
+            await self.page.evaluate('() => window.scrollTo(0, 0)')
+            await self.page.click('#btn{}'.format(i))
+        self.assertEqual(messages, [
+            'button #0 clicked',
+            'button #1 clicked',
+            'button #2 clicked',
+            'button #3 clicked',
+            'button #4 clicked',
+            'button #5 clicked',
+            'button #6 clicked',
+            'button #7 clicked',
+            'button #8 clicked',
+            'button #9 clicked',
+        ])
+
+    @sync
     async def test_click_events(self):
         await self.page.goto(self.url + 'static/checkbox.html')
         self.assertIsNone(await self.page.evaluate('result.check'))

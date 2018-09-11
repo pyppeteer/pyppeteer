@@ -65,20 +65,31 @@ class ElementHandle(JSHandle):
         return self._frameManager.frame(node_obj['frameId'])
 
     async def _scrollIntoViewIfNeeded(self) -> None:
-        error = await self.executionContext.evaluate(
-            '''element => {
+        error = await self.executionContext.evaluate('''
+            async element => {
                 if (!element.isConnected)
                     return 'Node is detached from document';
                 if (element.nodeType !== Node.ELEMENT_NODE)
                     return 'Node is not of type HTMLElement';
-                element.scrollIntoViewIfNeeded();
+                const visibleRatio = await new Promise(resolve => {
+                    const observer = new IntersectionObserver(entries => {
+                        resolve(entries[0].intersectionRatio);
+                        observer.disconnect();
+                    });
+                    observer.observe(element);
+                });
+                if (visibleRatio !== 1.0)
+                    element.scrollIntoView({
+                        block: 'center',
+                        inline: 'center',
+                        behavior: 'instant',
+                    });
                 return false;
             }''', self)
         if error:
             raise ElementHandleError(error)
 
-    async def _visibleCenter(self) -> Dict[str, float]:
-        await self._scrollIntoViewIfNeeded()
+    async def _boundingBoxCenter(self) -> Dict[str, float]:
         box = await self._assertBoundingBox()
         if not box:
             raise ElementHandleError('Node is not visible.')
@@ -119,7 +130,8 @@ class ElementHandle(JSHandle):
         If needed, this method scrolls eleemnt into view. If this element is
         detached from DOM tree, the method raises an ``ElementHandleError``.
         """
-        obj = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        obj = await self._boundingBoxCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
@@ -139,7 +151,8 @@ class ElementHandle(JSHandle):
           ``mouseup`` in milliseconds. Defaults to 0.
         """
         options = merge_dict(options, kwargs)
-        obj = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        obj = await self._boundingBoxCenter()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.click(x, y, options)
@@ -159,7 +172,8 @@ class ElementHandle(JSHandle):
         If needed, this method scrolls element into view. If the element is
         detached from DOM, the method raises ``ElementHandleError``.
         """
-        center = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        center = await self._boundingBoxCenter()
         x = center.get('x', 0)
         y = center.get('y', 0)
         await self._page.touchscreen.tap(x, y)
@@ -285,6 +299,9 @@ class ElementHandle(JSHandle):
             new_viewport.update(newViewport)
             await self._page.setViewport(new_viewport)
             needsViewportReset = True
+
+        await self._scrollIntoViewIfNeeded()
+        boundingBox = await self._assertBoundingBox()
 
         _obj = await self._client.send('Page.getLayoutMetrics')
         pageX = _obj['layoutViewport']['pageX']
