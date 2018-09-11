@@ -45,6 +45,24 @@ class TestBoundingBox(BaseTestCase):
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
 
+    @sync
+    async def test_force_layout(self):
+        await self.page.setViewport({'width': 500, 'height': 500})
+        await self.page.setContent(
+            '<div style="width: 100px; height: 100px;">hello</div>')
+        elementHandle = await self.page.J('div')
+        await self.page.evaluate(
+            'element => element.style.height = "200px"',
+            elementHandle,
+        )
+        box = await elementHandle.boundingBox()
+        self.assertEqual(box, {
+            'x': 8,
+            'y': 8,
+            'width': 100,
+            'height': 200,
+        })
+
 
 class TestBoxModel(BaseTestCase):
     def setUp(self):
