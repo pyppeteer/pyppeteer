@@ -102,13 +102,12 @@ class Connection(EventEmitter):
 
     def _on_response(self, msg: dict) -> None:
         callback = self._callbacks.pop(msg.get('id', -1))
-        if 'error' in msg:
-            error = msg['error']
+        if msg.get('error'):
             callback.set_exception(
-                _rewriteError(
+                _createProtocolError(
                     callback.error,  # type: ignore
-                    f'Protocol Error ({callback.method}): '  # type: ignore
-                    f'{error["message"]} {error["data"]}'
+                    callback.method,  # type: ignore
+                    msg
                 )
             )
         else:
@@ -252,13 +251,11 @@ class CDPSession(EventEmitter):
             callback = self._callbacks.get(_id)
             if callback:
                 del self._callbacks[_id]
-                if 'error' in obj:
-                    error = obj['error']
-                    msg = error.get('message')
-                    data = error.get('data')
-                    callback.set_exception(_rewriteError(
+                if obj.get('error'):
+                    callback.set_exception(_createProtocolError(
                         callback.error,  # type: ignore
-                        f'Protocol Error: {msg} {data}',
+                        callback.method,  # type: ignore
+                        obj,
                     ))
                 else:
                     result = obj.get('result')
@@ -302,6 +299,14 @@ class CDPSession(EventEmitter):
         session = CDPSession(self, targetType, sessionId, self._loop)
         self._sessions[sessionId] = session
         return session
+
+
+def _createProtocolError(error: Exception, method: str, object: Dict
+                         ) -> Exception:
+    message = f'Protocol error ({method}): {object["error"]["message"]}'
+    if 'data' in object['error']:
+        message += f' {object["error"]["data"]}'
+    return _rewriteError(error, message)
 
 
 def _rewriteError(error: Exception, message: str) -> Exception:

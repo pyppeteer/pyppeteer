@@ -52,7 +52,7 @@ class TestEvaluate(BaseTestCase):
                     setTimeout(() => resolve(1), 0);
                 }
         )}''')
-        self.assertIn('Protocol Error', cm.exception.args[0])
+        self.assertIn('Protocol error', cm.exception.args[0])
 
     @sync
     async def test_after_framenavigation(self):
@@ -229,6 +229,19 @@ class TestEvaluate(BaseTestCase):
         }'''  # noqa: E501
         await self.page.evaluate(playAudio)
         await self.page.evaluate('({})()'.format(playAudio), force_expr=True)
+
+    @sync
+    async def test_nice_error_after_navigation(self):
+        executionContext = await self.page.mainFrame.executionContext()
+
+        await asyncio.wait([
+            self.page.waitForNavigation(),
+            executionContext.evaluate('window.location.reload()'),
+        ])
+
+        with self.assertRaises(NetworkError) as cm:
+            await executionContext.evaluate('() => null')
+        self.assertIn('navigation', cm.exception.args[0])
 
 
 class TestOfflineMode(BaseTestCase):

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import os
 import time
 import unittest
 
@@ -323,8 +322,6 @@ class TestWaitForSelector(BaseTestCase):
         await self.page.goto(self.url + '1')
         await task
 
-    @unittest.skip('This test raises error on asyncio')
-    @unittest.skipIf('CI' in os.environ, 'Skip unstable test on CI')
     @sync
     async def test_fail_page_closed(self):
         page = await self.browser.newPage()

@@ -57,20 +57,24 @@ class ExecutionContext(object):
         await handle.dispose()
         return result
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any,
+    async def evaluateHandle(self, pageFunction: str, *args: Any,  # noqa: C901
                              force_expr: bool = False) -> 'JSHandle':
         """Execute ``pageFunction`` on this context.
 
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
         if force_expr or (not args and not helper.is_jsfunc(pageFunction)):
-            _obj = await self._client.send('Runtime.evaluate', {
-                'expression': pageFunction,
-                'contextId': self._contextId,
-                'returnByValue': False,
-                'awaitPromise': True,
-                'userGesture': True,
-            })
+            try:
+                _obj = await self._client.send('Runtime.evaluate', {
+                    'expression': pageFunction,
+                    'contextId': self._contextId,
+                    'returnByValue': False,
+                    'awaitPromise': True,
+                    'userGesture': True,
+                })
+            except Exception as e:
+                _rewriteError(e)
+
             exceptionDetails = _obj.get('exceptionDetails')
             if exceptionDetails:
                 raise ElementHandleError(
@@ -79,14 +83,18 @@ class ExecutionContext(object):
             remoteObject = _obj.get('result')
             return self._objectHandleFactory(remoteObject)
 
-        _obj = await self._client.send('Runtime.callFunctionOn', {
-            'functionDeclaration': pageFunction,
-            'executionContextId': self._contextId,
-            'arguments': [self._convertArgument(arg) for arg in args],
-            'returnByValue': False,
-            'awaitPromise': True,
-            'userGesture': True,
-        })
+        try:
+            _obj = await self._client.send('Runtime.callFunctionOn', {
+                'functionDeclaration': pageFunction,
+                'executionContextId': self._contextId,
+                'arguments': [self._convertArgument(arg) for arg in args],
+                'returnByValue': False,
+                'awaitPromise': True,
+                'userGesture': True,
+            })
+        except Exception as e:
+            _rewriteError(e)
+
         exceptionDetails = _obj.get('exceptionDetails')
         if exceptionDetails:
             raise ElementHandleError('Evaluation failed: {}'.format(
@@ -209,3 +217,10 @@ class JSHandle(object):
             return f'JSHandle@{_type}'
         return 'JSHandle:{}'.format(
             helper.valueFromRemoteObject(self._remoteObject))
+
+
+def _rewriteError(error: Exception) -> None:
+    if error.args[0].endswith('Cannot find context with specified id'):
+        msg = 'Execution context was destroyed, most likely because of a navigation.'  # noqa: E501
+        raise type(error)(msg)
+    raise error
