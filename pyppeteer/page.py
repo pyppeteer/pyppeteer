@@ -792,7 +792,7 @@ function addPageBinding(bindingName) {
         """Go to the ``url``.
 
         :arg string url: URL to navigate page to. The url should include
-            scheme, e.g. ``https://``.
+                         scheme, e.g. ``https://``.
 
         Available options are:
 
@@ -810,6 +810,22 @@ function addPageBinding(bindingName) {
             for at least 500 ms.
           * ``networkidle2``: when there are no more than 2 network connections
             for at least 500 ms.
+
+        The ``Page.goto`` will raise errors if:
+
+        * there's an SSL error (e.g. in case of self-signed certificates)
+        * target URL is invalid
+        * the ``timeout`` is exceeded during navigation
+        * then main resource failed to load
+
+        .. note::
+            :meth:`goto` either riase error or return a main resource response.
+            The only exceptions are navigation to ``about:blank`` or navigation
+            to the same URL with a different hash, which would succeed and
+            return ``None``.
+
+        .. note::
+            Headless mode doesn't support navigation to a PDF document.
         """
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
