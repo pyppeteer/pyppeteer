@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import asyncio
 from pathlib import Path
 import sys
 import unittest
@@ -51,6 +52,16 @@ class TestClick(BaseTestCase):
             'button #8 clicked',
             'button #9 clicked',
         ])
+
+    @sync
+    async def test_click_wrapped_links(self):
+        await self.page.goto(self.url + 'static/wrappedlink.html')
+        await asyncio.gather(
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        )
+        self.assertEqual(self.page.url,
+                         self.url + 'static/wrappedlink.html#clicked')
 
     @sync
     async def test_click_events(self):

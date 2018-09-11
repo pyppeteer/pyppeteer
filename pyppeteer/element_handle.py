@@ -89,21 +89,35 @@ class ElementHandle(JSHandle):
         if error:
             raise ElementHandleError(error)
 
-    async def _boundingBoxCenter(self) -> Dict[str, float]:
-        box = await self._assertBoundingBox()
-        if not box:
-            raise ElementHandleError('Node is not visible.')
-        return {
-            'x': box['x'] + box['width'] / 2,
-            'y': box['y'] + box['height'] / 2,
-        }
+    async def _clickablePoint(self) -> Dict[str, float]:  # noqa: C901
+        result = None
+        try:
+            result = await self._client.send('DOM.getContentQuads', {
+                'objectId': self._remoteObject.get('objectId'),
+            })
+        except Exception as e:
+            debugError(logger, e)
 
-    async def _assertBoundingBox(self) -> Dict:
-        boundingBox = await self.boundingBox()
-        if boundingBox:
-            return boundingBox
-        raise ElementHandleError(
-            'Node is either not visible or not an HTMLElement')
+        if not result or not result.get('quads'):
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
+        quads = []
+        for _quad in result.get('quads'):
+            _q = self._fromProtocolQuad(_quad)
+            if _computeQuadArea(_q) > 1:
+                quads.append(_q)
+        if not quads:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
+        quad = quads[0]
+        x = 0
+        y = 0
+        for point in quad:
+            x += point['x']
+            y += point['y']
+        return {'x': x / 4, 'y': y / 4}
 
     async def _getBoxModel(self) -> Optional[Dict]:
         try:
@@ -131,7 +145,7 @@ class ElementHandle(JSHandle):
         detached from DOM tree, the method raises an ``ElementHandleError``.
         """
         await self._scrollIntoViewIfNeeded()
-        obj = await self._boundingBoxCenter()
+        obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
@@ -152,7 +166,7 @@ class ElementHandle(JSHandle):
         """
         options = merge_dict(options, kwargs)
         await self._scrollIntoViewIfNeeded()
-        obj = await self._boundingBoxCenter()
+        obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.click(x, y, options)
@@ -173,7 +187,7 @@ class ElementHandle(JSHandle):
         detached from DOM, the method raises ``ElementHandleError``.
         """
         await self._scrollIntoViewIfNeeded()
-        center = await self._boundingBoxCenter()
+        center = await self._clickablePoint()
         x = center.get('x', 0)
         y = center.get('y', 0)
         await self._page.touchscreen.tap(x, y)
@@ -280,7 +294,11 @@ class ElementHandle(JSHandle):
         options = merge_dict(options, kwargs)
 
         needsViewportReset = False
-        boundingBox = await self._assertBoundingBox()
+        boundingBox = await self.boundingBox()
+        if not boundingBox:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
         original_viewport = copy.deepcopy(self._page.viewport)
 
         if (boundingBox['width'] > original_viewport['width'] or
@@ -301,7 +319,10 @@ class ElementHandle(JSHandle):
             needsViewportReset = True
 
         await self._scrollIntoViewIfNeeded()
-        boundingBox = await self._assertBoundingBox()
+        boundingBox = await self.boundingBox()
+        if not boundingBox:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
 
         _obj = await self._client.send('Page.getLayoutMetrics')
         pageX = _obj['layoutViewport']['pageX']
@@ -459,3 +480,12 @@ class ElementHandle(JSHandle):
 
     #: alias to :meth:`xpath`
     Jx = xpath
+
+
+def _computeQuadArea(quad: List[Dict]) -> float:
+    area = 0
+    for i, _ in enumerate(quad):
+        p1 = quad[i]
+        p2 = quad[(i + 1) % len(quad)]
+        area += (p1['x'] * p2['y'] - p2['x'] * p1['y']) / 2
+    return area
