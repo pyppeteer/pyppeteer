@@ -63,6 +63,21 @@ class TestBoundingBox(BaseTestCase):
             'height': 200,
         })
 
+    @sync
+    async def test_svg(self):
+        await self.page.setContent('''
+            <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
+                <rect id="theRect" x="30" y="50" width="200" height="300"></rect>
+            </svg>
+        ''')  # noqa: E501
+        element = await self.page.J('#therect')
+        pptrBoundingBox = await element.boundingBox()
+        webBoundingBox = await self.page.evaluate('''e => {
+            const rect = e.getBoundingClientRect();
+            return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
+        }''', element)  # noqa: E501
+        self.assertEqual(pptrBoundingBox, webBoundingBox)
+
 
 class TestBoxModel(BaseTestCase):
     def setUp(self):
