@@ -894,8 +894,8 @@ function addPageBinding(bindingName) {
         which will indirectly cause the page to navigate. In case of navigation
         to a different anchor or navigation due to
         `History API <https://developer.mozilla.org/en-US/docs/Web/API/History_API>`_
-        usage, the
-        navigation will return ``None``.
+        usage, the navigation will return ``None``.
+
         Consider this example:
 
         .. code::

@@ -614,10 +614,11 @@ class TestWaitForNavigation(BaseTestCase):
     async def test_click_anchor_link(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('<a href="#foobar">foobar</a>')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'empty#foobar')
 
     @sync
@@ -637,10 +638,11 @@ class TestWaitForNavigation(BaseTestCase):
                 function pushState() { history.pushState({}, '', 'wow.html') }
             </script>
         ''')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'wow.html')
 
     @sync
@@ -654,10 +656,11 @@ class TestWaitForNavigation(BaseTestCase):
                 }
             </script>
         ''')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'replaced.html')
 
     @sync
@@ -674,15 +677,18 @@ class TestWaitForNavigation(BaseTestCase):
             </script>
         ''')
         self.assertEqual(self.page.url, self.url + 'second.html')
-        await asyncio.wait([
+        results_back = await asyncio.gather(
+            self.page.waitForNavigation(),
             self.page.click('a#back'),
-            self.page.waitForNavigation(),
-        ])
+        )
+        self.assertIsNone(results_back[0])
         self.assertEqual(self.page.url, self.url + 'first.html')
-        await asyncio.wait([
-            self.page.click('a#forward'),
+
+        results_forward = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a#forward'),
+        )
+        self.assertIsNone(results_forward[0])
         self.assertEqual(self.page.url, self.url + 'second.html')
 
     @sync
