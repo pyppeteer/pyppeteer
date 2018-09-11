@@ -1,6 +1,10 @@
 History
 =======
 
+## Version 0.0.24 (next version)
+
+* Now possible to attach to extension background pages with `Target.page()`
+
 ## Version 0.0.23 (2018-09-10)
 
 Catch up puppeteer v1.5.0
