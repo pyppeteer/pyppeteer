@@ -1271,6 +1271,12 @@ class TestViewport(BaseTestCase):
         )
 
     @sync
+    async def test_detect_touch_viewport_touch(self):
+        await self.page.setViewport({'width': 800, 'height': 600, 'hasTouch': True})  # noqa: E501
+        await self.page.addScriptTag({'url': self.url + 'static/modernizr.js'})
+        self.assertTrue(await self.page.evaluate('() => Modernizr.touchevents'))  # noqa: E501
+
+    @sync
     async def test_landscape_emulation(self):
         await self.page.goto(self.url + 'static/mobile.html')
         self.assertEqual(
