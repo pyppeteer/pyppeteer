@@ -29,7 +29,8 @@ class Worker(EventEmitter):
     """  # noqa: E501
 
     def __init__(self, client: 'CDPSession', url: str,  # noqa: C901
-                 consoleAPICalled: Callable) -> None:
+                 consoleAPICalled: Callable, exceptionThrown: Callable
+                 ) -> None:
         super().__init__()
         self._client = client
         self._url = url
@@ -68,6 +69,10 @@ class Worker(EventEmitter):
             consoleAPICalled(event['type'], args)
 
         self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
+        self._client.on(
+            'Runtime.exceptionThrown',
+            lambda exception: exceptionThrown(exception['exceptionDetails']),
+        )
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
         self._executionContextPromise.set_result(value)

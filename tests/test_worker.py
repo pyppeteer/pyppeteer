@@ -71,3 +71,11 @@ class TestWorker(BaseTestCase):
         self.assertEqual(
             await (await worker.executionContext()).evaluate('1+1'), 2)
         self.assertEqual(await worker.evaluate('1+2'), 3)
+
+    @sync
+    async def test_report_error(self):
+        errorPromise = asyncio.get_event_loop().create_future()
+        self.page.on('pageerror', lambda x: errorPromise.set_result(x))
+        await self.page.evaluate('() => new Worker(`data:text/javascript, throw new Error("this is my error");`)')  # noqa: E501
+        errorLog = await errorPromise
+        self.assertIn('this is my error', errorLog.args[0])

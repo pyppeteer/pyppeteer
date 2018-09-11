@@ -152,6 +152,7 @@ class Page(EventEmitter):
                 session,
                 targetInfo['url'],
                 self._addConsoleMessage,
+                self._handleException,
             )
             self._workers[sessionId] = worker
             self.emit(Page.Events.WorkerCreated, worker)
