@@ -481,6 +481,19 @@ class ElementHandle(JSHandle):
     #: alias to :meth:`xpath`
     Jx = xpath
 
+    async def isIntersectingViewport(self) -> bool:
+        """Return ``True`` if the element is visible in the viewport."""
+        return await self.executionContext.evaluate('''async element => {
+            const visibleRatio = await new Promise(resolve => {
+                const observer = new IntersectionObserver(entries => {
+                    resolve(entries[0].intersectionRatio);
+                    observer.disconnect();
+                });
+                observer.observe(element);
+            });
+            return visibleRatio > 0;
+        }''', self)
+
 
 def _computeQuadArea(quad: List[Dict]) -> float:
     area = 0

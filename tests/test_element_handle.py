@@ -259,6 +259,16 @@ class TestHover(BaseTestCase):
         )
 
 
+class TestIsIntersectingViewport(BaseTestCase):
+    @sync
+    async def test_is_intersecting_viwport(self):
+        await self.page.goto(self.url + 'static/offscreenbuttons.html')
+        for i in range(11):
+            button = await self.page.J('#btn{}'.format(i))
+            visible = i < 10
+            self.assertEqual(await button.isIntersectingViewport(), visible)
+
+
 class TestScreenshot(BaseTestCase):
     @sync
     async def test_screenshot_larger_than_viewport(self):

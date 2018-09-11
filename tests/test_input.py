@@ -37,7 +37,7 @@ class TestClick(BaseTestCase):
         await self.page.goto(self.url + 'static/offscreenbuttons.html')
         messages = []
         self.page.on('console', lambda msg: messages.append(msg.text))
-        for i in range(10):
+        for i in range(11):
             await self.page.evaluate('() => window.scrollTo(0, 0)')
             await self.page.click('#btn{}'.format(i))
         self.assertEqual(messages, [
@@ -51,6 +51,7 @@ class TestClick(BaseTestCase):
             'button #7 clicked',
             'button #8 clicked',
             'button #9 clicked',
+            'button #10 clicked',
         ])
 
     @sync
