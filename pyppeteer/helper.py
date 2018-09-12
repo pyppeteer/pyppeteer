@@ -3,6 +3,7 @@
 
 """Helper functions."""
 
+import asyncio
 import json
 import logging
 import math
@@ -12,7 +13,7 @@ from pyee import EventEmitter
 
 import pyppeteer
 from pyppeteer.connection import CDPSession
-from pyppeteer.errors import ElementHandleError
+from pyppeteer.errors import ElementHandleError, TimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -116,6 +117,41 @@ def releaseObject(client: CDPSession, remoteObject: dict
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
         debugError(logger, e)
     return fut_none
+
+
+def waitForEvent(emitter: EventEmitter, eventName: str,  # noqa: C901
+                 predicate: Callable[[Any], bool], timeout: float,
+                 loop: asyncio.AbstractEventLoop) -> Awaitable:
+    """Wait for an event emitted from the emitter."""
+    promise = loop.create_future()
+
+    def resolveCallback(target: Any) -> None:
+        promise.set_result(target)
+
+    def rejectCallback(exception: Exception) -> None:
+        promise.set_exception(exception)
+
+    async def timeoutTimer() -> None:
+        await asyncio.sleep(timeout / 1000)
+        rejectCallback(
+            TimeoutError('Timeout exceeded while waiting for event'))
+
+    def _listener(target: Any) -> None:
+        if not predicate(target):
+            return
+        cleanup()
+        resolveCallback(target)
+
+    listener = addEventListener(emitter, eventName, _listener)
+    if timeout:
+        eventTimeout = loop.create_task(timeoutTimer())
+
+    def cleanup() -> None:
+        removeEventListeners([listener])
+        if timeout:
+            eventTimeout.cancel()
+
+    return promise
 
 
 def get_positive_int(obj: dict, name: str) -> int:

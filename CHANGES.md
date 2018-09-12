@@ -5,6 +5,7 @@ History
 
 * Add `ElementHandle.isIntersectingViewport()`
 * Add `reportAnonymousScript` option to `Coverage.startJSCoverage()`
+* Add `Page.waitForRequest` and `Page.waitForResponse` methods
 * Now possible to attach to extension background pages with `Target.page()`
 * Improved reliability of clicking with `Page.click()` and `ElementHandle.click()`
 

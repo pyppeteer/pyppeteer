@@ -692,7 +692,7 @@ class TestWaitForNavigation(BaseTestCase):
         self.assertEqual(self.page.url, self.url + 'second.html')
 
     @sync
-    async def test_subframe_issues(self) -> None:
+    async def test_subframe_issues(self):
         navigationPromise = asyncio.ensure_future(
             self.page.goto(self.url + 'static/one-frame.html'))
         frame = await waitEvent(self.page, 'frameattached')
@@ -705,6 +705,108 @@ class TestWaitForNavigation(BaseTestCase):
         self.page.on('framenavigated', is_same_frame)
         asyncio.ensure_future(frame.evaluate('window.stop()'))
         await navigationPromise
+
+
+class TestWaitForRequest(BaseTestCase):
+    @sync
+    async def test_wait_for_request(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForRequest(self.url + 'static/digits/2.png'),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_predicate(self):
+        await self.page.goto(self.url + 'empty')
+
+        def predicate(req):
+            return req.url == self.url + 'static/digits/2.png'
+
+        results = await asyncio.gather(
+            self.page.waitForRequest(predicate),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForRequest(
+                self.url + 'static/digits/2.png',
+                timeout=0,
+            ),
+            self.page.evaluate('''() => setTimeout(() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }, 50)''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+
+class TestWaitForResponse(BaseTestCase):
+    @sync
+    async def test_wait_for_response(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForResponse(self.url + 'static/digits/2.png'),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_predicate(self):
+        await self.page.goto(self.url + 'empty')
+
+        def predicate(response):
+            return response.url == self.url + 'static/digits/2.png'
+
+        results = await asyncio.gather(
+            self.page.waitForResponse(predicate),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForResponse(
+                self.url + 'static/digits/2.png',
+                timeout=0,
+            ),
+            self.page.evaluate('''() => setTimeout(() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }, 50)''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
 
 
 class TestGoBack(BaseTestCase):

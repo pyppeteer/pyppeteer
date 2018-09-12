@@ -939,6 +939,80 @@ function addPageBinding(bindingName) {
         response = responses.get(self.url, None)
         return response
 
+    async def waitForRequest(self, urlOrPredicate: Union[str, Callable[[Request], bool]],  # noqa: E501
+                             options: Dict = None, **kwargs: Any) -> Request:
+        """Wait for request.
+
+        :arg urlOrPredicate: A URL or function to wait for.
+
+        This method accepts below options:
+
+        * ``timeout`` (int|float): Maximum wait time in milliseconds, defaults
+          to 30 seconds, pass ``0`` to disable the timeout.
+
+        Example:
+
+        .. code::
+
+            firstRequest = await page.waitForRequest('http://example.com/resource')
+            finalRequest = await page.waitForRequest(lambda req: req.url == 'http://example.com' and req.method == 'GET')
+            return firstRequest.url
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+
+        def predicate(request: Request) -> bool:
+            if isinstance(urlOrPredicate, str):
+                return urlOrPredicate == request.url
+            if callable(urlOrPredicate):
+                return bool(urlOrPredicate(request))
+            return False
+
+        return await helper.waitForEvent(
+            self._networkManager,
+            NetworkManager.Events.Request,
+            predicate,
+            timeout,
+            self._client._loop,
+        )
+
+    async def waitForResponse(self, urlOrPredicate: Union[str, Callable[[Response], bool]],  # noqa: E501
+                              options: Dict = None, **kwargs: Any) -> Response:
+        """Wait for response.
+
+        :arg urlOrPredicate: A URL or function to wait for.
+
+        This method accepts below options:
+
+        * ``timeout`` (int|float): Maximum wait time in milliseconds, defaults
+          to 30 seconds, pass ``0`` to disable the timeout.
+
+        Example:
+
+        .. code::
+
+            firstResponse = await page.waitForResponse('http://example.com/resource')
+            finalResponse = await page.waitForResponse(lambda res: res.url == 'http://example.com' and res.status == 200)
+            return finalResponse.ok
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+
+        def predicate(response: Response) -> bool:
+            if isinstance(urlOrPredicate, str):
+                return urlOrPredicate == response.url
+            if callable(urlOrPredicate):
+                return bool(urlOrPredicate(response))
+            return False
+
+        return await helper.waitForEvent(
+            self._networkManager,
+            NetworkManager.Events.Response,
+            predicate,
+            timeout,
+            self._client._loop,
+        )
+
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
         """Navigate to the previous page in history.
