@@ -1309,7 +1309,7 @@ function addPageBinding(bindingName) {
         * ``landscape`` (bool): Paper orientation. Defaults to ``False``.
         * ``pageRanges`` (string): Paper ranges to print, e.g., '1-5,8,11-13'.
           Defaults to empty string, which means all pages.
-        * ``foramt`` (str): Paper format. If set, takes prioprity over
+        * ``format`` (str): Paper format. If set, takes priority over
           ``width`` or ``height``. Defaults to ``Letter``.
         * ``width`` (str): Paper width, accepts values labeled with units.
         * ``height`` (str): Paper height, accepts values labeled with units.
