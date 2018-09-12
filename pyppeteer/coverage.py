@@ -177,6 +177,8 @@ class JSCoverage(object):
 
         scriptId = event.get('scriptId')
         url = event.get('url')
+        if not url and self._reportAnonymousScript:
+            url = f'debugger://VM{scriptId}'
         try:
             response = await self._client.send(
                 'Debugger.getScriptSource',

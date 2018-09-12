@@ -46,6 +46,8 @@ class TestJSCoverage(BaseTestCase):
         await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
         await self.page.goto(self.url + 'static/jscoverage/eval.html')
         coverage = await self.page.coverage.stopJSCoverage()
+        self.assertTrue(any(entry for entry in coverage
+                            if entry['url'].startswith('debugger://')))
         self.assertEqual(len(coverage), 2)
 
     @sync
