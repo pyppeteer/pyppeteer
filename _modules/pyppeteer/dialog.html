@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.dialog &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.dialog &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -54,6 +54,24 @@
     <span class="sd">&quot;&quot;&quot;Dialog class.</span>
 
 <span class="sd">    Dialog objects are dispatched by page via the ``dialog`` event.</span>
+
+<span class="sd">    An example of using ``Dialog`` class:</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        browser = await launch()</span>
+<span class="sd">        page = await browser.newPage()</span>
+
+<span class="sd">        async def close_dialog(dialog):</span>
+<span class="sd">            print(dialog.message)</span>
+<span class="sd">            await dialog.dismiss()</span>
+<span class="sd">            await browser.close()</span>
+
+<span class="sd">        page.on(</span>
+<span class="sd">            &#39;dialog&#39;,</span>
+<span class="sd">            lambda dialog: asyncio.ensure_future(close_dialog(dialog))</span>
+<span class="sd">        )</span>
+<span class="sd">        await page.evaluate(&#39;() =&gt; alert(&quot;1&quot;)&#39;)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">Type</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>

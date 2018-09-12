@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.coverage &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -52,6 +52,7 @@
 <span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.connection</span> <span class="k">import</span> <span class="n">CDPSession</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">PageError</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.execution_context</span> <span class="k">import</span> <span class="n">EVALUATION_SCRIPT_URL</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.helper</span> <span class="k">import</span> <span class="n">debugError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">merge_dict</span>
 
@@ -99,6 +100,15 @@
 
 <span class="sd">        * ``resetOnNavigation`` (bool): Whether to reset coverage on every</span>
 <span class="sd">          navigation. Defaults to ``True``.</span>
+<span class="sd">        * ``reportAnonymousScript`` (bool): Whether anonymous script generated</span>
+<span class="sd">          by the page should be reported. Defaults to ``False``.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Anonymous scripts are ones that don&#39;t have an associated url. These</span>
+<span class="sd">            are scripts that are dynamically created on the page using ``eval``</span>
+<span class="sd">            of ``new Function``. If ``reportAnonymousScript`` is set to</span>
+<span class="sd">            ``True``, anonymous scripts will have</span>
+<span class="sd">            ``__pyppeteer_evaluation_script__`` as their url.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">options</span><span class="p">)</span></div>
@@ -106,8 +116,7 @@
 <div class="viewcode-block" id="Coverage.stopJSCoverage"><a class="viewcode-back" href="../../reference.html#pyppeteer.coverage.Coverage.stopJSCoverage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">stopJSCoverage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Stop JS coverage measurement and get result.</span>
 
-<span class="sd">        Return list of coverage reports for all non-anonymous scripts. Each</span>
-<span class="sd">        report includes:</span>
+<span class="sd">        Return list of coverage reports for all scripts. Each report includes:</span>
 
 <span class="sd">        * ``url`` (str): Script url.</span>
 <span class="sd">        * ``text`` (str): Script content.</span>
@@ -118,8 +127,8 @@
 <span class="sd">          * ``end`` (int): An end offset in text, exclusive.</span>
 
 <span class="sd">        .. note::</span>
-<span class="sd">           JavaScript coverage doesn&#39;t include anonymous scripts; however,</span>
-<span class="sd">           scripts with sourceURLs are reported.</span>
+<span class="sd">           JavaScript coverage doesn&#39;t include anonymous scripts by default.</span>
+<span class="sd">           However, scripts with sourceURLs are reported.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_jsCoverage</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span></div>
 
@@ -174,6 +183,7 @@
             <span class="k">raise</span> <span class="n">PageError</span><span class="p">(</span><span class="s1">&#39;JSCoverage is always enabled.&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_resetOnNavigation</span> <span class="o">=</span> <span class="p">(</span><span class="kc">True</span> <span class="k">if</span> <span class="s1">&#39;resetOnNavigation&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">options</span>
                                    <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;resetOnNavigation&#39;</span><span class="p">]))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_reportAnonymousScript</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;reportAnonymousScript&#39;</span><span class="p">))</span>  <span class="c1"># noqa: E501</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_enabled</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scriptURLs</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
@@ -199,10 +209,18 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_scriptSources</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_onScriptParsed</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">if</span> <span class="s1">&#39;url&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">event</span><span class="p">:</span>
+        <span class="c1"># Ignore pyppeteer-injected scripts</span>
+        <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">EVALUATION_SCRIPT_URL</span><span class="p">:</span>
             <span class="k">return</span>
+        <span class="c1"># Ignore other anonymous scripts unleess the reportAnonymousScript</span>
+        <span class="c1"># option is True</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reportAnonymousScript</span><span class="p">:</span>
+            <span class="k">return</span>
+
         <span class="n">scriptId</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;scriptId&#39;</span><span class="p">)</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;url&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reportAnonymousScript</span><span class="p">:</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;debugger://VM</span><span class="si">{scriptId}</span><span class="s1">&#39;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
                 <span class="s1">&#39;Debugger.getScriptSource&#39;</span><span class="p">,</span>
@@ -283,7 +301,7 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_onStyleSheet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">header</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;header&#39;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="c1"># Ignore anonymous scripts</span>
-        <span class="k">if</span> <span class="s1">&#39;sourceURL&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">header</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">header</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;sourceURL&#39;</span><span class="p">):</span>
             <span class="k">return</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.input &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.input &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -58,7 +58,39 @@
 
 
 <div class="viewcode-block" id="Keyboard"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard">[docs]</a><span class="k">class</span> <span class="nc">Keyboard</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Keyboard class.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Keyboard class provides as api for managing a virtual keyboard.</span>
+
+<span class="sd">    The high level api is :meth:`type`, which takes raw characters and</span>
+<span class="sd">    generate proper keydown, keypress/input, and keyup events on your page.</span>
+
+<span class="sd">    For finer control, you can use :meth:`down`, :meth:`up`, and</span>
+<span class="sd">    :meth:`sendCharacter` to manually fire events as if they were generated</span>
+<span class="sd">    from a real keyboard.</span>
+
+<span class="sd">    An example of holding down ``Shift`` in order to select and delete some</span>
+<span class="sd">    text:</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        await page.keyboard.type(&#39;Hello, World!&#39;)</span>
+<span class="sd">        await page.keyboard.press(&#39;ArrowLeft&#39;)</span>
+
+<span class="sd">        await page.keyboard.down(&#39;Shift&#39;)</span>
+<span class="sd">        for i in &#39; World&#39;:</span>
+<span class="sd">            await page.keyboard.press(&#39;ArrowLeft&#39;)</span>
+<span class="sd">        await page.keyboard.up(&#39;Shift&#39;)</span>
+
+<span class="sd">        await page.keyboard.press(&#39;Backspace&#39;)</span>
+<span class="sd">        # Result text will end up saying &#39;Hello!&#39;.</span>
+
+<span class="sd">    An example of pressing ``A``:</span>
+
+<span class="sd">    .. code::</span>
+
+<span class="sd">        await page.keyboard.down(&#39;Shift&#39;)</span>
+<span class="sd">        await page.keyboard.press(&#39;KeyA&#39;)</span>
+<span class="sd">        await page.keyboard.up(&#39;Shift&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">CDPSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span>
@@ -67,9 +99,9 @@
 
 <div class="viewcode-block" id="Keyboard.down"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.down">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">down</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches a ``keydown`` event with ``key``.</span>
+        <span class="sd">&quot;&quot;&quot;Dispatch a ``keydown`` event with ``key``.</span>
 
-<span class="sd">        If ``key`` is a single character and no modifier keys besides ``shift``</span>
+<span class="sd">        If ``key`` is a single character and no modifier keys besides ``Shift``</span>
 <span class="sd">        are being held down, and a ``keyparess``/``input`` event will also</span>
 <span class="sd">        generated. The ``text`` option can be specified to force an ``input``</span>
 <span class="sd">        event to be generated.</span>
@@ -81,6 +113,10 @@
 <span class="sd">        :arg str key: Name of key to press, such as ``ArrowLeft``.</span>
 <span class="sd">        :arg dict options: Option can have ``text`` field, and if this option</span>
 <span class="sd">            spedified, generate an input event with this text.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Modifier keys DO influence :meth:`down`. Holding down ``shift``</span>
+<span class="sd">            will type the text in upper case.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
@@ -161,7 +197,7 @@
         <span class="k">return</span> <span class="n">description</span>
 
 <div class="viewcode-block" id="Keyboard.up"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.up">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">up</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches a ``keyup`` event of the ``key``.</span>
+        <span class="sd">&quot;&quot;&quot;Dispatch a ``keyup`` event of the ``key``.</span>
 
 <span class="sd">        :arg str key: Name of key to release, such as ``ArrowLeft``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -180,9 +216,14 @@
         <span class="p">})</span></div>
 
 <div class="viewcode-block" id="Keyboard.sendCharacter"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.sendCharacter">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">sendCharacter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Dispatches a ``keypress`` and ``input`` event.</span>
+        <span class="sd">&quot;&quot;&quot;Send character into the page.</span>
 
-<span class="sd">        This does not send a ``keydown`` or ``keyup`` event.</span>
+<span class="sd">        This method dispatches a ``keypress`` and ``input`` event. This does</span>
+<span class="sd">        not send a ``keydown`` or ``keyup`` event.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Modifier keys DO NOT effect :meth:`sendCharacter`. Holding down</span>
+<span class="sd">            ``shift`` will not type the text in upper case.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Input.dispatchKeyEvent&#39;</span><span class="p">,</span> <span class="p">{</span>
             <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;char&#39;</span><span class="p">,</span>
@@ -194,7 +235,7 @@
 
 <div class="viewcode-block" id="Keyboard.type"><a class="viewcode-back" href="../../reference.html#pyppeteer.input.Keyboard.type">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
                    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Type characters.</span>
+        <span class="sd">&quot;&quot;&quot;Type characters into a focused element.</span>
 
 <span class="sd">        This method sends ``keydown``, ``keypress``/``input``, and ``keyup``</span>
 <span class="sd">        event for each character in the ``text``.</span>
@@ -202,10 +243,14 @@
 <span class="sd">        To press a special key, like ``Control`` or ``ArrowDown``, use</span>
 <span class="sd">        :meth:`press` method.</span>
 
-<span class="sd">        :arg str text: Text to type into this element.</span>
+<span class="sd">        :arg str text: Text to type into a focused element.</span>
 <span class="sd">        :arg dict options: Options can have ``delay`` (int|float) field, which</span>
 <span class="sd">          specifies time to wait between key presses in milliseconds. Defaults</span>
 <span class="sd">          to 0.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Modifier keys DO NOT effect :meth:`type`. Holding down ``shift``</span>
+<span class="sd">            will not type the text in upper case.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
         <span class="n">delay</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;delay&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
@@ -234,6 +279,10 @@
 <span class="sd">          text.</span>
 <span class="sd">        * ``delay`` (int|float): Time to wait between ``keydown`` and</span>
 <span class="sd">          ``keyup``. Defaults to 0.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Modifier keys DO effect :meth:`press`. Holding down ``shift`` will</span>
+<span class="sd">            type the text in upper case.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 

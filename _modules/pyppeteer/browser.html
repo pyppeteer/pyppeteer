@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -246,12 +246,17 @@
                 <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">_isInitialized</span><span class="p">]</span></div>
 
 <div class="viewcode-block" id="Browser.pages"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.pages">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">pages</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Page</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all pages of this browser.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Get all pages of this browser.</span>
+
+<span class="sd">        Non visible pages, such as ``&quot;background_page&quot;``, will not be listed</span>
+<span class="sd">        here. You can find then using :meth:`pyppeteer.target.Target.page`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">pages</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">():</span>
-            <span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">page</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">page</span><span class="p">:</span>
-                <span class="n">pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s1">&#39;page&#39;</span><span class="p">:</span>
+                <span class="n">page</span> <span class="o">=</span> <span class="k">await</span> <span class="n">target</span><span class="o">.</span><span class="n">page</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">page</span><span class="p">:</span>
+                    <span class="n">pages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">page</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pages</span></div>
 
 <div class="viewcode-block" id="Browser.version"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.version">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.element_handle &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -107,34 +107,59 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_frameManager</span><span class="o">.</span><span class="n">frame</span><span class="p">(</span><span class="n">node_obj</span><span class="p">[</span><span class="s1">&#39;frameId&#39;</span><span class="p">])</span></div>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_scrollIntoViewIfNeeded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
-            <span class="sd">&#39;&#39;&#39;element =&gt; {</span>
-<span class="sd">                if (!element.isConnected)</span>
-<span class="sd">                    return &#39;Node is detached from document&#39;;</span>
-<span class="sd">                if (element.nodeType !== Node.ELEMENT_NODE)</span>
-<span class="sd">                    return &#39;Node is not of type HTMLElement&#39;;</span>
-<span class="sd">                element.scrollIntoViewIfNeeded();</span>
-<span class="sd">                return false;</span>
-<span class="sd">            }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+<span class="s1">            async element =&gt; {</span>
+<span class="s1">                if (!element.isConnected)</span>
+<span class="s1">                    return &#39;Node is detached from document&#39;;</span>
+<span class="s1">                if (element.nodeType !== Node.ELEMENT_NODE)</span>
+<span class="s1">                    return &#39;Node is not of type HTMLElement&#39;;</span>
+<span class="s1">                const visibleRatio = await new Promise(resolve =&gt; {</span>
+<span class="s1">                    const observer = new IntersectionObserver(entries =&gt; {</span>
+<span class="s1">                        resolve(entries[0].intersectionRatio);</span>
+<span class="s1">                        observer.disconnect();</span>
+<span class="s1">                    });</span>
+<span class="s1">                    observer.observe(element);</span>
+<span class="s1">                });</span>
+<span class="s1">                if (visibleRatio !== 1.0)</span>
+<span class="s1">                    element.scrollIntoView({</span>
+<span class="s1">                        block: &#39;center&#39;,</span>
+<span class="s1">                        inline: &#39;center&#39;,</span>
+<span class="s1">                        behavior: &#39;instant&#39;,</span>
+<span class="s1">                    });</span>
+<span class="s1">                return false;</span>
+<span class="s1">            }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_visibleCenter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
-        <span class="n">box</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assertBoundingBox</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">box</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;Node is not visible.&#39;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
-            <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">box</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="p">}</span>
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_clickablePoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>  <span class="c1"># noqa: C901</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;DOM.getContentQuads&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;objectId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;objectId&#39;</span><span class="p">),</span>
+            <span class="p">})</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">debugError</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_assertBoundingBox</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
-        <span class="n">boundingBox</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingBox</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">boundingBox</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">boundingBox</span>
-        <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
-            <span class="s1">&#39;Node is either not visible or not an HTMLElement&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;quads&#39;</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="s1">&#39;Node is either not visible or not an HTMLElement&#39;</span><span class="p">)</span>
+
+        <span class="n">quads</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">_quad</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;quads&#39;</span><span class="p">):</span>
+            <span class="n">_q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fromProtocolQuad</span><span class="p">(</span><span class="n">_quad</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_computeQuadArea</span><span class="p">(</span><span class="n">_q</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">quads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_q</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">quads</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="s1">&#39;Node is either not visible or not an HTMLElement&#39;</span><span class="p">)</span>
+
+        <span class="n">quad</span> <span class="o">=</span> <span class="n">quads</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="n">quad</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">+=</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span>
+            <span class="n">y</span> <span class="o">+=</span> <span class="n">point</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="n">y</span> <span class="o">/</span> <span class="mi">4</span><span class="p">}</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_getBoxModel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">]:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -161,7 +186,8 @@
 <span class="sd">        If needed, this method scrolls eleemnt into view. If this element is</span>
 <span class="sd">        detached from DOM tree, the method raises an ``ElementHandleError``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clickablePoint</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
@@ -181,7 +207,8 @@
 <span class="sd">          ``mouseup`` in milliseconds. Defaults to 0.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clickablePoint</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">mouse</span><span class="o">.</span><span class="n">click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span></div>
@@ -201,7 +228,8 @@
 <span class="sd">        If needed, this method scrolls element into view. If the element is</span>
 <span class="sd">        detached from DOM, the method raises ``ElementHandleError``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_visibleCenter</span><span class="p">()</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clickablePoint</span><span class="p">()</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">center</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">touchscreen</span><span class="o">.</span><span class="n">tap</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
@@ -308,7 +336,11 @@
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">needsViewportReset</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">boundingBox</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_assertBoundingBox</span><span class="p">()</span>
+        <span class="n">boundingBox</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingBox</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">boundingBox</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="s1">&#39;Node is either not visible or not an HTMLElement&#39;</span><span class="p">)</span>
+
         <span class="n">original_viewport</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">viewport</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="n">boundingBox</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">original_viewport</span><span class="p">[</span><span class="s1">&#39;width&#39;</span><span class="p">]</span> <span class="ow">or</span>
@@ -327,6 +359,12 @@
             <span class="n">new_viewport</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">newViewport</span><span class="p">)</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_page</span><span class="o">.</span><span class="n">setViewport</span><span class="p">(</span><span class="n">new_viewport</span><span class="p">)</span>
             <span class="n">needsViewportReset</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_scrollIntoViewIfNeeded</span><span class="p">()</span>
+        <span class="n">boundingBox</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">boundingBox</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">boundingBox</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
+                <span class="s1">&#39;Node is either not visible or not an HTMLElement&#39;</span><span class="p">)</span>
 
         <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Page.getLayoutMetrics&#39;</span><span class="p">)</span>
         <span class="n">pageX</span> <span class="o">=</span> <span class="n">_obj</span><span class="p">[</span><span class="s1">&#39;layoutViewport&#39;</span><span class="p">][</span><span class="s1">&#39;pageX&#39;</span><span class="p">]</span>
@@ -440,11 +478,6 @@
             <span class="s1">&#39;(element, selector) =&gt; Array.from(element.querySelectorAll(selector))&#39;</span><span class="p">,</span>  <span class="c1"># noqa: E501</span>
             <span class="bp">self</span><span class="p">,</span> <span class="n">selector</span>
         <span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">jsonValue</span><span class="p">())</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
-                <span class="n">f</span><span class="s1">&#39;Error: failed to find elements matching selector &quot;</span><span class="si">{selector}</span><span class="s1">&quot;&#39;</span>  <span class="c1"># noqa: E501</span>
-            <span class="p">)</span>
-
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span>
             <span class="n">pageFunction</span><span class="p">,</span> <span class="n">arrayHandle</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">arrayHandle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
@@ -460,9 +493,9 @@
     <span class="n">JJeval</span> <span class="o">=</span> <span class="n">querySelectorAllEval</span>
 
 <div class="viewcode-block" id="ElementHandle.xpath"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.xpath">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">xpath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;ElementHandle&#39;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Evaluate XPath expression relative to this elementHandle.</span>
+        <span class="sd">&quot;&quot;&quot;Evaluate the XPath expression relative to this elementHandle.</span>
 
-<span class="sd">        If there is no such element, return None.</span>
+<span class="sd">        If there are no such elements, return an empty list.</span>
 
 <span class="sd">        :arg str expression: XPath string to be evaluated.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -488,7 +521,29 @@
         <span class="k">return</span> <span class="n">result</span></div>
 
     <span class="c1">#: alias to :meth:`xpath`</span>
-    <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span></div>
+    <span class="n">Jx</span> <span class="o">=</span> <span class="n">xpath</span>
+
+<div class="viewcode-block" id="ElementHandle.isIntersectingViewport"><a class="viewcode-back" href="../../reference.html#pyppeteer.element_handle.ElementHandle.isIntersectingViewport">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">isIntersectingViewport</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return ``True`` if the element is visible in the viewport.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">executionContext</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;async element =&gt; {</span>
+<span class="s1">            const visibleRatio = await new Promise(resolve =&gt; {</span>
+<span class="s1">                const observer = new IntersectionObserver(entries =&gt; {</span>
+<span class="s1">                    resolve(entries[0].intersectionRatio);</span>
+<span class="s1">                    observer.disconnect();</span>
+<span class="s1">                });</span>
+<span class="s1">                observer.observe(element);</span>
+<span class="s1">            });</span>
+<span class="s1">            return visibleRatio &gt; 0;</span>
+<span class="s1">        }&#39;&#39;&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_computeQuadArea</span><span class="p">(</span><span class="n">quad</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">quad</span><span class="p">):</span>
+        <span class="n">p1</span> <span class="o">=</span> <span class="n">quad</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">p2</span> <span class="o">=</span> <span class="n">quad</span><span class="p">[(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">quad</span><span class="p">)]</span>
+        <span class="n">area</span> <span class="o">+=</span> <span class="p">(</span><span class="n">p1</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">p2</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">p2</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="n">p1</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">area</span>
 </pre></div>
 
           </div>

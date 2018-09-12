@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.network_manager &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -610,10 +610,30 @@
 <span class="sd">        If request interception is not enabled, raise ``NetworkError``.</span>
 
 <span class="sd">        ``errorCode`` is an optional error code string. Defaults to ``failed``,</span>
-<span class="sd">        could be one of the following: ``aborted``, ``accesdenied``,</span>
-<span class="sd">        ``addressunreachable``, ``connectionaborted``, ``connectionclosed``,</span>
-<span class="sd">        ``connectionfailed``, ``connnectionrefused``, ``connectionreset``,</span>
-<span class="sd">        ``internetdisconnected``, ``namenotresolved``, ``timedout``, ``failed``</span>
+<span class="sd">        could be one of the following:</span>
+
+<span class="sd">        - ``aborted``: An operation was aborted (due to user action).</span>
+<span class="sd">        - ``accesdenied``: Permission to access a resource, other than the</span>
+<span class="sd">          network, was denied.</span>
+<span class="sd">        - ``addressunreachable``: The IP address is unreachable. This usually</span>
+<span class="sd">          means that there is no route to the specified host or network.</span>
+<span class="sd">        - ``blockedbyclient``: The client chose to block the request.</span>
+<span class="sd">        - ``blockedbyresponse``: The request failed because the request was</span>
+<span class="sd">          delivered along with requirements which are not met</span>
+<span class="sd">          (&#39;X-Frame-Options&#39; and &#39;Content-Security-Policy&#39; ancestor check,</span>
+<span class="sd">          for instance).</span>
+<span class="sd">        - ``connectionaborted``: A connection timeout as a result of not</span>
+<span class="sd">          receiving an ACK for data sent.</span>
+<span class="sd">        - ``connectionclosed``: A connection was closed (corresponding to a TCP</span>
+<span class="sd">          FIN).</span>
+<span class="sd">        - ``connectionfailed``: A connection attempt failed.</span>
+<span class="sd">        - ``connnectionrefused``: A connection attempt was refused.</span>
+<span class="sd">        - ``connectionreset``: A connection was reset (corresponding to a TCP</span>
+<span class="sd">          RST).</span>
+<span class="sd">        - ``internetdisconnected``: The Internet connection has been lost.</span>
+<span class="sd">        - ``namenotresolved``: The host name could not be resolved.</span>
+<span class="sd">        - ``timedout``: An operation timed out.</span>
+<span class="sd">        - ``failed``: A generic failure occurred.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">errorReason</span> <span class="o">=</span> <span class="n">errorReasons</span><span class="p">[</span><span class="n">errorCode</span><span class="p">]</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">errorReason</span><span class="p">:</span>
@@ -636,6 +656,8 @@
     <span class="s1">&#39;aborted&#39;</span><span class="p">:</span> <span class="s1">&#39;Aborted&#39;</span><span class="p">,</span>
     <span class="s1">&#39;accessdenied&#39;</span><span class="p">:</span> <span class="s1">&#39;AccessDenied&#39;</span><span class="p">,</span>
     <span class="s1">&#39;addressunreachable&#39;</span><span class="p">:</span> <span class="s1">&#39;AddressUnreachable&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;blockedbyclient&#39;</span><span class="p">:</span> <span class="s1">&#39;BlockedByClient&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;blockedbyresponse&#39;</span><span class="p">:</span> <span class="s1">&#39;BlockedByResponse&#39;</span><span class="p">,</span>
     <span class="s1">&#39;connectionaborted&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionAborted&#39;</span><span class="p">,</span>
     <span class="s1">&#39;connectionclosed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionClosed&#39;</span><span class="p">,</span>
     <span class="s1">&#39;connectionfailed&#39;</span><span class="p">:</span> <span class="s1">&#39;ConnectionFailed&#39;</span><span class="p">,</span>

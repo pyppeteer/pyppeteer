@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.execution_context &#8212; Pyppeteer 0.0.23 documentation</title>
+    <title>pyppeteer.execution_context &#8212; Pyppeteer 0.0.24 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -47,6 +47,7 @@
 
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TYPE_CHECKING</span>
 
 <span class="kn">from</span> <span class="nn">pyppeteer</span> <span class="k">import</span> <span class="n">helper</span>
@@ -59,6 +60,12 @@
     <span class="kn">from</span> <span class="nn">pyppeteer.frame_manager</span> <span class="k">import</span> <span class="n">Frame</span>  <span class="c1"># noqa: F401</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">EVALUATION_SCRIPT_URL</span> <span class="o">=</span> <span class="s1">&#39;__pyppeteer_evaluation_script__&#39;</span>
+<span class="n">SOURCE_URL_REGEX</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s1">&#39;^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$&#39;</span><span class="p">,</span>
+    <span class="n">re</span><span class="o">.</span><span class="n">MULTILINE</span><span class="p">,</span>
+<span class="p">)</span>
 
 
 <div class="viewcode-block" id="ExecutionContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext">[docs]</a><span class="k">class</span> <span class="nc">ExecutionContext</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
@@ -99,20 +106,30 @@
         <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span></div>
 
-<div class="viewcode-block" id="ExecutionContext.evaluateHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext.evaluateHandle">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluateHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<div class="viewcode-block" id="ExecutionContext.evaluateHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.execution_context.ExecutionContext.evaluateHandle">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluateHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>  <span class="c1"># noqa: C901</span>
                              <span class="n">force_expr</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;JSHandle&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Execute ``pageFunction`` on this context.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">suffix</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;//# sourceURL=</span><span class="si">{EVALUATION_SCRIPT_URL}</span><span class="s1">&#39;</span>
+
         <span class="k">if</span> <span class="n">force_expr</span> <span class="ow">or</span> <span class="p">(</span><span class="ow">not</span> <span class="n">args</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">helper</span><span class="o">.</span><span class="n">is_jsfunc</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">)):</span>
-            <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span> <span class="p">{</span>
-                <span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">pageFunction</span><span class="p">,</span>
-                <span class="s1">&#39;contextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
-                <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                <span class="s1">&#39;userGesture&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="p">})</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">SOURCE_URL_REGEX</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">):</span>
+                    <span class="n">expressionWithSourceUrl</span> <span class="o">=</span> <span class="n">pageFunction</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">expressionWithSourceUrl</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{pageFunction}</span><span class="se">\n</span><span class="si">{suffix}</span><span class="s1">&#39;</span>
+                <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.evaluate&#39;</span><span class="p">,</span> <span class="p">{</span>
+                    <span class="s1">&#39;expression&#39;</span><span class="p">:</span> <span class="n">expressionWithSourceUrl</span><span class="p">,</span>
+                    <span class="s1">&#39;contextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
+                    <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s1">&#39;userGesture&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="p">})</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">_rewriteError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
             <span class="n">exceptionDetails</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">exceptionDetails</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span>
@@ -121,14 +138,18 @@
             <span class="n">remoteObject</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;result&#39;</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_objectHandleFactory</span><span class="p">(</span><span class="n">remoteObject</span><span class="p">)</span>
 
-        <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.callFunctionOn&#39;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s1">&#39;functionDeclaration&#39;</span><span class="p">:</span> <span class="n">pageFunction</span><span class="p">,</span>
-            <span class="s1">&#39;executionContextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
-            <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convertArgument</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span>
-            <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-            <span class="s1">&#39;userGesture&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_obj</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.callFunctionOn&#39;</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s1">&#39;functionDeclaration&#39;</span><span class="p">:</span> <span class="n">f</span><span class="s1">&#39;</span><span class="si">{pageFunction}</span><span class="se">\n</span><span class="si">{suffix}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;executionContextId&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextId</span><span class="p">,</span>
+                <span class="s1">&#39;arguments&#39;</span><span class="p">:</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_convertArgument</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span> <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">],</span>
+                <span class="s1">&#39;returnByValue&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                <span class="s1">&#39;awaitPromise&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                <span class="s1">&#39;userGesture&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="p">})</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">_rewriteError</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
         <span class="n">exceptionDetails</span> <span class="o">=</span> <span class="n">_obj</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;exceptionDetails&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">exceptionDetails</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ElementHandleError</span><span class="p">(</span><span class="s1">&#39;Evaluation failed: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
@@ -251,6 +272,13 @@
             <span class="k">return</span> <span class="n">f</span><span class="s1">&#39;JSHandle@</span><span class="si">{_type}</span><span class="s1">&#39;</span>
         <span class="k">return</span> <span class="s1">&#39;JSHandle:</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">helper</span><span class="o">.</span><span class="n">valueFromRemoteObject</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_remoteObject</span><span class="p">))</span></div></div>
+
+
+<span class="k">def</span> <span class="nf">_rewriteError</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;Cannot find context with specified id&#39;</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Execution context was destroyed, most likely because of a navigation.&#39;</span>  <span class="c1"># noqa: E501</span>
+        <span class="k">raise</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)(</span><span class="n">msg</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">error</span>
 </pre></div>
 
           </div>
