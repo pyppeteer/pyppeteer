@@ -1,7 +1,9 @@
 History
 =======
 
-## Version 0.0.24 (next version)
+## Version 0.0.24 (2018-09-12)
+
+Catch up puppeteer v1.6.0
 
 * Add `ElementHandle.isIntersectingViewport()`
 * Add `reportAnonymousScript` option to `Coverage.startJSCoverage()`
