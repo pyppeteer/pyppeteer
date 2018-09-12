@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import unittest
-
 from syncer import sync
 
 from .base import BaseTestCase
@@ -196,7 +194,6 @@ class TestCSSCoverage(BaseTestCase):
             {'start': 198, 'end': 304},
         ])
 
-    @unittest.skip('Cannot pass this test.')
     @sync
     async def test_css_ignore_injected_css(self):
         await self.page.goto(self.url + 'empty')

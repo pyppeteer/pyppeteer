@@ -257,7 +257,7 @@ class CSSCoverage(object):
     async def _onStyleSheet(self, event: Dict) -> None:
         header = event.get('header', {})
         # Ignore anonymous scripts
-        if 'sourceURL' not in header:
+        if not header.get('sourceURL'):
             return
         try:
             response = await self._client.send(
