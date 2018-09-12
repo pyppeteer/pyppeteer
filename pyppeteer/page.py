@@ -124,7 +124,7 @@ class Page(EventEmitter):
         self._networkManager = NetworkManager(client, self._frameManager)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
-        self._pageBindings: Dict[str, Callable] = dict()
+        self._pageBindings: Dict[str, Callable[..., Any]] = dict()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultNavigationTimeout = 30000  # milliseconds
         self._coverage = Coverage(client)
@@ -574,7 +574,8 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.injectFile(filePath)
 
-    async def exposeFunction(self, name: str, pyppeteerFunction: Callable
+    async def exposeFunction(self, name: str,
+                             pyppeteerFunction: Callable[..., Any]
                              ) -> None:
         """Add python function to the browser's ``window`` object as ``name``.
 
@@ -699,7 +700,7 @@ function addPageBinding(bindingName) {
 
     def _onConsoleAPI(self, event: dict) -> None:
         _id = event['executionContextId']
-        values = []
+        values: List[JSHandle] = []
         for arg in event.get('args', []):
             values.append(self._frameManager.createJSHandle(_id, arg))
         self._addConsoleMessage(event['type'], values)
