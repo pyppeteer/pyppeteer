@@ -1296,7 +1296,7 @@ function addPageBinding(bindingName) {
         * ``headerTemplate`` (str): HTML template for the print header. Should
           be valid HTML markup with following classes.
 
-          * ``data``: formatted print date
+          * ``date``: formatted print date
           * ``title``: document title
           * ``url``: document location
           * ``pageNumber``: current page number
