@@ -3,7 +3,10 @@ History
 
 ## Version 0.0.24 (next version)
 
+* Add `ElementHandle.isIntersectingViewport()`
+* Add `reportAnonymousScript` option to `Coverage.startJSCoverage()`
 * Now possible to attach to extension background pages with `Target.page()`
+* Improved reliability of clicking with `Page.click()` and `ElementHandle.click()`
 
 ## Version 0.0.23 (2018-09-10)
 

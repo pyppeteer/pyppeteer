@@ -58,6 +58,15 @@ class Coverage(object):
 
         * ``resetOnNavigation`` (bool): Whether to reset coverage on every
           navigation. Defaults to ``True``.
+        * ``reportAnonymousScript`` (bool): Whether anonymous script generated
+          by the page should be reported. Defaults to ``False``.
+
+        .. note::
+            Anonymous scripts are ones that don't have an associated url. These
+            are scripts that are dynamically created on the page using ``eval``
+            of ``new Function``. If ``reportAnonymousScript`` is set to
+            ``True``, anonymous scripts will have
+            ``__pyppeteer_evaluation_script__`` as their url.
         """
         options = merge_dict(options, kwargs)
         await self._jsCoverage.start(options)
@@ -65,8 +74,7 @@ class Coverage(object):
     async def stopJSCoverage(self) -> List:
         """Stop JS coverage measurement and get result.
 
-        Return list of coverage reports for all non-anonymous scripts. Each
-        report includes:
+        Return list of coverage reports for all scripts. Each report includes:
 
         * ``url`` (str): Script url.
         * ``text`` (str): Script content.
@@ -77,8 +85,8 @@ class Coverage(object):
           * ``end`` (int): An end offset in text, exclusive.
 
         .. note::
-           JavaScript coverage doesn't include anonymous scripts; however,
-           scripts with sourceURLs are reported.
+           JavaScript coverage doesn't include anonymous scripts by default.
+           However, scripts with sourceURLs are reported.
         """
         return await self._jsCoverage.stop()
 
