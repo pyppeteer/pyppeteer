@@ -53,8 +53,13 @@ class Target(object):
         return await self._sessionFactory()
 
     async def page(self) -> Optional[Page]:
-        """Get page of this target."""
-        if self._targetInfo['type'] == 'page' and self._page is None:
+        """Get page of this target.
+
+        If the target is not of type "page" or "background_page", return
+        ``None``.
+        """
+        if (self._targetInfo['type'] in ['page', 'background_page'] and
+                self._page is None):
             client = await self._sessionFactory()
             new_page = await Page.create(
                 client, self,

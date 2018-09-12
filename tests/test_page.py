@@ -52,7 +52,7 @@ class TestEvaluate(BaseTestCase):
                     setTimeout(() => resolve(1), 0);
                 }
         )}''')
-        self.assertIn('Protocol Error', cm.exception.args[0])
+        self.assertIn('Protocol error', cm.exception.args[0])
 
     @sync
     async def test_after_framenavigation(self):
@@ -90,6 +90,18 @@ class TestEvaluate(BaseTestCase):
         with self.assertRaises(ElementHandleError) as cm:
             await self.page.evaluate('() => not.existing.object.property')
         self.assertIn('not is not defined', cm.exception.args[0])
+
+    @sync
+    async def test_string_as_error_message(self):
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('() => { throw "qwerty"; }')
+        self.assertIn('qwerty', cm.exception.args[0])
+
+    @sync
+    async def test_number_as_error_message(self):
+        with self.assertRaises(Exception) as cm:
+            await self.page.evaluate('() => { throw 100500; }')
+        self.assertIn('100500', cm.exception.args[0])
 
     @sync
     async def test_return_complex_object(self):
@@ -217,6 +229,19 @@ class TestEvaluate(BaseTestCase):
         }'''  # noqa: E501
         await self.page.evaluate(playAudio)
         await self.page.evaluate('({})()'.format(playAudio), force_expr=True)
+
+    @sync
+    async def test_nice_error_after_navigation(self):
+        executionContext = await self.page.mainFrame.executionContext()
+
+        await asyncio.wait([
+            self.page.waitForNavigation(),
+            executionContext.evaluate('window.location.reload()'),
+        ])
+
+        with self.assertRaises(NetworkError) as cm:
+            await executionContext.evaluate('() => null')
+        self.assertIn('navigation', cm.exception.args[0])
 
 
 class TestOfflineMode(BaseTestCase):
@@ -448,6 +473,21 @@ class TestGoto(BaseTestCase):
                                         waitUntil='domcontentloaded')
         self.assertEqual(response.status, 200)
 
+    @unittest.skip('This test should be fixed')
+    @sync
+    async def test_goto_history_api_beforeunload(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.evaluate('''() => {
+            window.addEventListener(
+                'beforeunload',
+                () => history.replaceState(null, 'initial', window.location.href),
+                false,
+            );
+        }''')  # noqa: E501
+        response = await self.page.goto(self.url + 'static/grid.html')
+        self.assertTrue(response)
+        self.assertEqual(response.status, 200)
+
     @sync
     async def test_goto_networkidle(self):
         with self.assertRaises(ValueError):
@@ -574,10 +614,11 @@ class TestWaitForNavigation(BaseTestCase):
     async def test_click_anchor_link(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('<a href="#foobar">foobar</a>')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'empty#foobar')
 
     @sync
@@ -597,10 +638,11 @@ class TestWaitForNavigation(BaseTestCase):
                 function pushState() { history.pushState({}, '', 'wow.html') }
             </script>
         ''')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'wow.html')
 
     @sync
@@ -614,10 +656,11 @@ class TestWaitForNavigation(BaseTestCase):
                 }
             </script>
         ''')
-        await asyncio.wait([
-            self.page.click('a'),
+        results = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a'),
+        )
+        self.assertIsNone(results[0])
         self.assertEqual(self.page.url, self.url + 'replaced.html')
 
     @sync
@@ -634,19 +677,22 @@ class TestWaitForNavigation(BaseTestCase):
             </script>
         ''')
         self.assertEqual(self.page.url, self.url + 'second.html')
-        await asyncio.wait([
+        results_back = await asyncio.gather(
+            self.page.waitForNavigation(),
             self.page.click('a#back'),
-            self.page.waitForNavigation(),
-        ])
+        )
+        self.assertIsNone(results_back[0])
         self.assertEqual(self.page.url, self.url + 'first.html')
-        await asyncio.wait([
-            self.page.click('a#forward'),
+
+        results_forward = await asyncio.gather(
             self.page.waitForNavigation(),
-        ])
+            self.page.click('a#forward'),
+        )
+        self.assertIsNone(results_forward[0])
         self.assertEqual(self.page.url, self.url + 'second.html')
 
     @sync
-    async def test_subframe_issues(self) -> None:
+    async def test_subframe_issues(self):
         navigationPromise = asyncio.ensure_future(
             self.page.goto(self.url + 'static/one-frame.html'))
         frame = await waitEvent(self.page, 'frameattached')
@@ -659,6 +705,108 @@ class TestWaitForNavigation(BaseTestCase):
         self.page.on('framenavigated', is_same_frame)
         asyncio.ensure_future(frame.evaluate('window.stop()'))
         await navigationPromise
+
+
+class TestWaitForRequest(BaseTestCase):
+    @sync
+    async def test_wait_for_request(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForRequest(self.url + 'static/digits/2.png'),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_predicate(self):
+        await self.page.goto(self.url + 'empty')
+
+        def predicate(req):
+            return req.url == self.url + 'static/digits/2.png'
+
+        results = await asyncio.gather(
+            self.page.waitForRequest(predicate),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForRequest(
+                self.url + 'static/digits/2.png',
+                timeout=0,
+            ),
+            self.page.evaluate('''() => setTimeout(() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }, 50)''')
+        )
+        request = results[0]
+        self.assertEqual(request.url, self.url + 'static/digits/2.png')
+
+
+class TestWaitForResponse(BaseTestCase):
+    @sync
+    async def test_wait_for_response(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForResponse(self.url + 'static/digits/2.png'),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_predicate(self):
+        await self.page.goto(self.url + 'empty')
+
+        def predicate(response):
+            return response.url == self.url + 'static/digits/2.png'
+
+        results = await asyncio.gather(
+            self.page.waitForResponse(predicate),
+            self.page.evaluate('''() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
+
+    @sync
+    async def test_no_timeout(self):
+        await self.page.goto(self.url + 'empty')
+        results = await asyncio.gather(
+            self.page.waitForResponse(
+                self.url + 'static/digits/2.png',
+                timeout=0,
+            ),
+            self.page.evaluate('''() => setTimeout(() => {
+                fetch('/static/digits/1.png');
+                fetch('/static/digits/2.png');
+                fetch('/static/digits/3.png');
+            }, 50)''')
+        )
+        response = results[0]
+        self.assertEqual(response.url, self.url + 'static/digits/2.png')
 
 
 class TestGoBack(BaseTestCase):
@@ -1223,6 +1371,12 @@ class TestViewport(BaseTestCase):
             await self.page.evaluate('document.body.textContent.trim()'),
             'YES'
         )
+
+    @sync
+    async def test_detect_touch_viewport_touch(self):
+        await self.page.setViewport({'width': 800, 'height': 600, 'hasTouch': True})  # noqa: E501
+        await self.page.addScriptTag({'url': self.url + 'static/modernizr.js'})
+        self.assertTrue(await self.page.evaluate('() => Modernizr.touchevents'))  # noqa: E501
 
     @sync
     async def test_landscape_emulation(self):

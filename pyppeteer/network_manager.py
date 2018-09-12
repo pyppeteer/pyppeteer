@@ -568,10 +568,30 @@ class Request(object):
         If request interception is not enabled, raise ``NetworkError``.
 
         ``errorCode`` is an optional error code string. Defaults to ``failed``,
-        could be one of the following: ``aborted``, ``accesdenied``,
-        ``addressunreachable``, ``connectionaborted``, ``connectionclosed``,
-        ``connectionfailed``, ``connnectionrefused``, ``connectionreset``,
-        ``internetdisconnected``, ``namenotresolved``, ``timedout``, ``failed``
+        could be one of the following:
+
+        - ``aborted``: An operation was aborted (due to user action).
+        - ``accesdenied``: Permission to access a resource, other than the
+          network, was denied.
+        - ``addressunreachable``: The IP address is unreachable. This usually
+          means that there is no route to the specified host or network.
+        - ``blockedbyclient``: The client chose to block the request.
+        - ``blockedbyresponse``: The request failed because the request was
+          delivered along with requirements which are not met
+          ('X-Frame-Options' and 'Content-Security-Policy' ancestor check,
+          for instance).
+        - ``connectionaborted``: A connection timeout as a result of not
+          receiving an ACK for data sent.
+        - ``connectionclosed``: A connection was closed (corresponding to a TCP
+          FIN).
+        - ``connectionfailed``: A connection attempt failed.
+        - ``connnectionrefused``: A connection attempt was refused.
+        - ``connectionreset``: A connection was reset (corresponding to a TCP
+          RST).
+        - ``internetdisconnected``: The Internet connection has been lost.
+        - ``namenotresolved``: The host name could not be resolved.
+        - ``timedout``: An operation timed out.
+        - ``failed``: A generic failure occurred.
         """
         errorReason = errorReasons[errorCode]
         if not errorReason:
@@ -594,6 +614,8 @@ errorReasons = {
     'aborted': 'Aborted',
     'accessdenied': 'AccessDenied',
     'addressunreachable': 'AddressUnreachable',
+    'blockedbyclient': 'BlockedByClient',
+    'blockedbyresponse': 'BlockedByResponse',
     'connectionaborted': 'ConnectionAborted',
     'connectionclosed': 'ConnectionClosed',
     'connectionfailed': 'ConnectionFailed',

@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
+from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
 from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
 
@@ -57,6 +58,15 @@ class Coverage(object):
 
         * ``resetOnNavigation`` (bool): Whether to reset coverage on every
           navigation. Defaults to ``True``.
+        * ``reportAnonymousScript`` (bool): Whether anonymous script generated
+          by the page should be reported. Defaults to ``False``.
+
+        .. note::
+            Anonymous scripts are ones that don't have an associated url. These
+            are scripts that are dynamically created on the page using ``eval``
+            of ``new Function``. If ``reportAnonymousScript`` is set to
+            ``True``, anonymous scripts will have
+            ``__pyppeteer_evaluation_script__`` as their url.
         """
         options = merge_dict(options, kwargs)
         await self._jsCoverage.start(options)
@@ -64,8 +74,7 @@ class Coverage(object):
     async def stopJSCoverage(self) -> List:
         """Stop JS coverage measurement and get result.
 
-        Return list of coverage reports for all non-anonymous scripts. Each
-        report includes:
+        Return list of coverage reports for all scripts. Each report includes:
 
         * ``url`` (str): Script url.
         * ``text`` (str): Script content.
@@ -76,8 +85,8 @@ class Coverage(object):
           * ``end`` (int): An end offset in text, exclusive.
 
         .. note::
-           JavaScript coverage doesn't include anonymous scripts; however,
-           scripts with sourceURLs are reported.
+           JavaScript coverage doesn't include anonymous scripts by default.
+           However, scripts with sourceURLs are reported.
         """
         return await self._jsCoverage.stop()
 
@@ -132,6 +141,7 @@ class JSCoverage(object):
             raise PageError('JSCoverage is always enabled.')
         self._resetOnNavigation = (True if 'resetOnNavigation' not in options
                                    else bool(options['resetOnNavigation']))
+        self._reportAnonymousScript = bool(options.get('reportAnonymousScript'))  # noqa: E501
         self._enabled = True
         self._scriptURLs.clear()
         self._scriptSources.clear()
@@ -157,10 +167,18 @@ class JSCoverage(object):
         self._scriptSources.clear()
 
     async def _onScriptParsed(self, event: Dict) -> None:
-        if 'url' not in event:
+        # Ignore pyppeteer-injected scripts
+        if event.get('url') == EVALUATION_SCRIPT_URL:
             return
+        # Ignore other anonymous scripts unleess the reportAnonymousScript
+        # option is True
+        if not event.get('url') and not self._reportAnonymousScript:
+            return
+
         scriptId = event.get('scriptId')
         url = event.get('url')
+        if not url and self._reportAnonymousScript:
+            url = f'debugger://VM{scriptId}'
         try:
             response = await self._client.send(
                 'Debugger.getScriptSource',
@@ -241,7 +259,7 @@ class CSSCoverage(object):
     async def _onStyleSheet(self, event: Dict) -> None:
         header = event.get('header', {})
         # Ignore anonymous scripts
-        if 'sourceURL' not in header:
+        if not header.get('sourceURL'):
             return
         try:
             response = await self._client.send(

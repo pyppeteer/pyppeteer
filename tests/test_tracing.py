@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import asyncio
 import json
 from pathlib import Path
 import unittest
@@ -15,10 +14,10 @@ from .base import BaseTestCase
 
 class TestTracing(BaseTestCase):
     def setUp(self):
-        super().setUp()
         self.outfile = Path(__file__).parent / 'trace.json'
         if self.outfile.is_file():
             self.outfile.unlink()
+        super().setUp()
 
     def tearDown(self):
         if self.outfile.is_file():
@@ -32,7 +31,6 @@ class TestTracing(BaseTestCase):
         })
         await self.page.goto(self.url)
         await self.page.tracing.stop()
-        await asyncio.sleep(0.1)
         self.assertTrue(self.outfile.is_file())
 
     @sync
@@ -42,7 +40,6 @@ class TestTracing(BaseTestCase):
             'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
         })
         await self.page.tracing.stop()
-        await asyncio.sleep(0.1)
         self.assertTrue(self.outfile.is_file())
         with self.outfile.open() as f:
             trace_json = json.load(f)

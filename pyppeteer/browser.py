@@ -204,12 +204,17 @@ class Browser(EventEmitter):
                 if target._isInitialized]
 
     async def pages(self) -> List[Page]:
-        """Get all pages of this browser."""
+        """Get all pages of this browser.
+
+        Non visible pages, such as ``"background_page"``, will not be listed
+        here. You can find then using :meth:`pyppeteer.target.Target.page`.
+        """
         pages = []
         for target in self.targets():
-            page = await target.page()
-            if page:
-                pages.append(page)
+            if target.type == 'page':
+                page = await target.page()
+                if page:
+                    pages.append(page)
         return pages
 
     async def version(self) -> str:

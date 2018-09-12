@@ -29,7 +29,9 @@ class Worker(EventEmitter):
     """  # noqa: E501
 
     def __init__(self, client: 'CDPSession', url: str,  # noqa: C901
-                 consoleAPICalled: Callable) -> None:
+                 consoleAPICalled: Callable[[str, List[JSHandle]], None],
+                 exceptionThrown: Callable[[Dict], None]
+                 ) -> None:
         super().__init__()
         self._client = client
         self._url = url
@@ -39,7 +41,7 @@ class Worker(EventEmitter):
         def jsHandleFactory(remoteObject: Dict) -> JSHandle:
             return None  # type: ignore
 
-        def _on_execution_content_created(event: Dict) -> None:
+        def onExecutionContentCreated(event: Dict) -> None:
             _execution_contexts: List[ExecutionContext] = []
             nonlocal jsHandleFactory
 
@@ -53,7 +55,7 @@ class Worker(EventEmitter):
             self._executionContextCallback(executionContext)
 
         self._client.on('Runtime.executionContextCreated',
-                        _on_execution_content_created)
+                        onExecutionContentCreated)
         try:
             # This might fail if the target is closed before we recieve all
             # execution contexts.
@@ -62,12 +64,16 @@ class Worker(EventEmitter):
             debugError(logger, e)
 
         def onConsoleAPICalled(event: Dict) -> None:
-            args = []
+            args: List[JSHandle] = []
             for arg in event.get('args', []):
                 args.append(jsHandleFactory(arg))
             consoleAPICalled(event['type'], args)
 
         self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
+        self._client.on(
+            'Runtime.exceptionThrown',
+            lambda exception: exceptionThrown(exception['exceptionDetails']),
+        )
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
         self._executionContextPromise.set_result(value)

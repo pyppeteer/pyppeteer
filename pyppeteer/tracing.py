@@ -4,14 +4,25 @@
 """Tracing module."""
 
 from pathlib import Path
-from typing import Any, Awaitable
+from typing import Any
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.util import merge_dict
 
 
 class Tracing(object):
-    """Tracing class."""
+    """Tracing class.
+
+    You can use :meth:`start` and :meth:`stop` to create a trace file which can
+    be opend in Chrome DevTools or
+    `timeline viewer <https://chromedevtools.github.io/timeline-viewer/>`_.
+
+    .. code::
+
+        await page.tracing.start({'path': 'trace.json'})
+        await page.goto('https://www.google.com')
+        await page.tracing.stop()
+    """
 
     def __init__(self, client: CDPSession) -> None:
         self._client = client
@@ -38,6 +49,7 @@ class Tracing(object):
             'blink.console', 'blink.user_timing', 'latencyInfo',
             'disabled-by-default-devtools.timeline.stack',
             'disabled-by-default-v8.cpu_profiler',
+            'disabled-by-default-v8.cpu_profiler.hires',
         ]
         categoriesArray = options.get('categories', defaultCategories)
 
@@ -51,10 +63,10 @@ class Tracing(object):
             'categories': ','.join(categoriesArray),
         })
 
-    async def stop(self) -> Awaitable:
+    async def stop(self) -> str:
         """Stop tracing.
 
-        :return: trace data.
+        :return: trace data as string.
         """
         contentPromise = self._client._loop.create_future()
         self._client.once(
@@ -62,8 +74,7 @@ class Tracing(object):
             lambda event: self._client._loop.create_task(
                 self._readStream(event.get('stream'), self._path)
             ).add_done_callback(
-                lambda fut: contentPromise.set_result(
-                    fut.result())  # type: ignore
+                lambda fut: contentPromise.set_result(fut.result())
             )
         )
         await self._client.send('Tracing.end')

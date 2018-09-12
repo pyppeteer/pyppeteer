@@ -124,7 +124,7 @@ class Page(EventEmitter):
         self._networkManager = NetworkManager(client, self._frameManager)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
-        self._pageBindings: Dict[str, Callable] = dict()
+        self._pageBindings: Dict[str, Callable[..., Any]] = dict()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultNavigationTimeout = 30000  # milliseconds
         self._coverage = Coverage(client)
@@ -152,6 +152,7 @@ class Page(EventEmitter):
                 session,
                 targetInfo['url'],
                 self._addConsoleMessage,
+                self._handleException,
             )
             self._workers[sessionId] = worker
             self.emit(Page.Events.WorkerCreated, worker)
@@ -191,6 +192,8 @@ class Page(EventEmitter):
                   lambda event: self.emit(Page.Events.Load))
         client.on('Runtime.consoleAPICalled',
                   lambda event: self._onConsoleAPI(event))
+        client.on('Runtime.bindingCalled',
+                  lambda event: self._onBindingCalled(event))
         client.on('Page.javascriptDialogOpening',
                   lambda event: self._onDialog(event))
         client.on('Runtime.exceptionThrown',
@@ -421,9 +424,9 @@ class Page(EventEmitter):
         return await frame.querySelectorAll(selector)
 
     async def xpath(self, expression: str) -> List[ElementHandle]:
-        """Evaluate XPath expression.
+        """Evaluate the XPath expression.
 
-        If there is no such element in this page, return None.
+        If there are no such elements in this page, return an empty list.
 
         :arg str expression: XPath string to be evaluated.
         """
@@ -571,7 +574,8 @@ class Page(EventEmitter):
             raise PageError('no main frame.')
         return await frame.injectFile(filePath)
 
-    async def exposeFunction(self, name: str, pyppeteerFunction: Callable
+    async def exposeFunction(self, name: str,
+                             pyppeteerFunction: Callable[..., Any]
                              ) -> None:
         """Add python function to the browser's ``window`` object as ``name``.
 
@@ -589,6 +593,7 @@ class Page(EventEmitter):
 
         addPageBinding = '''
 function addPageBinding(bindingName) {
+  const binding = window[bindingName];
   window[bindingName] = async(...args) => {
     const me = window[bindingName];
     let callbacks = me['callbacks'];
@@ -599,13 +604,13 @@ function addPageBinding(bindingName) {
     const seq = (me['lastSeq'] || 0) + 1;
     me['lastSeq'] = seq;
     const promise = new Promise(fulfill => callbacks.set(seq, fulfill));
-    // eslint-disable-next-line no-console
-    console.debug('driver:page-binding', JSON.stringify({name: bindingName, seq, args}));
+    binding(JSON.stringify({name: bindingName, seq, args}));
     return promise;
   };
 }
         '''  # noqa: E501
         expression = helper.evaluationString(addPageBinding, name)
+        await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument',
                                 {'source': expression})
 
@@ -694,36 +699,34 @@ function addPageBinding(bindingName) {
         self.emit(Page.Events.PageError, PageError(message))
 
     def _onConsoleAPI(self, event: dict) -> None:
-        _args = event.get('args', [])
-        if (event.get('type') == 'debug' and _args and
-                _args[0].get('value') == 'driver:page-binding'):
-            obj = json.loads(_args[1]['value'])
-            name = obj.get('name')
-            seq = obj.get('seq')
-            args = obj.get('args')
-            result = self._pageBindings[name](*args)
-
-            deliverResult = '''
-function deliverResult(name, seq, result) {
-  window[name]['callbacks'].get(seq)(result);
-  window[name]['callbacks'].delete(seq);
-}
-            '''
-            expression = helper.evaluationString(
-                deliverResult, name, seq, result)
-            self._client._loop.create_task(self._send(
-                'Runtime.evaluate', {
-                    'expression': expression,
-                    'contextId': event['executionContextId'],
-                }
-            ))
-            return
-
         _id = event['executionContextId']
-        values = []
+        values: List[JSHandle] = []
         for arg in event.get('args', []):
             values.append(self._frameManager.createJSHandle(_id, arg))
         self._addConsoleMessage(event['type'], values)
+
+    def _onBindingCalled(self, event: Dict) -> None:
+        obj = json.loads(event['payload'])
+        name = obj['name']
+        seq = obj['seq']
+        args = obj['args']
+        result = self._pageBindings[name](*args)
+
+        deliverResult = '''
+            function deliverResult(name, seq, result) {
+                window[name]['callbacks'].get(seq)(result);
+                window[name]['callbacks'].delete(seq);
+            }
+        '''
+
+        expression = helper.evaluationString(deliverResult, name, seq, result)
+        try:
+            self._client.send('Runtime.evaluate', {
+                'expression': expression,
+                'contextId': event['executionContextId'],
+            })
+        except Exception as e:
+            helper.debugError(logger, e)
 
     def _addConsoleMessage(self, type: str, args: List[JSHandle]) -> None:
         if not self.listeners(Page.Events.Console):
@@ -791,7 +794,7 @@ function deliverResult(name, seq, result) {
         """Go to the ``url``.
 
         :arg string url: URL to navigate page to. The url should include
-            scheme, e.g. ``https://``.
+                         scheme, e.g. ``https://``.
 
         Available options are:
 
@@ -809,6 +812,22 @@ function deliverResult(name, seq, result) {
             for at least 500 ms.
           * ``networkidle2``: when there are no more than 2 network connections
             for at least 500 ms.
+
+        The ``Page.goto`` will raise errors if:
+
+        * there's an SSL error (e.g. in case of self-signed certificates)
+        * target URL is invalid
+        * the ``timeout`` is exceeded during navigation
+        * then main resource failed to load
+
+        .. note::
+            :meth:`goto` either riase error or return a main resource response.
+            The only exceptions are navigation to ``about:blank`` or navigation
+            to the same URL with a different hash, which would succeed and
+            return ``None``.
+
+        .. note::
+            Headless mode doesn't support navigation to a PDF document.
         """
         options = merge_dict(options, kwargs)
         mainFrame = self._frameManager.mainFrame
@@ -876,8 +895,8 @@ function deliverResult(name, seq, result) {
         which will indirectly cause the page to navigate. In case of navigation
         to a different anchor or navigation due to
         `History API <https://developer.mozilla.org/en-US/docs/Web/API/History_API>`_
-        usage, the
-        navigation will return ``None``.
+        usage, the navigation will return ``None``.
+
         Consider this example:
 
         .. code::
@@ -920,6 +939,80 @@ function deliverResult(name, seq, result) {
 
         response = responses.get(self.url, None)
         return response
+
+    async def waitForRequest(self, urlOrPredicate: Union[str, Callable[[Request], bool]],  # noqa: E501
+                             options: Dict = None, **kwargs: Any) -> Request:
+        """Wait for request.
+
+        :arg urlOrPredicate: A URL or function to wait for.
+
+        This method accepts below options:
+
+        * ``timeout`` (int|float): Maximum wait time in milliseconds, defaults
+          to 30 seconds, pass ``0`` to disable the timeout.
+
+        Example:
+
+        .. code::
+
+            firstRequest = await page.waitForRequest('http://example.com/resource')
+            finalRequest = await page.waitForRequest(lambda req: req.url == 'http://example.com' and req.method == 'GET')
+            return firstRequest.url
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+
+        def predicate(request: Request) -> bool:
+            if isinstance(urlOrPredicate, str):
+                return urlOrPredicate == request.url
+            if callable(urlOrPredicate):
+                return bool(urlOrPredicate(request))
+            return False
+
+        return await helper.waitForEvent(
+            self._networkManager,
+            NetworkManager.Events.Request,
+            predicate,
+            timeout,
+            self._client._loop,
+        )
+
+    async def waitForResponse(self, urlOrPredicate: Union[str, Callable[[Response], bool]],  # noqa: E501
+                              options: Dict = None, **kwargs: Any) -> Response:
+        """Wait for response.
+
+        :arg urlOrPredicate: A URL or function to wait for.
+
+        This method accepts below options:
+
+        * ``timeout`` (int|float): Maximum wait time in milliseconds, defaults
+          to 30 seconds, pass ``0`` to disable the timeout.
+
+        Example:
+
+        .. code::
+
+            firstResponse = await page.waitForResponse('http://example.com/resource')
+            finalResponse = await page.waitForResponse(lambda res: res.url == 'http://example.com' and res.status == 200)
+            return finalResponse.ok
+        """  # noqa: E501
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+
+        def predicate(response: Response) -> bool:
+            if isinstance(urlOrPredicate, str):
+                return urlOrPredicate == response.url
+            if callable(urlOrPredicate):
+                return bool(urlOrPredicate(response))
+            return False
+
+        return await helper.waitForEvent(
+            self._networkManager,
+            NetworkManager.Events.Response,
+            predicate,
+            timeout,
+            self._client._loop,
+        )
 
     async def goBack(self, options: dict = None, **kwargs: Any
                      ) -> Optional[Response]:
@@ -1227,8 +1320,62 @@ function deliverResult(name, seq, result) {
           * ``bottom`` (str): Bottom margin, accepts values labeled with units.
           * ``left`` (str): Left margin, accepts values labeled with units.
 
-        :return bytes: Return generated PDF ``bytes`` object.
-        """
+        :return: Return generated PDF ``bytes`` object.
+
+        .. note::
+            Generating a pdf is currently only supported in headless mode.
+
+        :meth:`pdf` generates a pdf of the page with ``print`` css media. To
+        generate a pdf with ``screen`` media, call
+        ``page.emulateMedia('screen')`` before calling :meth:`pdf`.
+
+        .. note::
+            By default, :meth:`pdf` generates a pdf with modified colors for
+            printing. Use the ``--webkit-print-color-adjust`` property to force
+            rendering of exact colors.
+
+        .. code::
+
+            await page.emulateMedia('screen')
+            await page.pdf({'path': 'page.pdf'})
+
+        The ``width``, ``height``, and ``margin`` options accept values labeled
+        with units. Unlabeled values are treated as pixels.
+
+        A few exapmles:
+
+        - ``page.pdf({'width': 100})``: prints with width set to 100 pixels.
+        - ``page.pdf({'width': '100px'})``: prints with width set to 100 pixels.
+        - ``page.pdf({'width': '10cm'})``: prints with width set to 100 centimeters.
+
+        All available units are:
+
+        - ``px``: pixel
+        - ``in``: inch
+        - ``cm``: centimeter
+        - ``mm``: millimeter
+
+        The format options are:
+
+        - ``Letter``: 8.5in x 11in
+        - ``Legal``: 8.5in x 14in
+        - ``Tabloid``: 11in x 17in
+        - ``Ledger``: 17in x 11in
+        - ``A0``: 33.1in x 46.8in
+        - ``A1``: 23.4in x 33.1in
+        - ``A2``: 16.5in x 23.4in
+        - ``A3``: 11.7in x 16.5in
+        - ``A4``: 8.27in x 11.7in
+        - ``A5``: 5.83in x 8.27in
+        - ``A6``: 4.13in x 5.83in
+
+        .. note::
+            ``headerTemplate`` and ``footerTemplate`` markup have the following
+            limitations:
+
+            1. Script tags inside templates are not evaluated.
+            2. Page styles are not visible inside templates.
+        """  # noqa: E501
         options = merge_dict(options, kwargs)
         scale = options.get('scale', 1)
         displayHeaderFooter = bool(options.get('displayHeaderFooter'))

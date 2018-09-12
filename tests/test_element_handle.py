@@ -45,6 +45,39 @@ class TestBoundingBox(BaseTestCase):
         element = await self.page.J('div')
         self.assertIsNone(await element.boundingBox())
 
+    @sync
+    async def test_force_layout(self):
+        await self.page.setViewport({'width': 500, 'height': 500})
+        await self.page.setContent(
+            '<div style="width: 100px; height: 100px;">hello</div>')
+        elementHandle = await self.page.J('div')
+        await self.page.evaluate(
+            'element => element.style.height = "200px"',
+            elementHandle,
+        )
+        box = await elementHandle.boundingBox()
+        self.assertEqual(box, {
+            'x': 8,
+            'y': 8,
+            'width': 100,
+            'height': 200,
+        })
+
+    @sync
+    async def test_svg(self):
+        await self.page.setContent('''
+            <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
+                <rect id="theRect" x="30" y="50" width="200" height="300"></rect>
+            </svg>
+        ''')  # noqa: E501
+        element = await self.page.J('#therect')
+        pptrBoundingBox = await element.boundingBox()
+        webBoundingBox = await self.page.evaluate('''e => {
+            const rect = e.getBoundingClientRect();
+            return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
+        }''', element)  # noqa: E501
+        self.assertEqual(pptrBoundingBox, webBoundingBox)
+
 
 class TestBoxModel(BaseTestCase):
     def setUp(self):
@@ -226,6 +259,16 @@ class TestHover(BaseTestCase):
         )
 
 
+class TestIsIntersectingViewport(BaseTestCase):
+    @sync
+    async def test_is_intersecting_viwport(self):
+        await self.page.goto(self.url + 'static/offscreenbuttons.html')
+        for i in range(11):
+            button = await self.page.J('#btn{}'.format(i))
+            visible = i < 10
+            self.assertEqual(await button.isIntersectingViewport(), visible)
+
+
 class TestScreenshot(BaseTestCase):
     @sync
     async def test_screenshot_larger_than_viewport(self):
@@ -257,7 +300,7 @@ div.to-screenshot {
 
 class TestQuerySelector(BaseTestCase):
     @sync
-    async def test_element_handle_J(self):
+    async def test_J(self):
         await self.page.setContent('''
 <html><body><div class="second"><div class="inner">A</div></div></body></html>
         ''')
@@ -268,7 +311,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, 'A')
 
     @sync
-    async def test_element_handle_J_none(self):
+    async def test_J_none(self):
         await self.page.setContent('''
 <html><body><div class="second"><div class="inner">A</div></div></body></html>
         ''')
@@ -277,7 +320,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertIsNone(second)
 
     @sync
-    async def test_element_handle_Jeval(self):
+    async def test_Jeval(self):
         await self.page.setContent('''<html><body>
             <div class="tweet">
                 <div class="like">100</div>
@@ -289,7 +332,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, '100')
 
     @sync
-    async def test_element_handle_Jeval_subtree(self):
+    async def test_Jeval_subtree(self):
         htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
@@ -297,7 +340,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, 'a-child-div')
 
     @sync
-    async def test_element_handle_with_missing_selector(self):
+    async def test_Jeval_with_missing_selector(self):
         htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
@@ -307,7 +350,7 @@ class TestQuerySelector(BaseTestCase):
                       cm.exception.args[0])
 
     @sync
-    async def test_element_handle_JJ(self):
+    async def test_JJ(self):
         await self.page.setContent('''
 <html><body><div>A</div><br/><div>B</div></body></html>
         ''')
@@ -323,7 +366,7 @@ class TestQuerySelector(BaseTestCase):
             self.assertEqual(result, ['A', 'B'])
 
     @sync
-    async def test_element_handle_JJ_empty(self):
+    async def test_JJ_empty(self):
         await self.page.setContent('''
 <html><body><span>A</span><br/><span>B</span></body></html>
         ''')
@@ -332,7 +375,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(len(elements), 0)
 
     @sync
-    async def test_element_handle_JJEval(self):
+    async def test_JJEval(self):
         await self.page.setContent(
             '<html><body><div class="tweet"><div class="like">100</div>'
             '<div class="like">10</div></div></body></html>'
@@ -343,7 +386,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, ['100', '10'])
 
     @sync
-    async def test_element_handle_JJEval_subtree(self):
+    async def test_JJEval_subtree(self):
         await self.page.setContent(
             '<div class="a">not-a-child-div</div>'
             '<div id="myId">'
@@ -357,18 +400,15 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, ['a1-child-div', 'a2-child-div'])
 
     @sync
-    async def test_element_handle_JJEval_missing_selector(self):
+    async def test_JJEval_missing_selector(self):
         await self.page.setContent(
             '<div class="a">not-a-child-div</div><div id="myId"></div>')
         elementHandle = await self.page.J('#myId')
-        with self.assertRaises(ElementHandleError) as cm:
-            await elementHandle.JJeval(
-                '.a', 'nodes => nodes.map(n => n.innerText)')
-        self.assertIn('Error: failed to find elements matching selector ".a"',
-                      cm.exception.args[0])
+        nodesLength = await elementHandle.JJeval('.a', 'nodes => nodes.length')
+        self.assertEqual(nodesLength, 0)
 
     @sync
-    async def test_element_handle_xpath(self):
+    async def test_xpath(self):
         await self.page.setContent(
             '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
         )
@@ -379,7 +419,7 @@ class TestQuerySelector(BaseTestCase):
         self.assertEqual(content, 'A')
 
     @sync
-    async def test_element_handle_xpath_not_found(self):
+    async def test_xpath_not_found(self):
         await self.page.goto(self.url + 'empty')
         html = await self.page.querySelector('html')
         element = await html.xpath('/div[contains(@class, \'third\')]')

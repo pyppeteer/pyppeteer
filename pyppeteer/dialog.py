@@ -12,6 +12,24 @@ class Dialog(object):
     """Dialog class.
 
     Dialog objects are dispatched by page via the ``dialog`` event.
+
+    An example of using ``Dialog`` class:
+
+    .. code::
+
+        browser = await launch()
+        page = await browser.newPage()
+
+        async def close_dialog(dialog):
+            print(dialog.message)
+            await dialog.dismiss()
+            await browser.close()
+
+        page.on(
+            'dialog',
+            lambda dialog: asyncio.ensure_future(close_dialog(dialog))
+        )
+        await page.evaluate('() => alert("1")')
     """
 
     Type = SimpleNamespace(

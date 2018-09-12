@@ -16,6 +16,16 @@ from .utils import waitEvent
 
 
 class TestBrowser(unittest.TestCase):
+    extensionPath = Path(__file__).parent / 'static' / 'simple-extension'
+    extentionOptions = {
+        'headless': False,
+        'args': [
+            '--no-sandbox',
+            '--disable-extensions-except={}'.format(extensionPath),
+            '--load-extensions={}'.format(extensionPath),
+        ]
+    }
+
     @sync
     async def test_browser_process(self):
         browser = await launch(DEFAULT_OPTIONS)
@@ -89,15 +99,7 @@ class TestBrowser(unittest.TestCase):
     @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
     @sync
     async def test_background_target_type(self):
-        extensionPath = Path(__file__).parent / 'static' / 'simple-extension'
-        browser = await launch(
-            headless=False,
-            args=[
-                '--no-sandbox',
-                '--disable-extensions-except={}'.format(extensionPath),
-                '--load-extensions={}'.format(extensionPath),
-            ]
-        )
+        browser = await launch(self.extentionOptions)
         page = await browser.newPage()
         targets = browser.targets()
         backgroundPageTargets = [t for t in targets if t.type == 'background_page']  # noqa: E501
@@ -133,6 +135,20 @@ class TestBrowser(unittest.TestCase):
         urls.sort()
         self.assertEqual(urls, [example_page, 'https://google.com/'])
         await browser.close()
+
+    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @sync
+    async def test_background_page(self):
+        browserWithExtension = await launch(self.extentionOptions)
+        targets = browserWithExtension.targets()
+        backgroundPageTarget = None
+        for target in targets:
+            if target.type == 'background_page':
+                backgroundPageTarget = target
+        self.assertIsNotNone(backgroundPageTarget)
+        page = await backgroundPageTarget.page()
+        self.assertEqual(await page.evaluate('2 * 3'), 6)
+        await browserWithExtension.close()
 
 
 class TestPageClose(BaseTestCase):

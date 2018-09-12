@@ -65,34 +65,59 @@ class ElementHandle(JSHandle):
         return self._frameManager.frame(node_obj['frameId'])
 
     async def _scrollIntoViewIfNeeded(self) -> None:
-        error = await self.executionContext.evaluate(
-            '''element => {
+        error = await self.executionContext.evaluate('''
+            async element => {
                 if (!element.isConnected)
                     return 'Node is detached from document';
                 if (element.nodeType !== Node.ELEMENT_NODE)
                     return 'Node is not of type HTMLElement';
-                element.scrollIntoViewIfNeeded();
+                const visibleRatio = await new Promise(resolve => {
+                    const observer = new IntersectionObserver(entries => {
+                        resolve(entries[0].intersectionRatio);
+                        observer.disconnect();
+                    });
+                    observer.observe(element);
+                });
+                if (visibleRatio !== 1.0)
+                    element.scrollIntoView({
+                        block: 'center',
+                        inline: 'center',
+                        behavior: 'instant',
+                    });
                 return false;
             }''', self)
         if error:
             raise ElementHandleError(error)
 
-    async def _visibleCenter(self) -> Dict[str, float]:
-        await self._scrollIntoViewIfNeeded()
-        box = await self._assertBoundingBox()
-        if not box:
-            raise ElementHandleError('Node is not visible.')
-        return {
-            'x': box['x'] + box['width'] / 2,
-            'y': box['y'] + box['height'] / 2,
-        }
+    async def _clickablePoint(self) -> Dict[str, float]:  # noqa: C901
+        result = None
+        try:
+            result = await self._client.send('DOM.getContentQuads', {
+                'objectId': self._remoteObject.get('objectId'),
+            })
+        except Exception as e:
+            debugError(logger, e)
 
-    async def _assertBoundingBox(self) -> Dict:
-        boundingBox = await self.boundingBox()
-        if boundingBox:
-            return boundingBox
-        raise ElementHandleError(
-            'Node is either not visible or not an HTMLElement')
+        if not result or not result.get('quads'):
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
+        quads = []
+        for _quad in result.get('quads'):
+            _q = self._fromProtocolQuad(_quad)
+            if _computeQuadArea(_q) > 1:
+                quads.append(_q)
+        if not quads:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
+        quad = quads[0]
+        x = 0
+        y = 0
+        for point in quad:
+            x += point['x']
+            y += point['y']
+        return {'x': x / 4, 'y': y / 4}
 
     async def _getBoxModel(self) -> Optional[Dict]:
         try:
@@ -119,7 +144,8 @@ class ElementHandle(JSHandle):
         If needed, this method scrolls eleemnt into view. If this element is
         detached from DOM tree, the method raises an ``ElementHandleError``.
         """
-        obj = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
@@ -139,7 +165,8 @@ class ElementHandle(JSHandle):
           ``mouseup`` in milliseconds. Defaults to 0.
         """
         options = merge_dict(options, kwargs)
-        obj = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
         await self._page.mouse.click(x, y, options)
@@ -159,7 +186,8 @@ class ElementHandle(JSHandle):
         If needed, this method scrolls element into view. If the element is
         detached from DOM, the method raises ``ElementHandleError``.
         """
-        center = await self._visibleCenter()
+        await self._scrollIntoViewIfNeeded()
+        center = await self._clickablePoint()
         x = center.get('x', 0)
         y = center.get('y', 0)
         await self._page.touchscreen.tap(x, y)
@@ -266,7 +294,11 @@ class ElementHandle(JSHandle):
         options = merge_dict(options, kwargs)
 
         needsViewportReset = False
-        boundingBox = await self._assertBoundingBox()
+        boundingBox = await self.boundingBox()
+        if not boundingBox:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
+
         original_viewport = copy.deepcopy(self._page.viewport)
 
         if (boundingBox['width'] > original_viewport['width'] or
@@ -285,6 +317,12 @@ class ElementHandle(JSHandle):
             new_viewport.update(newViewport)
             await self._page.setViewport(new_viewport)
             needsViewportReset = True
+
+        await self._scrollIntoViewIfNeeded()
+        boundingBox = await self.boundingBox()
+        if not boundingBox:
+            raise ElementHandleError(
+                'Node is either not visible or not an HTMLElement')
 
         _obj = await self._client.send('Page.getLayoutMetrics')
         pageX = _obj['layoutViewport']['pageX']
@@ -398,11 +436,6 @@ class ElementHandle(JSHandle):
             '(element, selector) => Array.from(element.querySelectorAll(selector))',  # noqa: E501
             self, selector
         )
-        if len(await arrayHandle.jsonValue()) == 0:
-            raise ElementHandleError(
-                f'Error: failed to find elements matching selector "{selector}"'  # noqa: E501
-            )
-
         result = await self.executionContext.evaluate(
             pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()
@@ -418,9 +451,9 @@ class ElementHandle(JSHandle):
     JJeval = querySelectorAllEval
 
     async def xpath(self, expression: str) -> List['ElementHandle']:
-        """Evaluate XPath expression relative to this elementHandle.
+        """Evaluate the XPath expression relative to this elementHandle.
 
-        If there is no such element, return None.
+        If there are no such elements, return an empty list.
 
         :arg str expression: XPath string to be evaluated.
         """
@@ -447,3 +480,25 @@ class ElementHandle(JSHandle):
 
     #: alias to :meth:`xpath`
     Jx = xpath
+
+    async def isIntersectingViewport(self) -> bool:
+        """Return ``True`` if the element is visible in the viewport."""
+        return await self.executionContext.evaluate('''async element => {
+            const visibleRatio = await new Promise(resolve => {
+                const observer = new IntersectionObserver(entries => {
+                    resolve(entries[0].intersectionRatio);
+                    observer.disconnect();
+                });
+                observer.observe(element);
+            });
+            return visibleRatio > 0;
+        }''', self)
+
+
+def _computeQuadArea(quad: List[Dict]) -> float:
+    area = 0
+    for i, _ in enumerate(quad):
+        p1 = quad[i]
+        p2 = quad[(i + 1) % len(quad)]
+        area += (p1['x'] * p2['y'] - p2['x'] * p1['y']) / 2
+    return area

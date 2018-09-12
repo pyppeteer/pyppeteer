@@ -1,6 +1,16 @@
 History
 =======
 
+## Version 0.0.24 (2018-09-12)
+
+Catch up puppeteer v1.6.0
+
+* Add `ElementHandle.isIntersectingViewport()`
+* Add `reportAnonymousScript` option to `Coverage.startJSCoverage()`
+* Add `Page.waitForRequest` and `Page.waitForResponse` methods
+* Now possible to attach to extension background pages with `Target.page()`
+* Improved reliability of clicking with `Page.click()` and `ElementHandle.click()`
+
 ## Version 0.0.23 (2018-09-10)
 
 Catch up puppeteer v1.5.0

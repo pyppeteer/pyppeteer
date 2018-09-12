@@ -119,7 +119,7 @@ class FrameManager(EventEmitter):
         if frameId in self._frames:
             return
         parentFrame = self._frames.get(parentFrameId)
-        frame = Frame(self._client, self._page, parentFrame, frameId)
+        frame = Frame(self._client, parentFrame, frameId)
         self._frames[frameId] = frame
         self.emit(FrameManager.Events.FrameAttached, frame)
 
@@ -147,7 +147,7 @@ class FrameManager(EventEmitter):
                 frame._id = _id
             else:
                 # Initial main frame navigation.
-                frame = Frame(self._client, self._page, None, _id)
+                frame = Frame(self._client, None, _id)
             self._frames[_id] = frame
             self._mainFrame = frame
 
@@ -232,10 +232,9 @@ class Frame(object):
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
     """
 
-    def __init__(self, client: CDPSession, page: Any,
-                 parentFrame: Optional['Frame'], frameId: str) -> None:
+    def __init__(self, client: CDPSession, parentFrame: Optional['Frame'],
+                 frameId: str) -> None:
         self._client = client
-        self._page = page
         self._parentFrame = parentFrame
         self._url = ''
         self._detached = False
@@ -317,9 +316,9 @@ class Frame(object):
         return document
 
     async def xpath(self, expression: str) -> List[ElementHandle]:
-        """Evaluate XPath expression.
+        """Evaluate the XPath expression.
 
-        If there is no such element in this frame, return None.
+        If there are no such elements in this frame, return an empty list.
 
         :arg str expression: XPath string to be evaluated.
         """

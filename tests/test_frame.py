@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-import os
 import time
 import unittest
 
@@ -112,6 +111,15 @@ class TestWaitForFunction(BaseTestCase):
                 '(a, b) => a + b === 3', {}, 1, 2)
         )
         await fut
+
+    @sync
+    async def test_before_execution_context_resolved(self):
+        await self.page.evaluateOnNewDocument('() => window.__RELOADED = true')
+        await self.page.waitForFunction('''() => {
+            if (!window.__RELOADED)
+                window.location.reload();
+            return true;
+        }''')
 
     @sync
     async def test_poll_on_interval(self):
@@ -314,8 +322,6 @@ class TestWaitForSelector(BaseTestCase):
         await self.page.goto(self.url + '1')
         await task
 
-    @unittest.skip('This test raises error on asyncio')
-    @unittest.skipIf('CI' in os.environ, 'Skip unstable test on CI')
     @sync
     async def test_fail_page_closed(self):
         page = await self.browser.newPage()
