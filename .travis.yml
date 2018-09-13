@@ -1,7 +1,7 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
 
-sudo: false
+sudo: required
 dist: trusty
 
 language: python
@@ -16,16 +16,13 @@ matrix:
       env: TOXENV="py36"
     - os: linux
       python: "3.7-dev"
-      addons:
-        apt:
-          packates:
-            - enchant
       env: TOXENV="py37,doit,codecov"
     - os: osx
       language: generic
       env: TOXENV="py37"
 
 before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install enchant; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade python; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python3 --version; fi
 
