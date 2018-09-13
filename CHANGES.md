@@ -1,6 +1,12 @@
 History
 =======
 
+## Version 0.0.25 (next version)
+
+* Fix miss-spelled methods
+  * Change `Browser.isIncognite` to `Browser.isIncognito`
+  * Change `Browser.createIncogniteBrowserContext` to `Browser.createIncognitoBrowserContext`
+
 ## Version 0.0.24 (2018-09-12)
 
 Catch up puppeteer v1.6.0

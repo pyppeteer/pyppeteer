@@ -3,6 +3,7 @@
 
 """Browser module."""
 
+import logging
 from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
@@ -13,6 +14,8 @@ from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.page import Page
 from pyppeteer.target import Target
+
+logger = logging.getLogger(__name__)
 
 
 class Browser(EventEmitter):
@@ -75,6 +78,17 @@ class Browser(EventEmitter):
         return self._process
 
     async def createIncogniteBrowserContext(self) -> 'BrowserContext':
+        """[Deprecated] Miss spelled method.
+
+        Use :meth:`createIncognitoBrowserContext` method instead.
+        """
+        logger.warning(
+            'createIncogniteBrowserContext is deprecated. '
+            'Use createIncognitoBrowserContext instead.'
+        )
+        return await self.createIncognitoBrowserContext()
+
+    async def createIncognitoBrowserContext(self) -> 'BrowserContext':
         """Create a new incognito browser context.
 
         This won't share cookies/cache with other browser contexts.
@@ -83,7 +97,7 @@ class Browser(EventEmitter):
 
             browser = await launch()
             # Create a new incognito browser context.
-            context = await browser.createIncogniteBrowserContext()
+            context = await browser.createIncognitoBrowserContext()
             # Create a new page in a pristine context.
             page = await context.newPage()
             # Do stuff
@@ -255,13 +269,13 @@ class BrowserContext(EventEmitter):
     will belong to the parent page's browser context.
 
     Pyppeteer allows creation of "incognito" browser context with
-    ``browser.createIncogniteBrowserContext()`` method.
+    ``browser.createIncognitoBrowserContext()`` method.
     "incognito" browser contexts don't write any browser data to disk.
 
     .. code::
 
         # Create new incognito browser context
-        context = await browser.createIncogniteBrowserContext()
+        context = await browser.createIncognitoBrowserContext()
         # Create a new page inside context
         page = await context.newPage()
         # ... do stuff with page ...
@@ -290,6 +304,17 @@ class BrowserContext(EventEmitter):
         return targets
 
     def isIncognite(self) -> bool:
+        """[Deprecated] Miss spelled method.
+
+        Use :meth:`isIncognito` method instead.
+        """
+        logger.warning(
+            'isIncognite is deprecated. '
+            'Use isIncognito instead.'
+        )
+        return self.isIncognito()
+
+    def isIncognito(self) -> bool:
         """Return whether BrowserContext is incognito.
 
         The default browser context is the only non-incognito browser context.
