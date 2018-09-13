@@ -18,7 +18,7 @@ from pyppeteer.target import Target
 class Browser(EventEmitter):
     """Browser class.
 
-    A Broser object is created when pyppeteer connects to chrome, either
+    A Browser object is created when pyppeteer connects to chrome, either
     through :func:`~pyppeteer.launcer.launch` or
     :func:`~pyppeteer.launcer.connect`.
     """
@@ -75,14 +75,14 @@ class Browser(EventEmitter):
         return self._process
 
     async def createIncogniteBrowserContext(self) -> 'BrowserContext':
-        """Create a new incognite browser context.
+        """Create a new incognito browser context.
 
         This won't share cookies/cache with other browser contexts.
 
         .. code::
 
             browser = await launch()
-            # Create a new incognite browser context.
+            # Create a new incognito browser context.
             context = await browser.createIncogniteBrowserContext()
             # Create a new page in a pristine context.
             page = await context.newPage()
@@ -170,7 +170,7 @@ class Browser(EventEmitter):
 
     @property
     def wsEndpoint(self) -> str:
-        """Retrun websocket end point url."""
+        """Return websocket end point url."""
         return self._connection.url
 
     async def newPage(self) -> Page:
@@ -247,20 +247,20 @@ class Browser(EventEmitter):
 class BrowserContext(EventEmitter):
     """BrowserContext provides multiple independent browser sessions.
 
-    When a browser is launched, it has a single BrowserContext used by defualt.
+    When a browser is launched, it has a single BrowserContext used by default.
     The method `browser.newPage()` creates a page in the default browser
     context.
 
     If a page opens another page, e.g. with a ``window.open`` call, the popup
-    will belong to the parent page's borwser context.
+    will belong to the parent page's browser context.
 
-    Pyppeteer allows creation of "incognite" browser context with
+    Pyppeteer allows creation of "incognito" browser context with
     ``browser.createIncogniteBrowserContext()`` method.
-    "Incognite" borwser contexts don't write any browser data to disk.
+    "incognito" browser contexts don't write any browser data to disk.
 
     .. code::
 
-        # Create new incognite browser context
+        # Create new incognito browser context
         context = await browser.createIncogniteBrowserContext()
         # Create a new page inside context
         page = await context.newPage()
@@ -290,12 +290,12 @@ class BrowserContext(EventEmitter):
         return targets
 
     def isIncognite(self) -> bool:
-        """Return whether BrowserContext is incognite.
+        """Return whether BrowserContext is incognito.
 
-        The default browser context is the only non-incognite browser context.
+        The default browser context is the only non-incognito browser context.
 
         .. note::
-            The default borwser context cannot be closed.
+            The default browser context cannot be closed.
         """
         return bool(self._id)
 
@@ -314,8 +314,8 @@ class BrowserContext(EventEmitter):
         All the targets that belongs to the browser context will be closed.
 
         .. note::
-            Only incognite browser context can be closed.
+            Only incognito browser context can be closed.
         """
         if self._id is None:
-            raise BrowserError('Non-incognite profile cannot be closed')
+            raise BrowserError('Non-incognito profile cannot be closed')
         await self._browser._disposeContext(self._id)

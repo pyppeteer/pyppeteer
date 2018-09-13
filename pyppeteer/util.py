@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Utitlity functions."""
+"""Utility functions."""
 
 import gc
 import socket

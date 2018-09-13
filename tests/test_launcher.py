@@ -54,9 +54,9 @@ class TestLauncher(unittest.TestCase):
 
     def test_disable_default_args(self):
         launcher = Launcher(ignoreDefaultArgs=True)
-        # check defatul args
+        # check default args
         self.assertNotIn('--no-first-run', launcher.chrome_args)
-        # check dev tools port
+        # check devtools port
         self.assertNotIn(
             '--remote-debugging-port={}'.format(launcher.port),
             launcher.chrome_args,
@@ -357,7 +357,7 @@ class TestClose(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0)
         wsEndPoint = proc.stdout.decode()
-        # chrome should be already closed, so fail to connet websocket
+        # chrome should be already closed, so fail to connect websocket
         with self.assertRaises(OSError):
             await websockets.client.connect(wsEndPoint)
 

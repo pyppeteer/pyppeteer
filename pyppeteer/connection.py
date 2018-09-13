@@ -29,7 +29,7 @@ class Connection(EventEmitter):
         """Make connection.
 
         :arg str url: WebSocket url to connect devtool.
-        :arg int delay: delay to wait before processing recieved messages.
+        :arg int delay: delay to wait before processing received messages.
         """
         super().__init__()
         self._url = url

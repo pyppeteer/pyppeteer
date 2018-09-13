@@ -36,7 +36,7 @@ class Multimap(object):
         return key in self._map
 
     def hasValue(self, key: Optional[str], value: Any) -> bool:
-        """Chekc value is in this map."""
+        """Check value is in this map."""
         _set = self._map.get(key, list())
         return value in _set
 

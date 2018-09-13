@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Emulation Managet module."""
+"""Emulation Manager module."""
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -11,7 +11,7 @@ class EmulationManager(object):
     """EmulationManager class."""
 
     def __init__(self, client: CDPSession) -> None:
-        """Make new elmulation manager."""
+        """Make new emulation manager."""
         self._client = client
         self._emulatingMobile = False
         self._hasTouch = False

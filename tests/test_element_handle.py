@@ -123,7 +123,7 @@ class TestBoxModel(BaseTestCase):
             return div
         }''')).asElement()
 
-        # query div's boxModel and assert box balues
+        # query div's boxModel and assert box values
         box = await divHandle.boxModel()
         self.assertEqual(box['width'], 6)
         self.assertEqual(box['height'], 7)

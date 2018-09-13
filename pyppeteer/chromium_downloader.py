@@ -132,7 +132,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
 
 
 def download_chromium() -> None:
-    """Downlaod and extract chrmoium."""
+    """Downlaod and extract chromium."""
     extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
 
 

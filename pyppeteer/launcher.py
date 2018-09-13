@@ -65,7 +65,7 @@ AUTOMATION_ARGS = [
 
 
 class Launcher(object):
-    """Chrome parocess launcher class."""
+    """Chrome process launcher class."""
 
     def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
                  **kwargs: Any) -> None:
@@ -173,7 +173,7 @@ class Launcher(object):
             if not self.chromeClosed:
                 self._loop.run_until_complete(self.killChrome())
 
-        # dont forget to close browser process
+        # don't forget to close browser process
         if self.options.get('autoClose', True):
             atexit.register(_close_process)
         if self.options.get('handleSIGINT', True):
@@ -265,7 +265,7 @@ class Launcher(object):
 async def launch(options: dict = None, **kwargs: Any) -> Browser:
     """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
 
-    This function is a shotcut to :meth:`Launcher(options, **kwargs).launch`.
+    This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.
 
     Available options are:
 
@@ -275,7 +275,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``True`` unless ``appMode`` or ``devtools`` options is ``True``.
     * ``executablePath`` (str): Path to a Chromium or Chrome executable to run
       instead of default bundled Chromium.
-    * ``slowMo`` (int|float): Sles down pyppeteer operations by the specified
+    * ``slowMo`` (int|float): Slow down pyppeteer operations by the specified
       amount of milliseconds.
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
@@ -297,7 +297,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
-    * ``autoClose`` (bool): Automatically close browser process when sctipt
+    * ``autoClose`` (bool): Automatically close browser process when script
       completed. Defaults to ``True``.
     * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.

@@ -57,7 +57,7 @@ class Worker(EventEmitter):
         self._client.on('Runtime.executionContextCreated',
                         onExecutionContentCreated)
         try:
-            # This might fail if the target is closed before we recieve all
+            # This might fail if the target is closed before we receive all
             # execution contexts.
             self._client.send('Runtime.enable', {})
         except Exception as e:
