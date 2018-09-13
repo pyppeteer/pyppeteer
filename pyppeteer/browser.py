@@ -22,8 +22,8 @@ class Browser(EventEmitter):
     """Browser class.
 
     A Browser object is created when pyppeteer connects to chrome, either
-    through :func:`~pyppeteer.launcer.launch` or
-    :func:`~pyppeteer.launcer.connect`.
+    through :func:`~pyppeteer.launcher.launch` or
+    :func:`~pyppeteer.launcher.connect`.
     """
 
     Events = SimpleNamespace(
@@ -72,7 +72,7 @@ class Browser(EventEmitter):
     def process(self) -> Optional[Popen]:
         """Return process of this browser.
 
-        If browser instance is created by :func:`pyppeteer.launcer.connect`,
+        If browser instance is created by :func:`pyppeteer.launcher.connect`,
         return ``None``.
         """
         return self._process
