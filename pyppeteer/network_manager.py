@@ -73,7 +73,7 @@ class NetworkManager(EventEmitter):
             if not isinstance(v, str):
                 raise TypeError(
                     f'Expected value of header "{k}" to be string, '
-                    'but {} is found.'.format(type(v)))
+                    f'but {type(v)} is found.')
             self._extraHTTPHeaders[k.lower()] = v
         await self._client.send('Network.setExtraHTTPHeaders',
                                 {'headers': self._extraHTTPHeaders})
@@ -353,17 +353,6 @@ class Request(object):
     to a redirect url.
     """
 
-    #: url of this request.
-    url: str
-    #: headers associated with the request.
-    headers: dict
-    #: contains the request method (GET/POST/...).
-    method: str
-    #: contains the request's post body, if any.
-    postData: str
-    #: contains the request's resource type
-    resourceType: str
-
     def __init__(self, client: CDPSession, requestId: Optional[str],
                  interceptionId: str, isNavigationRequest: bool,
                  allowInterception: bool, url: str, resourceType: str,
@@ -631,13 +620,6 @@ errorReasons = {
 class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
-    #: whether the response succeeded or not.
-    ok: bool
-    #: status code of the response.
-    status: int
-    #: url of the response.
-    url: str
-
     def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str], fromDiskCache: bool,
                  fromServiceWorker: bool, securityDetails: Dict = None
@@ -768,7 +750,11 @@ def generateRequestHash(request: dict) -> str:
         for header in headers:
             headerValue = request['headers'][header]
             header = header.lower()
-            if (header == 'accept' or header == 'referer' or header == 'x-devtools-emulate-network-conditions-client-id'):  # noqa: E501
+            if header in [
+                'accept',
+                'referer',
+                'x-devtools-emulate-network-conditions-client-id',
+            ]:
                 continue
             _hash['headers'][header] = headerValue
     return json.dumps(_hash)

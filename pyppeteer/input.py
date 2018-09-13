@@ -239,7 +239,7 @@ class Keyboard(object):
           ``keyup``. Defaults to 0.
 
         .. note::
-            Modifier keys DO effect :meth:`press`. Holding down ``shift`` will
+            Modifier keys DO effect :meth:`press`. Holding down ``Shift`` will
             type the text in upper case.
         """
         options = merge_dict(options, kwargs)

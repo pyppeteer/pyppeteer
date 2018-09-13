@@ -31,7 +31,6 @@ dialog's
 dict
 doctype
 domcontentloaded
-downlaod
 dpr
 dumpio
 elementhandle

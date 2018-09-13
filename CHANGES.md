@@ -3,9 +3,11 @@ History
 
 ## Version 0.0.25 (next version)
 
-* Fix miss-spelled methods
+* Fix miss-spelled methods and functions
   * Change `Browser.isIncognite` to `Browser.isIncognito`
   * Change `Browser.createIncogniteBrowserContext` to `Browser.createIncognitoBrowserContext`
+  * Change `chromium_excutable` to `chromium_executable`
+  * Remove `craete` function in `page.py`
 
 ## Version 0.0.24 (2018-09-12)
 

@@ -45,7 +45,7 @@ class Dialog(object):
         self._type = type
         self._message = message
         self._handled = False
-        self._defalutValue = defaultValue
+        self._defaultValue = defaultValue
 
     @property
     def type(self) -> str:
@@ -66,7 +66,7 @@ class Dialog(object):
 
         If dialog is not prompt, return empty string (``''``).
         """
-        return self._defalutValue
+        return self._defaultValue
 
     async def accept(self, promptText: str = '') -> None:
         """Accept the dialog.

@@ -751,11 +751,11 @@ function addPageBinding(bindingName) {
         _type = event.get('type')
         if _type == 'alert':
             dialogType = Dialog.Type.Alert
-        elif (_type == 'confirm'):
+        elif _type == 'confirm':
             dialogType = Dialog.Type.Confirm
-        elif (_type == 'prompt'):
+        elif _type == 'prompt':
             dialogType = Dialog.Type.Prompt
-        elif (_type == 'beforeunload'):
+        elif _type == 'beforeunload':
             dialogType = Dialog.Type.BeforeUnload
         dialog = Dialog(self._client, dialogType, event.get('message'),
                         event.get('defaultPrompt'))
@@ -837,9 +837,9 @@ function addPageBinding(bindingName) {
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
 
-        def set_request(request: Request) -> None:
-            if request.url not in requests:
-                requests[request.url] = request
+        def set_request(req: Request) -> None:
+            if req.url not in requests:
+                requests[req.url] = req
 
         eventListeners = [helper.addEventListener(
             self._networkManager,
@@ -1757,5 +1757,13 @@ class ConsoleMessage(object):
         return self._args
 
 
-#: alias to :func:`create_page()`
-craete = Page.create
+async def craete(*args: Any, **kwargs: Any) -> Page:
+    """[Deprecated] miss-spelled function.
+
+    This function is undocumented and will be removed in future release.
+    """
+    logger.warning(
+        '`craete` function is deprecated and will be removed in future. '
+        'Use `Page.create` instead.'
+    )
+    return await Page.create(*args, **kwargs)

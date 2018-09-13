@@ -4,10 +4,7 @@
 """Multimap module."""
 
 from collections import OrderedDict
-from typing import Any, List, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing import Dict  # noqa: F401
+from typing import Any, List, Optional
 
 
 class Multimap(object):

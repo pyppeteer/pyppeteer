@@ -734,7 +734,6 @@ function(html) {
     }
 }
         '''  # noqa: E501
-        timeout = options.get('timeout', 30000)
         return WaitTask(
             self,
             predicate,

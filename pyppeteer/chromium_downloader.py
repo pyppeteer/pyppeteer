@@ -118,12 +118,12 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         if proc.returncode != 0:
             logger.error(proc.stdout.decode())
             raise OSError(f'Failed to unzip {zip_path}.')
-        if chromium_excutable().exists() and zip_path.exists():
+        if chromium_executable().exists() and zip_path.exists():
             zip_path.unlink()
     else:
         with ZipFile(data) as zf:
             zf.extractall(str(path))
-    exec_path = chromium_excutable()
+    exec_path = chromium_executable()
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
     exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP |
@@ -132,15 +132,27 @@ def extract_zip(data: BytesIO, path: Path) -> None:
 
 
 def download_chromium() -> None:
-    """Downlaod and extract chromium."""
+    """Download and extract chromium."""
     extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
 
 
 def chromium_excutable() -> Path:
+    """[Deprecated] miss-spelled function.
+
+    Use `chromium_executable` instead.
+    """
+    logger.warning(
+        '`chromium_excutable` function is deprecated. '
+        'Use `chromium_executable instead.'
+    )
+    return chromium_executable()
+
+
+def chromium_executable() -> Path:
     """Get path of the chromium executable."""
     return chromiumExecutable[current_platform()]
 
 
 def check_chromium() -> bool:
     """Check if chromium is placed at correct path."""
-    return chromium_excutable().exists()
+    return chromium_executable().exists()
