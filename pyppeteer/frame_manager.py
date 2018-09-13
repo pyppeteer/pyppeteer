@@ -571,7 +571,7 @@ function(html) {
         await handle.dispose()
 
     async def focus(self, selector: str) -> None:
-        """Fucus element which matches ``selector``.
+        """Focus element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.focus`.
         """
