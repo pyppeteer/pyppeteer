@@ -494,7 +494,7 @@ class Page(EventEmitter):
     async def setCookie(self, *cookies: dict) -> None:
         """Set cookies.
 
-        ``coockies`` should be dictionaries which contain these fields:
+        ``cookies`` should be dictionaries which contain these fields:
 
         * ``name`` (str): **required**
         * ``value`` (str): **required**
