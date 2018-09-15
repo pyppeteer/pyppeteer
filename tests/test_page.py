@@ -1345,16 +1345,16 @@ class TestViewport(BaseTestCase):
             let fulfill;
             const promise = new Promise(x => fulfill = x);
             window.ontouchstart = function(e) {
-                fulfill('Recieved touch');
+                fulfill('Received touch');
             };
             window.dispatchEvent(new Event('touchstart'));
 
-            fulfill('Did not recieve touch');
+            fulfill('Did not receive touch');
 
             return promise;
         }'''
         self.assertEqual(
-            await self.page.evaluate(dispatchTouch), 'Recieved touch')
+            await self.page.evaluate(dispatchTouch), 'Received touch')
 
         await self.page.setViewport({'width': 100, 'height': 100})
         self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
