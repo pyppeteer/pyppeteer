@@ -274,7 +274,7 @@ class TestScreenshot(BaseTestCase):
     async def test_screenshot_larger_than_viewport(self):
         await self.page.setViewport({'width': 500, 'height': 500})
         await self.page.setContent('''
-someting above
+something above
 <style>
 div.to-screenshot {
     border: 1px solid blue;
@@ -284,7 +284,7 @@ div.to-screenshot {
 }
 
 ::-webkit-scrollbar {
-    dispaly: none;
+    display: none;
 }
 </style>
 

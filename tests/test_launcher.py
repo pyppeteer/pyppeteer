@@ -190,7 +190,7 @@ class TestMixedContent(unittest.TestCase):
         options.update(DEFAULT_OPTIONS)
         browser = await launch(options)
         page = await browser.newPage()
-        page.goto()
+        # page.goto()
         await page.close()
         await browser.close()
 
@@ -366,8 +366,8 @@ class TestEventLoop(unittest.TestCase):
     def test_event_loop(self):
         loop = asyncio.new_event_loop()
 
-        async def inner(loop) -> None:
-            browser = await launch(args=['--no-sandbox'], loop=loop)
+        async def inner(_loop) -> None:
+            browser = await launch(args=['--no-sandbox'], loop=_loop)
             page = await browser.newPage()
             await page.goto('http://example.com')
             result = await page.evaluate('() => 1 + 2')

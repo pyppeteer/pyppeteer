@@ -86,7 +86,7 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 27)
 
     @sync
-    async def test_paromise_reject(self):
+    async def test_promise_reject(self):
         with self.assertRaises(ElementHandleError) as cm:
             await self.page.evaluate('() => not.existing.object.property')
         self.assertIn('not is not defined', cm.exception.args[0])
@@ -1565,7 +1565,7 @@ class TestSelect(BaseTestCase):
         await self.page.evaluate('makeMultiple()')
         result = await self.page.select('select', 'blue', 'black', 'magenta')
         self.assertEqual(len(result), 3)
-        self.assertEqual(set(result), set(['blue', 'black', 'magenta']))
+        self.assertEqual(set(result), {'blue', 'black', 'magenta'})
 
     @sync
     async def test_select_not_multiple(self):

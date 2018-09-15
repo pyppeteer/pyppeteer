@@ -72,7 +72,7 @@ class TestBrowserContext(BaseTestCase):
 
     @unittest.skip('this test not pass in some environment')
     @sync
-    async def test_isolate_loacal_storage_and_cookie(self):
+    async def test_isolate_local_storage_and_cookie(self):
         context1 = await self.browser.createIncognitoBrowserContext()
         context2 = await self.browser.createIncognitoBrowserContext()
         self.assertEqual(len(context1.targets()), 0)
@@ -113,7 +113,7 @@ class TestBrowserContext(BaseTestCase):
         self.assertEqual(len(self.browser.browserContexts), 1)
 
     @sync
-    async def test_accross_session(self):
+    async def test_across_session(self):
         self.assertEqual(len(self.browser.browserContexts), 1)
         context = await self.browser.createIncognitoBrowserContext()
         self.assertEqual(len(self.browser.browserContexts), 2)

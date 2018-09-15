@@ -122,7 +122,7 @@ class TestNetworkEvent(BaseTestCase):
 
     @unittest.skipIf(sys.platform.startswith('msys'), 'Fails on MSYS')
     @sync
-    async def test_reponse_body(self):
+    async def test_response_body(self):
         responses = []
         self.page.on('response', lambda res: responses.append(res))
         await self.page.goto(self.url + 'static/simple.json')
