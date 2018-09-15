@@ -19,7 +19,6 @@ connectionclosed
 connectionfailed
 connectionreset
 connectionrefused
-coockies
 createincognitobrowsercontext
 csp
 css
