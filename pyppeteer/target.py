@@ -30,7 +30,7 @@ class Target(object):
         self._setDefaultViewport = setDefaultViewport
         self._screenshotTaskQueue = screenshotTaskQueue
         self._loop = loop
-        self._page = None
+        self._page: Optional[Page] = None
 
         self._initializedPromise = self._loop.create_future()
         self._isClosedPromise = self._loop.create_future()
