@@ -754,6 +754,7 @@ def generateRequestHash(request: dict) -> str:
                 'accept',
                 'referer',
                 'x-devtools-emulate-network-conditions-client-id',
+                'cookie',
             ]:
                 continue
             _hash['headers'][header] = headerValue
