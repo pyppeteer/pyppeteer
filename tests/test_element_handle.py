@@ -183,7 +183,7 @@ class TestClick(BaseTestCase):
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
     @sync
-    async def test_chadow_dom(self):
+    async def test_shadow_dom(self):
         await self.page.goto(self.url + 'static/shadow.html')
         button = await self.page.evaluateHandle('() => button')
         await button.click()
@@ -261,7 +261,7 @@ class TestHover(BaseTestCase):
 
 class TestIsIntersectingViewport(BaseTestCase):
     @sync
-    async def test_is_intersecting_viwport(self):
+    async def test_is_intersecting_viewport(self):
         await self.page.goto(self.url + 'static/offscreenbuttons.html')
         for i in range(11):
             button = await self.page.J('#btn{}'.format(i))

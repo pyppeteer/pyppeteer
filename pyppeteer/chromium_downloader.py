@@ -14,7 +14,7 @@ from zipfile import ZipFile
 import urllib3
 from tqdm import tqdm
 
-from pyppeteer import __chromimum_revision__, __pyppeteer_home__
+from pyppeteer import __chromium_revision__, __pyppeteer_home__
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ DOWNLOAD_HOST = os.environ.get(
 BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
 
 REVISION = os.environ.get(
-    'PYPPETEER_CHROMIUM_REVISION', __chromimum_revision__)
+    'PYPPETEER_CHROMIUM_REVISION', __chromium_revision__)
 
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',

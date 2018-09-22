@@ -1062,7 +1062,7 @@ class TestAuthenticate(BaseTestCase):
         self.assertEqual(response.status, 200)
 
 
-class TestAuthenticateFaile(BaseTestCase):
+class TestAuthenticateFailed(BaseTestCase):
     @sync
     async def test_auth_fail(self):
         await self.page.authenticate({'username': 'foo', 'password': 'bar'})

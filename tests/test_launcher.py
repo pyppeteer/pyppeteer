@@ -146,7 +146,7 @@ class TestLauncher(unittest.TestCase):
 
 class TestDefaultURL(unittest.TestCase):
     @sync
-    async def test_defualt_url(self):
+    async def test_default_url(self):
         browser = await launch(DEFAULT_OPTIONS)
         pages = await browser.pages()
         url_list = []
@@ -155,7 +155,7 @@ class TestDefaultURL(unittest.TestCase):
         self.assertEqual(url_list, ['about:blank'])
         await browser.close()
 
-    @unittest.skipIf('CI' in os.environ, 'Skip headful test on CI')
+    @unittest.skipIf('CI' in os.environ, 'Skip in-browser test on CI')
     @sync
     async def test_default_url_not_headless(self):
         options = deepcopy(DEFAULT_OPTIONS)
@@ -327,9 +327,9 @@ class TestUserDataDir(unittest.TestCase):
         await browser2.close()
         self.assertEqual(result, 'hello')
 
-    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
-    async def test_user_data_dir_restore_cookie_headful(self):
+    async def test_user_data_dir_restore_cookie_in_browser(self):
         browser = await launch(
             DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()

@@ -521,7 +521,7 @@ class TestRequestInterception(BaseTestCase):
         body = await self.page.evaluate('() => document.body.textContent')
         self.assertEqual(body, 'intercepted')
 
-    @unittest.skip('Sending bynary object is not implemented')
+    @unittest.skip('Sending binary object is not implemented')
     @sync
     async def test_request_respond_bytes(self):
         pass
