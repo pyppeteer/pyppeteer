@@ -466,7 +466,7 @@ class TestWaitForSelector(BaseTestCase):
 class TestWaitForXPath(BaseTestCase):
     @sync
     async def test_fancy_xpath(self):
-        await self.page.setContent('<p>red heering</p><p>hello world  </p>')
+        await self.page.setContent('<p>red herring</p><p>hello world  </p>')
         waitForXPath = await self.page.waitForXPath('//p[normalize-space(.)="hello world"]')  # noqa: E501
         self.assertEqual(
             await self.page.evaluate('x => x.textContent', waitForXPath),
