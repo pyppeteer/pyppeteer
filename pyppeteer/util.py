@@ -15,6 +15,7 @@ __all__ = [
     'chromium_executable',
     'download_chromium',
     'get_free_port',
+    'merge_dict',
 ]
 
 
