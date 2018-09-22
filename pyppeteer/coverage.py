@@ -311,11 +311,11 @@ def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
                             ) -> List[Any]:
     """Convert ranges."""
     points: List = []
-    for range in nestedRanges:
-        points.append({'offset': range['startOffset'], 'type': 0,
-                       'range': range})
-        points.append({'offset': range['endOffset'], 'type': 1,
-                       'range': range})
+    for nested_range in nestedRanges:
+        points.append({'offset': nested_range['startOffset'], 'type': 0,
+                       'range': nested_range})
+        points.append({'offset': nested_range['endOffset'], 'type': 1,
+                       'range': nested_range})
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:
