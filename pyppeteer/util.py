@@ -31,6 +31,7 @@ def get_free_port() -> int:
 
 
 def merge_dict(dict1: Optional[Dict], dict2: Optional[Dict]) -> Dict:
+    """Merge two dictionaries into new one."""
     new_dict = {}
     if dict1:
         new_dict.update(dict1)
