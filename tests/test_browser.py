@@ -96,7 +96,7 @@ class TestBrowser(unittest.TestCase):
         await browser.close()
         self.assertTrue(errors)
 
-    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_background_target_type(self):
         browser = await launch(self.extensionOptions)
@@ -107,7 +107,7 @@ class TestBrowser(unittest.TestCase):
         await browser.close()
         self.assertTrue(backgroundPageTargets)
 
-    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_OOPIF(self):
         options = deepcopy(DEFAULT_OPTIONS)
@@ -136,7 +136,7 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(urls, [example_page, 'https://google.com/'])
         await browser.close()
 
-    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_background_page(self):
         browserWithExtension = await launch(self.extensionOptions)
