@@ -165,8 +165,8 @@ class NetworkManager(EventEmitter):
             if request:
                 self._handleRequestRedirect(
                     request,
-                    event.get('redirectStatusCode', 0),
-                    event.get('redirectHeaders', {}),
+                    event.get('responseStatusCode', 0),
+                    event.get('responseHeaders', {}),
                     False,
                     False,
                     None,
