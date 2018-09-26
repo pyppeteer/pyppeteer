@@ -1,7 +1,7 @@
 History
 =======
 
-## Version 0.0.25 (next version)
+## Version 0.0.25 (2018-09-27)
 
 * Fix miss-spelled methods and functions
   * Change `Browser.isIncognite` to `Browser.isIncognito`

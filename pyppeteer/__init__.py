@@ -10,7 +10,7 @@ from appdirs import AppDirs
 
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'miyako.dev@gmail.com'
-__version__ = '0.0.24'
+__version__ = '0.0.25'
 __chromium_revision__ = '575458'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get(
