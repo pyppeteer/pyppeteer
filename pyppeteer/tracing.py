@@ -14,7 +14,7 @@ class Tracing(object):
     """Tracing class.
 
     You can use :meth:`start` and :meth:`stop` to create a trace file which can
-    be opend in Chrome DevTools or
+    be opened in Chrome DevTools or
     `timeline viewer <https://chromedevtools.github.io/timeline-viewer/>`_.
 
     .. code::

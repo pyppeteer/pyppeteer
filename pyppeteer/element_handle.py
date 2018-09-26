@@ -141,7 +141,7 @@ class ElementHandle(JSHandle):
     async def hover(self) -> None:
         """Move mouse over to center of this element.
 
-        If needed, this method scrolls eleemnt into view. If this element is
+        If needed, this method scrolls element into view. If this element is
         detached from DOM tree, the method raises an ``ElementHandleError``.
         """
         await self._scrollIntoViewIfNeeded()
@@ -255,7 +255,7 @@ class ElementHandle(JSHandle):
     async def boxModel(self) -> Optional[Dict]:
         """Return boxes of element.
 
-        Return ``None`` if element is not visivle. Boxes are represented as an
+        Return ``None`` if element is not visible. Boxes are represented as an
         list of points; each Point is a dictionary ``{x, y}``. Box points are
         sorted clock-wise.
 
@@ -266,7 +266,7 @@ class ElementHandle(JSHandle):
         * ``border`` (List[Dict]): Border box.
         * ``margin`` (List[Dict]): Margin box.
         * ``width`` (int): Element's width.
-        * ``heidht`` (int): Element's height.
+        * ``height`` (int): Element's height.
         """
         result = await self._getBoxModel()
 
@@ -344,7 +344,7 @@ class ElementHandle(JSHandle):
     async def querySelector(self, selector: str) -> Optional['ElementHandle']:
         """Return first element which matches ``selector`` under this element.
 
-        If no element mathes the ``selector``, returns ``None``.
+        If no element matches the ``selector``, returns ``None``.
         """
         handle = await self.executionContext.evaluateHandle(
             '(element, selector) => element.querySelector(selector)',
@@ -383,7 +383,7 @@ class ElementHandle(JSHandle):
         element matching ``selector``, the method raises
         ``ElementHandleError``.
 
-        If ``pageFunction`` returns a promise, then wait for the proimse to
+        If ``pageFunction`` returns a promise, then wait for the promise to
         resolve and return its value.
 
         ``ElementHandle.Jeval`` is a shortcut of this method.

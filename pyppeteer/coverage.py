@@ -30,7 +30,7 @@ class Coverage(object):
         await page.coverage.startJSCoverage()
         await page.coverage.startCSSCoverage()
 
-        # Navigato to page
+        # Navigate to page
         await page.goto('https://example.com')
         # Disable JS and CSS coverage and get results
         jsCoverage = await page.coverage.stopJSCoverage()
@@ -118,7 +118,7 @@ class Coverage(object):
 
         .. note::
            CSS coverage doesn't include dynamically injected style tags without
-           sourceURLs (but currently includs... to be fixed).
+           sourceURLs (but currently includes... to be fixed).
         """
         return await self._cssCoverage.stop()
 
@@ -170,7 +170,7 @@ class JSCoverage(object):
         # Ignore pyppeteer-injected scripts
         if event.get('url') == EVALUATION_SCRIPT_URL:
             return
-        # Ignore other anonymous scripts unleess the reportAnonymousScript
+        # Ignore other anonymous scripts unless the reportAnonymousScript
         # option is True
         if not event.get('url') and not self._reportAnonymousScript:
             return
@@ -311,11 +311,11 @@ def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
                             ) -> List[Any]:
     """Convert ranges."""
     points: List = []
-    for range in nestedRanges:
-        points.append({'offset': range['startOffset'], 'type': 0,
-                       'range': range})
-        points.append({'offset': range['endOffset'], 'type': 1,
-                       'range': range})
+    for nested_range in nestedRanges:
+        points.append({'offset': nested_range['startOffset'], 'type': 0,
+                       'range': nested_range})
+        points.append({'offset': nested_range['endOffset'], 'type': 1,
+                       'range': nested_range})
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:

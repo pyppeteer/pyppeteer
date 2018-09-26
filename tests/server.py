@@ -94,7 +94,7 @@ def auth_api(username: str, password: str) -> bool:
 
 
 def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
-    def decore(f: Callable) -> Callable:
+    def wrapper(f: Callable) -> Callable:
         def _request_auth(handler: Any) -> None:
             handler.set_header('WWW-Authenticate', 'Basic realm=JSL')
             handler.set_status(401)
@@ -113,13 +113,13 @@ def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
             auth_decoded = base64.b64decode(auth_header[6:])
             username, password = auth_decoded.decode('utf-8').split(':', 2)
 
-            if (auth(username, password)):
+            if auth(username, password):
                 f(*args)
             else:
                 _request_auth(handler)
 
         return new_f
-    return decore
+    return wrapper
 
 
 class AuthHandler(BaseHandler):

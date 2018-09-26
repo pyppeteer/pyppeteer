@@ -4,10 +4,7 @@
 """Multimap module."""
 
 from collections import OrderedDict
-from typing import Any, List, Optional, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from typing import Dict  # noqa: F401
+from typing import Any, List, Optional
 
 
 class Multimap(object):
@@ -36,7 +33,7 @@ class Multimap(object):
         return key in self._map
 
     def hasValue(self, key: Optional[str], value: Any) -> bool:
-        """Chekc value is in this map."""
+        """Check value is in this map."""
         _set = self._map.get(key, list())
         return value in _set
 

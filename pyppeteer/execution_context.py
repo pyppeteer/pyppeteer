@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Execut Context Module."""
+"""Execution Context Module."""
 
 import logging
 import math

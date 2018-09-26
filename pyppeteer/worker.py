@@ -42,22 +42,19 @@ class Worker(EventEmitter):
             return None  # type: ignore
 
         def onExecutionContentCreated(event: Dict) -> None:
-            _execution_contexts: List[ExecutionContext] = []
             nonlocal jsHandleFactory
 
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
-                executionContext = _execution_contexts[0]
                 return JSHandle(executionContext, client, remoteObject)
 
             executionContext = ExecutionContext(
                 client, event['context'], jsHandleFactory)
-            _execution_contexts.append(executionContext)
             self._executionContextCallback(executionContext)
 
         self._client.on('Runtime.executionContextCreated',
                         onExecutionContentCreated)
         try:
-            # This might fail if the target is closed before we recieve all
+            # This might fail if the target is closed before we receive all
             # execution contexts.
             self._client.send('Runtime.enable', {})
         except Exception as e:

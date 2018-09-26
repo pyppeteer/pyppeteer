@@ -367,7 +367,7 @@ class TestType(BaseTestCase):
     async def test_key_arrowkey(self):
         await self.page.goto(self.url + 'static/textarea.html')
         await self.page.type('textarea', 'Hello World!')
-        for char in 'World!':
+        for _ in 'World!':
             await self.page.keyboard.press('ArrowLeft')
         await self.page.keyboard.type('inserted ')
         result = await self.page.evaluate(
@@ -376,7 +376,7 @@ class TestType(BaseTestCase):
         self.assertEqual(result, 'Hello inserted World!')
 
         await self.page.keyboard.down('Shift')
-        for char in 'inserted ':
+        for _ in 'inserted ':
             await self.page.keyboard.press('ArrowLeft')
         await self.page.keyboard.up('Shift')
         await self.page.keyboard.press('Backspace')

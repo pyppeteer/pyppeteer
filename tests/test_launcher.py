@@ -54,9 +54,9 @@ class TestLauncher(unittest.TestCase):
 
     def test_disable_default_args(self):
         launcher = Launcher(ignoreDefaultArgs=True)
-        # check defatul args
+        # check default args
         self.assertNotIn('--no-first-run', launcher.chrome_args)
-        # check dev tools port
+        # check devtools port
         self.assertNotIn(
             '--remote-debugging-port={}'.format(launcher.port),
             launcher.chrome_args,
@@ -146,7 +146,7 @@ class TestLauncher(unittest.TestCase):
 
 class TestDefaultURL(unittest.TestCase):
     @sync
-    async def test_defualt_url(self):
+    async def test_default_url(self):
         browser = await launch(DEFAULT_OPTIONS)
         pages = await browser.pages()
         url_list = []
@@ -155,7 +155,7 @@ class TestDefaultURL(unittest.TestCase):
         self.assertEqual(url_list, ['about:blank'])
         await browser.close()
 
-    @unittest.skipIf('CI' in os.environ, 'Skip headful test on CI')
+    @unittest.skipIf('CI' in os.environ, 'Skip in-browser test on CI')
     @sync
     async def test_default_url_not_headless(self):
         options = deepcopy(DEFAULT_OPTIONS)
@@ -190,7 +190,7 @@ class TestMixedContent(unittest.TestCase):
         options.update(DEFAULT_OPTIONS)
         browser = await launch(options)
         page = await browser.newPage()
-        page.goto()
+        # page.goto()
         await page.close()
         await browser.close()
 
@@ -327,9 +327,9 @@ class TestUserDataDir(unittest.TestCase):
         await browser2.close()
         self.assertEqual(result, 'hello')
 
-    @unittest.skipIf('CI' in os.environ, 'skip headful test on CI server')
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
-    async def test_user_data_dir_restore_cookie_headful(self):
+    async def test_user_data_dir_restore_cookie_in_browser(self):
         browser = await launch(
             DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
@@ -357,7 +357,7 @@ class TestClose(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0)
         wsEndPoint = proc.stdout.decode()
-        # chrome should be already closed, so fail to connet websocket
+        # chrome should be already closed, so fail to connect websocket
         with self.assertRaises(OSError):
             await websockets.client.connect(wsEndPoint)
 
@@ -366,8 +366,8 @@ class TestEventLoop(unittest.TestCase):
     def test_event_loop(self):
         loop = asyncio.new_event_loop()
 
-        async def inner(loop) -> None:
-            browser = await launch(args=['--no-sandbox'], loop=loop)
+        async def inner(_loop) -> None:
+            browser = await launch(args=['--no-sandbox'], loop=_loop)
             page = await browser.newPage()
             await page.goto('http://example.com')
             result = await page.evaluate('() => 1 + 2')

@@ -104,11 +104,11 @@ class FrameManager(EventEmitter):
 
     @property
     def mainFrame(self) -> Optional['Frame']:
-        """Retrun main frame."""
+        """Return main frame."""
         return self._mainFrame
 
     def frames(self) -> List['Frame']:
-        """Retrun all frames."""
+        """Return all frames."""
         return list(self._frames.values())
 
     def frame(self, frameId: str) -> Optional['Frame']:
@@ -273,7 +273,7 @@ class Frame(object):
         return await self._contextPromise
 
     async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
-        """Execute fucntion on this frame.
+        """Execute function on this frame.
 
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
@@ -346,7 +346,7 @@ class Frame(object):
         return value
 
     async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
-        """Get all elelments which matches `selector`.
+        """Get all elements which matches `selector`.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
         """
@@ -571,7 +571,7 @@ function(html) {
         await handle.dispose()
 
     async def focus(self, selector: str) -> None:
-        """Fucus element which matches ``selector``.
+        """Focus element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.focus`.
         """
@@ -734,7 +734,6 @@ function(html) {
     }
 }
         '''  # noqa: E501
-        timeout = options.get('timeout', 30000)
         return WaitTask(
             self,
             predicate,

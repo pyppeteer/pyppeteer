@@ -123,7 +123,7 @@ class TestBoxModel(BaseTestCase):
             return div
         }''')).asElement()
 
-        # query div's boxModel and assert box balues
+        # query div's boxModel and assert box values
         box = await divHandle.boxModel()
         self.assertEqual(box['width'], 6)
         self.assertEqual(box['height'], 7)
@@ -183,7 +183,7 @@ class TestClick(BaseTestCase):
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
     @sync
-    async def test_chadow_dom(self):
+    async def test_shadow_dom(self):
         await self.page.goto(self.url + 'static/shadow.html')
         button = await self.page.evaluateHandle('() => button')
         await button.click()
@@ -261,7 +261,7 @@ class TestHover(BaseTestCase):
 
 class TestIsIntersectingViewport(BaseTestCase):
     @sync
-    async def test_is_intersecting_viwport(self):
+    async def test_is_intersecting_viewport(self):
         await self.page.goto(self.url + 'static/offscreenbuttons.html')
         for i in range(11):
             button = await self.page.J('#btn{}'.format(i))
@@ -274,7 +274,7 @@ class TestScreenshot(BaseTestCase):
     async def test_screenshot_larger_than_viewport(self):
         await self.page.setViewport({'width': 500, 'height': 500})
         await self.page.setContent('''
-someting above
+something above
 <style>
 div.to-screenshot {
     border: 1px solid blue;
@@ -284,7 +284,7 @@ div.to-screenshot {
 }
 
 ::-webkit-scrollbar {
-    dispaly: none;
+    display: none;
 }
 </style>
 

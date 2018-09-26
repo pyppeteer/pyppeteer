@@ -60,7 +60,7 @@ class Keyboard(object):
         """Dispatch a ``keydown`` event with ``key``.
 
         If ``key`` is a single character and no modifier keys besides ``Shift``
-        are being held down, and a ``keyparess``/``input`` event will also
+        are being held down, and a ``keypress``/``input`` event will also
         generated. The ``text`` option can be specified to force an ``input``
         event to be generated.
 
@@ -70,7 +70,7 @@ class Keyboard(object):
 
         :arg str key: Name of key to press, such as ``ArrowLeft``.
         :arg dict options: Option can have ``text`` field, and if this option
-            spedified, generate an input event with this text.
+            specified, generate an input event with this text.
 
         .. note::
             Modifier keys DO influence :meth:`down`. Holding down ``shift``
@@ -239,7 +239,7 @@ class Keyboard(object):
           ``keyup``. Defaults to 0.
 
         .. note::
-            Modifier keys DO effect :meth:`press`. Holding down ``shift`` will
+            Modifier keys DO effect :meth:`press`. Holding down ``Shift`` will
             type the text in upper case.
         """
         options = merge_dict(options, kwargs)

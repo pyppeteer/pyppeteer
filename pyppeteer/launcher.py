@@ -26,7 +26,7 @@ from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import addEventListener, debugError, removeEventListeners
 from pyppeteer.target import Target
-from pyppeteer.util import check_chromium, chromium_excutable
+from pyppeteer.util import check_chromium, chromium_executable
 from pyppeteer.util import download_chromium, merge_dict, get_free_port
 
 if TYPE_CHECKING:
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 pyppeteer_home = Path(__pyppeteer_home__)
-CHROME_PROFILIE_PATH = pyppeteer_home / '.dev_profile'
+CHROME_PROFILE_PATH = pyppeteer_home / '.dev_profile'
 
 DEFAULT_ARGS = [
     '--disable-background-networking',
@@ -65,7 +65,7 @@ AUTOMATION_ARGS = [
 
 
 class Launcher(object):
-    """Chrome parocess launcher class."""
+    """Chrome process launcher class."""
 
     def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
                  **kwargs: Any) -> None:
@@ -123,7 +123,7 @@ class Launcher(object):
         else:
             if not check_chromium():
                 download_chromium()
-            self.exec = str(chromium_excutable())
+            self.exec = str(chromium_executable())
 
         self.cmd = [self.exec] + self.chrome_args
 
@@ -132,10 +132,10 @@ class Launcher(object):
                 not any(opt for opt in self.options['args']
                         if opt.startswith('--user-data-dir'))):
             if 'userDataDir' not in self.options:
-                if not CHROME_PROFILIE_PATH.exists():
-                    CHROME_PROFILIE_PATH.mkdir(parents=True)
+                if not CHROME_PROFILE_PATH.exists():
+                    CHROME_PROFILE_PATH.mkdir(parents=True)
                 self._tmp_user_data_dir = tempfile.mkdtemp(
-                    dir=str(CHROME_PROFILIE_PATH))
+                    dir=str(CHROME_PROFILE_PATH))
             self.chrome_args.append('--user-data-dir={}'.format(
                 self.options.get('userDataDir', self._tmp_user_data_dir)))
         if isinstance(self.options.get('args'), list):
@@ -158,7 +158,7 @@ class Launcher(object):
         self.chromeClosed = False
         self.connection: Optional[Connection] = None
 
-        options = {}
+        options = dict()
         options['env'] = self.options.get('env')
         if not self.options.get('dumpio'):
             options['stdout'] = subprocess.PIPE
@@ -173,7 +173,7 @@ class Launcher(object):
             if not self.chromeClosed:
                 self._loop.run_until_complete(self.killChrome())
 
-        # dont forget to close browser process
+        # don't forget to close browser process
         if self.options.get('autoClose', True):
             atexit.register(_close_process)
         if self.options.get('handleSIGINT', True):
@@ -265,7 +265,7 @@ class Launcher(object):
 async def launch(options: dict = None, **kwargs: Any) -> Browser:
     """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
 
-    This function is a shotcut to :meth:`Launcher(options, **kwargs).launch`.
+    This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.
 
     Available options are:
 
@@ -275,7 +275,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``True`` unless ``appMode`` or ``devtools`` options is ``True``.
     * ``executablePath`` (str): Path to a Chromium or Chrome executable to run
       instead of default bundled Chromium.
-    * ``slowMo`` (int|float): Sles down pyppeteer operations by the specified
+    * ``slowMo`` (int|float): Slow down pyppeteer operations by the specified
       amount of milliseconds.
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
@@ -297,7 +297,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       ``False``.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
       root logger.
-    * ``autoClose`` (bool): Automatically close browser process when sctipt
+    * ``autoClose`` (bool): Automatically close browser process when script
       completed. Defaults to ``True``.
     * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.
@@ -352,7 +352,7 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
 
 def executablePath() -> str:
     """Get executable path of default chrome."""
-    return str(chromium_excutable())
+    return str(chromium_executable())
 
 
 def defaultArgs() -> List[str]:

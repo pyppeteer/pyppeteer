@@ -73,7 +73,7 @@ class NetworkManager(EventEmitter):
             if not isinstance(v, str):
                 raise TypeError(
                     f'Expected value of header "{k}" to be string, '
-                    'but {} is found.'.format(type(v)))
+                    f'but {type(v)} is found.')
             self._extraHTTPHeaders[k.lower()] = v
         await self._client.send('Network.setExtraHTTPHeaders',
                                 {'headers': self._extraHTTPHeaders})
@@ -100,7 +100,7 @@ class NetworkManager(EventEmitter):
                                 {'userAgent': userAgent})
 
     async def setRequestInterception(self, value: bool) -> None:
-        """Enable request intercetion."""
+        """Enable request interception."""
         self._userRequestInterceptionEnabled = value
         await self._updateProtocolRequestInterception()
 
@@ -165,8 +165,8 @@ class NetworkManager(EventEmitter):
             if request:
                 self._handleRequestRedirect(
                     request,
-                    event.get('redirectStatusCode', 0),
-                    event.get('redirectHeaders', {}),
+                    event.get('responseStatusCode', 0),
+                    event.get('responseHeaders', {}),
                     False,
                     False,
                     None,
@@ -353,17 +353,6 @@ class Request(object):
     to a redirect url.
     """
 
-    #: url of this request.
-    url: str
-    #: headers associated with the request.
-    headers: dict
-    #: contains the request method (GET/POST/...).
-    method: str
-    #: contains the request's post body, if any.
-    postData: str
-    #: contains the request's resource type
-    resourceType: str
-
     def __init__(self, client: CDPSession, requestId: Optional[str],
                  interceptionId: str, isNavigationRequest: bool,
                  allowInterception: bool, url: str, resourceType: str,
@@ -418,7 +407,7 @@ class Request(object):
 
     @property
     def headers(self) -> Dict:
-        """Reurn a dictionary of HTTP headers of this request.
+        """Return a dictionary of HTTP headers of this request.
 
         All header names are lower-case.
         """
@@ -428,7 +417,7 @@ class Request(object):
     def response(self) -> Optional['Response']:
         """Return matching :class:`Response` object, or ``None``.
 
-        If the response has not been recieved, return ``None``.
+        If the response has not been received, return ``None``.
         """
         return self._response
 
@@ -504,15 +493,15 @@ class Request(object):
     async def respond(self, response: Dict) -> None:  # noqa: C901
         """Fulfills request with given response.
 
-        To use this, request interception shuold by enabled by
+        To use this, request interception should by enabled by
         :meth:`pyppeteer.page.Page.setRequestInterception`. Request
         interception is not enabled, raise ``NetworkError``.
 
-        ``response`` is a dictinary which can have the following fields:
+        ``response`` is a dictionary which can have the following fields:
 
         * ``status`` (int): Response status code, defaults to 200.
         * ``headers`` (dict): Optional response headers.
-        * ``contentType`` (str): If set, euqals to setting ``Content-Type``
+        * ``contentType`` (str): If set, equals to setting ``Content-Type``
           response header.
         * ``body`` (str|bytes): Optional response body.
         """
@@ -571,7 +560,7 @@ class Request(object):
         could be one of the following:
 
         - ``aborted``: An operation was aborted (due to user action).
-        - ``accesdenied``: Permission to access a resource, other than the
+        - ``accessdenied``: Permission to access a resource, other than the
           network, was denied.
         - ``addressunreachable``: The IP address is unreachable. This usually
           means that there is no route to the specified host or network.
@@ -585,7 +574,7 @@ class Request(object):
         - ``connectionclosed``: A connection was closed (corresponding to a TCP
           FIN).
         - ``connectionfailed``: A connection attempt failed.
-        - ``connnectionrefused``: A connection attempt was refused.
+        - ``connectionrefused``: A connection attempt was refused.
         - ``connectionreset``: A connection was reset (corresponding to a TCP
           RST).
         - ``internetdisconnected``: The Internet connection has been lost.
@@ -629,14 +618,7 @@ errorReasons = {
 
 
 class Response(object):
-    """Response class represents responses which are recieved by ``Page``."""
-
-    #: whether the repoonse succeeded or not.
-    ok: bool
-    #: status code of the reponse.
-    status: int
-    #: url of the reponse.
-    url: str
+    """Response class represents responses which are received by ``Page``."""
 
     def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str], fromDiskCache: bool,
@@ -710,7 +692,7 @@ class Response(object):
         return body
 
     def buffer(self) -> Awaitable[bytes]:
-        """Retrun awaitable which resolves to bytes with response body."""
+        """Return awaitable which resolves to bytes with response body."""
         if not self._contentPromise.done():
             return self._client._loop.create_task(self._bufread())
         return self._contentPromise
@@ -768,7 +750,12 @@ def generateRequestHash(request: dict) -> str:
         for header in headers:
             headerValue = request['headers'][header]
             header = header.lower()
-            if (header == 'accept' or header == 'referer' or header == 'x-devtools-emulate-network-conditions-client-id'):  # noqa: E501
+            if header in [
+                'accept',
+                'referer',
+                'x-devtools-emulate-network-conditions-client-id',
+                'cookie',
+            ]:
                 continue
             _hash['headers'][header] = headerValue
     return json.dumps(_hash)

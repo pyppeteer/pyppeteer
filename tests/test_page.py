@@ -86,7 +86,7 @@ class TestEvaluate(BaseTestCase):
         self.assertEqual(result, 27)
 
     @sync
-    async def test_paromise_reject(self):
+    async def test_promise_reject(self):
         with self.assertRaises(ElementHandleError) as cm:
             await self.page.evaluate('() => not.existing.object.property')
         self.assertIn('not is not defined', cm.exception.args[0])
@@ -1062,7 +1062,7 @@ class TestAuthenticate(BaseTestCase):
         self.assertEqual(response.status, 200)
 
 
-class TestAuthenticateFaile(BaseTestCase):
+class TestAuthenticateFailed(BaseTestCase):
     @sync
     async def test_auth_fail(self):
         await self.page.authenticate({'username': 'foo', 'password': 'bar'})
@@ -1345,16 +1345,16 @@ class TestViewport(BaseTestCase):
             let fulfill;
             const promise = new Promise(x => fulfill = x);
             window.ontouchstart = function(e) {
-                fulfill('Recieved touch');
+                fulfill('Received touch');
             };
             window.dispatchEvent(new Event('touchstart'));
 
-            fulfill('Did not recieve touch');
+            fulfill('Did not receive touch');
 
             return promise;
         }'''
         self.assertEqual(
-            await self.page.evaluate(dispatchTouch), 'Recieved touch')
+            await self.page.evaluate(dispatchTouch), 'Received touch')
 
         await self.page.setViewport({'width': 100, 'height': 100})
         self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
@@ -1565,7 +1565,7 @@ class TestSelect(BaseTestCase):
         await self.page.evaluate('makeMultiple()')
         result = await self.page.select('select', 'blue', 'black', 'magenta')
         self.assertEqual(len(result), 3)
-        self.assertEqual(set(result), set(['blue', 'black', 'magenta']))
+        self.assertEqual(set(result), {'blue', 'black', 'magenta'})
 
     @sync
     async def test_select_not_multiple(self):

@@ -9,7 +9,7 @@ from pyppeteer.chromium_downloader import check_chromium, download_chromium
 
 
 def install() -> None:
-    """Downlaod chromium if not install."""
+    """Download chromium if not install."""
     if not check_chromium():
         download_chromium()
     else:

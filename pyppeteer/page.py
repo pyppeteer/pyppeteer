@@ -292,8 +292,8 @@ class Page(EventEmitter):
         :meth:`~pyppeteer.network_manager.Request.abort`,
         :meth:`~pyppeteer.network_manager.Request.continue_`, and
         :meth:`~pyppeteer.network_manager.Request.response` methods.
-        This provides the capbility to modify network requests that are made by
-        a page.
+        This provides the capability to modify network requests that are made
+        by a page.
         """
         return await self._networkManager.setRequestInterception(value)
 
@@ -478,7 +478,7 @@ class Page(EventEmitter):
 
         ``cookies`` should be dictionaries which contain these fields:
 
-        * ``name`` (str): **requiered**
+        * ``name`` (str): **required**
         * ``url`` (str)
         * ``domain`` (str)
         * ``path`` (str)
@@ -494,10 +494,10 @@ class Page(EventEmitter):
     async def setCookie(self, *cookies: dict) -> None:
         """Set cookies.
 
-        ``coockies`` should be dictionaries which contain these fields:
+        ``cookies`` should be dictionaries which contain these fields:
 
-        * ``name`` (str): **requiered**
-        * ``value`` (str): **requiered**
+        * ``name`` (str): **required**
+        * ``value`` (str): **required**
         * ``url`` (str)
         * ``domain`` (str)
         * ``path`` (str)
@@ -641,9 +641,9 @@ function addPageBinding(bindingName) {
             ``page.setExtraHTTPHeaders`` does not guarantee the order of
             headers in the outgoing requests.
 
-        :arg Dict headers: A dictionary containing additional http headrs to be
-                           sent with every requests. All header values must be
-                           string.
+        :arg Dict headers: A dictionary containing additional http headers to
+                           be sent with every requests. All header values must
+                           be string.
         """
         return await self._networkManager.setExtraHTTPHeaders(headers)
 
@@ -751,11 +751,11 @@ function addPageBinding(bindingName) {
         _type = event.get('type')
         if _type == 'alert':
             dialogType = Dialog.Type.Alert
-        elif (_type == 'confirm'):
+        elif _type == 'confirm':
             dialogType = Dialog.Type.Confirm
-        elif (_type == 'prompt'):
+        elif _type == 'prompt':
             dialogType = Dialog.Type.Prompt
-        elif (_type == 'beforeunload'):
+        elif _type == 'beforeunload':
             dialogType = Dialog.Type.BeforeUnload
         dialog = Dialog(self._client, dialogType, event.get('message'),
                         event.get('defaultPrompt'))
@@ -799,7 +799,7 @@ function addPageBinding(bindingName) {
         Available options are:
 
         * ``timeout`` (int): Maximum navigation time in milliseconds, defaults
-          to 30 seconds, pass ``0`` to desable timeout. The default value can
+          to 30 seconds, pass ``0`` to disable timeout. The default value can
           be changed by using the :meth:`setDefaultNavigationTimeout` method.
         * ``waitUntil`` (str|List[str]): When to consider navigation succeeded,
           defaults to ``load``. Given a list of event strings, navigation is
@@ -821,7 +821,7 @@ function addPageBinding(bindingName) {
         * then main resource failed to load
 
         .. note::
-            :meth:`goto` either riase error or return a main resource response.
+            :meth:`goto` either raise error or return a main resource response.
             The only exceptions are navigation to ``about:blank`` or navigation
             to the same URL with a different hash, which would succeed and
             return ``None``.
@@ -837,9 +837,9 @@ function addPageBinding(bindingName) {
         referrer = self._networkManager.extraHTTPHeaders().get('referer', '')
         requests: Dict[str, Request] = dict()
 
-        def set_request(request: Request) -> None:
-            if request.url not in requests:
-                requests[request.url] = request
+        def set_request(req: Request) -> None:
+            if req.url not in requests:
+                requests[req.url] = req
 
         eventListeners = [helper.addEventListener(
             self._networkManager,
@@ -915,7 +915,7 @@ function addPageBinding(bindingName) {
             ])
 
         .. note::
-            Usage of the History API to chage the URL is considered a
+            Usage of the History API to change the URL is considered a
             navigation.
         """  # noqa: E501
         options = merge_dict(options, kwargs)
@@ -1164,7 +1164,7 @@ function addPageBinding(bindingName) {
         This function would be invoked in one of the following scenarios:
 
         * whenever the page is navigated
-        * whenever the child frame is attached or navigated. Inthis case, the
+        * whenever the child frame is attached or navigated. In this case, the
           function is invoked in the context of the newly attached frame.
         """
         source = helper.evaluationString(pageFunction, *args)
@@ -1296,7 +1296,7 @@ function addPageBinding(bindingName) {
         * ``headerTemplate`` (str): HTML template for the print header. Should
           be valid HTML markup with following classes.
 
-          * ``data``: formatted print date
+          * ``date``: formatted print date
           * ``title``: document title
           * ``url``: document location
           * ``pageNumber``: current page number
@@ -1309,7 +1309,7 @@ function addPageBinding(bindingName) {
         * ``landscape`` (bool): Paper orientation. Defaults to ``False``.
         * ``pageRanges`` (string): Paper ranges to print, e.g., '1-5,8,11-13'.
           Defaults to empty string, which means all pages.
-        * ``foramt`` (str): Paper format. If set, takes prioprity over
+        * ``format`` (str): Paper format. If set, takes priority over
           ``width`` or ``height``. Defaults to ``Letter``.
         * ``width`` (str): Paper width, accepts values labeled with units.
         * ``height`` (str): Paper height, accepts values labeled with units.
@@ -1342,7 +1342,7 @@ function addPageBinding(bindingName) {
         The ``width``, ``height``, and ``margin`` options accept values labeled
         with units. Unlabeled values are treated as pixels.
 
-        A few exapmles:
+        A few examples:
 
         - ``page.pdf({'width': 100})``: prints with width set to 100 pixels.
         - ``page.pdf({'width': '100px'})``: prints with width set to 100 pixels.
@@ -1567,7 +1567,7 @@ function addPageBinding(bindingName) {
 
         Pyppeteer tries to automatically detect function or selector, but
         sometimes miss-detects. If not work as you expected, use
-        :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.
+        :meth:`waitForFunction` or :meth:`waitForSelector` directly.
 
         :arg selectorOrFunctionOrTimeout: A selector, xpath, or function
                                           string, or timeout (milliseconds).
@@ -1589,7 +1589,7 @@ function addPageBinding(bindingName) {
         """Wait until element which matches ``selector`` appears on page.
 
         Wait for the ``selector`` to appear in page. If at the moment of
-        callingthe method the ``selector`` already exists, the method will
+        calling the method the ``selector`` already exists, the method will
         return immediately. If the selector doesn't appear after the
         ``timeout`` milliseconds of waiting, the function will raise error.
 
@@ -1602,7 +1602,7 @@ function addPageBinding(bindingName) {
         * ``visible`` (bool): Wait for element to be present in DOM and to be
           visible; i.e. to not have ``display: none`` or ``visibility: hidden``
           CSS properties. Defaults to ``False``.
-        * ``hidden`` (bool): Wait for eleemnt to not be found in the DOM or to
+        * ``hidden`` (bool): Wait for element to not be found in the DOM or to
           be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
           properties. Defaults to ``False``.
         * ``timeout`` (int|float): Maximum time to wait for in milliseconds.
@@ -1615,11 +1615,11 @@ function addPageBinding(bindingName) {
 
     def waitForXPath(self, xpath: str, options: dict = None,
                      **kwargs: Any) -> Awaitable:
-        """Wait until eleemnt which matches ``xpath`` appears on page.
+        """Wait until element which matches ``xpath`` appears on page.
 
         Wait for the ``xpath`` to appear in page. If the moment of calling the
         method the ``xpath`` already exists, the method will return
-        immediately. If the xpath doesn't appear after ``timeout`` millisecons
+        immediately. If the xpath doesn't appear after ``timeout`` milliseconds
         of waiting, the function will raise exception.
 
 
@@ -1627,7 +1627,7 @@ function addPageBinding(bindingName) {
         :return: Return awaitable object which resolves when element specified
                  by xpath string is added to DOM.
 
-        Avalaible options are:
+        Available options are:
 
         * ``visible`` (bool): wait for element to be present in DOM and to be
           visible, i.e. to not have ``display: none`` or ``visibility: hidden``
@@ -1636,7 +1636,7 @@ function addPageBinding(bindingName) {
           be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS
           properties. Defaults to ``False``.
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
-          Defaults to 30000 (30 seconds). Pass ``0`` to diable timeout.
+          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
         frame = self.mainFrame
         if not frame:
@@ -1645,12 +1645,12 @@ function addPageBinding(bindingName) {
 
     def waitForFunction(self, pageFunction: str, options: dict = None,
                         *args: str, **kwargs: Any) -> Awaitable:
-        """Wait until the function completes and returns a truethy value.
+        """Wait until the function completes and returns a truthy value.
 
         :arg Any args: Arguments to pass to ``pageFunction``.
         :return: Return awaitable object which resolves when the
-                 ``pageFunction`` returns a truethy value. It resolves to a
-                 :class:`~pyppeteer.execution_context.JSHandle` of the truethy
+                 ``pageFunction`` returns a truthy value. It resolves to a
+                 :class:`~pyppeteer.execution_context.JSHandle` of the truthy
                  value.
 
         This method accepts the following options:
@@ -1757,5 +1757,13 @@ class ConsoleMessage(object):
         return self._args
 
 
-#: alias to :func:`create_page()`
-craete = Page.create
+async def craete(*args: Any, **kwargs: Any) -> Page:
+    """[Deprecated] miss-spelled function.
+
+    This function is undocumented and will be removed in future release.
+    """
+    logger.warning(
+        '`craete` function is deprecated and will be removed in future. '
+        'Use `Page.create` instead.'
+    )
+    return await Page.create(*args, **kwargs)

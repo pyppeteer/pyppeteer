@@ -29,7 +29,7 @@ class Connection(EventEmitter):
         """Make connection.
 
         :arg str url: WebSocket url to connect devtool.
-        :arg int delay: delay to wait before processing recieved messages.
+        :arg int delay: delay to wait before processing received messages.
         """
         super().__init__()
         self._url = url
@@ -301,11 +301,11 @@ class CDPSession(EventEmitter):
         return session
 
 
-def _createProtocolError(error: Exception, method: str, object: Dict
+def _createProtocolError(error: Exception, method: str, obj: Dict
                          ) -> Exception:
-    message = f'Protocol error ({method}): {object["error"]["message"]}'
-    if 'data' in object['error']:
-        message += f' {object["error"]["data"]}'
+    message = f'Protocol error ({method}): {obj["error"]["message"]}'
+    if 'data' in obj['error']:
+        message += f' {obj["error"]["data"]}'
     return _rewriteError(error, message)
 
 

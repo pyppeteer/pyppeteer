@@ -1,3 +1,3 @@
-sphinx>=1.6
+sphinx>=1.6,<1.8
 sphinxcontrib-asyncio
 m2r

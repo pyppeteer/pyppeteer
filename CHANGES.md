@@ -1,6 +1,14 @@
 History
 =======
 
+## Version 0.0.25 (2018-09-27)
+
+* Fix miss-spelled methods and functions
+  * Change `Browser.isIncognite` to `Browser.isIncognito`
+  * Change `Browser.createIncogniteBrowserContext` to `Browser.createIncognitoBrowserContext`
+  * Change `chromium_excutable` to `chromium_executable`
+  * Remove `craete` function in `page.py`
+
 ## Version 0.0.24 (2018-09-12)
 
 Catch up puppeteer v1.6.0
@@ -90,7 +98,7 @@ Catch up puppeteer v1.1.1
 * Add `Page.waitForXPath` and `Frame.waitForXPath`
 * `Page.waitFor` accepts xpath string which starts with `//`
 * Add `Response.fromCache` and `Response.fromServiceWorker`
-* Add `SecurityDetauls` class and `response.secutiryDetails`
+* Add `SecurityDetails` class and `response.securityDetails`
 * Add `Page.setCacheEnabled` method
 * Add `ExecutionContext.frame`
 * Add `dumpio` option to `launch` function
@@ -115,7 +123,7 @@ Catch up puppeteer v1.1.1
 
 ## Version 0.0.16 (2018-03-23)
 
-* BugFIx: Skip SIGHUP option on windows (windows does not support this signal)
+* BugFix: Skip SIGHUP option on windows (windows does not support this signal)
 
 
 ## Version 0.0.15 (2018-03-22)
@@ -126,7 +134,7 @@ Catch up puppeteer v1.0.0
 * Add `Page.coverage` to support JS and CSS coverage
 * Add XPath support with `Page.xpath`, `Frame.xpath`, and `ElementHandle.xpath`
 * Add `Target.createCDPSession` to work with raw Devtools Protocol
-* Change `Frame.executionContest` from property to coroutine
+* Change `Frame.executionContext` from property to coroutine
 * Add `ignoreDefaultArgs` option to `pyppeteer.launch`
 * Add `handleSIGINT`/`handleSIGTERM`/`handleSIGHUP` options to `pyppeteer.launch`
 * Add `Page.setDefaultNavigationTimeout` method
@@ -153,13 +161,13 @@ Catch up puppeteer v0.13.0
 
 * `pyppeteer.launch()` is now **coroutine**
 * Implement `connect` function
-* `PYPPETEER_DOWNLAOD_HOST` env variable specifies host part of URL to download chromium
+* `PYPPETEER_DOWNLOAD_HOST` env variable specifies host part of URL to download chromium
 * Rename `setRequestInterceptionEnable` to `setRequestInterception`
 * Rename `Page.getMetrics` to `Page.metrics`
 * Implement `Browser.pages` to access all pages
     * Add `Target` class and some new method on Browser
 * Add `ElementHandle.querySelector` and `ElementHandle.querySelectorAll`
-* Refactor NavigatoinWatcher
+* Refactor NavigatorWatcher
     * add `documentloaded`, `networkidle0`, and `networkidle2` options
 * `Request.abort` accepts error code
 * `addScriptTag` and `addStyleTag` return `ElementHandle`
@@ -190,7 +198,7 @@ Catch up puppeteer v0.12.0
 * Deprecate `Page.injectFile`
 * Add `Page.querySelectorAllEval`
 * Add `Page.select` and `Page.type`
-* Add `ElementHandle.boudingBox` and `ElementHandle.screenshot`
+* Add `ElementHandle.boundingBox` and `ElementHandle.screenshot`
 * Add `ElementHandle.focus`, `ElementHandle.type`, and `ElementHandle.press`
 * Add `getMetrics` method
 * Add `offlineMode`
