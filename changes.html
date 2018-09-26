@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>History &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>History &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -42,6 +42,18 @@
             
   <div class="section" id="history">
 <h1>History<a class="headerlink" href="#history" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="version-0-0-25-2018-09-27">
+<h2>Version 0.0.25 (2018-09-27)<a class="headerlink" href="#version-0-0-25-2018-09-27" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Fix miss-spelled methods and functions<ul>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Browser.isIncognite</span></code> to <code class="docutils literal notranslate"><span class="pre">Browser.isIncognito</span></code></li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Browser.createIncogniteBrowserContext</span></code> to <code class="docutils literal notranslate"><span class="pre">Browser.createIncognitoBrowserContext</span></code></li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">chromium_excutable</span></code> to <code class="docutils literal notranslate"><span class="pre">chromium_executable</span></code></li>
+<li>Remove <code class="docutils literal notranslate"><span class="pre">craete</span></code> function in <code class="docutils literal notranslate"><span class="pre">page.py</span></code></li>
+</ul>
+</li>
+</ul>
+</div>
 <div class="section" id="version-0-0-24-2018-09-12">
 <h2>Version 0.0.24 (2018-09-12)<a class="headerlink" href="#version-0-0-24-2018-09-12" title="Permalink to this headline">¶</a></h2>
 <p>Catch up puppeteer v1.6.0</p>
@@ -139,7 +151,7 @@
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.waitForXPath</span></code> and <code class="docutils literal notranslate"><span class="pre">Frame.waitForXPath</span></code></li>
 <li><code class="docutils literal notranslate"><span class="pre">Page.waitFor</span></code> accepts xpath string which starts with <code class="docutils literal notranslate"><span class="pre">//</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Response.fromCache</span></code> and <code class="docutils literal notranslate"><span class="pre">Response.fromServiceWorker</span></code></li>
-<li>Add <code class="docutils literal notranslate"><span class="pre">SecurityDetauls</span></code> class and <code class="docutils literal notranslate"><span class="pre">response.secutiryDetails</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">SecurityDetails</span></code> class and <code class="docutils literal notranslate"><span class="pre">response.securityDetails</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.setCacheEnabled</span></code> method</li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">ExecutionContext.frame</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">dumpio</span></code> option to <code class="docutils literal notranslate"><span class="pre">launch</span></code> function</li>
@@ -167,7 +179,7 @@
 <div class="section" id="version-0-0-16-2018-03-23">
 <h2>Version 0.0.16 (2018-03-23)<a class="headerlink" href="#version-0-0-16-2018-03-23" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li>BugFIx: Skip SIGHUP option on windows (windows does not support this signal)</li>
+<li>BugFix: Skip SIGHUP option on windows (windows does not support this signal)</li>
 </ul>
 </div>
 <div class="section" id="version-0-0-15-2018-03-22">
@@ -178,7 +190,7 @@
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.coverage</span></code> to support JS and CSS coverage</li>
 <li>Add XPath support with <code class="docutils literal notranslate"><span class="pre">Page.xpath</span></code>, <code class="docutils literal notranslate"><span class="pre">Frame.xpath</span></code>, and <code class="docutils literal notranslate"><span class="pre">ElementHandle.xpath</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Target.createCDPSession</span></code> to work with raw Devtools Protocol</li>
-<li>Change <code class="docutils literal notranslate"><span class="pre">Frame.executionContest</span></code> from property to coroutine</li>
+<li>Change <code class="docutils literal notranslate"><span class="pre">Frame.executionContext</span></code> from property to coroutine</li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">ignoreDefaultArgs</span></code> option to <code class="docutils literal notranslate"><span class="pre">pyppeteer.launch</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">handleSIGINT</span></code>/<code class="docutils literal notranslate"><span class="pre">handleSIGTERM</span></code>/<code class="docutils literal notranslate"><span class="pre">handleSIGHUP</span></code> options to <code class="docutils literal notranslate"><span class="pre">pyppeteer.launch</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.setDefaultNavigationTimeout</span></code> method</li>
@@ -208,7 +220,7 @@
 <ul class="simple">
 <li><code class="docutils literal notranslate"><span class="pre">pyppeteer.launch()</span></code> is now <strong>coroutine</strong></li>
 <li>Implement <code class="docutils literal notranslate"><span class="pre">connect</span></code> function</li>
-<li><code class="docutils literal notranslate"><span class="pre">PYPPETEER_DOWNLAOD_HOST</span></code> env variable specifies host part of URL to download chromium</li>
+<li><code class="docutils literal notranslate"><span class="pre">PYPPETEER_DOWNLOAD_HOST</span></code> env variable specifies host part of URL to download chromium</li>
 <li>Rename <code class="docutils literal notranslate"><span class="pre">setRequestInterceptionEnable</span></code> to <code class="docutils literal notranslate"><span class="pre">setRequestInterception</span></code></li>
 <li>Rename <code class="docutils literal notranslate"><span class="pre">Page.getMetrics</span></code> to <code class="docutils literal notranslate"><span class="pre">Page.metrics</span></code></li>
 <li>Implement <code class="docutils literal notranslate"><span class="pre">Browser.pages</span></code> to access all pages<ul>
@@ -216,7 +228,7 @@
 </ul>
 </li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.querySelector</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.querySelectorAll</span></code></li>
-<li>Refactor NavigatoinWatcher<ul>
+<li>Refactor NavigatorWatcher<ul>
 <li>add <code class="docutils literal notranslate"><span class="pre">documentloaded</span></code>, <code class="docutils literal notranslate"><span class="pre">networkidle0</span></code>, and <code class="docutils literal notranslate"><span class="pre">networkidle2</span></code> options</li>
 </ul>
 </li>
@@ -253,7 +265,7 @@
 <li>Deprecate <code class="docutils literal notranslate"><span class="pre">Page.injectFile</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.querySelectorAllEval</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">Page.select</span></code> and <code class="docutils literal notranslate"><span class="pre">Page.type</span></code></li>
-<li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.boudingBox</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.screenshot</span></code></li>
+<li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.boundingBox</span></code> and <code class="docutils literal notranslate"><span class="pre">ElementHandle.screenshot</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">ElementHandle.focus</span></code>, <code class="docutils literal notranslate"><span class="pre">ElementHandle.type</span></code>, and <code class="docutils literal notranslate"><span class="pre">ElementHandle.press</span></code></li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">getMetrics</span></code> method</li>
 <li>Add <code class="docutils literal notranslate"><span class="pre">offlineMode</span></code></li>
@@ -345,6 +357,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="reference.html">API Reference</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">History</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#version-0-0-25-2018-09-27">Version 0.0.25 (2018-09-27)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-24-2018-09-12">Version 0.0.24 (2018-09-12)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-23-2018-09-10">Version 0.0.23 (2018-09-10)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#version-0-0-22-2018-09-06">Version 0.0.22 (2018-09-06)</a></li>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.frame_manager &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -146,11 +146,11 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">mainFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Retrun main frame.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return main frame.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mainFrame</span>
 
     <span class="k">def</span> <span class="nf">frames</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Retrun all frames.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return all frames.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_frames</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
 
     <span class="k">def</span> <span class="nf">frame</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frameId</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s1">&#39;Frame&#39;</span><span class="p">]:</span>
@@ -315,7 +315,7 @@
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_contextPromise</span></div>
 
 <div class="viewcode-block" id="Frame.evaluateHandle"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.evaluateHandle">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">evaluateHandle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSHandle</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Execute fucntion on this frame.</span>
+        <span class="sd">&quot;&quot;&quot;Execute function on this frame.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -388,7 +388,7 @@
         <span class="k">return</span> <span class="n">value</span></div>
 
 <div class="viewcode-block" id="Frame.querySelectorAll"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.querySelectorAll">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">querySelectorAll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ElementHandle</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;Get all elelments which matches `selector`.</span>
+        <span class="sd">&quot;&quot;&quot;Get all elements which matches `selector`.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.querySelectorAll`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -613,7 +613,7 @@
         <span class="k">await</span> <span class="n">handle</span><span class="o">.</span><span class="n">dispose</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="Frame.focus"><a class="viewcode-back" href="../../reference.html#pyppeteer.frame_manager.Frame.focus">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">focus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selector</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Fucus element which matches ``selector``.</span>
+        <span class="sd">&quot;&quot;&quot;Focus element which matches ``selector``.</span>
 
 <span class="sd">        Details see :meth:`pyppeteer.page.Page.focus`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -776,7 +776,6 @@
 <span class="s1">    }</span>
 <span class="s1">}</span>
 <span class="s1">        &#39;&#39;&#39;</span>  <span class="c1"># noqa: E501</span>
-        <span class="n">timeout</span> <span class="o">=</span> <span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;timeout&#39;</span><span class="p">,</span> <span class="mi">30000</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">WaitTask</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">,</span>
             <span class="n">predicate</span><span class="p">,</span>

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.connection &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.connection &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -71,7 +71,7 @@
         <span class="sd">&quot;&quot;&quot;Make connection.</span>
 
 <span class="sd">        :arg str url: WebSocket url to connect devtool.</span>
-<span class="sd">        :arg int delay: delay to wait before processing recieved messages.</span>
+<span class="sd">        :arg int delay: delay to wait before processing received messages.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_url</span> <span class="o">=</span> <span class="n">url</span>
@@ -343,11 +343,11 @@
         <span class="k">return</span> <span class="n">session</span></div>
 
 
-<span class="k">def</span> <span class="nf">_createProtocolError</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">:</span> <span class="n">Dict</span>
+<span class="k">def</span> <span class="nf">_createProtocolError</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="ne">Exception</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Dict</span>
                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="ne">Exception</span><span class="p">:</span>
-    <span class="n">message</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;Protocol error (</span><span class="si">{method}</span><span class="s1">): </span><span class="si">{object[&quot;error&quot;][&quot;message&quot;]}</span><span class="s1">&#39;</span>
-    <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">in</span> <span class="nb">object</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]:</span>
-        <span class="n">message</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39; </span><span class="si">{object[&quot;error&quot;][&quot;data&quot;]}</span><span class="s1">&#39;</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="n">f</span><span class="s1">&#39;Protocol error (</span><span class="si">{method}</span><span class="s1">): </span><span class="si">{obj[&quot;error&quot;][&quot;message&quot;]}</span><span class="s1">&#39;</span>
+    <span class="k">if</span> <span class="s1">&#39;data&#39;</span> <span class="ow">in</span> <span class="n">obj</span><span class="p">[</span><span class="s1">&#39;error&#39;</span><span class="p">]:</span>
+        <span class="n">message</span> <span class="o">+=</span> <span class="n">f</span><span class="s1">&#39; </span><span class="si">{obj[&quot;error&quot;][&quot;data&quot;]}</span><span class="s1">&#39;</span>
     <span class="k">return</span> <span class="n">_rewriteError</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span>
 
 

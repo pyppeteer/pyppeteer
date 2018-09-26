@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.browser &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -45,6 +45,7 @@
 
 <span class="sd">&quot;&quot;&quot;Browser module.&quot;&quot;&quot;</span>
 
+<span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">from</span> <span class="nn">subprocess</span> <span class="k">import</span> <span class="n">Popen</span>
 <span class="kn">from</span> <span class="nn">types</span> <span class="k">import</span> <span class="n">SimpleNamespace</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="k">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
@@ -56,13 +57,15 @@
 <span class="kn">from</span> <span class="nn">pyppeteer.page</span> <span class="k">import</span> <span class="n">Page</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.target</span> <span class="k">import</span> <span class="n">Target</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
 
 <div class="viewcode-block" id="Browser"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser">[docs]</a><span class="k">class</span> <span class="nc">Browser</span><span class="p">(</span><span class="n">EventEmitter</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Browser class.</span>
 
-<span class="sd">    A Broser object is created when pyppeteer connects to chrome, either</span>
-<span class="sd">    through :func:`~pyppeteer.launcer.launch` or</span>
-<span class="sd">    :func:`~pyppeteer.launcer.connect`.</span>
+<span class="sd">    A Browser object is created when pyppeteer connects to chrome, either</span>
+<span class="sd">    through :func:`~pyppeteer.launcher.launch` or</span>
+<span class="sd">    :func:`~pyppeteer.launcher.connect`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">Events</span> <span class="o">=</span> <span class="n">SimpleNamespace</span><span class="p">(</span>
@@ -111,21 +114,32 @@
     <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Popen</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;Return process of this browser.</span>
 
-<span class="sd">        If browser instance is created by :func:`pyppeteer.launcer.connect`,</span>
+<span class="sd">        If browser instance is created by :func:`pyppeteer.launcher.connect`,</span>
 <span class="sd">        return ``None``.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process</span>
 
 <div class="viewcode-block" id="Browser.createIncogniteBrowserContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.createIncogniteBrowserContext">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">createIncogniteBrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BrowserContext&#39;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Create a new incognite browser context.</span>
+        <span class="sd">&quot;&quot;&quot;[Deprecated] Miss spelled method.</span>
+
+<span class="sd">        Use :meth:`createIncognitoBrowserContext` method instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s1">&#39;createIncogniteBrowserContext is deprecated. &#39;</span>
+            <span class="s1">&#39;Use createIncognitoBrowserContext instead.&#39;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">createIncognitoBrowserContext</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Browser.createIncognitoBrowserContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.createIncognitoBrowserContext">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">createIncognitoBrowserContext</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;BrowserContext&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create a new incognito browser context.</span>
 
 <span class="sd">        This won&#39;t share cookies/cache with other browser contexts.</span>
 
 <span class="sd">        .. code::</span>
 
 <span class="sd">            browser = await launch()</span>
-<span class="sd">            # Create a new incognite browser context.</span>
-<span class="sd">            context = await browser.createIncogniteBrowserContext()</span>
+<span class="sd">            # Create a new incognito browser context.</span>
+<span class="sd">            context = await browser.createIncognitoBrowserContext()</span>
 <span class="sd">            # Create a new page in a pristine context.</span>
 <span class="sd">            page = await context.newPage()</span>
 <span class="sd">            # Do stuff</span>
@@ -212,7 +226,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">wsEndpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Retrun websocket end point url.&quot;&quot;&quot;</span>
+        <span class="sd">&quot;&quot;&quot;Return websocket end point url.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_connection</span><span class="o">.</span><span class="n">url</span>
 
 <div class="viewcode-block" id="Browser.newPage"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.Browser.newPage">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">newPage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
@@ -289,21 +303,21 @@
 <div class="viewcode-block" id="BrowserContext"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext">[docs]</a><span class="k">class</span> <span class="nc">BrowserContext</span><span class="p">(</span><span class="n">EventEmitter</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;BrowserContext provides multiple independent browser sessions.</span>
 
-<span class="sd">    When a browser is launched, it has a single BrowserContext used by defualt.</span>
+<span class="sd">    When a browser is launched, it has a single BrowserContext used by default.</span>
 <span class="sd">    The method `browser.newPage()` creates a page in the default browser</span>
 <span class="sd">    context.</span>
 
 <span class="sd">    If a page opens another page, e.g. with a ``window.open`` call, the popup</span>
-<span class="sd">    will belong to the parent page&#39;s borwser context.</span>
+<span class="sd">    will belong to the parent page&#39;s browser context.</span>
 
-<span class="sd">    Pyppeteer allows creation of &quot;incognite&quot; browser context with</span>
-<span class="sd">    ``browser.createIncogniteBrowserContext()`` method.</span>
-<span class="sd">    &quot;Incognite&quot; borwser contexts don&#39;t write any browser data to disk.</span>
+<span class="sd">    Pyppeteer allows creation of &quot;incognito&quot; browser context with</span>
+<span class="sd">    ``browser.createIncognitoBrowserContext()`` method.</span>
+<span class="sd">    &quot;incognito&quot; browser contexts don&#39;t write any browser data to disk.</span>
 
 <span class="sd">    .. code::</span>
 
-<span class="sd">        # Create new incognite browser context</span>
-<span class="sd">        context = await browser.createIncogniteBrowserContext()</span>
+<span class="sd">        # Create new incognito browser context</span>
+<span class="sd">        context = await browser.createIncognitoBrowserContext()</span>
 <span class="sd">        # Create a new page inside context</span>
 <span class="sd">        page = await context.newPage()</span>
 <span class="sd">        # ... do stuff with page ...</span>
@@ -332,12 +346,23 @@
         <span class="k">return</span> <span class="n">targets</span></div>
 
 <div class="viewcode-block" id="BrowserContext.isIncognite"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.isIncognite">[docs]</a>    <span class="k">def</span> <span class="nf">isIncognite</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Return whether BrowserContext is incognite.</span>
+        <span class="sd">&quot;&quot;&quot;[Deprecated] Miss spelled method.</span>
 
-<span class="sd">        The default browser context is the only non-incognite browser context.</span>
+<span class="sd">        Use :meth:`isIncognito` method instead.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s1">&#39;isIncognite is deprecated. &#39;</span>
+            <span class="s1">&#39;Use isIncognito instead.&#39;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">isIncognito</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BrowserContext.isIncognito"><a class="viewcode-back" href="../../reference.html#pyppeteer.browser.BrowserContext.isIncognito">[docs]</a>    <span class="k">def</span> <span class="nf">isIncognito</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return whether BrowserContext is incognito.</span>
+
+<span class="sd">        The default browser context is the only non-incognito browser context.</span>
 
 <span class="sd">        .. note::</span>
-<span class="sd">            The default borwser context cannot be closed.</span>
+<span class="sd">            The default browser context cannot be closed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span></div>
 
@@ -356,10 +381,10 @@
 <span class="sd">        All the targets that belongs to the browser context will be closed.</span>
 
 <span class="sd">        .. note::</span>
-<span class="sd">            Only incognite browser context can be closed.</span>
+<span class="sd">            Only incognito browser context can be closed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Non-incognite profile cannot be closed&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">BrowserError</span><span class="p">(</span><span class="s1">&#39;Non-incognito profile cannot be closed&#39;</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_browser</span><span class="o">.</span><span class="n">_disposeContext</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_id</span><span class="p">)</span></div></div>
 </pre></div>
 

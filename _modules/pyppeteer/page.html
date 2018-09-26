@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.page &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.page &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -334,8 +334,8 @@
 <span class="sd">        :meth:`~pyppeteer.network_manager.Request.abort`,</span>
 <span class="sd">        :meth:`~pyppeteer.network_manager.Request.continue_`, and</span>
 <span class="sd">        :meth:`~pyppeteer.network_manager.Request.response` methods.</span>
-<span class="sd">        This provides the capbility to modify network requests that are made by</span>
-<span class="sd">        a page.</span>
+<span class="sd">        This provides the capability to modify network requests that are made</span>
+<span class="sd">        by a page.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setRequestInterception</span><span class="p">(</span><span class="n">value</span><span class="p">)</span></div>
 
@@ -520,7 +520,7 @@
 
 <span class="sd">        ``cookies`` should be dictionaries which contain these fields:</span>
 
-<span class="sd">        * ``name`` (str): **requiered**</span>
+<span class="sd">        * ``name`` (str): **required**</span>
 <span class="sd">        * ``url`` (str)</span>
 <span class="sd">        * ``domain`` (str)</span>
 <span class="sd">        * ``path`` (str)</span>
@@ -536,10 +536,10 @@
 <div class="viewcode-block" id="Page.setCookie"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.setCookie">[docs]</a>    <span class="k">async</span> <span class="k">def</span> <span class="nf">setCookie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">cookies</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Set cookies.</span>
 
-<span class="sd">        ``coockies`` should be dictionaries which contain these fields:</span>
+<span class="sd">        ``cookies`` should be dictionaries which contain these fields:</span>
 
-<span class="sd">        * ``name`` (str): **requiered**</span>
-<span class="sd">        * ``value`` (str): **requiered**</span>
+<span class="sd">        * ``name`` (str): **required**</span>
+<span class="sd">        * ``value`` (str): **required**</span>
 <span class="sd">        * ``url`` (str)</span>
 <span class="sd">        * ``domain`` (str)</span>
 <span class="sd">        * ``path`` (str)</span>
@@ -683,9 +683,9 @@
 <span class="sd">            ``page.setExtraHTTPHeaders`` does not guarantee the order of</span>
 <span class="sd">            headers in the outgoing requests.</span>
 
-<span class="sd">        :arg Dict headers: A dictionary containing additional http headrs to be</span>
-<span class="sd">                           sent with every requests. All header values must be</span>
-<span class="sd">                           string.</span>
+<span class="sd">        :arg Dict headers: A dictionary containing additional http headers to</span>
+<span class="sd">                           be sent with every requests. All header values must</span>
+<span class="sd">                           be string.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">setExtraHTTPHeaders</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span></div>
 
@@ -793,11 +793,11 @@
         <span class="n">_type</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;alert&#39;</span><span class="p">:</span>
             <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Alert</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;confirm&#39;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;confirm&#39;</span><span class="p">:</span>
             <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Confirm</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;prompt&#39;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;prompt&#39;</span><span class="p">:</span>
             <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">Prompt</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;beforeunload&#39;</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">_type</span> <span class="o">==</span> <span class="s1">&#39;beforeunload&#39;</span><span class="p">:</span>
             <span class="n">dialogType</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">Type</span><span class="o">.</span><span class="n">BeforeUnload</span>
         <span class="n">dialog</span> <span class="o">=</span> <span class="n">Dialog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="n">dialogType</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;message&#39;</span><span class="p">),</span>
                         <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;defaultPrompt&#39;</span><span class="p">))</span>
@@ -841,7 +841,7 @@
 <span class="sd">        Available options are:</span>
 
 <span class="sd">        * ``timeout`` (int): Maximum navigation time in milliseconds, defaults</span>
-<span class="sd">          to 30 seconds, pass ``0`` to desable timeout. The default value can</span>
+<span class="sd">          to 30 seconds, pass ``0`` to disable timeout. The default value can</span>
 <span class="sd">          be changed by using the :meth:`setDefaultNavigationTimeout` method.</span>
 <span class="sd">        * ``waitUntil`` (str|List[str]): When to consider navigation succeeded,</span>
 <span class="sd">          defaults to ``load``. Given a list of event strings, navigation is</span>
@@ -863,7 +863,7 @@
 <span class="sd">        * then main resource failed to load</span>
 
 <span class="sd">        .. note::</span>
-<span class="sd">            :meth:`goto` either riase error or return a main resource response.</span>
+<span class="sd">            :meth:`goto` either raise error or return a main resource response.</span>
 <span class="sd">            The only exceptions are navigation to ``about:blank`` or navigation</span>
 <span class="sd">            to the same URL with a different hash, which would succeed and</span>
 <span class="sd">            return ``None``.</span>
@@ -879,9 +879,9 @@
         <span class="n">referrer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="o">.</span><span class="n">extraHTTPHeaders</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;referer&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
         <span class="n">requests</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Request</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">set_request</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
-                <span class="n">requests</span><span class="p">[</span><span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="p">]</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="k">def</span> <span class="nf">set_request</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">req</span><span class="o">.</span><span class="n">url</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
+                <span class="n">requests</span><span class="p">[</span><span class="n">req</span><span class="o">.</span><span class="n">url</span><span class="p">]</span> <span class="o">=</span> <span class="n">req</span>
 
         <span class="n">eventListeners</span> <span class="o">=</span> <span class="p">[</span><span class="n">helper</span><span class="o">.</span><span class="n">addEventListener</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_networkManager</span><span class="p">,</span>
@@ -957,7 +957,7 @@
 <span class="sd">            ])</span>
 
 <span class="sd">        .. note::</span>
-<span class="sd">            Usage of the History API to chage the URL is considered a</span>
+<span class="sd">            Usage of the History API to change the URL is considered a</span>
 <span class="sd">            navigation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
         <span class="n">options</span> <span class="o">=</span> <span class="n">merge_dict</span><span class="p">(</span><span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
@@ -1206,7 +1206,7 @@
 <span class="sd">        This function would be invoked in one of the following scenarios:</span>
 
 <span class="sd">        * whenever the page is navigated</span>
-<span class="sd">        * whenever the child frame is attached or navigated. Inthis case, the</span>
+<span class="sd">        * whenever the child frame is attached or navigated. In this case, the</span>
 <span class="sd">          function is invoked in the context of the newly attached frame.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">source</span> <span class="o">=</span> <span class="n">helper</span><span class="o">.</span><span class="n">evaluationString</span><span class="p">(</span><span class="n">pageFunction</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
@@ -1338,7 +1338,7 @@
 <span class="sd">        * ``headerTemplate`` (str): HTML template for the print header. Should</span>
 <span class="sd">          be valid HTML markup with following classes.</span>
 
-<span class="sd">          * ``data``: formatted print date</span>
+<span class="sd">          * ``date``: formatted print date</span>
 <span class="sd">          * ``title``: document title</span>
 <span class="sd">          * ``url``: document location</span>
 <span class="sd">          * ``pageNumber``: current page number</span>
@@ -1384,7 +1384,7 @@
 <span class="sd">        The ``width``, ``height``, and ``margin`` options accept values labeled</span>
 <span class="sd">        with units. Unlabeled values are treated as pixels.</span>
 
-<span class="sd">        A few exapmles:</span>
+<span class="sd">        A few examples:</span>
 
 <span class="sd">        - ``page.pdf({&#39;width&#39;: 100})``: prints with width set to 100 pixels.</span>
 <span class="sd">        - ``page.pdf({&#39;width&#39;: &#39;100px&#39;})``: prints with width set to 100 pixels.</span>
@@ -1609,7 +1609,7 @@
 
 <span class="sd">        Pyppeteer tries to automatically detect function or selector, but</span>
 <span class="sd">        sometimes miss-detects. If not work as you expected, use</span>
-<span class="sd">        :meth:`waitForFunction` or :meth:`waitForSelector` dilectly.</span>
+<span class="sd">        :meth:`waitForFunction` or :meth:`waitForSelector` directly.</span>
 
 <span class="sd">        :arg selectorOrFunctionOrTimeout: A selector, xpath, or function</span>
 <span class="sd">                                          string, or timeout (milliseconds).</span>
@@ -1631,7 +1631,7 @@
         <span class="sd">&quot;&quot;&quot;Wait until element which matches ``selector`` appears on page.</span>
 
 <span class="sd">        Wait for the ``selector`` to appear in page. If at the moment of</span>
-<span class="sd">        callingthe method the ``selector`` already exists, the method will</span>
+<span class="sd">        calling the method the ``selector`` already exists, the method will</span>
 <span class="sd">        return immediately. If the selector doesn&#39;t appear after the</span>
 <span class="sd">        ``timeout`` milliseconds of waiting, the function will raise error.</span>
 
@@ -1644,7 +1644,7 @@
 <span class="sd">        * ``visible`` (bool): Wait for element to be present in DOM and to be</span>
 <span class="sd">          visible; i.e. to not have ``display: none`` or ``visibility: hidden``</span>
 <span class="sd">          CSS properties. Defaults to ``False``.</span>
-<span class="sd">        * ``hidden`` (bool): Wait for eleemnt to not be found in the DOM or to</span>
+<span class="sd">        * ``hidden`` (bool): Wait for element to not be found in the DOM or to</span>
 <span class="sd">          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS</span>
 <span class="sd">          properties. Defaults to ``False``.</span>
 <span class="sd">        * ``timeout`` (int|float): Maximum time to wait for in milliseconds.</span>
@@ -1657,11 +1657,11 @@
 
 <div class="viewcode-block" id="Page.waitForXPath"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitForXPath">[docs]</a>    <span class="k">def</span> <span class="nf">waitForXPath</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xpath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                      <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Wait until eleemnt which matches ``xpath`` appears on page.</span>
+        <span class="sd">&quot;&quot;&quot;Wait until element which matches ``xpath`` appears on page.</span>
 
 <span class="sd">        Wait for the ``xpath`` to appear in page. If the moment of calling the</span>
 <span class="sd">        method the ``xpath`` already exists, the method will return</span>
-<span class="sd">        immediately. If the xpath doesn&#39;t appear after ``timeout`` millisecons</span>
+<span class="sd">        immediately. If the xpath doesn&#39;t appear after ``timeout`` milliseconds</span>
 <span class="sd">        of waiting, the function will raise exception.</span>
 
 
@@ -1669,7 +1669,7 @@
 <span class="sd">        :return: Return awaitable object which resolves when element specified</span>
 <span class="sd">                 by xpath string is added to DOM.</span>
 
-<span class="sd">        Avalaible options are:</span>
+<span class="sd">        Available options are:</span>
 
 <span class="sd">        * ``visible`` (bool): wait for element to be present in DOM and to be</span>
 <span class="sd">          visible, i.e. to not have ``display: none`` or ``visibility: hidden``</span>
@@ -1678,7 +1678,7 @@
 <span class="sd">          be hidden, i.e. have ``display: none`` or ``visibility: hidden`` CSS</span>
 <span class="sd">          properties. Defaults to ``False``.</span>
 <span class="sd">        * ``timeout`` (int|float): maximum time to wait for in milliseconds.</span>
-<span class="sd">          Defaults to 30000 (30 seconds). Pass ``0`` to diable timeout.</span>
+<span class="sd">          Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mainFrame</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">frame</span><span class="p">:</span>
@@ -1687,12 +1687,12 @@
 
 <div class="viewcode-block" id="Page.waitForFunction"><a class="viewcode-back" href="../../reference.html#pyppeteer.page.Page.waitForFunction">[docs]</a>    <span class="k">def</span> <span class="nf">waitForFunction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pageFunction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Awaitable</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Wait until the function completes and returns a truethy value.</span>
+        <span class="sd">&quot;&quot;&quot;Wait until the function completes and returns a truthy value.</span>
 
 <span class="sd">        :arg Any args: Arguments to pass to ``pageFunction``.</span>
 <span class="sd">        :return: Return awaitable object which resolves when the</span>
-<span class="sd">                 ``pageFunction`` returns a truethy value. It resolves to a</span>
-<span class="sd">                 :class:`~pyppeteer.execution_context.JSHandle` of the truethy</span>
+<span class="sd">                 ``pageFunction`` returns a truthy value. It resolves to a</span>
+<span class="sd">                 :class:`~pyppeteer.execution_context.JSHandle` of the truthy</span>
 <span class="sd">                 value.</span>
 
 <span class="sd">        This method accepts the following options:</span>
@@ -1799,8 +1799,16 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_args</span></div>
 
 
-<span class="c1">#: alias to :func:`create_page()`</span>
-<span class="n">craete</span> <span class="o">=</span> <span class="n">Page</span><span class="o">.</span><span class="n">create</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">craete</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Page</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;[Deprecated] miss-spelled function.</span>
+
+<span class="sd">    This function is undocumented and will be removed in future release.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+        <span class="s1">&#39;`craete` function is deprecated and will be removed in future. &#39;</span>
+        <span class="s1">&#39;Use `Page.create` instead.&#39;</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">Page</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </pre></div>
 
           </div>

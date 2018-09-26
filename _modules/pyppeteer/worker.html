@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.worker &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.worker &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -84,22 +84,19 @@
             <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
 
         <span class="k">def</span> <span class="nf">onExecutionContentCreated</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">_execution_contexts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ExecutionContext</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">nonlocal</span> <span class="n">jsHandleFactory</span>
 
             <span class="k">def</span> <span class="nf">jsHandleFactory</span><span class="p">(</span><span class="n">remoteObject</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSHandle</span><span class="p">:</span>
-                <span class="n">executionContext</span> <span class="o">=</span> <span class="n">_execution_contexts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">return</span> <span class="n">JSHandle</span><span class="p">(</span><span class="n">executionContext</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="n">remoteObject</span><span class="p">)</span>
 
             <span class="n">executionContext</span> <span class="o">=</span> <span class="n">ExecutionContext</span><span class="p">(</span>
                 <span class="n">client</span><span class="p">,</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;context&#39;</span><span class="p">],</span> <span class="n">jsHandleFactory</span><span class="p">)</span>
-            <span class="n">_execution_contexts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">executionContext</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_executionContextCallback</span><span class="p">(</span><span class="n">executionContext</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">on</span><span class="p">(</span><span class="s1">&#39;Runtime.executionContextCreated&#39;</span><span class="p">,</span>
                         <span class="n">onExecutionContentCreated</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># This might fail if the target is closed before we recieve all</span>
+            <span class="c1"># This might fail if the target is closed before we receive all</span>
             <span class="c1"># execution contexts.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;Runtime.enable&#39;</span><span class="p">,</span> <span class="p">{})</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>

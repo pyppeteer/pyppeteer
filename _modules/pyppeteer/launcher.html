@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.24 documentation</title>
+    <title>pyppeteer.launcher &#8212; Pyppeteer 0.0.25 documentation</title>
     <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
@@ -68,7 +68,7 @@
 <span class="kn">from</span> <span class="nn">pyppeteer.errors</span> <span class="k">import</span> <span class="n">BrowserError</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.helper</span> <span class="k">import</span> <span class="n">addEventListener</span><span class="p">,</span> <span class="n">debugError</span><span class="p">,</span> <span class="n">removeEventListeners</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.target</span> <span class="k">import</span> <span class="n">Target</span>
-<span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">check_chromium</span><span class="p">,</span> <span class="n">chromium_excutable</span>
+<span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">check_chromium</span><span class="p">,</span> <span class="n">chromium_executable</span>
 <span class="kn">from</span> <span class="nn">pyppeteer.util</span> <span class="k">import</span> <span class="n">download_chromium</span><span class="p">,</span> <span class="n">merge_dict</span><span class="p">,</span> <span class="n">get_free_port</span>
 
 <span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
@@ -77,7 +77,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">pyppeteer_home</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">__pyppeteer_home__</span><span class="p">)</span>
-<span class="n">CHROME_PROFILIE_PATH</span> <span class="o">=</span> <span class="n">pyppeteer_home</span> <span class="o">/</span> <span class="s1">&#39;.dev_profile&#39;</span>
+<span class="n">CHROME_PROFILE_PATH</span> <span class="o">=</span> <span class="n">pyppeteer_home</span> <span class="o">/</span> <span class="s1">&#39;.dev_profile&#39;</span>
 
 <span class="n">DEFAULT_ARGS</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s1">&#39;--disable-background-networking&#39;</span><span class="p">,</span>
@@ -107,7 +107,7 @@
 
 
 <span class="k">class</span> <span class="nc">Launcher</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Chrome parocess launcher class.&quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Chrome process launcher class.&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># noqa: C901</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -165,7 +165,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">check_chromium</span><span class="p">():</span>
                 <span class="n">download_chromium</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_excutable</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">exec</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_executable</span><span class="p">())</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">exec</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">chrome_args</span>
 
@@ -174,10 +174,10 @@
                 <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">opt</span> <span class="k">for</span> <span class="n">opt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">[</span><span class="s1">&#39;args&#39;</span><span class="p">]</span>
                         <span class="k">if</span> <span class="n">opt</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;--user-data-dir&#39;</span><span class="p">))):</span>
             <span class="k">if</span> <span class="s1">&#39;userDataDir&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">CHROME_PROFILIE_PATH</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-                    <span class="n">CHROME_PROFILIE_PATH</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">CHROME_PROFILE_PATH</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">CHROME_PROFILE_PATH</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_tmp_user_data_dir</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">(</span>
-                    <span class="nb">dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">CHROME_PROFILIE_PATH</span><span class="p">))</span>
+                    <span class="nb">dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">CHROME_PROFILE_PATH</span><span class="p">))</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">chrome_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;--user-data-dir=</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;userDataDir&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tmp_user_data_dir</span><span class="p">)))</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;args&#39;</span><span class="p">),</span> <span class="nb">list</span><span class="p">):</span>
@@ -200,7 +200,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">chromeClosed</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="n">options</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">options</span><span class="p">[</span><span class="s1">&#39;env&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;env&#39;</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;dumpio&#39;</span><span class="p">):</span>
             <span class="n">options</span><span class="p">[</span><span class="s1">&#39;stdout&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
@@ -215,7 +215,7 @@
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">chromeClosed</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span><span class="o">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">killChrome</span><span class="p">())</span>
 
-        <span class="c1"># dont forget to close browser process</span>
+        <span class="c1"># don&#39;t forget to close browser process</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;autoClose&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
             <span class="n">atexit</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">_close_process</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;handleSIGINT&#39;</span><span class="p">,</span> <span class="kc">True</span><span class="p">):</span>
@@ -307,7 +307,7 @@
 <div class="viewcode-block" id="launch"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.launch">[docs]</a><span class="k">async</span> <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="n">options</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Browser</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Start chrome process and return :class:`~pyppeteer.browser.Browser`.</span>
 
-<span class="sd">    This function is a shotcut to :meth:`Launcher(options, **kwargs).launch`.</span>
+<span class="sd">    This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.</span>
 
 <span class="sd">    Available options are:</span>
 
@@ -317,7 +317,7 @@
 <span class="sd">      ``True`` unless ``appMode`` or ``devtools`` options is ``True``.</span>
 <span class="sd">    * ``executablePath`` (str): Path to a Chromium or Chrome executable to run</span>
 <span class="sd">      instead of default bundled Chromium.</span>
-<span class="sd">    * ``slowMo`` (int|float): Sles down pyppeteer operations by the specified</span>
+<span class="sd">    * ``slowMo`` (int|float): Slow down pyppeteer operations by the specified</span>
 <span class="sd">      amount of milliseconds.</span>
 <span class="sd">    * ``args`` (List[str]): Additional arguments (flags) to pass to the browser</span>
 <span class="sd">      process.</span>
@@ -339,7 +339,7 @@
 <span class="sd">      ``False``.</span>
 <span class="sd">    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the</span>
 <span class="sd">      root logger.</span>
-<span class="sd">    * ``autoClose`` (bool): Automatically close browser process when sctipt</span>
+<span class="sd">    * ``autoClose`` (bool): Automatically close browser process when script</span>
 <span class="sd">      completed. Defaults to ``True``.</span>
 <span class="sd">    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).</span>
 <span class="sd">    * ``appMode`` (bool): Deprecated.</span>
@@ -394,7 +394,7 @@
 
 <div class="viewcode-block" id="executablePath"><a class="viewcode-back" href="../../reference.html#pyppeteer.launcher.executablePath">[docs]</a><span class="k">def</span> <span class="nf">executablePath</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;Get executable path of default chrome.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_excutable</span><span class="p">())</span></div>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">chromium_executable</span><span class="p">())</span></div>
 
 
 <span class="k">def</span> <span class="nf">defaultArgs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
