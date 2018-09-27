@@ -274,6 +274,21 @@ class TestRequestInterception(BaseTestCase):
         self.assertEqual(res.status, 200)
 
     @sync
+    async def test_referer_header(self):
+        await self.page.setRequestInterception(True)
+        requests = list()
+
+        async def set_request(req):
+            requests.append(req)
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(set_request(req)))
+        await self.page.goto(self.url + 'static/one-style.html')
+        self.assertIn('/one-style.css', requests[1].url)
+        self.assertIn('/one-style.html', requests[1].headers['referer'])
+
+    @sync
     async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
         self.page.once('request',
