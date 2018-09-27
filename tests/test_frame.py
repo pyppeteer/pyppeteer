@@ -441,6 +441,16 @@ class TestWaitForSelector(BaseTestCase):
         )
 
     @sync
+    async def test_error_msg_wait_for_hidden(self):
+        await self.page.setContent('<div></div>')
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForSelector('div', hidden=True, timeout=10)
+        self.assertIn(
+            'Waiting for selector "div" to be hidden failed: timeout',
+            cm.exception.args[0],
+        )
+
+    @sync
     async def test_wait_for_selector_node_mutation(self):
         div = []
         fut = asyncio.ensure_future(self.page.waitForSelector('.cls'))

@@ -712,6 +712,12 @@ function(html) {
         waitForVisible = bool(options.get('visible'))
         waitForHidden = bool(options.get('hidden'))
         polling = 'raf' if waitForHidden or waitForVisible else 'mutation'
+        title = '{} "{}"{}'.format(
+            'XPath' if isXPath else 'selector',
+            selectorOrXPath,
+            ' to be hidden' if waitForHidden else '',
+        )
+
         predicate = '''
 (selectorOrXPath, isXPath, waitForVisible, waitForHidden) => {
     const node = isXPath
@@ -734,10 +740,11 @@ function(html) {
     }
 }
         '''  # noqa: E501
+
         return WaitTask(
             self,
             predicate,
-            f'{"XPath" if isXPath else "selector"} "{selectorOrXPath}"',
+            title,
             polling,
             timeout,
             self._client._loop,
