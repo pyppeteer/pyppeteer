@@ -106,6 +106,21 @@ class TestLauncher(unittest.TestCase):
         server.stop()
 
     @sync
+    async def test_ignore_https_errors_interception(self):
+        browser = await launch(DEFAULT_OPTIONS, ignoreHTTPSErrors=True)
+        page = await browser.newPage()
+        await page.setRequestInterception(True)
+
+        async def check(req) -> None:
+            await req.continue_()
+
+        page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        # TODO: should use user-signed cert
+        response = await page.goto('https://google.com/')
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status, 200)
+
+    @sync
     async def test_await_after_close(self):
         browser = await launch(DEFAULT_OPTIONS)
         page = await browser.newPage()
