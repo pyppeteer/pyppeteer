@@ -852,6 +852,19 @@ class TestExposeFunction(BaseTestCase):
         self.assertEqual(result, 36)
 
     @sync
+    async def test_call_from_evaluate_on_document(self):
+        await self.page.goto(self.url + 'empty')
+        called = list()
+
+        def woof():
+            called.append(True)
+
+        await self.page.exposeFunction('woof', woof)
+        await self.page.evaluateOnNewDocument('() => woof()')
+        await self.page.reload()
+        self.assertTrue(called)
+
+    @sync
     async def test_expose_function_other_page(self):
         await self.page.exposeFunction('compute', lambda a, b: a * b)
         await self.page.goto(self.url + 'empty')
