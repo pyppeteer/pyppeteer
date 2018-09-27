@@ -29,7 +29,7 @@ REVISION = os.environ.get(
 
 NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
 if NO_PROGRESS_BAR.lower() in ('1', 'true'):
-    NO_PROGRESS_BAR = True
+    NO_PROGRESS_BAR = True  # type: ignore
 
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
@@ -86,7 +86,10 @@ def download_zip(url: str) -> BytesIO:
         except (KeyError, ValueError, AttributeError):
             total_length = 0
 
-        process_bar = tqdm(total=total_length, file=os.devnull if NO_PROGRESS_BAR else None)
+        process_bar = tqdm(
+            total=total_length,
+            file=os.devnull if NO_PROGRESS_BAR else None,
+        )
 
         # 10 * 1024
         _data = BytesIO()
