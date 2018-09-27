@@ -115,9 +115,7 @@ class Launcher(object):
                     return False
             return True
 
-        if (not self.options.get('ignoreDefaultArgs') and
-                isinstance(self.options.get('args'), list) and
-                _is_default_url()):
+        if isinstance(self.options.get('args'), list) and _is_default_url():
             self.chrome_args.append('about:blank')
 
         if 'executablePath' in self.options:
