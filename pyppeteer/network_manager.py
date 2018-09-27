@@ -43,11 +43,11 @@ class NetworkManager(EventEmitter):
         self._client = client
         self._frameManager = frameManager
         self._requestIdToRequest: Dict[Optional[str], Request] = dict()
-        self._interceptionIdToRequest: Dict[Optional[str], Request] = dict()
+        self._requestIdToResponseWillBeSent: Dict[Optional[str], Dict] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
         self._offline: bool = False
         self._credentials: Optional[Dict[str, str]] = None
-        self._attemptedAuthentications: Set[str] = set()
+        self._attemptedAuthentications: Set[Optional[str]] = set()
         self._userRequestInterceptionEnabled = False
         self._protocolRequestInterceptionEnabled = False
         self._requestHashToRequestIds = Multimap()
@@ -122,6 +122,19 @@ class NetworkManager(EventEmitter):
             )
         )
 
+    async def _onRequestWillBeSent(self, event: Dict) -> None:
+        if self._protocolRequestInterceptionEnabled:
+            requestHash = generateRequestHash(event.get('request', {}))
+            interceptionId = self._requestHashToInterceptionIds.firstValue(requestHash)  # noqa: E501
+            if interceptionId:
+                self._onRequest(event, interceptionId)
+                self._requestHashToInterceptionIds.delete(requestHash, interceptionId)  # noqa: E501
+            else:
+                self._requestHashToRequestIds.set(requestHash, event.get('requestId'))  # noqa: E501
+                self._requestIdToResponseWillBeSent[event.get('requestId')] = event  # noqa: E501
+            return
+        self._onRequest(event, None)
+
     async def _send(self, method: str, msg: dict) -> None:
         try:
             await self._client.send(method, msg)
@@ -159,47 +172,46 @@ class NetworkManager(EventEmitter):
                 }
             ))
 
-        if 'redirectUrl' in event:
-            request = self._interceptionIdToRequest.get(
-                event.get('interceptionId', ''))
-            if request:
-                self._handleRequestRedirect(
-                    request,
-                    event.get('responseStatusCode', 0),
-                    event.get('responseHeaders', {}),
-                    False,
-                    False,
-                    None,
-                )
-                self._handleRequestStart(
-                    request._requestId,
-                    event.get('interceptionId', ''),
-                    event.get('redirectUrl', ''),
-                    event.get('isNavigationRequest', False),
-                    event.get('resourceType', ''),
-                    event.get('request', {}),
-                    event.get('frameId'),
-                    request._redirectChain,
-                )
-            return
-
         requestHash = generateRequestHash(event['request'])
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
         if requestId:
+            requestWillBeSentEvent = self._requestIdToResponseWillBeSent[requestId]  # noqa: E501
+            self._onRequest(requestWillBeSentEvent, event.get('interceptionId'))  # noqa: E501
             self._requestHashToRequestIds.delete(requestHash, requestId)
-            self._handleRequestStart(
-                requestId, event['interceptionId'], event['request']['url'],
-                event['isNavigationRequest'], event['resourceType'],
-                event['request'], event['frameId'], [],
-            )
+            self._requestIdToResponseWillBeSent.pop(requestId, None)
         else:
-            self._requestHashToInterceptionIds.set(
-                requestHash, event['interceptionId'])
-            self._handleRequestStart(
-                None, event['interceptionId'], event['request']['url'],
-                event['isNavigationRequest'], event['resourceType'],
-                event['request'], event['frameId'], [],
-            )
+            self._requestHashToInterceptionIds.set(requestHash, event['interceptionId'])  # noqa: E501
+
+    def _onRequest(self, event: Dict, interceptionId: Optional[str]) -> None:
+        redirectChain: List[Request] = list()
+        if event.get('redirectResponse'):
+            request = self._requestIdToRequest.get(event['requestId'])
+            if request:
+                redirectResponse = event['redirectResponse']
+                self._handleRequestRedirect(
+                    request,
+                    redirectResponse.get('status'),
+                    redirectResponse.get('headers'),
+                    redirectResponse.get('fromDiskCache'),
+                    redirectResponse.get('fromServiceWorker'),
+                    redirectResponse.get('SecurityDetails'),
+                )
+                redirectChain = request._redirectChain
+
+        isNavigationRequest = bool(
+            event.get('requestId') == event.get('loaderId') and
+            event.get('type') == 'Document'
+        )
+        self._handleRequestStart(
+            event['requestId'],
+            interceptionId,
+            event.get('request', {}).get('url'),
+            isNavigationRequest,
+            event.get('type', ''),
+            event.get('request', {}),
+            event.get('frameId'),
+            redirectChain,
+        )
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
         request = self._requestIdToRequest.get(event.get('requestId'))
@@ -219,13 +231,12 @@ class NetworkManager(EventEmitter):
             NetworkError('Response body is unavailable for redirect response')
         )
         self._requestIdToRequest.pop(request._requestId, None)
-        self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.Response, response)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
-    def _handleRequestStart(self, requestId: Optional[str],
-                            interceptionId: str, url: str,
+    def _handleRequestStart(self, requestId: str,
+                            interceptionId: Optional[str], url: str,
                             isNavigationRequest: bool, resourceType: str,
                             requestPayload: Dict, frameId: Optional[str],
                             redirectChain: List['Request']
@@ -238,55 +249,8 @@ class NetworkManager(EventEmitter):
                           isNavigationRequest,
                           self._userRequestInterceptionEnabled, url,
                           resourceType, requestPayload, frame, redirectChain)
-        if requestId:
-            self._requestIdToRequest[requestId] = request
-        if interceptionId:
-            self._interceptionIdToRequest[interceptionId] = request
+        self._requestIdToRequest[requestId] = request
         self.emit(NetworkManager.Events.Request, request)
-
-    def _onRequestWillBeSent(self, event: dict) -> None:
-        if self._protocolRequestInterceptionEnabled:
-            if event.get('redirectResponse'):
-                return
-            requestHash = generateRequestHash(event['request'])
-            interceptionId = self._requestHashToInterceptionIds.firstValue(
-                requestHash)
-            request = self._interceptionIdToRequest.get(interceptionId)
-            if request:
-                request._requestId = event['requestId']
-                self._requestIdToRequest[event['requestId']] = request
-                self._requestHashToInterceptionIds.delete(
-                    requestHash, interceptionId)
-            else:
-                self._requestHashToRequestIds.set(
-                    requestHash, event['requestId'])
-            return
-
-        redirectChain: List[Request] = []
-        if event.get('redirectResponse'):
-            request = self._requestIdToRequest[event['requestId']]
-            if request:
-                redirectResponse = event.get('redirectResponse', {})
-                self._handleRequestRedirect(
-                    request,
-                    redirectResponse.get('status'),
-                    redirectResponse.get('headers'),
-                    redirectResponse.get('fromDiskCache'),
-                    redirectResponse.get('fromServiceWorker'),
-                    redirectResponse.get('securityDetails'),
-                )
-                redirectChain = request._redirectChain
-        isNavigationRequest = (event['requestId'] == event['loaderId'] and
-                               event['type'] == 'Document')
-        self._handleRequestStart(
-            event.get('requestId', ''), '',
-            event.get('request', {}).get('url', ''),
-            isNavigationRequest,
-            event.get('type', ''),
-            event.get('request', {}),
-            event.get('frameId'),
-            redirectChain,
-        )
 
     def _onResponseReceived(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
@@ -304,7 +268,7 @@ class NetworkManager(EventEmitter):
         self.emit(NetworkManager.Events.Response, response)
 
     def _onLoadingFinished(self, event: dict) -> None:
-        request = self._requestIdToRequest.get(event.get('requestId', ''))
+        request = self._requestIdToRequest.get(event['requestId'])
         # For certain requestIds we never receive requestWillBeSent event.
         # @see https://crbug.com/750469
         if not request:
@@ -313,7 +277,6 @@ class NetworkManager(EventEmitter):
         if response:
             response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
-        self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.RequestFinished, request)
 
@@ -328,7 +291,6 @@ class NetworkManager(EventEmitter):
         if response:
             response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
-        self._interceptionIdToRequest.pop(request._interceptionId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.RequestFailed, request)
 
@@ -354,7 +316,7 @@ class Request(object):
     """
 
     def __init__(self, client: CDPSession, requestId: Optional[str],
-                 interceptionId: str, isNavigationRequest: bool,
+                 interceptionId: Optional[str], isNavigationRequest: bool,
                  allowInterception: bool, url: str, resourceType: str,
                  payload: dict, frame: Optional[Frame],
                  redirectChain: List['Request']

@@ -410,6 +410,29 @@ class TestRequestInterception(BaseTestCase):
         response = await self.page.goto(self.url + 'redirect1')
         self.assertEqual(response.status, 200)
 
+    @sync
+    async def test_redirect_for_subresource(self):
+        await self.page.setRequestInterception(True)
+        requests = list()
+
+        async def check(req):
+            await req.continue_()
+            requests.append(req)
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        response = await self.page.goto(self.url + 'one-style.html')
+        self.assertEqual(response.status, 200)
+        self.assertIn('one-style.html', response.url)
+        self.assertEqual(len(requests), 5)
+        self.assertEqual(requests[0].resourceType, 'document')
+        self.assertEqual(requests[1].resourceType, 'stylesheet')
+
+        # check redirect chain
+        redirectChain = requests[1].redirectChain
+        self.assertEqual(len(redirectChain), 3)
+        self.assertIn('/one-style.css', redirectChain[0].url)
+        self.assertIn('/three-style.css', redirectChain[2].url)
+
     @unittest.skip('This test is not implemented')
     @sync
     async def test_request_interception_abort_redirects(self):
