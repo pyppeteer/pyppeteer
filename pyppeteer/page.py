@@ -1324,6 +1324,11 @@ function addPageBinding(bindingName) {
           * ``bottom`` (str): Bottom margin, accepts values labeled with units.
           * ``left`` (str): Left margin, accepts values labeled with units.
 
+        * ``preferCSSPageSize``: Give any CSS ``@page`` size declared in the
+          page priority over what is declared in ``width`` and ``height`` or
+          ``format`` options. Defaults to ``False``, which will scale the
+          content to fit the paper size.
+
         :return: Return generated PDF ``bytes`` object.
 
         .. note::
@@ -1406,6 +1411,7 @@ function addPageBinding(bindingName) {
         marginLeft = convertPrintParameterToInches(marginOptions.get('left')) or 0  # noqa: E501
         marginBottom = convertPrintParameterToInches(marginOptions.get('bottom')) or 0  # noqa: E501
         marginRight = convertPrintParameterToInches(marginOptions.get('right')) or 0  # noqa: E501
+        preferCSSPageSize = options.get('preferCSSPageSize', False)
 
         result = await self._client.send('Page.printToPDF', dict(
             landscape=landscape,
@@ -1420,7 +1426,8 @@ function addPageBinding(bindingName) {
             marginBottom=marginBottom,
             marginLeft=marginLeft,
             marginRight=marginRight,
-            pageRanges=pageRanges
+            pageRanges=pageRanges,
+            preferCSSPageSize=preferCSSPageSize,
         ))
         buffer = base64.b64decode(result.get('data', b''))
         if 'path' in options:
