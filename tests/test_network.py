@@ -289,6 +289,20 @@ class TestRequestInterception(BaseTestCase):
         self.assertIn('/one-style.html', requests[1].headers['referer'])
 
     @sync
+    async def test_response_with_cookie(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setCookie({'name': 'foo', 'value': 'bar'})
+
+        await self.page.setRequestInterception(True)
+
+        async def continue_(req):
+            await req.continue_()
+
+        self.page.on('request', lambda r: asyncio.ensure_future(continue_(r)))
+        response = await self.page.reload()
+        self.assertEqual(response.status, 200)
+
+    @sync
     async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
         self.page.once('request',
