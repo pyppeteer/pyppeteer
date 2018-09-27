@@ -1,6 +1,10 @@
 History
 =======
 
+## Version 0.0.26 (next version)
+
+* `Page.pdf()` accepts a new argument `preferCSSPageSize`
+
 ## Version 0.0.25 (2018-09-27)
 
 * Fix miss-spelled methods and functions
