@@ -27,6 +27,10 @@ BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
 REVISION = os.environ.get(
     'PYPPETEER_CHROMIUM_REVISION', __chromium_revision__)
 
+NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
+if NO_PROGRESS_BAR.lower() in ('1', 'true'):
+    NO_PROGRESS_BAR = True
+
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
@@ -82,7 +86,7 @@ def download_zip(url: str) -> BytesIO:
         except (KeyError, ValueError, AttributeError):
             total_length = 0
 
-        process_bar = tqdm(total=total_length)
+        process_bar = tqdm(total=total_length, file=os.devnull if NO_PROGRESS_BAR else None)
 
         # 10 * 1024
         _data = BytesIO()
