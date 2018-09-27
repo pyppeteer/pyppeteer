@@ -127,6 +127,7 @@ class Page(EventEmitter):
         self._pageBindings: Dict[str, Callable[..., Any]] = dict()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultNavigationTimeout = 30000  # milliseconds
+        self._javascriptEnabled = True
         self._coverage = Coverage(client)
 
         if screenshotTaskQueue is None:
@@ -1088,6 +1089,9 @@ function addPageBinding(bindingName) {
 
     async def setJavaScriptEnabled(self, enabled: bool) -> None:
         """Set JavaScript enable/disable."""
+        if self._javascriptEnabled == enabled:
+            return
+        self._javascriptEnabled = enabled
         await self._client.send('Emulation.setScriptExecutionDisabled', {
             'value': not enabled,
         })

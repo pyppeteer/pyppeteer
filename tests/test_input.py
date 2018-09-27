@@ -33,6 +33,19 @@ class TestClick(BaseTestCase):
         self.assertEqual(await self.page.evaluate('result'), 'Clicked')
 
     @sync
+    async def test_click_with_disabled_javascript(self):
+        await self.page.setJavaScriptEnabled(False)
+        await self.page.goto(self.url + 'static/wrappedlink.html')
+        await asyncio.gather(
+            self.page.click('a'),
+            self.page.waitForNavigation(),
+        )
+        self.assertEqual(
+            self.page.url,
+            self.url + 'static/wrappedlink.html#clicked',
+        )
+
+    @sync
     async def test_click_offscreen_button(self):
         await self.page.goto(self.url + 'static/offscreenbuttons.html')
         messages = []
