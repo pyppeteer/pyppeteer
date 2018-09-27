@@ -18,7 +18,7 @@ from syncer import sync
 import websockets
 
 from pyppeteer import connect, launch, executablePath
-from pyppeteer.chromium_downloader import chromium_excutable, current_platform
+from pyppeteer.chromium_downloader import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
@@ -31,10 +31,11 @@ class TestLauncher(unittest.TestCase):
     def setUp(self):
         self.headless_options = [
             '--headless',
-            '--disable-gpu',
             '--hide-scrollbars',
             '--mute-audio',
         ]
+        if current_platform().startswith('win'):
+            self.headless_options.append('--disable-gpu')
 
     def check_default_args(self, launcher):
         for opt in self.headless_options:
@@ -45,7 +46,7 @@ class TestLauncher(unittest.TestCase):
     def test_no_option(self):
         launcher = Launcher()
         self.check_default_args(launcher)
-        self.assertEqual(launcher.exec, str(chromium_excutable()))
+        self.assertEqual(launcher.exec, str(chromium_executable()))
 
     def test_disable_headless(self):
         launcher = Launcher({'headless': False})

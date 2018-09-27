@@ -23,6 +23,7 @@ from typing import Any, Dict, List, TYPE_CHECKING
 from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
+from pyppeteer.chromium_downloader import current_platform
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import addEventListener, debugError, removeEventListeners
 from pyppeteer.target import Target
@@ -102,10 +103,11 @@ class Launcher(object):
         if 'headless' not in self.options or self.options.get('headless'):
             self.chrome_args.extend([
                 '--headless',
-                '--disable-gpu',
                 '--hide-scrollbars',
                 '--mute-audio',
             ])
+            if current_platform().startswith('win'):
+                self.chrome_args.append('--disable-gpu')
 
         def _is_default_url() -> bool:
             for arg in self.options['args']:
