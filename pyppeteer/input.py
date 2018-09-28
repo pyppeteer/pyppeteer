@@ -183,13 +183,7 @@ class Keyboard(object):
             Modifier keys DO NOT effect :meth:`sendCharacter`. Holding down
             ``shift`` will not type the text in upper case.
         """
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'char',
-            'modifiers': self._modifiers,
-            'text': char,
-            'key': char,
-            'unmodifiedText': char,
-        })
+        await self._client.send('Input.insertText', {'text': char})
 
     async def type(self, text: str, options: Dict = None, **kwargs: Any
                    ) -> None:

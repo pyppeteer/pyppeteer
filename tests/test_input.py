@@ -627,3 +627,28 @@ window.addEventListener('keydown', event => {
             await self.page.keyboard.press('ё')
         with self.assertRaises(PyppeteerError):
             await self.page.keyboard.press('😊')
+
+    @sync
+    async def test_emoji(self):
+        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.type('textarea', '👹 Tokyo street Japan 🇯🇵')
+        self.assertEqual(
+            await self.page.Jeval('textarea', 'textarea => textarea.value'),
+            '👹 Tokyo street Japan 🇯🇵',
+        )
+
+    @sync
+    async def test_emoji_in_iframe(self):
+        await self.page.goto(self.url + 'empty')
+        await attachFrame(
+            self.page,
+            'emoji-test',
+            self.url + 'static/textarea.html',
+        )
+        frame = self.page.frames[1]
+        textarea = await frame.J('textarea')
+        await textarea.type('👹 Tokyo street Japan 🇯🇵')
+        self.assertEqual(
+            await frame.Jeval('textarea', 'textarea => textarea.value'),
+            '👹 Tokyo street Japan 🇯🇵',
+        )
