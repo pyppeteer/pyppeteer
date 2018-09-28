@@ -245,7 +245,11 @@ class Keyboard(object):
 
 
 class Mouse(object):
-    """Mouse class."""
+    """Mouse class.
+
+    The :class:`Mouse` operates in main-frame CSS pixels relative to the
+    top-left corner of the viewport.
+    """
 
     def __init__(self, client: CDPSession, keyboard: Keyboard) -> None:
         self._client = client
