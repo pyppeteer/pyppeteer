@@ -77,8 +77,7 @@ class Launcher(object):
         self.chromeClosed = True
 
         ignoreDefaultArgs = options.get('ignoreDefaultArgs', False)
-        args: List[str] = list()
-
+        args: List[str] = options.get('args', list())
         self.dumpio = options.get('dumpio', False)
         executablePath = options.get('executablePath')
         self.env = options.get('env')
