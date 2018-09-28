@@ -86,7 +86,7 @@ class Page(EventEmitter):
 
     @staticmethod
     async def create(client: CDPSession, target: 'Target',
-                     ignoreHTTPSErrors: bool, setDefaultViewport: bool,
+                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which makes new page object."""
         await client.send('Page.enable'),
@@ -106,8 +106,8 @@ class Page(EventEmitter):
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
-        if setDefaultViewport:
-            await page.setViewport({'width': 800, 'height': 600})
+        if defaultViewport:
+            await page.setViewport(defaultViewport)
         return page
 
     def __init__(self, client: CDPSession, target: 'Target',  # noqa: C901
@@ -129,6 +129,7 @@ class Page(EventEmitter):
         self._defaultNavigationTimeout = 30000  # milliseconds
         self._javascriptEnabled = True
         self._coverage = Coverage(client)
+        self._viewport: Optional[Dict] = None
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = list()
@@ -1138,8 +1139,8 @@ function addPageBinding(bindingName) {
             await self.reload()
 
     @property
-    def viewport(self) -> dict:
-        """Get viewport as a dictionary.
+    def viewport(self) -> Optional[Dict]:
+        """Get viewport as a dictionary or None.
 
         Fields of returned dictionary is same as :meth:`setViewport`.
         """
@@ -1247,9 +1248,15 @@ function addPageBinding(bindingName) {
 
             # Overwrite clip for full page at all times.
             clip = dict(x=0, y=0, width=width, height=height, scale=1)
-            mobile = self._viewport.get('isMobile', False)
-            deviceScaleFactor = self._viewport.get('deviceScaleFactor', 1)
-            landscape = self._viewport.get('isLandscape', False)
+            if self._viewport is not None:
+                mobile = self._viewport.get('isMobile', False)
+                deviceScaleFactor = self._viewport.get('deviceScaleFactor', 1)
+                landscape = self._viewport.get('isLandscape', False)
+            else:
+                mobile = False
+                deviceScaleFactor = 1
+                landscape = False
+
             if landscape:
                 screenOrientation = dict(angle=90, type='landscapePrimary')
             else:
@@ -1276,7 +1283,7 @@ function addPageBinding(bindingName) {
             await self._client.send(
                 'Emulation.setDefaultBackgroundColorOverride')
 
-        if options.get('fullPage'):
+        if options.get('fullPage') and self._viewport is not None:
             await self.setViewport(self._viewport)
 
         if options.get('encoding') == 'base64':

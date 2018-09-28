@@ -6,6 +6,7 @@ History
 * Add `$PYPPETEER_NO_PROGRESS_BAR` environment variable
 * `Page.type()` now supports typing emoji
 * `Page.pdf()` accepts a new argument `preferCSSPageSize`
+* Add new option `defaultViewport` to `launch()` and `connect()`
 * Add `BrowserContext.pages()` method
 
 ## Version 0.0.25 (2018-09-27)

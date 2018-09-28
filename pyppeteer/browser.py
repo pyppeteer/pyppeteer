@@ -34,13 +34,13 @@ class Browser(EventEmitter):
     )
 
     def __init__(self, connection: Connection, contextIds: List[str],
-                 ignoreHTTPSErrors: bool, setDefaultViewport: bool,
+                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                  process: Optional[Popen] = None,
                  closeCallback: Callable[[], Awaitable[None]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
-        self._setDefaultViewport = setDefaultViewport
+        self._defaultViewport = defaultViewport
         self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
@@ -127,13 +127,13 @@ class Browser(EventEmitter):
 
     @staticmethod
     async def create(connection: Connection, contextIds: List[str],
-                     ignoreHTTPSErrors: bool, appMode: bool,
+                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                      process: Optional[Popen] = None,
                      closeCallback: Callable[[], Awaitable[None]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
-        browser = Browser(connection, contextIds, ignoreHTTPSErrors, appMode,
-                          process, closeCallback)
+        browser = Browser(connection, contextIds, ignoreHTTPSErrors,
+                          defaultViewport, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -151,7 +151,7 @@ class Browser(EventEmitter):
             context,
             lambda: self._connection.createSession(targetInfo),
             self._ignoreHTTPSErrors,
-            self._setDefaultViewport,
+            self._defaultViewport,
             self._screenshotTaskQueue,
             self._connection._loop,
         )

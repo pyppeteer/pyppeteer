@@ -159,6 +159,28 @@ class TestLauncher(unittest.TestCase):
         self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
 
+    @sync
+    async def test_default_viewport(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['defaultViewport'] = {
+            'width': 456,
+            'height': 789,
+        }
+        browser = await launch(options)
+        page = await browser.newPage()
+        self.assertEqual(await page.evaluate('window.innerWidth'), 456)
+        self.assertEqual(await page.evaluate('window.innerHeight'), 789)
+        await browser.close()
+
+    @sync
+    async def test_disable_default_viewport(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['defaultViewport'] = None
+        browser = await launch(options)
+        page = await browser.newPage()
+        self.assertIsNone(page.viewport)
+        await browser.close()
+
 
 class TestDefaultURL(unittest.TestCase):
     @sync

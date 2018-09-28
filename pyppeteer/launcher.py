@@ -88,9 +88,7 @@ class Launcher(object):
             )
 
         self.chromeClosed = True
-        if self.options.get('appMode', False):
-            self.options['headless'] = False
-        elif not self.options.get('ignoreDefaultArgs', False):
+        if not self.options.get('ignoreDefaultArgs', False):
             self.chrome_args.extend(AUTOMATION_ARGS)
 
         self._tmp_user_data_dir: Optional[str] = None
@@ -191,9 +189,12 @@ class Launcher(object):
         self.connection = Connection(
             self.browserWSEndpoint, self._loop, connectionDelay)
         ignoreHTTPSErrors = bool(self.options.get('ignoreHTTPSErrors', False))
-        setDefaultViewport = not self.options.get('appMode', False)
+        defaultViewport = self.options.get('defaultViewport', {
+            'width': 800,
+            'height': 600,
+        })
         browser = await Browser.create(
-            self.connection, [], ignoreHTTPSErrors, setDefaultViewport,
+            self.connection, [], ignoreHTTPSErrors, defaultViewport,
             self.proc, self.killChrome)
         await self.ensureInitialPage(browser)
         return browser
@@ -277,6 +278,20 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       instead of default bundled Chromium.
     * ``slowMo`` (int|float): Slow down pyppeteer operations by the specified
       amount of milliseconds.
+    * ``defaultViewport`` (dict): Set a consistent viewport for each page.
+      Defaults to an 800x600 viewport. ``None`` disables default viewport.
+
+      * ``width`` (int): page width in pixels.
+      * ``height`` (int): page height in pixels.
+      * ``deviceScaleFactor`` (int|float): Specify device scale factor (can be
+        thought as dpr). Defaults to ``1``.
+      * ``isMobile`` (bool): Whether the ``meta viewport`` tag is taken into
+        account. Defaults to ``False``.
+      * ``hasTouch`` (bool): Specify if viewport supports touch events.
+        Defaults to ``False``.
+      * ``isLandscape`` (bool): Specify if viewport is in landscape mode.
+        Defaults to ``False``.
+
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
     * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
@@ -324,6 +339,20 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
       (**required**)
     * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
       ``False``.
+    * ``defaultViewport`` (dict): Set a consistent viewport for each page.
+      Defaults to an 800x600 viewport. ``None`` disables default viewport.
+
+      * ``width`` (int): page width in pixels.
+      * ``height`` (int): page height in pixels.
+      * ``deviceScaleFactor`` (int|float): Specify device scale factor (can be
+        thought as dpr). Defaults to ``1``.
+      * ``isMobile`` (bool): Whether the ``meta viewport`` tag is taken into
+        account. Defaults to ``False``.
+      * ``hasTouch`` (bool): Specify if viewport supports touch events.
+        Defaults to ``False``.
+      * ``isLandscape`` (bool): Specify if viewport is in landscape mode.
+        Defaults to ``False``.
+
     * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
       milliseconds.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
@@ -345,9 +374,11 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     browserContextIds = (await connection.send('Target.getBrowserContexts')
                          ).get('browserContextIds', [])
     ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
+    defaultViewport = options.get('defaultViewport',
+                                  {'width': 800, 'height': 600})
     return await Browser.create(
-        connection, browserContextIds, ignoreHTTPSErrors, True, None,
-        lambda: connection.send('Browser.close'))
+        connection, browserContextIds, ignoreHTTPSErrors, defaultViewport,
+        None, lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:
