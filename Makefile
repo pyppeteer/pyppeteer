@@ -90,6 +90,10 @@ sphinx:  ## run document build server
 	@echo "### Sphinx Build Server Start ###"
 	@python docs/server.py
 
+.PHONY: spell
+spell:  ## run spell check on comments and docstring
+	@pylint --disable all --enable spelling --spelling-dict en_US --spelling-private-dict-file spell.txt pyppeteer
+
 .PHONY: check
 check:  ## run flake8, mypy, pydocstyle, sphinx-build
 	@doit --verbosity 1 --process 4 --parallel-type thread

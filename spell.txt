@@ -36,6 +36,7 @@ dpr
 dumpio
 elementhandle
 emulatemedia
+endswith
 env
 eval
 evaluatehandle
@@ -52,6 +53,7 @@ internetdisconnected
 ip
 isinstance
 jpeg
+jpg
 js
 json
 jsonized
@@ -97,6 +99,7 @@ screenshots
 scrollable
 setbypasscsp
 setextrahttpheaders
+setrequestinterception
 ssl
 startcsscoverage
 startjscoverage

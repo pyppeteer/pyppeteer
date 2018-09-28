@@ -296,7 +296,29 @@ class Page(EventEmitter):
         :meth:`~pyppeteer.network_manager.Request.response` methods.
         This provides the capability to modify network requests that are made
         by a page.
-        """
+
+        Once request interception is enabled, every request will stall unless
+        it's continued, responded or aborted.
+
+        An example of a native request interceptor that aborts all image
+        requests:
+
+        .. code:: python
+
+            browser = await launch()
+            page = await browser.newPage()
+            await page.setRequestInterception(True)
+
+            async def intercept(request):
+                if request.url.endswith('.png') or request.url.endswith('.jpg'):
+                    await request.abort()
+                else:
+                    await request.continue_()
+
+            page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
+            await page.goto('https://example.com')
+            await browser.close()
+        """  # noqa: E501
         return await self._networkManager.setRequestInterception(value)
 
     async def setOfflineMode(self, enabled: bool) -> None:
