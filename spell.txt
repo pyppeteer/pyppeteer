@@ -23,6 +23,8 @@ createincognitobrowsercontext
 csp
 css
 ctrl
+customargs
+defaultargs
 defaultdict
 devtool
 devtools

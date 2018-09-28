@@ -31,13 +31,14 @@ Environment Variables
   download process. Acceptable values are ``1`` or ``true`` (case-insensitive).
 
 
-Launcher
---------
+Pyppeteer Main Module
+---------------------
 
-.. currentmodule:: pyppeteer.launcher
+.. currentmodule:: pyppeteer
 
 .. autofunction:: launch
 .. autofunction:: connect
+.. autofunction:: defaultArgs
 .. autofunction:: executablePath
 
 Browser Class

@@ -5,6 +5,7 @@
 
 import asyncio
 import atexit
+from copy import copy
 import json
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -56,9 +57,6 @@ DEFAULT_ARGS = [
     '--metrics-recording-only',
     '--no-first-run',
     '--safebrowsing-disable-auto-update',
-]
-
-AUTOMATION_ARGS = [
     '--enable-automation',
     '--password-store=basic',
     '--use-mock-keychain',
@@ -71,80 +69,60 @@ class Launcher(object):
     def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
                  **kwargs: Any) -> None:
         """Make new launcher."""
-        self.options = merge_dict(options, kwargs)
+        options = merge_dict(options, kwargs)
+
         self.port = get_free_port()
         self.url = f'http://127.0.0.1:{self.port}'
-        self.chrome_args: List[str] = []
-        self._loop = self.options.get('loop', asyncio.get_event_loop())
+        self._loop = options.get('loop', asyncio.get_event_loop())
+        self.chromeClosed = True
 
-        logLevel = self.options.get('logLevel')
+        ignoreDefaultArgs = options.get('ignoreDefaultArgs', False)
+        args: List[str] = list()
+
+        self.dumpio = options.get('dumpio', False)
+        executablePath = options.get('executablePath')
+        self.env = options.get('env')
+        self.handleSIGINT = options.get('handleSIGINT', True)
+        self.handleSIGTERM = options.get('handleSIGTERM', True)
+        self.handleSIGHUP = options.get('handleSIGHUP', True)
+        self.ignoreHTTPSErrors = options.get('ignoreHTTPSErrors', False)
+        self.defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})  # noqa: E501
+        self.slowMo = options.get('slowMo', 0)
+        self.timeout = options.get('timeout', 30000)
+        self.autoClose = options.get('autoClose', True)
+
+        logLevel = options.get('logLevel')
         if logLevel:
             logging.getLogger('pyppeteer').setLevel(logLevel)
 
-        if not self.options.get('ignoreDefaultArgs', False):
-            self.chrome_args.extend(DEFAULT_ARGS)
-            self.chrome_args.append(
-                f'--remote-debugging-port={self.port}',
-            )
+        self.chromeArguments: List[str] = defaultArgs(options) if not ignoreDefaultArgs else args  # noqa: E501
+        self.temporaryUserDataDir: Optional[str] = None
 
-        self.chromeClosed = True
-        if not self.options.get('ignoreDefaultArgs', False):
-            self.chrome_args.extend(AUTOMATION_ARGS)
+        if not any(arg for arg in self.chromeArguments
+                   if arg.startswith('--remote-debugging-')):
+            self.chromeArguments.append(f'--remote-debugging-port={self.port}')
 
-        self._tmp_user_data_dir: Optional[str] = None
-        self._parse_args()
+        if not any(arg for arg in self.chromeArguments
+                   if arg.startswith('--user-data-dir')):
+            if not CHROME_PROFILE_PATH.exists():
+                CHROME_PROFILE_PATH.mkdir(parents=True)
+            self.temporaryUserDataDir = tempfile.mkdtemp(dir=str(CHROME_PROFILE_PATH))  # noqa: E501
+            self.chromeArguments.append(f'--user-data-dir={self.temporaryUserDataDir}')  # noqa: E501
 
-        if self.options.get('devtools'):
-            self.chrome_args.append('--auto-open-devtools-for-tabs')
-            self.options['headless'] = False
-
-        if 'headless' not in self.options or self.options.get('headless'):
-            self.chrome_args.extend([
-                '--headless',
-                '--hide-scrollbars',
-                '--mute-audio',
-            ])
-            if current_platform().startswith('win'):
-                self.chrome_args.append('--disable-gpu')
-
-        def _is_default_url() -> bool:
-            for arg in self.options['args']:
-                if not arg.startswith('-'):
-                    return False
-            return True
-
-        if isinstance(self.options.get('args'), list) and _is_default_url():
-            self.chrome_args.append('about:blank')
-
-        if 'executablePath' in self.options:
-            self.exec = self.options['executablePath']
-        else:
+        self.chromeExecutable = executablePath
+        if not self.chromeExecutable:
             if not check_chromium():
                 download_chromium()
-            self.exec = str(chromium_executable())
+            self.chromeExecutable = str(chromium_executable())
 
-        self.cmd = [self.exec] + self.chrome_args
-
-    def _parse_args(self) -> None:
-        if (not isinstance(self.options.get('args'), list) or
-                not any(opt for opt in self.options['args']
-                        if opt.startswith('--user-data-dir'))):
-            if 'userDataDir' not in self.options:
-                if not CHROME_PROFILE_PATH.exists():
-                    CHROME_PROFILE_PATH.mkdir(parents=True)
-                self._tmp_user_data_dir = tempfile.mkdtemp(
-                    dir=str(CHROME_PROFILE_PATH))
-            self.chrome_args.append('--user-data-dir={}'.format(
-                self.options.get('userDataDir', self._tmp_user_data_dir)))
-        if isinstance(self.options.get('args'), list):
-            self.chrome_args.extend(self.options['args'])
+        self.cmd = [self.chromeExecutable] + self.chromeArguments
 
     def _cleanup_tmp_user_data_dir(self) -> None:
         for retry in range(100):
-            if self._tmp_user_data_dir and os.path.exists(
-                    self._tmp_user_data_dir):
-                shutil.rmtree(self._tmp_user_data_dir, ignore_errors=True)
-                if os.path.exists(self._tmp_user_data_dir):
+            if self.temporaryUserDataDir and os.path.exists(
+                    self.temporaryUserDataDir):
+                shutil.rmtree(self.temporaryUserDataDir, ignore_errors=True)
+                if os.path.exists(self.temporaryUserDataDir):
                     time.sleep(0.01)
             else:
                 break
@@ -157,8 +135,8 @@ class Launcher(object):
         self.connection: Optional[Connection] = None
 
         options = dict()
-        options['env'] = self.options.get('env')
-        if not self.options.get('dumpio'):
+        options['env'] = self.env
+        if not self.dumpio:
             options['stdout'] = subprocess.PIPE
             options['stderr'] = subprocess.STDOUT
 
@@ -172,29 +150,27 @@ class Launcher(object):
                 self._loop.run_until_complete(self.killChrome())
 
         # don't forget to close browser process
-        if self.options.get('autoClose', True):
+        if self.autoClose:
             atexit.register(_close_process)
-        if self.options.get('handleSIGINT', True):
+        if self.handleSIGINT:
             signal.signal(signal.SIGINT, _close_process)
-        if self.options.get('handleSIGTERM', True):
+        if self.handleSIGTERM:
             signal.signal(signal.SIGTERM, _close_process)
         if not sys.platform.startswith('win'):
             # SIGHUP is not defined on windows
-            if self.options.get('handleSIGHUP', True):
+            if self.handleSIGHUP:
                 signal.signal(signal.SIGHUP, _close_process)
 
-        connectionDelay = self.options.get('slowMo', 0)
+        connectionDelay = self.slowMo
         self.browserWSEndpoint = self._get_ws_endpoint()
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(
-            self.browserWSEndpoint, self._loop, connectionDelay)
-        ignoreHTTPSErrors = bool(self.options.get('ignoreHTTPSErrors', False))
-        defaultViewport = self.options.get('defaultViewport', {
-            'width': 800,
-            'height': 600,
-        })
+            self.browserWSEndpoint,
+            self._loop,
+            connectionDelay,
+        )
         browser = await Browser.create(
-            self.connection, [], ignoreHTTPSErrors, defaultViewport,
+            self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport,
             self.proc, self.killChrome)
         await self.ensureInitialPage(browser)
         return browser
@@ -257,7 +233,7 @@ class Launcher(object):
             except Exception as e:
                 # ignore errors on browser termination process
                 debugError(logger, e)
-        if self._tmp_user_data_dir and os.path.exists(self._tmp_user_data_dir):
+        if self.temporaryUserDataDir and os.path.exists(self.temporaryUserDataDir):  # noqa: E501
             # Force kill chrome only when using temporary userDataDir
             self.waitForChromeToClose()
             self._cleanup_tmp_user_data_dir()
@@ -382,10 +358,59 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
 
 
 def executablePath() -> str:
-    """Get executable path of default chrome."""
+    """Get executable path of default chromium."""
     return str(chromium_executable())
 
 
-def defaultArgs() -> List[str]:
-    """Get list of default chrome args."""
-    return DEFAULT_ARGS + AUTOMATION_ARGS
+def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901,E501
+    """Get the default flags the chromium will be launched.
+
+    ``options`` or keyword arguments are set of configurable options to set on
+    the browser. Can have the following fields:
+
+    * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
+      ``True`` unless the ``devtools`` option is ``True``.
+    * ``args`` (List[str]): Additional arguments to pass to the browser
+      instance. The list of chromium flags can be found
+      `here <http://peter.sh/experiments/chromium-command-line-switches/>`__.
+    * ``userDataDir`` (str): Path to a User Data Directory.
+    * ``devtools`` (bool): Whether to auto-open DevTools panel for each tab. If
+      this option is ``True``, the ``headless`` option will be set ``False``.
+
+    ``pyppeteer.defaultArgs`` can be used to turn off some flags that pyppeteer
+    usually launches chromium with:
+
+    .. code:: python
+
+        customArgs = [arg for arg in pyppeteer.defaultArgs()
+                      if arg != '--mute-audio']
+        browser = await pyppeteer.launch(
+            ignoreDefaultArgs=True,
+            args=customArgs,
+        )
+    """
+    options = merge_dict(options, kwargs)
+    devtools = options.get('devtools', False)
+    headless = options.get('headless', not devtools)
+    args = options.get('args', list())
+    userDataDir = options.get('userDataDir')
+    chromeArguments = copy(DEFAULT_ARGS)
+
+    if userDataDir:
+        chromeArguments.append(f'--user-data-dir={userDataDir}')
+    if devtools:
+        chromeArguments.append('--auto-open-devtools-for-tabs')
+    if headless:
+        chromeArguments.extend((
+            '--headless',
+            '--hide-scrollbars',
+            '--mute-audio',
+        ))
+        if current_platform().startswith('win'):
+            chromeArguments.append('--disable-gpu')
+
+    if all(map(lambda arg: arg.startswith('-'), args)):  # type: ignore
+        chromeArguments.append('about:blank')
+    chromeArguments.extend(args)
+
+    return chromeArguments
