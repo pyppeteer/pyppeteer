@@ -40,6 +40,7 @@ class TestBrowserContext(BaseTestCase):
         context = await self.browser.createIncognitoBrowserContext()
         await context.newPage()
         self.assertEqual(len(await self.browser.pages()), 3)
+        self.assertEqual(len(await context.pages()), 1)
         await context.close()
         self.assertEqual(len(await self.browser.pages()), 2)
 

@@ -222,13 +222,14 @@ class Browser(EventEmitter):
 
         Non visible pages, such as ``"background_page"``, will not be listed
         here. You can find then using :meth:`pyppeteer.target.Target.page`.
+
+        In case of multiple browser contexts, this method will return a list
+        with all the pages in all browser contexts.
         """
-        pages = []
-        for target in self.targets():
-            if target.type == 'page':
-                page = await target.page()
-                if page:
-                    pages.append(page)
+        # Using asyncio.gather is better for performance
+        pages: List[Page] = list()
+        for context in self.browserContexts:
+            pages.extend(await context.pages())
         return pages
 
     async def version(self) -> str:
@@ -302,6 +303,21 @@ class BrowserContext(EventEmitter):
             if target.browserContext == self:
                 targets.append(target)
         return targets
+
+    async def pages(self) -> List[Page]:
+        """Return list of all open pages.
+
+        Non-visible pages, such as ``"background_page"``, will not be listed
+        here. You can find them using :meth:`pyppeteer.target.Target.page`.
+        """
+        # Using asyncio.gather is better for performance
+        pages = []
+        for target in self.targets():
+            if target.type == 'page':
+                page = await target.page()
+                if page:
+                    pages.append(page)
+        return pages
 
     def isIncognite(self) -> bool:
         """[Deprecated] Miss spelled method.

@@ -3,7 +3,9 @@ History
 
 ## Version 0.0.26 (next version)
 
+* `Page.type()` now supports typing emoji
 * `Page.pdf()` accepts a new argument `preferCSSPageSize`
+* Add `BrowserContext.pages()` method
 
 ## Version 0.0.25 (2018-09-27)
 

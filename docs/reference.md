@@ -160,9 +160,9 @@ Response Class
 Target Class
 ------------
 
-.. currentmodule:: pyppeteer.browser
+.. currentmodule:: pyppeteer.target
 
-.. autoclass:: pyppeteer.browser.Target
+.. autoclass:: pyppeteer.target.Target
    :members:
 
 CDPSession Class
