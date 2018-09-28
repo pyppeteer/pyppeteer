@@ -28,11 +28,14 @@ class BaseTestCase(unittest.TestCase):
         cls.server.stop()
 
     def setUp(self):
-        self.page = sync(self.browser.newPage())
+        self.context = sync(self.browser.createIncognitoBrowserContext())
+        self.page = sync(self.context.newPage())
         self.result = False
 
     def tearDown(self):
-        sync(self.page.close())
+        sync(self.context.close())
+        self.context = None
+        self.page = None
 
     def set_result(self, value):
         self.result = value

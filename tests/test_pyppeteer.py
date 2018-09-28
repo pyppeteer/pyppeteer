@@ -65,7 +65,7 @@ class TestScreenshot(BaseTestCase):
 
     @sync
     async def test_screenshot_large(self):
-        page = await self.browser.newPage()
+        page = await self.context.newPage()
         await page.setViewport({
             'width': 2000,
             'height': 2000,

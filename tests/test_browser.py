@@ -165,14 +165,14 @@ class TestBrowser(unittest.TestCase):
 class TestPageClose(BaseTestCase):
     @sync
     async def test_not_visible_in_browser_pages(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         self.assertIn(newPage, await self.browser.pages())
         await newPage.close()
         self.assertNotIn(newPage, await self.browser.pages())
 
     @sync
     async def test_before_unload(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         await newPage.goto(self.url + 'static/beforeunload.html')
         await newPage.click('body')
         asyncio.ensure_future(newPage.close(runBeforeUnload=True))
@@ -185,7 +185,7 @@ class TestPageClose(BaseTestCase):
 
     @sync
     async def test_page_close_state(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         self.assertFalse(newPage.isClosed())
         await newPage.close()
         self.assertTrue(newPage.isClosed())

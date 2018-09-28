@@ -361,6 +361,33 @@ class TestUserDataDir(unittest.TestCase):
         self.assertEqual(result, 'foo=true')
 
 
+class TestTargetEvents(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        time.sleep(0.1)
+        cls.app = get_application()
+        cls.server = cls.app.listen(cls.port)
+        cls.url = 'http://localhost:{}/'.format(cls.port)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.stop()
+
+    @sync
+    async def test_target_events(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        events = list()
+        browser.on('targetcreated', lambda _: events.append('CREATED'))
+        browser.on('targetchanged', lambda _: events.append('CHANGED'))
+        browser.on('targetdestroyed', lambda _: events.append('DESTROYED'))
+        page = await browser.newPage()
+        await page.goto(self.url + 'empty')
+        await page.close()
+        self.assertEqual(['CREATED', 'CHANGED', 'DESTROYED'], events)
+        await browser.close()
+
+
 class TestClose(unittest.TestCase):
     @sync
     async def test_close(self):

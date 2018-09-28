@@ -1880,7 +1880,7 @@ class TestEvents(BaseTestCase):
             page = await target.page()
             newPagePromise.set_result(page)
 
-        self.browser.once('targetcreated', page_created)
+        self.context.once('targetcreated', page_created)
         await self.page.evaluate(
             'window["newPage"] = window.open("about:blank")')
         newPage = await newPagePromise
@@ -1892,7 +1892,7 @@ class TestEvents(BaseTestCase):
 
     @sync
     async def test_close_page_close(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         closedPromise = asyncio.get_event_loop().create_future()
         newPage.on('close', lambda: closedPromise.set_result(True))
         await newPage.close()

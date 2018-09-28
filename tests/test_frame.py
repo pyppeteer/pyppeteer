@@ -324,7 +324,7 @@ class TestWaitForSelector(BaseTestCase):
 
     @sync
     async def test_fail_page_closed(self):
-        page = await self.browser.newPage()
+        page = await self.context.newPage()
         await page.goto(self.url + 'empty')
         task = page.waitForSelector('.box')
         await page.close()
