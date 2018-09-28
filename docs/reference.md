@@ -27,6 +27,9 @@ Environment Variables
   like pyppeteer to use. Default value can be checked by
   ``pyppeteer.__chromium_revision__``.
 
+* ``$PYPPETEER_NO_PROGRESS_BAR``: Suppress showing progress bar in chromium
+  download process. Acceptable values are ``1`` or ``true`` (case-insensitive).
+
 
 Launcher
 --------
