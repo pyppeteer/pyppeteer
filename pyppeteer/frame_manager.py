@@ -7,8 +7,7 @@ import asyncio
 from collections import OrderedDict
 import logging
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
-from typing import TYPE_CHECKING
+from typing import Any, Awaitable, Dict, Generator, List, Optional, Set, Union
 
 from pyee import EventEmitter
 
@@ -19,9 +18,6 @@ from pyppeteer.errors import NetworkError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
-
-if TYPE_CHECKING:
-    from typing import Set  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -170,12 +166,12 @@ class FrameManager(EventEmitter):
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         if (contextPayload.get('auxData') and
-                contextPayload['auxData']['isDefault']):
+                contextPayload['auxData'].get('frameId')):
             frameId = contextPayload['auxData']['frameId']
         else:
             frameId = None
 
-        frame = self._frames.get(frameId) if frameId else None
+        frame = self._frames.get(frameId)
 
         def _createJSHandle(obj: Dict) -> JSHandle:
             context = self.executionContextById(contextPayload['id'])
@@ -190,23 +186,23 @@ class FrameManager(EventEmitter):
         self._contextIdToContext[contextPayload['id']] = context
 
         if frame:
-            frame._setDefaultContext(context)
-
-    def _removeContext(self, context: ExecutionContext) -> None:
-        frame = self._frames[context._frameId] if context._frameId else None
-        if frame and context._isDefault:
-            frame._setDefaultContext(None)
+            frame._addExecutionContext(context)
 
     def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
         context = self._contextIdToContext.get(executionContextId)
         if not context:
             return
         del self._contextIdToContext[executionContextId]
-        self._removeContext(context)
+
+        frame = context.frame
+        if frame:
+            frame._removeExecutionContext(context)
 
     def _onExecutionContextsCleared(self) -> None:
         for context in self._contextIdToContext.values():
-            self._removeContext(context)
+            frame = context.frame
+            if frame:
+                frame._removeExecutionContext(context)
         self._contextIdToContext.clear()
 
     def executionContextById(self, contextId: str) -> ExecutionContext:
@@ -260,6 +256,14 @@ class Frame(object):
         self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
+
+    def _addExecutionContext(self, context: ExecutionContext) -> None:
+        if context._isDefault:
+            self._setDefaultContext(context)
+
+    def _removeExecutionContext(self, context: ExecutionContext) -> None:
+        if context._isDefault:
+            self._setDefaultContext(None)
 
     def _setDefaultContext(self, context: Optional[ExecutionContext]) -> None:
         if context is not None:
