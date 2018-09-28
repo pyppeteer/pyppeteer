@@ -94,7 +94,17 @@ class Launcher(object):
         if logLevel:
             logging.getLogger('pyppeteer').setLevel(logLevel)
 
-        self.chromeArguments: List[str] = defaultArgs(options) if not ignoreDefaultArgs else args  # noqa: E501
+        self.chromeArguments: List[str] = list()
+        if not ignoreDefaultArgs:
+            self.chromeArguments.extend(defaultArgs(options))
+        elif isinstance(ignoreDefaultArgs, list):
+            self.chromeArguments.extend(filter(
+                lambda arg: arg not in ignoreDefaultArgs,
+                defaultArgs(options),
+            ))
+        else:
+            self.chromeArguments.extend(args)
+
         self.temporaryUserDataDir: Optional[str] = None
 
         if not any(arg for arg in self.chromeArguments
@@ -269,8 +279,10 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
 
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
-    * ``ignoreDefaultArgs`` (bool): Do not use pyppeteer's default args. This
-      is dangerous option; use with care.
+    * ``ignoreDefaultArgs`` (bool or List[str]): If ``True``, do not use
+      :func:`~pyppeteer.defaultArgs`. If list is given, then filter out given
+      default arguments. Dangerous option; use with care. Defaults to
+      ``False``.
     * ``handleSIGINT`` (bool): Close the browser process on Ctrl+C. Defaults to
       ``True``.
     * ``handleSIGTERM`` (bool): Close the browser process on SIGTERM. Defaults
@@ -291,6 +303,23 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       completed. Defaults to ``True``.
     * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.
+
+    This function combines 3 steps:
+
+    1. Infer a set of flags to launch chromium with using
+       :func:`~pyppeteer.defaultArgs`.
+    2. Launch browser and start managing its process according to the
+       ``executablePath``, ``handleSIGINT``, ``dumpio``, and other options.
+    3. Create an instance of :class:`~pyppeteer.browser.Browser` class and
+       initialize it with ``defaultViewport``, ``slowMo``, and
+       ``ignoreHTTPSErrors``.
+
+    ``ignoreDefaultArgs`` option can be used to customize behavior on the (1)
+    step. For example, to filter out ``--mute-audio`` from default arguments:
+
+    .. code::
+
+        browser = await launch(ignoreDefaultArgs=['--mute-audio'])
 
     .. note::
         Pyppeteer can also be used to control the Chrome browser, but it works
@@ -362,7 +391,7 @@ def executablePath() -> str:
 
 
 def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901,E501
-    """Get the default flags the chromium will be launched.
+    """Get the default flags the chromium will be launched with.
 
     ``options`` or keyword arguments are set of configurable options to set on
     the browser. Can have the following fields:
@@ -375,18 +404,6 @@ def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901
     * ``userDataDir`` (str): Path to a User Data Directory.
     * ``devtools`` (bool): Whether to auto-open DevTools panel for each tab. If
       this option is ``True``, the ``headless`` option will be set ``False``.
-
-    ``pyppeteer.defaultArgs`` can be used to turn off some flags that pyppeteer
-    usually launches chromium with:
-
-    .. code:: python
-
-        customArgs = [arg for arg in pyppeteer.defaultArgs()
-                      if arg != '--mute-audio']
-        browser = await pyppeteer.launch(
-            ignoreDefaultArgs=True,
-            args=customArgs,
-        )
     """
     options = merge_dict(options, kwargs)
     devtools = options.get('devtools', False)

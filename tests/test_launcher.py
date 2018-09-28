@@ -17,7 +17,7 @@ from unittest import mock
 from syncer import sync
 import websockets
 
-from pyppeteer import connect, launch, executablePath
+from pyppeteer import connect, launch, executablePath, defaultArgs
 from pyppeteer.chromium_downloader import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
@@ -68,6 +68,18 @@ class TestLauncher(unittest.TestCase):
         launcher = Launcher({'args': ['--some-args']})
         self.check_default_args(launcher)
         self.assertIn('--some-args', launcher.chromeArguments)
+
+    def test_filter_ignore_default_args(self):
+        _defaultArgs = defaultArgs()
+        options = deepcopy(DEFAULT_OPTIONS)
+        launcher = Launcher(
+            options,
+            # ignore first and third default arguments
+            ignoreDefaultArgs=[_defaultArgs[0], _defaultArgs[2]],
+        )
+        self.assertNotIn(_defaultArgs[0], launcher.cmd)
+        self.assertIn(_defaultArgs[1], launcher.cmd)
+        self.assertNotIn(_defaultArgs[2], launcher.cmd)
 
     def test_user_data_dir(self):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
