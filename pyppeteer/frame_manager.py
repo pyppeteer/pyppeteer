@@ -177,10 +177,14 @@ class FrameManager(EventEmitter):
 
         frame = self._frames.get(frameId) if frameId else None
 
+        def _createJSHandle(obj: Dict) -> JSHandle:
+            context = self.executionContextById(contextPayload['id'])
+            return self.createJSHandle(context, obj)
+
         context = ExecutionContext(
             self._client,
             contextPayload,
-            lambda obj: self.createJSHandle(contextPayload['id'], obj),
+            _createJSHandle,
             frame,
         )
         self._contextIdToContext[contextPayload['id']] = context
@@ -205,14 +209,20 @@ class FrameManager(EventEmitter):
             self._removeContext(context)
         self._contextIdToContext.clear()
 
-    def createJSHandle(self, contextId: str, remoteObject: Dict = None
-                       ) -> JSHandle:
+    def executionContextById(self, contextId: str) -> ExecutionContext:
+        """Get stored ``ExecutionContext`` by ``id``."""
+        context = self._contextIdToContext.get(contextId)
+        if not context:
+            raise ElementHandleError(
+                f'INTERNAL ERROR: missing context with id = {contextId}'
+            )
+        return context
+
+    def createJSHandle(self, context: ExecutionContext,
+                       remoteObject: Dict = None) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
             remoteObject = dict()
-        context = self._contextIdToContext.get(contextId)
-        if not context:
-            raise ElementHandleError(f'missing context with id = {contextId}')
         if remoteObject.get('subtype') == 'node':
             return ElementHandle(context, self._client, remoteObject,
                                  self._page, self)
