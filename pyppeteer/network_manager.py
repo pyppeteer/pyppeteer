@@ -53,7 +53,12 @@ class NetworkManager(EventEmitter):
         self._requestHashToRequestIds = Multimap()
         self._requestHashToInterceptionIds = Multimap()
 
-        self._client.on('Network.requestWillBeSent', self._onRequestWillBeSent)
+        self._client.on(
+            'Network.requestWillBeSent',
+            lambda event: self._client._loop.create_task(
+                self._onRequestWillBeSent(event)
+            ),
+        )
         self._client.on('Network.requestIntercepted', self._onRequestIntercepted)  # noqa: E501
         self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)

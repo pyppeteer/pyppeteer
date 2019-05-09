@@ -1874,18 +1874,22 @@ class TestCookieFrames(BaseTestCase):
 class TestEvents(BaseTestCase):
     @sync
     async def test_close_window_close(self):
-        newPagePromise = asyncio.get_event_loop().create_future()
+        loop = asyncio.get_event_loop()
+        newPagePromise = loop.create_future()
 
         async def page_created(target):
             page = await target.page()
             newPagePromise.set_result(page)
 
-        self.context.once('targetcreated', page_created)
+        self.context.once(
+            'targetcreated',
+            lambda target: loop.create_task(page_created(target)),
+        )
         await self.page.evaluate(
             'window["newPage"] = window.open("about:blank")')
         newPage = await newPagePromise
 
-        closedPromise = asyncio.get_event_loop().create_future()
+        closedPromise = loop.create_future()
         newPage.on('close', lambda: closedPromise.set_result(True))
         await self.page.evaluate('window["newPage"].close()')
         await closedPromise

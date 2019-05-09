@@ -44,9 +44,10 @@ class Browser(EventEmitter):
         self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
+        loop = self._connection._loop
 
         def _dummy_callback() -> Awaitable[None]:
-            fut = self._connection._loop.create_future()
+            fut = loop.create_future()
             fut.set_result(None)
             return fut
 
@@ -64,9 +65,18 @@ class Browser(EventEmitter):
         self._connection.setClosedCallback(
             lambda: self.emit(Browser.Events.Disconnected)
         )
-        self._connection.on('Target.targetCreated', self._targetCreated)
-        self._connection.on('Target.targetDestroyed', self._targetDestroyed)
-        self._connection.on('Target.targetInfoChanged', self._targetInfoChanged)  # noqa: E501
+        self._connection.on(
+            'Target.targetCreated',
+            lambda event: loop.create_task(self._targetCreated(event)),
+        )
+        self._connection.on(
+            'Target.targetDestroyed',
+            lambda event: loop.create_task(self._targetDestroyed(event)),
+        )
+        self._connection.on(
+            'Target.targetInfoChanged',
+            lambda event: loop.create_task(self._targetInfoChanged(event)),
+        )
 
     @property
     def process(self) -> Optional[Popen]:
