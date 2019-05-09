@@ -42,7 +42,7 @@ except ImportError:
     readme = src
 
 requirements = [
-    'pyee',
+    'pyee<6',
     'websockets',
     'appdirs',
     'urllib3',
