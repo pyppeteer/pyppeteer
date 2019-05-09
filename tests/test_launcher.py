@@ -285,8 +285,13 @@ class TestLogLevel(unittest.TestCase):
         self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
 
         self.assertIn('listening on', self.mock.call_args_list[0][0][0])
-        self.assertIn('SEND', self.mock.call_args_list[2][0][0])
-        self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+        if self.mock.call_args_list[1][0][0] == '\n':
+            # python < 3.7.3
+            self.assertIn('SEND', self.mock.call_args_list[2][0][0])
+            self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+        else:
+            self.assertIn('SEND', self.mock.call_args_list[1][0][0])
+            self.assertIn('RECV', self.mock.call_args_list[2][0][0])
 
     @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
