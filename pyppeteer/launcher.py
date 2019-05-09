@@ -211,7 +211,7 @@ class Launcher(object):
                 with urlopen(url) as f:
                     data = json.loads(f.read().decode())
                 break
-            except URLError as e:
+            except URLError:
                 continue
         else:
             raise BrowserError(
