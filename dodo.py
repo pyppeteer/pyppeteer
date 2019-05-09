@@ -69,7 +69,7 @@ def task_check():
     """Run flake8/mypy/pydocstyle/docs/readme tasks."""
     return {
         'actions': None,
-        'task_dep': ['flake8', 'mypy', 'pydocstyle', 'docs', 'readme', 'spell']
+        'task_dep': ['flake8', 'mypy', 'pydocstyle', 'docs', 'readme']
     }
 
 
