@@ -1,32 +1,36 @@
 # Config file for automatic testing at travis-ci.org
 # This file will be regenerated if you run travis_pypi_setup.py
 
-sudo: required
-dist: trusty
-
 language: python
 
 matrix:
   include:
-    - os: linux
-      python: "3.5"
+    - dist: xenial
+      python: 3.5
       env: TOXENV="py35"
-    - os: linux
-      python: "3.6"
+    - dist: xenial
+      python: 3.6
       env: TOXENV="py36"
-    - os: linux
-      python: "3.7-dev"
+    - dist: xenial
+      python: 3.7
       env: TOXENV="py37,doit,codecov"
     - os: osx
-      language: generic
+      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+      language: shell
       env: TOXENV="py37"
+      before_install: python3 --version
+    - os: windows
+      language: shell
+      before_install: choco install python
+      env:
+        - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+          TOXENV="py37"
+  allow_failures:
+    - os: windows  # windows build is unstable on Travis
 
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew upgrade python; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then python3 --version; fi
 
 install:
-  - python3 -m pip install tox
+  - pip3 install tox
 
 script:
-  - python3 -m tox
+  - tox
