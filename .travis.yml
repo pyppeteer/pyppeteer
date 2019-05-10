@@ -25,6 +25,8 @@ matrix:
       env:
         - PATH=/c/Python37:/c/Python37/Scripts:$PATH
           TOXENV="py37"
+  allow_failures:
+    - os: windows  # windows build is unstable on Travis
 
 
 install:
