@@ -22,7 +22,7 @@ matrix:
 
 
 install:
-  - python3 -m pip install --user tox
+  - python3 -m pip install tox
 
 script:
   - python3 -m tox
