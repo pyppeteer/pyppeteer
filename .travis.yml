@@ -19,10 +19,16 @@ matrix:
       language: shell
       env: TOXENV="py37"
       before_install: python3 --version
+    - os: windows
+      language: shell
+      before_install: choco install python
+      env:
+        - PATH=/c/Python37:/c/Python37/Scripts:$PATH
+          TOXENV="py37"
 
 
 install:
-  - python3 -m pip install tox
+  - pip3 install tox
 
 script:
-  - python3 -m tox
+  - tox
