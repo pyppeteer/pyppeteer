@@ -114,11 +114,13 @@ browser = await launch(headless=True)
 
 ### Element selector method name (`$` -> `querySelector`)
 
-In python, `$` is not usable for method name.
-So pyppeteer uses
-`Page.querySelector()`/`Page.querySelectorAll()`/`Page.xpath()` instead of
-`Page.$()`/`Page.$$()`/`Page.$x()`. Pyppeteer also has shorthands for these
-methods, `Page.J()`, `Page.JJ()`, and `Page.Jx()`.
+In python, `$` is not usable for method name. So pyppeteer changes the following with shorthands available:
+
+| puppeteer | pyppeteer               | pyppeteer shorthand |
+|-----------|-------------------------|---------------------|
+| Page.$()  | Page.querySelector()    | Page.J()            |
+| Page.$$() | Page.querySelectorAll() | Page.JJ()           |
+| Page.$x() | Page.xpath()            | Page.Jx()           |
 
 ### Arguments of `Page.evaluate()` and `Page.querySelectorEval()`
 
