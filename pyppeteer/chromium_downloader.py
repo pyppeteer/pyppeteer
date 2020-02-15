@@ -31,19 +31,22 @@ NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
 if NO_PROGRESS_BAR.lower() in ('1', 'true'):
     NO_PROGRESS_BAR = True  # type: ignore
 
+# Windows archive name changed at r591479.
+windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
+    
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
-    'win32': f'{BASE_URL}/Win/{REVISION}/chrome-win32.zip',
-    'win64': f'{BASE_URL}/Win_x64/{REVISION}/chrome-win32.zip',
+    'win32': f'{BASE_URL}/Win/{REVISION}/{windowsArchive}.zip',
+    'win64': f'{BASE_URL}/Win_x64/{REVISION}/{windowsArchive}.zip',
 }
 
 chromiumExecutable = {
     'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chrome',
     'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' /
             'Contents' / 'MacOS' / 'Chromium'),
-    'win32': DOWNLOADS_FOLDER / REVISION / 'chrome-win32' / 'chrome.exe',
-    'win64': DOWNLOADS_FOLDER / REVISION / 'chrome-win32' / 'chrome.exe',
+    'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
+    'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
 }
 
 
