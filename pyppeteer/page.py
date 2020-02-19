@@ -470,7 +470,7 @@ class Page(EventEmitter):
     #: alias to :meth:`xpath`
     Jx = xpath
 
-    async def cookies(self, *urls: str) -> dict:
+    async def cookies(self, *urls: str) -> List[Dict[str, Union[str, int, bool]]]:
         """Get cookies.
 
         If no URLs are specified, this method returns cookies for the current

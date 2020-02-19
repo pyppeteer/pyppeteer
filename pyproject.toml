@@ -42,7 +42,7 @@ exclude = [
 "Bug Tracker" = "https://github.com/pyppeteer/pyppeteer2/issues"
 
 [tool.poetry.scripts]
-pyppeteer-install = 'pyppeteer.command:install'
+pyppeteer2-install = 'pyppeteer.command:install'
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
