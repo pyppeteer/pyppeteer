@@ -39,10 +39,28 @@ logger = logging.getLogger(__name__)
 pyppeteer_home = Path(__pyppeteer_home__)
 CHROME_PROFILE_PATH = pyppeteer_home / '.dev_profile'
 
-DEFAULT_ARGS = ['--disable-background-networking', '--disable-background-timer-throttling', '--disable-breakpad', '--disable-browser-side-navigation', '--disable-client-side-phishing-detection',
-        '--disable-default-apps', '--disable-dev-shm-usage', '--disable-extensions', '--disable-features=site-per-process', '--disable-hang-monitor', '--disable-popup-blocking',
-        '--disable-prompt-on-repost', '--disable-sync', '--disable-translate', '--metrics-recording-only', '--no-first-run', '--safebrowsing-disable-auto-update', '--enable-automation',
-        '--password-store=basic', '--use-mock-keychain', ]
+DEFAULT_ARGS = [
+    '--disable-background-networking',
+    '--disable-background-timer-throttling',
+    '--disable-breakpad',
+    '--disable-browser-side-navigation',
+    '--disable-client-side-phishing-detection',
+    '--disable-default-apps',
+    '--disable-dev-shm-usage',
+    '--disable-extensions',
+    '--disable-features=site-per-process',
+    '--disable-hang-monitor',
+    '--disable-popup-blocking',
+    '--disable-prompt-on-repost',
+    '--disable-sync',
+    '--disable-translate',
+    '--metrics-recording-only',
+    '--no-first-run',
+    '--safebrowsing-disable-auto-update',
+    '--enable-automation',
+    '--password-store=basic',
+    '--use-mock-keychain',
+]
 
 
 class Launcher(object):
@@ -101,7 +119,7 @@ class Launcher(object):
                 download_chromium()
             self.chromeExecutable = str(chromium_executable())
 
-        self.cmd = [self.chromeExecutable]+self.chromeArguments
+        self.cmd = [self.chromeExecutable] + self.chromeArguments
 
     def _cleanup_tmp_user_data_dir(self) -> None:
         for retry in range(100):
@@ -126,7 +144,7 @@ class Launcher(object):
             options['stderr'] = subprocess.STDOUT
 
         self.proc = subprocess.Popen(  # type: ignore
-                self.cmd, **options, )
+            self.cmd, **options, )
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
@@ -148,7 +166,8 @@ class Launcher(object):
         self.browserWSEndpoint = get_ws_endpoint(self.url)
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(self.browserWSEndpoint, self._loop, connectionDelay, )
-        browser = await Browser.create(self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc, self.killChrome)
+        browser = await Browser.create(self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc,
+                                       self.killChrome)
         await self.ensureInitialPage(browser)
         return browser
 
@@ -199,8 +218,8 @@ class Launcher(object):
 
 
 def get_ws_endpoint(url) -> str:
-    url = url+'/json/version'
-    timeout = time.time()+30
+    url = url + '/json/version'
+    timeout = time.time() + 30
     while (True):
         if time.time() > timeout:
             raise BrowserError('Browser closed unexpectedly:\n')
@@ -332,7 +351,8 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     browserContextIds = (await connection.send('Target.getBrowserContexts')).get('browserContextIds', [])
     ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
     defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})
-    return await Browser.create(connection, browserContextIds, ignoreHTTPSErrors, defaultViewport, None, lambda: connection.send('Browser.close'))
+    return await Browser.create(connection, browserContextIds, ignoreHTTPSErrors, defaultViewport, None,
+                                lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:
