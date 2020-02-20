@@ -39,28 +39,10 @@ logger = logging.getLogger(__name__)
 pyppeteer_home = Path(__pyppeteer_home__)
 CHROME_PROFILE_PATH = pyppeteer_home / '.dev_profile'
 
-DEFAULT_ARGS = [
-    '--disable-background-networking',
-    '--disable-background-timer-throttling',
-    '--disable-breakpad',
-    '--disable-browser-side-navigation',
-    '--disable-client-side-phishing-detection',
-    '--disable-default-apps',
-    '--disable-dev-shm-usage',
-    '--disable-extensions',
-    '--disable-features=site-per-process',
-    '--disable-hang-monitor',
-    '--disable-popup-blocking',
-    '--disable-prompt-on-repost',
-    '--disable-sync',
-    '--disable-translate',
-    '--metrics-recording-only',
-    '--no-first-run',
-    '--safebrowsing-disable-auto-update',
-    '--enable-automation',
-    '--password-store=basic',
-    '--use-mock-keychain',
-]
+DEFAULT_ARGS = ['--disable-background-networking', '--disable-background-timer-throttling', '--disable-breakpad', '--disable-browser-side-navigation', '--disable-client-side-phishing-detection',
+        '--disable-default-apps', '--disable-dev-shm-usage', '--disable-extensions', '--disable-features=site-per-process', '--disable-hang-monitor', '--disable-popup-blocking',
+        '--disable-prompt-on-repost', '--disable-sync', '--disable-translate', '--metrics-recording-only', '--no-first-run', '--safebrowsing-disable-auto-update', '--enable-automation',
+        '--password-store=basic', '--use-mock-keychain', ]
 
 
 class Launcher(object):
@@ -98,21 +80,16 @@ class Launcher(object):
         if not ignoreDefaultArgs:
             self.chromeArguments.extend(defaultArgs(options))
         elif isinstance(ignoreDefaultArgs, list):
-            self.chromeArguments.extend(filter(
-                lambda arg: arg not in ignoreDefaultArgs,
-                defaultArgs(options),
-            ))
+            self.chromeArguments.extend(filter(lambda arg: arg not in ignoreDefaultArgs, defaultArgs(options), ))
         else:
             self.chromeArguments.extend(args)
 
         self.temporaryUserDataDir: Optional[str] = None
 
-        if not any(arg for arg in self.chromeArguments
-                   if arg.startswith('--remote-debugging-')):
+        if not any(arg for arg in self.chromeArguments if arg.startswith('--remote-debugging-')):
             self.chromeArguments.append(f'--remote-debugging-port={self.port}')
 
-        if not any(arg for arg in self.chromeArguments
-                   if arg.startswith('--user-data-dir')):
+        if not any(arg for arg in self.chromeArguments if arg.startswith('--user-data-dir')):
             if not CHROME_PROFILE_PATH.exists():
                 CHROME_PROFILE_PATH.mkdir(parents=True)
             self.temporaryUserDataDir = tempfile.mkdtemp(dir=str(CHROME_PROFILE_PATH))  # noqa: E501
@@ -124,12 +101,11 @@ class Launcher(object):
                 download_chromium()
             self.chromeExecutable = str(chromium_executable())
 
-        self.cmd = [self.chromeExecutable] + self.chromeArguments
+        self.cmd = [self.chromeExecutable]+self.chromeArguments
 
     def _cleanup_tmp_user_data_dir(self) -> None:
         for retry in range(100):
-            if self.temporaryUserDataDir and os.path.exists(
-                    self.temporaryUserDataDir):
+            if self.temporaryUserDataDir and os.path.exists(self.temporaryUserDataDir):
                 shutil.rmtree(self.temporaryUserDataDir, ignore_errors=True)
                 if os.path.exists(self.temporaryUserDataDir):
                     time.sleep(0.01)
@@ -150,9 +126,7 @@ class Launcher(object):
             options['stderr'] = subprocess.STDOUT
 
         self.proc = subprocess.Popen(  # type: ignore
-            self.cmd,
-            **options,
-        )
+                self.cmd, **options, )
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
@@ -171,16 +145,10 @@ class Launcher(object):
                 signal.signal(signal.SIGHUP, _close_process)
 
         connectionDelay = self.slowMo
-        self.browserWSEndpoint = self._get_ws_endpoint()
+        self.browserWSEndpoint = get_ws_endpoint(self.url)
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
-        self.connection = Connection(
-            self.browserWSEndpoint,
-            self._loop,
-            connectionDelay,
-        )
-        browser = await Browser.create(
-            self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport,
-            self.proc, self.killChrome)
+        self.connection = Connection(self.browserWSEndpoint, self._loop, connectionDelay, )
+        browser = await Browser.create(self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc, self.killChrome)
         await self.ensureInitialPage(browser)
         return browser
 
@@ -202,24 +170,6 @@ class Launcher(object):
         listeners = [addEventListener(browser, 'targetcreated', check_target)]
         await initialPagePromise
         removeEventListeners(listeners)
-
-    def _get_ws_endpoint(self) -> str:
-        url = self.url + '/json/version'
-        while self.proc.poll() is None:
-            time.sleep(0.1)
-            try:
-                with urlopen(url) as f:
-                    data = json.loads(f.read().decode())
-                break
-            except URLError:
-                continue
-        else:
-            raise BrowserError(
-                'Browser closed unexpectedly:\n{}'.format(
-                    self.proc.stdout.read().decode()
-                )
-            )
-        return data['webSocketDebuggerUrl']
 
     def waitForChromeToClose(self) -> None:
         """Terminate chrome."""
@@ -248,13 +198,27 @@ class Launcher(object):
             self._cleanup_tmp_user_data_dir()
 
 
+def get_ws_endpoint(url) -> str:
+    url = url+'/json/version'
+    timeout = time.time()+30
+    while (True):
+        if time.time() > timeout:
+            raise BrowserError('Browser closed unexpectedly:\n')
+        try:
+            with urlopen(url) as f:
+                data = json.loads(f.read().decode())
+            break
+        except URLError as e:
+            continue
+        time.sleep(0.1)
+
+    return data['webSocketDebuggerUrl']
+
+
 async def launch(options: dict = None, **kwargs: Any) -> Browser:
     """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
-
     This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.
-
     Available options are:
-
     * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
       ``False``.
     * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
@@ -265,7 +229,6 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       amount of milliseconds.
     * ``defaultViewport`` (dict): Set a consistent viewport for each page.
       Defaults to an 800x600 viewport. ``None`` disables default viewport.
-
       * ``width`` (int): page width in pixels.
       * ``height`` (int): page height in pixels.
       * ``deviceScaleFactor`` (int|float): Specify device scale factor (can be
@@ -276,7 +239,6 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
         Defaults to ``False``.
       * ``isLandscape`` (bool): Specify if viewport is in landscape mode.
         Defaults to ``False``.
-
     * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
       process.
     * ``ignoreDefaultArgs`` (bool or List[str]): If ``True``, do not use
@@ -303,9 +265,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
       completed. Defaults to ``True``.
     * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
     * ``appMode`` (bool): Deprecated.
-
     This function combines 3 steps:
-
     1. Infer a set of flags to launch chromium with using
        :func:`~pyppeteer.defaultArgs`.
     2. Launch browser and start managing its process according to the
@@ -313,14 +273,10 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
     3. Create an instance of :class:`~pyppeteer.browser.Browser` class and
        initialize it with ``defaultViewport``, ``slowMo``, and
        ``ignoreHTTPSErrors``.
-
     ``ignoreDefaultArgs`` option can be used to customize behavior on the (1)
     step. For example, to filter out ``--mute-audio`` from default arguments:
-
     .. code::
-
         browser = await launch(ignoreDefaultArgs=['--mute-audio'])
-
     .. note::
         Pyppeteer can also be used to control the Chrome browser, but it works
         best with the version of Chromium it is bundled with. There is no
@@ -332,20 +288,18 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
 
 async def connect(options: dict = None, **kwargs: Any) -> Browser:
     """Connect to the existing chrome.
-
-    ``browserWSEndpoint`` option is necessary to connect to the chrome. The
-    format is ``ws://${host}:${port}/devtools/browser/<id>``. This value can
-    get by :attr:`~pyppeteer.browser.Browser.wsEndpoint`.
-
+    ``browserWSEndpoint`` or ``browserURL`` option is necessary to connect to
+    the chrome. The format of ``browserWSEndpoint`` is
+    ``ws://${host}:${port}/devtools/browser/<id>`` and format of ``browserURL``
+    is ``http://127.0.0.1:9222```.
+    The value of ``browserWSEndpoint`` can get by :attr:`~pyppeteer.browser.Browser.wsEndpoint`.
     Available options are:
-
     * ``browserWSEndpoint`` (str): A browser websocket endpoint to connect to.
-      (**required**)
+    * ``browserURL`` (str): A browser URL to connect to.
     * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
       ``False``.
     * ``defaultViewport`` (dict): Set a consistent viewport for each page.
       Defaults to an 800x600 viewport. ``None`` disables default viewport.
-
       * ``width`` (int): page width in pixels.
       * ``height`` (int): page height in pixels.
       * ``deviceScaleFactor`` (int|float): Specify device scale factor (can be
@@ -356,7 +310,6 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
         Defaults to ``False``.
       * ``isLandscape`` (bool): Specify if viewport is in landscape mode.
         Defaults to ``False``.
-
     * ``slowMo`` (int|float): Slow down pyppeteer's by the specified amount of
       milliseconds.
     * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
@@ -370,19 +323,16 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
 
     browserWSEndpoint = options.get('browserWSEndpoint')
     if not browserWSEndpoint:
-        raise BrowserError('Need `browserWSEndpoint` option.')
+        browserURL = options.get('browserURL')
+        if not browserURL:
+            raise BrowserError('Need `browserWSEndpoint` or `browserURL` option.')
+        browserWSEndpoint = get_ws_endpoint(browserURL)
     connectionDelay = options.get('slowMo', 0)
-    connection = Connection(browserWSEndpoint,
-                            options.get('loop', asyncio.get_event_loop()),
-                            connectionDelay)
-    browserContextIds = (await connection.send('Target.getBrowserContexts')
-                         ).get('browserContextIds', [])
+    connection = Connection(browserWSEndpoint, options.get('loop', asyncio.get_event_loop()), connectionDelay)
+    browserContextIds = (await connection.send('Target.getBrowserContexts')).get('browserContextIds', [])
     ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
-    defaultViewport = options.get('defaultViewport',
-                                  {'width': 800, 'height': 600})
-    return await Browser.create(
-        connection, browserContextIds, ignoreHTTPSErrors, defaultViewport,
-        None, lambda: connection.send('Browser.close'))
+    defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})
+    return await Browser.create(connection, browserContextIds, ignoreHTTPSErrors, defaultViewport, None, lambda: connection.send('Browser.close'))
 
 
 def executablePath() -> str:
@@ -392,10 +342,8 @@ def executablePath() -> str:
 
 def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901,E501
     """Get the default flags the chromium will be launched with.
-
     ``options`` or keyword arguments are set of configurable options to set on
     the browser. Can have the following fields:
-
     * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
       ``True`` unless the ``devtools`` option is ``True``.
     * ``args`` (List[str]): Additional arguments to pass to the browser
@@ -417,11 +365,7 @@ def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901
     if devtools:
         chromeArguments.append('--auto-open-devtools-for-tabs')
     if headless:
-        chromeArguments.extend((
-            '--headless',
-            '--hide-scrollbars',
-            '--mute-audio',
-        ))
+        chromeArguments.extend(('--headless', '--hide-scrollbars', '--mute-audio',))
         if current_platform().startswith('win'):
             chromeArguments.append('--disable-gpu')
 
