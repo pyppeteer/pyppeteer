@@ -161,6 +161,14 @@ class TestBrowser(unittest.TestCase):
         self.assertEqual(await page.evaluate('2 * 3'), 6)
         await browserWithExtension.close()
 
+    @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
+    @sync
+    async def test_waitForTarget(self):
+        browser = await launch(**DEFAULT_OPTIONS)
+        self.assertIsNotNone(await browser.waitForTarget(lambda target: target))
+        with self.assertRaises(asyncio.exceptions.TimeoutError):
+            await browser.waitForTarget(lambda target: False, timeout=100),
+
 
 class TestPageClose(BaseTestCase):
     @sync

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Browser module."""
-
+import asyncio
 import logging
 from subprocess import Popen
 from types import SimpleNamespace
@@ -87,17 +87,6 @@ class Browser(EventEmitter):
         """
         return self._process
 
-    async def createIncogniteBrowserContext(self) -> 'BrowserContext':
-        """[Deprecated] Miss spelled method.
-
-        Use :meth:`createIncognitoBrowserContext` method instead.
-        """
-        logger.warning(
-            'createIncogniteBrowserContext is deprecated. '
-            'Use createIncognitoBrowserContext instead.'
-        )
-        return await self.createIncognitoBrowserContext()
-
     async def createIncognitoBrowserContext(self) -> 'BrowserContext':
         """Create a new incognito browser context.
 
@@ -129,6 +118,10 @@ class Browser(EventEmitter):
         """
         return [self._defaultContext] + [context for context in self._contexts.values()]  # noqa: E501
 
+    @property
+    def defaultBrowserContext(self) -> 'BrowserContext':
+        return self._defaultContext
+
     async def _disposeContext(self, contextId: str) -> None:
         await self._connection.send('Target.disposeBrowserContext', {
             'browserContextId': contextId,
@@ -157,13 +150,13 @@ class Browser(EventEmitter):
             context = self._defaultContext
 
         target = Target(
-            targetInfo,
-            context,
-            lambda: self._connection.createSession(targetInfo),
-            self._ignoreHTTPSErrors,
-            self._defaultViewport,
-            self._screenshotTaskQueue,
-            self._connection._loop,
+            targetInfo=targetInfo,
+            browserContext=context,
+            sessionFactory=lambda: self._connection.createSession(targetInfo),
+            ignoreHTTPSErrors=self._ignoreHTTPSErrors,
+            defaultViewport=self._defaultViewport,
+            screenshotTaskQueue=self._screenshotTaskQueue,
+            loop=self._connection._loop,
         )
         if targetInfo['targetId'] in self._targets:
             raise BrowserError('target should not exist before create.')
@@ -209,9 +202,7 @@ class Browser(EventEmitter):
         targetId = (await self._connection.send(
             'Target.createTarget', options)).get('targetId')
         target = self._targets.get(targetId)
-        if target is None:
-            raise BrowserError('Failed to create target for page.')
-        if not await target._initializedPromise:
+        if target is None or not await target._initializedPromise:
             raise BrowserError('Failed to create target for page.')
         page = await target.page()
         if page is None:
@@ -221,11 +212,41 @@ class Browser(EventEmitter):
     def targets(self) -> List[Target]:
         """Get a list of all active targets inside the browser.
 
-        In case of multiple browser contexts, the method will return a list
+        In case of multiple browser contexts, this will return a list
         with all the targets in all browser contexts.
         """
-        return [target for target in self._targets.values()
-                if target._isInitialized]
+        return [target for target in self._targets.values() if target._isInitialized]
+
+    @property
+    def target(self) -> Target:
+        """get active browser target"""
+        return next((target for target in self.targets() if target.type == 'browser'))
+
+    async def waitForTarget(self, predicate, timeout=30_000) -> Target:
+        """
+        Wait for target that matches predicate function.
+        :param predicate: function that takes 1 argument of Target object
+        :param timeout: how long to wait for target in milliseconds,
+        TimeoutError will be raised otherwise
+        """
+        if timeout:  # js uses ms while asyncio uses seconds
+            timeout = timeout / 1_000
+        existing_target = [target for target in self.targets() if predicate(target)]
+        if existing_target:
+            return existing_target[0]
+
+        result = asyncio.Future()
+
+        def check(target):
+            if predicate(target):
+                self.remove_listener('Target.targetCreated', check)
+                self.remove_listener('targetchanged', check)
+                result.set_result(target)
+                result.done()
+
+        self.on('Target.targetCreated', check)
+        self.on('targetchanged', check)
+        return await asyncio.wait_for(result, timeout=timeout)
 
     async def pages(self) -> List[Page]:
         """Get all pages of this browser.
@@ -236,11 +257,9 @@ class Browser(EventEmitter):
         In case of multiple browser contexts, this method will return a list
         with all the pages in all browser contexts.
         """
-        # Using asyncio.gather is better for performance
-        pages: List[Page] = list()
-        for context in self.browserContexts:
-            pages.extend(await context.pages())
-        return pages
+        pages = [context.pages() for context in self.browserContexts]
+        pages = await asyncio.gather(*pages)
+        return [p for ps in pages for p in ps]
 
     async def version(self) -> str:
         """Get version of the browser."""
@@ -320,14 +339,11 @@ class BrowserContext(EventEmitter):
         Non-visible pages, such as ``"background_page"``, will not be listed
         here. You can find them using :meth:`pyppeteer.target.Target.page`.
         """
-        # Using asyncio.gather is better for performance
-        pages = []
-        for target in self.targets():
-            if target.type == 'page':
-                page = await target.page()
-                if page:
-                    pages.append(page)
-        return pages
+        pages = [
+            target.page() for target in self.targets()
+            if target.type == 'page'
+        ]
+        return [page for page in await asyncio.gather(*pages) if page]
 
     def isIncognite(self) -> bool:
         """[Deprecated] Miss spelled method.
