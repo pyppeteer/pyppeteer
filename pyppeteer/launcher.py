@@ -72,7 +72,7 @@ class Launcher(object):
         options = merge_dict(options, kwargs)
 
         self.port = get_free_port()
-        self.url = f'http://127.0.0.1:{self.port}'
+        self.address = '127.0.0.1'
         self._loop = options.get('loop', asyncio.get_event_loop())
         self.chromeClosed = True
 
@@ -104,8 +104,16 @@ class Launcher(object):
 
         self.temporaryUserDataDir: Optional[str] = None
 
-        if not any(arg for arg in self.chromeArguments if arg.startswith('--remote-debugging-')):
+        if not any(arg for arg in self.chromeArguments if arg.startswith('--remote-debugging-port')):
             self.chromeArguments.append(f'--remote-debugging-port={self.port}')
+        else:
+          self.port = self.get_user_specified_port()
+        if not any(arg for arg in self.chromeArguments
+                   if arg.startswith('--remote-debugging-address')):
+          self.chromeArguments.append(f'--remote-debugging-address={self.address}')
+        else:
+          self.address = self.get_user_specified_address()
+        self.url = f'http://{self.address}:{self.port}'
 
         if not any(arg for arg in self.chromeArguments if arg.startswith('--user-data-dir')):
             if not CHROME_PROFILE_PATH.exists():
@@ -120,6 +128,16 @@ class Launcher(object):
             self.chromeExecutable = str(chromium_executable())
 
         self.cmd = [self.chromeExecutable] + self.chromeArguments
+
+    def get_user_specified_port(self):
+      for arg in self.chromeArguments:
+        if arg.startswith('--remote-debugging-port'):
+          return arg.split("=")[1]
+
+    def get_user_specified_address(self):
+      for arg in self.chromeArguments:
+        if arg.startswith('--remote-debugging-address'):
+          return arg.split("=")[1]
 
     def _cleanup_tmp_user_data_dir(self) -> None:
         for retry in range(100):
@@ -215,7 +233,8 @@ class Launcher(object):
             # Force kill chrome only when using temporary userDataDir
             self.waitForChromeToClose()
             self._cleanup_tmp_user_data_dir()
-
+        # If the process is still up for any reason, kill it
+        self.proc.kill()
 
 def get_ws_endpoint(url) -> str:
     url = url + '/json/version'
