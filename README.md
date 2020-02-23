@@ -1,4 +1,4 @@
-Pyppeteer2
+pyppeteer2
 ==========
 
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
@@ -7,39 +7,38 @@ Pyppeteer2
 [![Travis status](https://travis-ci.org/miyakogi/pyppeteer2.svg)](https://travis-ci.org/miyakogi/pyppeteer2)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/nb53tkg9po8v1blk?svg=true)](https://ci.appveyor.com/project/miyakogi/pyppeteer2)
 [![codecov](https://codecov.io/gh/miyakogi/pyppeteer2/branch/master/graph/badge.svg)](https://codecov.io/gh/miyakogi/pyppeteer2)
+
 _Note: this is a WIP continuation of pyppeteer project_  
 
 Unofficial Python port of
-[puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless)
-chrome/chromium browser automation library.
+[puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
 * Documentation: https://miyakogi.github.io/pyppeteer
 
 ## Installation
 
-Pyppeteer requires python 3.6+.
-(experimentally supports python 3.5)
+pyppeteer2 requires Python >= 3.6
 
-Install by pip from PyPI:
-
-```
-python3 -m pip install pyppeteer
-```
-
-Or install latest version from [github](https://github.com/miyakogi/pyppeteer):
+Install with `pip` from PyPI:
 
 ```
-python3 -m pip install -U git+https://github.com/miyakogi/pyppeteer.git@dev
+pip install pyppeteer
+```
+
+Or install latest version from [github](https://github.com/pyppeteer/pyppeteer2/):
+
+```
+pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
 ```
 
 ## Usage
 
-> **Note**: When you run pyppeteer first time, it downloads a recent version of Chromium (~100MB).
-> If you don't prefer this behavior, run `pyppeteer-install` command before running scripts which uses pyppeteer.
+> **Note**: When you run pyppeteer2 first time, it downloads a recent version of Chromium (~100MB) if it is not available.
+> If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer-install` command before prior to using this library.
 
-**Example**: open web page and take a screenshot.
-
+### Examples
+Open web page and take a screenshot.
 ```py
 import asyncio
 from pyppeteer import launch
@@ -47,14 +46,14 @@ from pyppeteer import launch
 async def main():
     browser = await launch()
     page = await browser.newPage()
-    await page.goto('http://example.com')
+    await page.goto('https://example.com')
     await page.screenshot({'path': 'example.png'})
     await browser.close()
 
 asyncio.get_event_loop().run_until_complete(main())
 ```
 
-**Example**: evaluate script on the page.
+Evaluate javascript on a page.
 
 ```py
 import asyncio
@@ -63,7 +62,7 @@ from pyppeteer import launch
 async def main():
     browser = await launch()
     page = await browser.newPage()
-    await page.goto('http://example.com')
+    await page.goto('https://example.com')
     await page.screenshot({'path': 'example.png'})
 
     dimensions = await page.evaluate('''() => {
@@ -81,24 +80,21 @@ async def main():
 asyncio.get_event_loop().run_until_complete(main())
 ```
 
-Pyppeteer has almost same API as puppeteer.
+pyppeteer2 has almost same API as puppeteer.
 More APIs are listed in the
 [document](https://miyakogi.github.io/pyppeteer/reference.html).
 
 [Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
 and [troubleshooting](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also useful for pyppeteer users.
 
-## Differences between puppeteer and pyppeteer
+## Differences between puppeteer and pyppeteer2
 
-Pyppeteer is to be as similar as puppeteer, but some differences between python
-and JavaScript make it difficult.
-
-These are differences between puppeteer and pyppeteer.
+pyppeteer2 strives to replicate the puppeteer API as close as possible, however, fundamental differences between Javascript and Python make this difficult to do exactly.
 
 ### Keyword arguments for options
 
 Puppeteer uses object (dictionary in python) for passing options to
-functions/methods. Pyppeteer accepts both dictionary and keyword arguments for
+functions/methods. pyppeteer2 accepts both dictionary and keyword arguments for
 options.
 
 Dictionary style option (similar to puppeteer):
@@ -113,11 +109,11 @@ Keyword argument style option (more pythonic, isn't it?):
 browser = await launch(headless=True)
 ```
 
-### Element selector method name (`$` -> `querySelector`)
+### Element selector method names
 
-In python, `$` is not usable for method name. So pyppeteer changes the following with shorthands available:
+In python, `$` is not a valid identifier. The equivalent methods to Puppeteer's `$`, `$$`, and `$x` and shorthand methods are listed below:
 
-| puppeteer | pyppeteer               | pyppeteer shorthand |
+| puppeteer | pyppeteer2               | pyppeteer2 shorthand |
 |-----------|-------------------------|---------------------|
 | Page.$()  | Page.querySelector()    | Page.J()            |
 | Page.$$() | Page.querySelectorAll() | Page.JJ()           |
@@ -125,31 +121,29 @@ In python, `$` is not usable for method name. So pyppeteer changes the following
 
 ### Arguments of `Page.evaluate()` and `Page.querySelectorEval()`
 
-Puppeteer's version of `evaluate()` takes JavaScript raw function or string of
-JavaScript expression, but pyppeteer takes string of JavaScript. JavaScript
-strings can be function or expression. Pyppeteer tries to automatically detect
-the string is function or expression, but sometimes it fails. If expression
-string is treated as function and error is raised, add `force_expr=True` option,
-which force pyppeteer to treat the string as expression.
+Puppeteer's version of `evaluate()` takes a JavaScript function or a string representation of a JavaScript expression. pyppeteer2 takes string representation of JavaScript expression or function. pyppeteer2 will try to automatically detect if the string is function or expression, but it will fail sometimes. If an expression
+string is erroneously treated as function and an error is raised, set `force_expr` to `True`,
+to force pyppeteer2 to treat the string as expression.
 
-Example to get page content:
+### Examples:
+
+Get a page's `textContent`:
 
 ```python
 content = await page.evaluate('document.body.textContent', force_expr=True)
 ```
 
-Example to get element's inner text:
+Get an element's `textContent`:
 
 ```python
 element = await page.querySelector('h1')
 title = await page.evaluate('(element) => element.textContent', element)
 ```
 
-## Future Plan
+## Roadmap
 
-1. Catch up development of puppeteer
-    * Not intend to add original API which puppeteer does not have
+See [projects](https://github.com/pyppeteer/pyppeteer2/projects)
 
 ## Credits
 
-This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage) project template.
+###### This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and the [audreyr/cookiecutter-pypackage](https://github.com/audreyr/cookiecutter-pypackage) project template.
