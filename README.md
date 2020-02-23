@@ -33,8 +33,7 @@ pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
 
 ## Usage
 
-> **Note**: When you run pyppeteer2 for the first time, it downloads a recent version of Chromium (~100MB) if it is not found on your system.
-> If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer-install` command before prior to using this library.
+> **Note**: When you run pyppeteer2 for the first time, it downloads the latest version of Chromium (~150MB) if it is not found on your system. If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer-install` command before prior to using this library.
 
 Full documentation can be found [here](https://miyakogi.github.io/pyppeteer/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [troubleshooting](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for puppeteer2 users.
 
