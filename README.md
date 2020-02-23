@@ -25,7 +25,7 @@ Install with `pip` from PyPI:
 pip install pyppeteer2
 ```
 
-Or install latest version from [github](https://github.com/pyppeteer/pyppeteer2/):
+Or install the latest version from [this github repo](https://github.com/pyppeteer/pyppeteer2/):
 
 ```
 pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
