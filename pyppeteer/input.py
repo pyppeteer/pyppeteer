@@ -83,9 +83,7 @@ class Keyboard(object):
         self._pressedKeys.add(description['code'])
         self._modifiers |= self._modifierBit(description['key'])
 
-        text = options.get('text')
-        if text is None:
-            text = description['text']
+        text = options.get('text', description['text'])
 
         await self._client.send('Input.dispatchKeyEvent', {
             'type': 'keyDown' if text else 'rawKeyDown',
@@ -103,11 +101,11 @@ class Keyboard(object):
     def _modifierBit(self, key: str) -> int:
         if key == 'Alt':
             return 1
-        if key == 'Control':
+        elif key == 'Control':
             return 2
-        if key == 'Meta':
+        elif key == 'Meta':
             return 4
-        if key == 'Shift':
+        elif key == 'Shift':
             return 8
         return 0
 
@@ -125,30 +123,31 @@ class Keyboard(object):
         if not definition:
             raise PyppeteerError(f'Unknown key: {keyString}')
 
-        if 'key' in definition:
+        if definition.get('text'):
             description['key'] = definition['key']
         if shift and definition.get('shiftKey'):
             description['key'] = definition['shiftKey']
 
-        if 'keyCode' in definition:
+        if definition.get('keyCode'):
             description['keyCode'] = definition['keyCode']
         if shift and definition.get('shiftKeyCode'):
             description['keyCode'] = definition['shiftKeyCode']
 
-        if 'code' in definition:
+        if definition.get('code'):
             description['code'] = definition['code']
 
-        if 'location' in definition:
+        if definition.get('location'):
             description['location'] = definition['location']
 
         if len(description['key']) == 1:  # type: ignore
             description['text'] = description['key']
 
-        if 'text' in definition:
+        if definition.get('text'):
             description['text'] = definition['text']
         if shift and definition.get('shiftText'):
             description['text'] = definition['shiftText']
-
+        
+        # if any modifiers besides shift are pressed, no text should be sent
         if self._modifiers & ~8:
             description['text'] = ''
 
@@ -205,14 +204,15 @@ class Keyboard(object):
             will not type the text in upper case.
         """
         options = merge_dict(options, kwargs)
-        delay = options.get('delay', 0)
+        delay = options.get('delay')
         for char in text:
             if char in keyDefinitions:
                 await self.press(char, {'delay': delay})
             else:
+                if delay:
+                    await asyncio.sleep(delay / 1000)
                 await self.sendCharacter(char)
-            if delay:
-                await asyncio.sleep(delay / 1000)
+
 
     async def press(self, key: str, options: Dict = None, **kwargs: Any
                     ) -> None:
@@ -239,7 +239,7 @@ class Keyboard(object):
         options = merge_dict(options, kwargs)
 
         await self.down(key, options)
-        if 'delay' in options:
+        if options.get('delay'):
             await asyncio.sleep(options['delay'] / 1000)
         await self.up(key)
 
@@ -266,19 +266,17 @@ class Mouse(object):
         specified, Sends intermediate ``mousemove`` events. Defaults to 1.
         """
         options = merge_dict(options, kwargs)
+        steps = options.get('steps', 1)
         fromX = self._x
         fromY = self._y
         self._x = x
         self._y = y
-        steps = options.get('steps', 1)
         for i in range(1, steps + 1):
-            x = round(fromX + (self._x - fromX) * (i / steps))
-            y = round(fromY + (self._y - fromY) * (i / steps))
             await self._client.send('Input.dispatchMouseEvent', {
                 'type': 'mouseMoved',
                 'button': self._button,
-                'x': x,
-                'y': y,
+                'x': round(fromX + (self._x - fromX) * (i / steps)),
+                'y': round(fromY + (self._y - fromY) * (i / steps)),
                 'modifiers': self._keyboard._modifiers,
             })
 
@@ -299,8 +297,8 @@ class Mouse(object):
         options = merge_dict(options, kwargs)
         await self.move(x, y)
         await self.down(options)
-        if options and options.get('delay'):
-            await asyncio.sleep(options.get('delay', 0) / 1000)
+        if options.get('delay'):
+            await asyncio.sleep(options['delay'] / 1000)
         await self.up(options)
 
     async def down(self, options: dict = None, **kwargs: Any) -> None:
@@ -320,7 +318,7 @@ class Mouse(object):
             'x': self._x,
             'y': self._y,
             'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
+            'clickCount': options.get('clickCount', 1),
         })
 
     async def up(self, options: dict = None, **kwargs: Any) -> None:
@@ -340,7 +338,7 @@ class Mouse(object):
             'x': self._x,
             'y': self._y,
             'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
+            'clickCount': options.get('clickCount', 1),
         })
 
 
@@ -357,6 +355,14 @@ class Touchscreen(object):
 
         Dispatches a ``touchstart`` and ``touchend`` event.
         """
+        # Touches appear to be lost during the first frame after navigation.
+        # This waits a frame before sending the tap.
+        # see https://crbug.com/613219
+        await self._client.send('Runtime.evaluate', {
+            'expression': new Promise(x => requestAnimationFrame(() => requestAnimationFrame(x))),
+            'awaitPromies': True
+        })
+        
         touchPoints = [{'x': round(x), 'y': round(y)}]
         await self._client.send('Input.dispatchTouchEvent', {
             'type': 'touchStart',
