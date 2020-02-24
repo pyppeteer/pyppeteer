@@ -359,8 +359,8 @@ class Touchscreen(object):
         # This waits a frame before sending the tap.
         # see https://crbug.com/613219
         await self._client.send('Runtime.evaluate', {
-            'expression': new Promise(x => requestAnimationFrame(() => requestAnimationFrame(x))),
-            'awaitPromies': True
+            'expression': 'new Promise(x => requestAnimationFrame(() => requestAnimationFrame(x)))',
+            'awaitPromise': True
         })
         
         touchPoints = [{'x': round(x), 'y': round(y)}]
