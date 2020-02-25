@@ -4,37 +4,34 @@
 """
 Lifecycle watcher module
 
-puppeteer equivelent: LifecycleWatcher.js
+puppeteer equivalent: lib/LifecycleWatcher.js
 """
+import asyncio
 from functools import partial
 from typing import Union, List
 
-from pyppeteer.errors import BrowserError
 from pyppeteer import helper
+from pyppeteer.errors import BrowserError, TimeoutError
 from pyppeteer.events import Events
+from pyppeteer.frame_manager import FrameManager, Frame
 
-pupeteerToProtocolLifecycle = {
+puppeteerToProtocolLifecycle = {
     'load': 'load',
     'domcontentloaded': 'DOMContentLoaded',
     'networkidle0': 'networkIdle',
     'networkidle2': 'networkAlmostIdle',
 }
 
-class LifecycleWatcher(object):
 
-    def __init__(
-            self,
-            frameManager: 'FrameManager',
-            frame: 'Frame',
-            waitUntil: Union[str, List[str]],
-            timeout: int,
-    ):
+class LifecycleWatcher:
+
+    def __init__(self, frameManager: FrameManager, frame: Frame, waitUntil: Union[str, List[str]], timeout: int,):
         if isinstance(waitUntil, str):
             waitUntil = [waitUntil]
 
         self._expectedLifecycle = []
         for wait_for in waitUntil:
-            protocol_event = pupeteerToProtocolLifecycle.get(wait_for)
+            protocol_event = puppeteerToProtocolLifecycle.get(wait_for)
             if not protocol_event:
                 raise BrowserError(f'Unknown value '
                                    f'for options.waitUntil: {waitUntil}')
@@ -83,7 +80,7 @@ class LifecycleWatcher(object):
         self._sameDocumentNavigationPromise = create_future()
         self._lifecyclePromise = create_future()
         self._newDocumentNavigationPromise = create_future()
-        self._timeoutPromise = create_future()  # todo
+        self._timeoutPromise = self._createTimeoutPromise()
         self._terminationPromise = create_future()
         self._checkLifecycleComplete()
 
@@ -119,16 +116,20 @@ class LifecycleWatcher(object):
         return self._lifecyclePromise
 
     def timeoutOrTerminationPromise(self):
-        pass
-        # TODO finish this
+        asyncio.wait([self._timeoutPromise, self._terminationPromise],
+                     loop=self._frameManager._client._loop,
+                     return_when='FIRST_COMPLETED')
 
     def _createTimeoutPromise(self):
         future = self._frameManager._client._loop.create_future()
         if not self._timeout:
             return future
         errorMessage = 'Navigation timeout of {} ms exceeded'.format(self._timeout)
-        # TODO finish this
-        return
+        self._maxTimeout = self._frameManager._client._loop.create_task(self._raiseTimeoutError(errorMessage))
+
+    async def _raiseTimeoutError(self, message: str):
+        await asyncio.sleep(self._timeout)
+        raise TimeoutError(message)
 
     def _navigatedWithinDocument(self, frame):
         if frame != self._frame:
@@ -158,7 +159,7 @@ class LifecycleWatcher(object):
 
     def dispose(self):
         helper.removeEventListeners(self._eventListeners)
-        # js: clearTimeout(this._maximumTimer);  # todo, reimplement this?
+        self._maxTimeout.cancel()
 
     def _sameDocumentNavigationCompleteCallback(self, value=None) -> None:
         self._sameDocumentNavigationPromise.set_value(value)
@@ -171,6 +172,3 @@ class LifecycleWatcher(object):
 
     def _terminationCallback(self, value=None) -> None:
         self._lifecyclePromise.set_value(value)
-
-
-
