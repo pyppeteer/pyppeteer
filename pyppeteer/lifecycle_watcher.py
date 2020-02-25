@@ -8,7 +8,7 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 """
 
 import asyncio
-from asyncio import FIRST_COMPLETED, Future
+from asyncio import FIRST_COMPLETED
 from functools import partial
 from typing import Awaitable, Dict, List, Union, Optional
 
@@ -115,15 +115,15 @@ class LifecycleWatcher:
                 self._expectedLifecycle.append(protocolEvent)
 
     @property
-    def lifecycleFuture(self) -> Future:
+    def lifecycleFuture(self) -> Awaitable:
         return self._lifecycleFuture
 
     @property
-    def sameDocumentNavigationFuture(self) -> Future:
+    def sameDocumentNavigationFuture(self) -> Awaitable:
         return self._sameDocumentNavigationFuture
 
     @property
-    def newDocumentNavigationFuture(self) -> Future:
+    def newDocumentNavigationFuture(self) -> Awaitable:
         return self._newDocumentNavigationFuture
 
     def _onRequest(self, request: 'Request') -> None:
@@ -143,7 +143,7 @@ class LifecycleWatcher:
     def navigationResponse(self) -> Optional[Request]:
         return self._navigationRequest.response if self._navigationRequest else None
 
-    def timeoutOrTerminationPromise(self) -> Future:
+    def timeoutOrTerminationPromise(self) -> Awaitable:
         return asyncio.wait([self._timeoutPromise, self._terminationFuture], return_when=FIRST_COMPLETED)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
