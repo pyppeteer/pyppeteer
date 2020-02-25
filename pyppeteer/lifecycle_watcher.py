@@ -115,18 +115,18 @@ class LifecycleWatcher:
                 self._expectedLifecycle.append(protocolEvent)
 
     @property
-    def lifecycleFuture(self) -> Awaitable:
+    def lifecycleFuture(self) -> Awaitable[None]:
         return self._lifecycleFuture
 
     @property
-    def sameDocumentNavigationFuture(self) -> Awaitable:
+    def sameDocumentNavigationFuture(self) -> Awaitable[None]:
         return self._sameDocumentNavigationFuture
 
     @property
-    def newDocumentNavigationFuture(self) -> Awaitable:
+    def newDocumentNavigationFuture(self) -> Awaitable[None]:
         return self._newDocumentNavigationFuture
 
-    def _onRequest(self, request: 'Request') -> None:
+    def _onRequest(self, request: Request) -> None:
         if request.frame == self._frame and request.isNavigationRequest():
             self._navigationRequest = request
 
