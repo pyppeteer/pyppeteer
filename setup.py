@@ -71,7 +71,7 @@ setup(
     install_requires=requirements,
     entry_points={
         'console_scripts': [
-            'pyppeteer-install = pyppeteer.command:install',
+            'pyppeteer2-install = pyppeteer.command:install',
         ],
     },
 
