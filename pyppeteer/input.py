@@ -127,7 +127,7 @@ class Keyboard(object):
         if not definition:
             raise PyppeteerError(f'Unknown key: {keyString}')
 
-        if definition.get('text'):
+        if definition.get('key'):
             description['key'] = definition['key']
         if shift and definition.get('shiftKey'):
             description['key'] = definition['shiftKey']
