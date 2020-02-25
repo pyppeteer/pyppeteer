@@ -8,9 +8,9 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 """
 
 import asyncio
-from asyncio import Future, FIRST_COMPLETED
+from asyncio import FIRST_COMPLETED, Future
 from functools import partial
-from typing import Any, Awaitable, Dict, List, Union
+from typing import Awaitable, Dict, List, Union, Optional
 
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
@@ -32,7 +32,7 @@ class LifecycleWatcher:
     """LifecycleWatcher class."""
 
     def __init__(self, frameManager: FrameManager, frame: Frame, timeout: int,
-                 options: Dict = None, **kwargs: Any) -> None:
+                 options: Dict = None, **kwargs: Dict[str, Union[bool, int, float, str]]) -> None:
         """Make new LifecycleWatcher"""
         options = merge_dict(options, kwargs)
         self._validate_options_and_set_expected_lifecycle(options)
@@ -46,9 +46,8 @@ class LifecycleWatcher:
             helper.addEventListener(
                 self._frameManager._client,
                 Events.CDPSession.Disconnected,
-                partial(
-                    self._terminate,
-                    BrowserError('Navigation failed because browser has disconnected'))
+                partial(self._terminate,
+                        BrowserError('Navigation failed because browser has disconnected'))
             ),
             helper.addEventListener(
                 self._frameManager,
@@ -73,25 +72,13 @@ class LifecycleWatcher:
         ]
         self._loop = self._frameManager._client._loop
 
-        self._lifecycleCompleteFuture = self._loop.create_future()
+        self._lifecycleFuture = self._loop.create_future()
         self._sameDocumentNavigationFuture = self._loop.create_future()
         self._newDocumentNavigationFuture = self._loop.create_future()
         self._terminationFuture = self._loop.create_future()
 
         self._timeoutPromise = self._createTimeoutPromise()
         self._checkLifecycleComplete()
-
-    @property
-    def lifecycleComplete(self):
-        return self._lifecycleCompleteFuture
-
-    @property
-    def sameDocumentNavigationComplete(self):
-        return self._sameDocumentNavigationFuture
-
-    @property
-    def newDocumentNavigationComplete(self):
-        return self._newDocumentNavigationFuture
 
     def _validate_options_and_set_expected_lifecycle(self, options: Dict) -> None:
         # noqa: C901
@@ -127,18 +114,36 @@ class LifecycleWatcher:
             else:
                 self._expectedLifecycle.append(protocolEvent)
 
-    def _onRequest(self, request: 'Request'):
-        if request.frame != self._frame or not request.isNavigationRequest():
-            return
-        self._navigationRequest = request
+    @property
+    def lifecycleFuture(self) -> Future:
+        return self._lifecycleFuture
 
-    def _onFrameDetached(self, frame: Frame):
+    @property
+    def sameDocumentNavigationFuture(self) -> Future:
+        return self._sameDocumentNavigationFuture
+
+    @property
+    def newDocumentNavigationFuture(self) -> Future:
+        return self._newDocumentNavigationFuture
+
+    def _onRequest(self, request: 'Request') -> None:
+        if request.frame == self._frame and request.isNavigationRequest():
+            self._navigationRequest = request
+
+    def _onFrameDetached(self, frame: Frame = None) -> None:
+        # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._terminationFuture.set_exception(PageError('Navigating frame was detached'))
-            return
-        self._checkLifecycleComplete()
+        else:
+            self._checkLifecycleComplete()
 
-    def timeoutOrTerminationPromise(self):
+    def _terminate(self, error: Exception) -> None:
+        self._terminationFuture.set_result(error)
+
+    def navigationResponse(self) -> Optional[Request]:
+        return self._navigationRequest.response if self._navigationRequest else None
+
+    def timeoutOrTerminationPromise(self) -> Future:
         return asyncio.wait([self._timeoutPromise, self._terminationFuture], return_when=FIRST_COMPLETED)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
@@ -156,22 +161,16 @@ class LifecycleWatcher:
             self._timeout_timer = self._loop.create_future()
         return self._maximumTimer
 
-    def navigationResponse(self) -> Any:
-        return self._navigationRequest.response() if self._navigationRequest else None
-
-    def _terminate(self):
-        self._terminato
-
     def _navigatedWithinDocument(self, frame: Frame = None) -> None:
-        if frame != self._frame:
-            return
-        self._hasSameDocumentNavigation = True
-        self._checkLifecycleComplete()
+        # note: frame never appears to specified, left in for compatibility
+        if frame == self._frame:
+            self._hasSameDocumentNavigation = True
+            self._checkLifecycleComplete()
 
     def _checkLifecycleComplete(self) -> None:
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return
-        self._lifecycleCompleteFuture.set_result(None)
+        self._lifecycleFuture.set_result(None)
         if self._frame._loaderId == self._initialLoaderId and not self._hasSameDocumentNavigation:
             return
         if self._hasSameDocumentNavigation:
@@ -188,15 +187,14 @@ class LifecycleWatcher:
                 return False
         return True
 
-    def cancel(self) -> None:
-        """Cancel navigation."""
-        self._cleanup()
-
     def dispose(self) -> None:
         self._cleanup()
 
     def _cleanup(self) -> None:
         helper.removeEventListeners(self._eventListeners)
-        # self._lifecycleCompletePromise.cancel()
+        # not sure if every future has to be canceled manually or not
+        # if we cancel lifecycleFuture (as done in old source) in theory we should cancel
+        # every future we created during class instantiation
+        # self._lifecycleFuture.cancel()
         self._maximumTimer.cancel()
         self._timeout_timer.cancel()

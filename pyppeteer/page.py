@@ -880,7 +880,7 @@ function addPageBinding(bindingName) {
         if result is not None:
             raise PageError(result)
         result = await watcher.navigationResponse()
-        watcher.cancel()
+        watcher.dispose()
         helper.removeEventListeners(eventListeners)
         error = result[0].pop().exception()  # type: ignore
         if error:
