@@ -104,8 +104,8 @@ class Page(EventEmitter):
             client.send('Log.enable', {}),
         )
         if ignoreHTTPSErrors:
-            await client.send('Security.setOverrideCertificateErrors',
-                              {'override': True})
+            await client.send('Security.setIgnoreCertificateErrors',
+                              {'ignore': True})
         if defaultViewport:
             await page.setViewport(defaultViewport)
         return page
@@ -201,8 +201,6 @@ class Page(EventEmitter):
         client.on('Runtime.exceptionThrown',
                   lambda exception: self._handleException(
                       exception.get('exceptionDetails')))
-        client.on('Security.certificateError',
-                  lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
