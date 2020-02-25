@@ -3,7 +3,7 @@ pyppeteer2
 
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
 [![PyPI version](https://img.shields.io/pypi/pyversions/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://miyakogi.github.io/pyppeteer/)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://pyppeteer.github.io/pyppeteer2/)
 [![Travis status](https://travis-ci.com/pyppeteer/pyppeteer2.svg)](https://travis-ci.com/pyppeteer/pyppeteer2)
 [![codecov](https://codecov.io/gh/pyppeteer/pyppeteer2/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer2)
 
@@ -12,7 +12,7 @@ _Note: this is a WIP continuation of the pyppeteer project_
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
-* Documentation: https://miyakogi.github.io/pyppeteer
+* Documentation: https://pyppeteer.github.io/pyppeteer2/
 
 ## Installation
 
@@ -34,7 +34,7 @@ pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
 
 > **Note**: When you run pyppeteer2 for the first time, it downloads the latest version of Chromium (~150MB) if it is not found on your system. If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer2-install` command before prior to using this library.
 
-Full documentation can be found [here](https://miyakogi.github.io/pyppeteer/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [its troubleshooting guide](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for puppeteer2 users.
+Full documentation can be found [here](https://pyppeteer.github.io/pyppeteer2/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [its troubleshooting guide](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for puppeteer2 users.
 
 ### Examples
 
@@ -81,7 +81,7 @@ asyncio.get_event_loop().run_until_complete(main())
 
 ## Differences between puppeteer and pyppeteer2
 
-pyppeteer2 strives to replicate the puppeteer API as close as possible, however, fundamental differences between Javascript and Python make this difficult to do precisely. More information on specifics can be found in the [documentation](https://miyakogi.github.io/pyppeteer/reference.html).
+pyppeteer2 strives to replicate the puppeteer API as close as possible, however, fundamental differences between Javascript and Python make this difficult to do precisely. More information on specifics can be found in the [documentation](https://pyppeteer.github.io/pyppeteer2/reference.html).
 
 ### Keyword arguments for options
 
