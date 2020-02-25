@@ -51,9 +51,10 @@ class Tracing(object):
             'disabled-by-default-v8.cpu_profiler',
             'disabled-by-default-v8.cpu_profiler.hires',
         ]
+
         categoriesArray = options.get('categories', defaultCategories)
 
-        if 'screenshots' in options:
+        if options.get('screenshots'):
             categoriesArray.append('disabled-by-default-devtools.screenshot')
 
         self._path = options.get('path', '')
@@ -68,18 +69,18 @@ class Tracing(object):
 
         :return: trace data as string.
         """
-        contentPromise = self._client._loop.create_future()
+        contentFuture = self._client._loop.create_future()
         self._client.once(
             'Tracing.tracingComplete',
             lambda event: self._client._loop.create_task(
                 self._readStream(event.get('stream'), self._path)
             ).add_done_callback(
-                lambda fut: contentPromise.set_result(fut.result())
+                lambda fut: contentFuture.set_result(fut.result())
             )
         )
         await self._client.send('Tracing.end')
         self._recording = False
-        return await contentPromise
+        return await contentFuture
 
     async def _readStream(self, handle: str, path: str) -> str:
         # might be better to return as bytes
