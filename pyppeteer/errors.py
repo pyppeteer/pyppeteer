@@ -34,3 +34,8 @@ class PageError(PyppeteerError):  # noqa: D204
 class TimeoutError(asyncio.TimeoutError):  # noqa: D204
     """Timeout Error class."""
     pass
+
+
+class DeprecationError(PyppeteerError):  # noqa: D204
+    """Deprecated Error class"""
+    pass

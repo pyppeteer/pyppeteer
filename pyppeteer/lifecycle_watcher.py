@@ -13,7 +13,7 @@ from functools import partial
 from typing import Any, Awaitable, Dict, List, Union
 
 from pyppeteer import helper
-from pyppeteer.errors import TimeoutError, BrowserError, PageError
+from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
 from pyppeteer.events import Events
 from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.network_manager import Request
@@ -93,16 +93,14 @@ class LifecycleWatcher:
     def newDocumentNavigationComplete(self):
         return self._newDocumentNavigationFuture
 
+    def _validate_options_and_set_expected_lifecycle(self, options: Dict) -> None:
+        # noqa: C901
+        for deprecated_opt in ('networkIdleTimeout', 'networkIdleInflight'):
+            if deprecated_opt in options:
+                raise DeprecationError(f'`{deprecated_opt}` option is no longer supported.')
 
-    def _validate_options_and_set_expected_lifecycle(self, options: Dict) -> None:  # noqa: C901
-        if 'networkIdleTimeout' in options:
-            raise ValueError(
-                '`networkIdleTimeout` option is no longer supported.')
-        if 'networkIdleInflight' in options:
-            raise ValueError(
-                '`networkIdleInflight` option is no longer supported.')
         if options.get('waitUntil') == 'networkidle':
-            raise ValueError(
+            raise DeprecationError(
                 '`networkidle` option is no longer supported. '
                 'Use `networkidle2` instead.')
         if options.get('waitUntil') == 'documentloaded':
