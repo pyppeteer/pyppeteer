@@ -27,7 +27,7 @@ from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
-from pyppeteer.navigator_watcher import NavigatorWatcher
+from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
@@ -879,7 +879,7 @@ function addPageBinding(bindingName) {
         result = await self._navigate(url, referrer)
         if result is not None:
             raise PageError(result)
-        result = await watcher.navigationPromise()
+        result = await watcher.navigationResponse()
         watcher.cancel()
         helper.removeEventListeners(eventListeners)
         error = result[0].pop().exception()  # type: ignore
@@ -956,7 +956,7 @@ function addPageBinding(bindingName) {
             NetworkManager.Events.Response,
             lambda response: responses.__setitem__(response.url, response)
         )
-        result = await watcher.navigationPromise()
+        result = await watcher.navigationResponse()
         helper.removeEventListeners([listener])
         error = result[0].pop().exception()
         if error:
