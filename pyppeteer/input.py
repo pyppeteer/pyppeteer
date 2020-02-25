@@ -105,11 +105,11 @@ class Keyboard(object):
     def _modifierBit(self, key: str) -> int:
         if key == 'Alt':
             return 1
-        elif key == 'Control':
+        if key == 'Control':
             return 2
-        elif key == 'Meta':
+        if key == 'Meta':
             return 4
-        elif key == 'Shift':
+        if key == 'Shift':
             return 8
         return 0
 
