@@ -12,13 +12,9 @@ from typing import Awaitable
 
 class TaskQueue:
     def __init__(self):
-        self._last_future = asyncio.Future()
-        self._last_future.set_result(None)
+        self._chain = None
 
     async def postTask(self, task: Awaitable):
-        self._last_future.add_done_callback(task)
-        try:
-            self._last_future = await self._last_future
-        except Exception:
-            pass
-        return self._last_future
+        tasks = self._chain or [task]
+        self._chain = asyncio.gather(tasks)
+        return self._chain
