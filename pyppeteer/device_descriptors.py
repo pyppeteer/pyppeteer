@@ -1,6 +1,7 @@
 from typing import Dict, Union
 
 # noqa
+# pragma: no cover
 devices: Dict[str, Dict[str, Union[str, Dict[str, Union[bool, int]]]]] = {
     "Blackberry PlayBook": {
         "userAgent": "Mozilla/5.0 (PlayBook; U; RIM Tablet OS 2.1.0; en-US) AppleWebKit/536.2+ (KHTML like Gecko) Version/7.2.1.0 Safari/536.2+",
