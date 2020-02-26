@@ -16,6 +16,9 @@ class TaskQueue:
         self._last_future.set_result(None)
 
     async def postTask(self, task: Awaitable):
-        result = await self._last_future
-        self._last_future = task
-        return result
+        self._last_future.add_done_callback(task)
+        try:
+            self._last_future = await self._last_future
+        except Exception:
+            pass
+        return self._last_future
