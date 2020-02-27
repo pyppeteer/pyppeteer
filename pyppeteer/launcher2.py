@@ -58,7 +58,7 @@ class BrowserOptions(TypedDict):
     slowMo: Optional[bool]
 
 
-class getWSEndpoint:
+class BrowserRunner:
     # todo: proper typing
     def __init__(self, executable_path: str, process_args: Sequence[str], temp_dir: Union[Path, str]):
         self.executable_path = executable_path
