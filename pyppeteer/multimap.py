@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Multimap module."""
+"""
+Multimap module.
 
-from collections import OrderedDict
-from typing import Any, List, Optional
+puppeteer equivalent: lib/Multimap.js
+"""
+
+
+from typing import Any, List, Optional, Dict
 
 
 class Multimap(object):
@@ -13,7 +17,7 @@ class Multimap(object):
     def __init__(self) -> None:
         """Make new multimap."""
         # maybe defaultdict(set) is better
-        self._map: OrderedDict[Optional[str], List[Any]] = OrderedDict()
+        self._map: Dict[Optional[str], List[Any]] = {}
 
     def set(self, key: Optional[str], value: Any) -> None:
         """Set value."""
