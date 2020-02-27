@@ -4,86 +4,208 @@
 """Frame Manager module."""
 
 import asyncio
-from collections import OrderedDict
+import re
 import logging
+from collections import OrderedDict
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, Generator, List, Optional, Set, Union
+from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
+from pyppeteer.domworld import DOMWorld
+from pyppeteer.events import Events
+from pyppeteer.jshandle import JSHandle
 from pyppeteer.connection import CDPSession
 from pyppeteer.element_handle import ElementHandle
-from pyppeteer.errors import NetworkError
-from pyppeteer.execution_context import ExecutionContext, JSHandle
-from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
+from pyppeteer.errors import BrowserError
+from pyppeteer.execution_context import ExecutionContext
+from pyppeteer.errors import ElementHandleError, PageError
+from pyppeteer.lifecycle_watcher import LifecycleWatcher
+from pyppeteer.network_manager import NetworkManager
+from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
+
+UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
+EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
+SOURCE_URL_REGEX = re.compile(
+    r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$',
+    re.MULTILINE,
+)
 
 
 class FrameManager(EventEmitter):
     """FrameManager class."""
 
-    Events = SimpleNamespace(
-        FrameAttached='frameattached',
-        FrameNavigated='framenavigated',
-        FrameDetached='framedetached',
-        LifecycleEvent='lifecycleevent',
-        FrameNavigatedWithinDocument='framenavigatedwithindocument',
-    )
-
-    def __init__(self, client: CDPSession, frameTree: Dict, page: Any) -> None:
+    def __init__(
+            self,
+            client: CDPSession,
+            page: Any,
+            ignoreHTTPSErrors: bool,
+            timeoutSettings: 'TimeoutSettings'
+    ) -> None:
         """Make new frame manager."""
         super().__init__()
         self._client = client
         self._page = page
+        self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
+        self._timeoutSettings = timeoutSettings
         self._frames: OrderedDict[str, Frame] = OrderedDict()
-        self._mainFrame: Optional[Frame] = None
-        self._contextIdToContext: Dict[str, ExecutionContext] = dict()
+        self._contextIdToContext: Dict[int, ExecutionContext] = dict()
+        self._isolatedWorlds: Set[str] = set()
 
-        client.on('Page.frameAttached',
-                  lambda event: self._onFrameAttached(
-                      event.get('frameId', ''), event.get('parentFrameId', ''))
-                  )
-        client.on('Page.frameNavigated',
-                  lambda event: self._onFrameNavigated(event.get('frame')))
-        client.on('Page.navigatedWithinDocument',
-                  lambda event: self._onFrameNavigatedWithinDocument(
-                      event.get('frameId'), event.get('url')
-                  ))
-        client.on('Page.frameDetached',
-                  lambda event: self._onFrameDetached(event.get('frameId')))
-        client.on('Page.frameStoppedLoading',
-                  lambda event: self._onFrameStoppedLoading(
-                      event.get('frameId')
-                  ))
-        client.on('Runtime.executionContextCreated',
-                  lambda event: self._onExecutionContextCreated(
-                      event.get('context')))
-        client.on('Runtime.executionContextDestroyed',
-                  lambda event: self._onExecutionContextDestroyed(
-                      event.get('executionContextId')))
-        client.on('Runtime.executionContextsCleared',
-                  lambda event: self._onExecutionContextsCleared())
-        client.on('Page.lifecycleEvent',
-                  lambda event: self._onLifecycleEvent(event))
+        client.on(
+            'Page.frameAttached',
+            lambda event: self._onFrameAttached(
+                event.get('frameId', ''), event.get('parentFrameId', ''))
+        )
+        client.on(
+            'Page.frameNavigated',
+            lambda event: self._onFrameNavigated(event.get('frame'))
+        )
+        client.on(
+            'Page.navigatedWithinDocument',
+            lambda event: self._onFrameNavigatedWithinDocument(
+                event.get('frameId'), event.get('url'))
+        )
+        client.on(
+            'Page.frameDetached',
+            lambda event: self._onFrameDetached(event.get('frameId'))
+        )
+        client.on(
+            'Page.frameStoppedLoading',
+            lambda event: self._onFrameStoppedLoading(event.get('frameId'))
+        )
+        client.on(
+            'Runtime.executionContextCreated',
+            lambda event: self._onExecutionContextCreated(event.get('context'))
+        )
+        client.on(
+            'Runtime.executionContextDestroyed',
+            lambda event: self._onExecutionContextDestroyed(
+                event.get('executionContextId'))
+        )
+        client.on(
+            'Runtime.executionContextsCleared',
+            lambda event: self._onExecutionContextsCleared()
+        )
+        client.on(
+            'Page.lifecycleEvent',
+            lambda event: self._onLifecycleEvent(event)
+        )
 
+    async def initiliaze(self):
+        frameTree = await asyncio.gather(
+            self._client.send('Page.enable'),
+            self._client.send('Page.getFrameTree'),
+        )
         self._handleFrameTree(frameTree)
+
+        async def runtime_enabled():
+            await self._client.send('Runtime.enable', {})
+            await self._ensureIsolatedWorld(UTILITY_WORLD_NAME)
+
+        await asyncio.gather(
+            self._client.send(
+                'Page.setLifecycleEventsEnabled',
+                {'enabled': True}
+            ),
+            await self._networkManager.initialize()
+        )
+
+    @property
+    def networkManager(self):
+        return self._networkManager
+
+    async def navigateFrame(
+            self,
+            frame: 'Frame',
+            url: str,
+            referer: str = None,
+            timeout: int = None,
+            waitUntil: Union[str, List[str]] = None,
+    ):
+        ensureNewDocumentNavigation = False
+
+        async def navigate(url: str, referer: str, frameId: str):
+            try:
+                response = await self._client.send(
+                    'Page.navigate',
+                    {
+                        'url': url,
+                        'referer': referer,
+                        'frameId': frameId,
+                    }
+                )
+                # todo local functions in python cannot modify outer namespaces
+                ensureNewDocumentNavigation = bool(response.get('loaderId'))
+                if response.get('errorText'):
+                    raise BrowserError(f'{response["errorText"]} at {url}')
+            except Exception as e:
+                return e
+
+        if referer is None:
+            referer = self._networkManager.extraHTTPHeaders().get('referer', '')
+        if waitUntil is None:
+            waitUntil = ['load']
+        if timeout is None:
+            timeout = self._timeoutSettings.navigationTimeout
+
+        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        error = await asyncio.wait([
+            navigate(url, referer, frame._id),
+            watcher.timeoutOrTerminationPromise()
+        ], return_when=asyncio.FIRST_COMPLETED)
+        if not error:
+            if ensureNewDocumentNavigation:
+                nav_promise = watcher.newDocumentNavigationPromise()
+            else:
+                nav_promise = watcher.sameDocumentNavigationPromise()
+            error = await asyncio.wait([
+                watcher.timeoutOrTerminationPromise(),
+                nav_promise,
+            ], return_when=asyncio.FIRST_COMPLETED)
+        watcher.dispose()
+        if error:
+            raise error
+        return watcher.navigationResponse()
+
+    async def waitForFrameNavigation(
+            self,
+            frame: 'Frame',
+            waitUntil: Union[str, List[str]] = None,
+            timeout: int = None
+    ):
+        if not waitUntil:
+            waitUntil = ['load']
+        if not timeout:
+            timeout = self._timeoutSettings.navigationTimeout
+        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        error = asyncio.wait([
+            watcher.timeoutOrTerminationPromise(),
+            watcher.sameDocumentNavigationPromise(),
+            watcher.newDocumentNavigationPromise(),
+        ], return_when=asyncio.FIRST_COMPLETED)
+        watcher.dispose()
+        if error:
+            raise error
+        return watcher.navigationResponse()
 
     def _onLifecycleEvent(self, event: Dict) -> None:
         frame = self._frames.get(event['frameId'])
         if not frame:
             return
         frame._onLifecycleEvent(event['loaderId'], event['name'])
-        self.emit(FrameManager.Events.LifecycleEvent, frame)
+        self.emit(Events.FrameManager.LifecycleEvent, frame)
 
     def _onFrameStoppedLoading(self, frameId: str) -> None:
         frame = self._frames.get(frameId)
         if not frame:
             return
         frame._onLoadingStopped()
-        self.emit(FrameManager.Events.LifecycleEvent, frame)
+        self.emit(Events.FrameManager.LifecycleEvent, frame)
 
     def _handleFrameTree(self, frameTree: Dict) -> None:
         frame = frameTree['frame']
@@ -97,6 +219,10 @@ class FrameManager(EventEmitter):
             return
         for child in frameTree['childFrames']:
             self._handleFrameTree(child)
+
+    @property
+    def page(self):
+        return self._page
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -117,7 +243,7 @@ class FrameManager(EventEmitter):
         parentFrame = self._frames.get(parentFrameId)
         frame = Frame(self._client, parentFrame, frameId)
         self._frames[frameId] = frame
-        self.emit(FrameManager.Events.FrameAttached, frame)
+        self.emit(Events.FrameManager.FrameAttached, frame)
 
     def _onFrameNavigated(self, framePayload: dict) -> None:
         isMainFrame = not framePayload.get('parentId')
@@ -149,15 +275,38 @@ class FrameManager(EventEmitter):
 
         # Update frame payload.
         frame._navigated(framePayload)  # type: ignore
-        self.emit(FrameManager.Events.FrameNavigated, frame)
+        self.emit(Events.FrameManager.FrameNavigated, frame)
+
+    async def _ensureIsolatedWorld(self, name: str):
+        if name in self._isolatedWorlds:
+            return
+        self._isolatedWorlds.add(name)
+        await self._client.send(
+            'Page.addScriptToEvaluateOnNewDocument',
+            {
+                'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}',
+                'worldName': name,
+            }
+        )
+        # todo wrap in debugerror?
+        await asyncio.gather(
+            *[self._client.send(
+                'Page.createIsolatedWorld',
+                {
+                    'frameId': frame._id,
+                    'grantUniversalAccess': True,
+                    'worldName': name,
+                }
+            ) for frame in self.frames()]
+        )
 
     def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
         frame = self._frames.get(frameId)
         if not frame:
             return
         frame._navigatedWithinDocument(url)
-        self.emit(FrameManager.Events.FrameNavigatedWithinDocument, frame)
-        self.emit(FrameManager.Events.FrameNavigated, frame)
+        self.emit(Events.FrameManager.FrameNavigatedWithinDocument, frame)
+        self.emit(Events.FrameManager.FrameNavigated, frame)
 
     def _onFrameDetached(self, frameId: str) -> None:
         frame = self._frames.get(frameId)
@@ -165,44 +314,43 @@ class FrameManager(EventEmitter):
             self._removeFramesRecursively(frame)
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
-        if (contextPayload.get('auxData') and
-                contextPayload['auxData'].get('frameId')):
-            frameId = contextPayload['auxData']['frameId']
-        else:
-            frameId = None
-
+        auxData = contextPayload.get('auxData')
+        frameId = auxData.get('frameId')
         frame = self._frames.get(frameId)
-
-        def _createJSHandle(obj: Dict) -> JSHandle:
-            context = self.executionContextById(contextPayload['id'])
-            return self.createJSHandle(context, obj)
+        world = None
+        if frame:
+            if auxData and not auxData['isDefault']:
+                world = frame._mainWorld
+            elif contextPayload.get('name') == UTILITY_WORLD_NAME \
+                    and not frame._secondaryWorld._hasContext():
+                # In case of multiple sessions to the same target, there's a race between
+                # connections so we might end up creating multiple isolated worlds.
+                # We can use either.
+                world = frame._secondaryWorld
+        if auxData and auxData.get('type') == 'isolated':
+            self._isolatedWorlds.add(contextPayload['name'])
 
         context = ExecutionContext(
             self._client,
             contextPayload,
-            _createJSHandle,
-            frame,
+            world
         )
+        if world:
+            world._setContext(context)
         self._contextIdToContext[contextPayload['id']] = context
-
-        if frame:
-            frame._addExecutionContext(context)
 
     def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
         context = self._contextIdToContext.get(executionContextId)
         if not context:
             return
         del self._contextIdToContext[executionContextId]
-
-        frame = context.frame
-        if frame:
-            frame._removeExecutionContext(context)
+        if context._world:
+            context._world._setContext(None)
 
     def _onExecutionContextsCleared(self) -> None:
         for context in self._contextIdToContext.values():
-            frame = context.frame
-            if frame:
-                frame._removeExecutionContext(context)
+            if context._world:
+                context._world._setContext(None)
         self._contextIdToContext.clear()
 
     def executionContextById(self, contextId: str) -> ExecutionContext:
@@ -214,22 +362,12 @@ class FrameManager(EventEmitter):
             )
         return context
 
-    def createJSHandle(self, context: ExecutionContext,
-                       remoteObject: Dict = None) -> JSHandle:
-        """Create JS handle associated to the context id and remote object."""
-        if remoteObject is None:
-            remoteObject = dict()
-        if remoteObject.get('subtype') == 'node':
-            return ElementHandle(context, self._client, remoteObject,
-                                 self._page, self)
-        return JSHandle(context, self._client, remoteObject)
-
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
         for child in frame.childFrames:
             self._removeFramesRecursively(child)
         frame._detach()
         self._frames.pop(frame._id, None)
-        self.emit(FrameManager.Events.FrameDetached, frame)
+        self.emit(Events.FrameManager.FrameDetached, frame)
 
 
 class Frame(object):
@@ -238,22 +376,34 @@ class Frame(object):
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
     """
 
-    def __init__(self, client: CDPSession, parentFrame: Optional['Frame'],
-                 frameId: str) -> None:
+    def __init__(
+            self,
+            frameManager: FrameManager,
+            client: CDPSession,
+            parentFrame: Optional['Frame'],
+            frameId: str
+    ) -> None:
+        self._frameManager = frameManager
         self._client = client
         self._parentFrame = parentFrame
         self._url = ''
-        self._detached = False
         self._id = frameId
+        self._detached = False
 
+        self._loaderId = ''
+        self._lifecycleEvents: Set[str] = set()
+        self._mainWorld = DOMWorld(frameManager, self, FrameManager._timeoutSettings)
+        self._secondaryWorld = DOMWorld(frameManager, self, FrameManager._timeoutSettings)
+        self._childFrames: Set[Frame] = set()  # maybe list
+        if self._parentFrame:
+            self._parentFrame._childFrames.add(self)
+
+        # todo remove this?
         self._documentPromise: Optional[ElementHandle] = None
         self._contextResolveCallback = lambda _: None
         self._setDefaultContext(None)
 
         self._waitTasks: Set[WaitTask] = set()  # maybe list
-        self._loaderId = ''
-        self._lifecycleEvents: Set[str] = set()
-        self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
@@ -277,6 +427,12 @@ class Frame(object):
             self._contextResolveCallback = (
                 lambda _context: self._contextPromise.set_result(_context)
             )
+
+    async def goto(self, url, **kwargs):
+        return await self._frameManager.navigateFrame(self, url, **kwargs)
+
+    async def waitForNavigation(self, **kwargs):
+        return await self._frameManager.waitForFrameNavigation(self, **kwargs)
 
     async def executionContext(self) -> Optional[ExecutionContext]:
         """Return execution context of this frame.
@@ -432,15 +588,6 @@ function(html) {
         Otherwise return ``False``.
         """
         return self._detached
-
-    async def injectFile(self, filePath: str) -> str:
-        """[Deprecated] Inject file to the frame."""
-        logger.warning('`injectFile` method is deprecated.'
-                       ' Use `addScriptTag` method instead.')
-        with open(filePath) as f:
-            contents = f.read()
-        contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
-        return await self.evaluate(contents)
 
     async def addScriptTag(self, options: Dict) -> ElementHandle:  # noqa: C901
         """Add script tag to this frame.
@@ -661,116 +808,87 @@ function(html) {
         await handle.type(text, options)
         await handle.dispose()
 
-    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, *args: Any, **kwargs: Any
-                ) -> Union[Awaitable, 'WaitTask']:
+    def waitFor(
+            self,
+            selectorOrFunctionOrTimeout: Union[str, int, float],
+            *args: Any,
+            **kwargs: Any
+    ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
         Details see :meth:`pyppeteer.page.Page.waitFor`.
         """
-        options = merge_dict(options, kwargs)
+        xPathPattern = '//'
+        if isinstance(selectorOrFunctionOrTimeout, str):
+            string = selectorOrFunctionOrTimeout
+            if string.startswith(xPathPattern):
+                return self.waitForXPath(string, **kwargs)
+            return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            fut: Awaitable[None] = self._client._loop.create_task(
-                asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
-            return fut
-        if not isinstance(selectorOrFunctionOrTimeout, str):
-            fut = self._client._loop.create_future()
-            fut.set_exception(TypeError(
-                'Unsupported target type: ' +
-                str(type(selectorOrFunctionOrTimeout))
-            ))
-            return fut
-
-        if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
+            return self._client._loop.create_task(
+                asyncio.sleep(selectorOrFunctionOrTimeout / 1000)
+            )
+        if helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(
-                selectorOrFunctionOrTimeout, options, *args)
-        if selectorOrFunctionOrTimeout.startswith('//'):
-            return self.waitForXPath(selectorOrFunctionOrTimeout, options)
-        return self.waitForSelector(selectorOrFunctionOrTimeout, options)
+                selectorOrFunctionOrTimeout, *args, **kwargs
+            )
+        f = self._client._loop.create_future()
+        f.set_exception(BrowserError(f'Unsupported target type:'
+                                     f' {type(selectorOrFunctionOrTimeout)}'))
+        return f
 
-    def waitForSelector(self, selector: str, options: dict = None,
-                        **kwargs: Any) -> 'WaitTask':
+    async def waitForSelector(
+            self,
+            selector: str,
+            **kwargs: Any
+    ) -> Optional[ElementHandle]:
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
         """
-        options = merge_dict(options, kwargs)
-        return self._waitForSelectorOrXPath(selector, False, options)
+        handle = await self._secondaryWorld.waitForSelector(selector, **kwargs)
+        if not handle:
+            return None
+        mainExecutionContext = await self._mainWorld.executionContext()
+        result = await mainExecutionContext._adoptElementHandle()
+        await handle.dispose()
+        return result
 
-    def waitForXPath(self, xpath: str, options: dict = None,
-                     **kwargs: Any) -> 'WaitTask':
+    def waitForXPath(
+            self,
+            xpath: str,
+            options: dict = None,
+            **kwargs: Any
+    ) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.
         """
-        options = merge_dict(options, kwargs)
-        return self._waitForSelectorOrXPath(xpath, True, options)
+        handle = await self._secondaryWorld.waitForXpath(xpath, **kwargs)
+        if not handle:
+            return None
+        mainExecutionContext = await self._mainWorld.executionContext()
+        result = await mainExecutionContext._adoptElementHandle(handle)
+        await handle.dispose()
+        return result
 
-    def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: Any, **kwargs: Any) -> 'WaitTask':
+    def waitForFunction(
+            self,
+            pageFunction: str,
+            *args,
+            **kwargs: Any
+    ) -> 'WaitTask':
         """Wait until the function completes.
 
         Details see :meth:`pyppeteer.page.Page.waitForFunction`.
         """
-        options = merge_dict(options, kwargs)
-        timeout = options.get('timeout',  30000)  # msec
-        polling = options.get('polling', 'raf')
-        return WaitTask(self, pageFunction, 'function', polling, timeout,
-                        self._client._loop, *args)
+        kwargs.setdefault('timeout', 30_000)
+        kwargs.setdefault('polling', 'raf')
+        return self._mainWorld.waitForFunction(pageFunction, *args, **kwargs)
 
-    def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
-                                options: dict = None, **kwargs: Any
-                                ) -> 'WaitTask':
-        options = merge_dict(options, kwargs)
-        timeout = options.get('timeout', 30000)
-        waitForVisible = bool(options.get('visible'))
-        waitForHidden = bool(options.get('hidden'))
-        polling = 'raf' if waitForHidden or waitForVisible else 'mutation'
-        title = '{} "{}"{}'.format(
-            'XPath' if isXPath else 'selector',
-            selectorOrXPath,
-            ' to be hidden' if waitForHidden else '',
-        )
-
-        predicate = '''
-(selectorOrXPath, isXPath, waitForVisible, waitForHidden) => {
-    const node = isXPath
-        ? document.evaluate(selectorOrXPath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue
-        : document.querySelector(selectorOrXPath);
-    if (!node)
-        return waitForHidden;
-    if (!waitForVisible && !waitForHidden)
-        return node;
-    const element = /** @type {Element} */ (node.nodeType === Node.TEXT_NODE ? node.parentElement : node);
-
-    const style = window.getComputedStyle(element);
-    const isVisible = style && style.visibility !== 'hidden' && hasVisibleBoundingBox();
-    const success = (waitForVisible === isVisible || waitForHidden === !isVisible)
-    return success ? node : null
-
-    function hasVisibleBoundingBox() {
-        const rect = element.getBoundingClientRect();
-        return !!(rect.top || rect.bottom || rect.width || rect.height);
-    }
-}
-        '''  # noqa: E501
-
-        return WaitTask(
-            self,
-            predicate,
-            title,
-            polling,
-            timeout,
-            self._client._loop,
-            selectorOrXPath,
-            isXPath,
-            waitForVisible,
-            waitForHidden,
-        )
-
-    async def title(self) -> str:
+    async def title(self):
         """Get title of the frame."""
-        return await self.evaluate('() => document.title')
+        return await self._secondaryWorld.title()
 
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
@@ -799,217 +917,3 @@ function(html) {
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
-
-
-class WaitTask(object):
-    """WaitTask class.
-
-    Instance of this class is awaitable.
-    """
-
-    def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
-                 title: str, polling: Union[str, int], timeout: float,
-                 loop: asyncio.AbstractEventLoop, *args: Any) -> None:
-        if isinstance(polling, str):
-            if polling not in ['raf', 'mutation']:
-                raise ValueError(f'Unknown polling: {polling}')
-        elif isinstance(polling, (int, float)):
-            if polling <= 0:
-                raise ValueError(
-                    f'Cannot poll with non-positive interval: {polling}'
-                )
-        else:
-            raise ValueError(f'Unknown polling option: {polling}')
-
-        self._frame = frame
-        self._polling = polling
-        self._timeout = timeout
-        self._loop = loop
-        if args or helper.is_jsfunc(predicateBody):
-            self._predicateBody = f'return ({predicateBody})(...args)'
-        else:
-            self._predicateBody = f'return {predicateBody}'
-        self._args = args
-        self._runCount = 0
-        self._terminated = False
-        self._timeoutError = False
-        frame._waitTasks.add(self)
-
-        self.promise = self._loop.create_future()
-
-        async def timer(timeout: Union[int, float]) -> None:
-            await asyncio.sleep(timeout / 1000)
-            self._timeoutError = True
-            self.terminate(TimeoutError(
-                f'Waiting for {title} failed: timeout {timeout}ms exceeds.'
-            ))
-
-        if timeout:
-            self._timeoutTimer = self._loop.create_task(timer(self._timeout))
-        self._runningTask = self._loop.create_task(self.rerun())
-
-    def __await__(self) -> Generator:
-        """Make this class **awaitable**."""
-        result = yield from self.promise
-        if isinstance(result, Exception):
-            raise result
-        return result
-
-    def terminate(self, error: Exception) -> None:
-        """Terminate this task."""
-        self._terminated = True
-        if not self.promise.done():
-            self.promise.set_result(error)
-        self._cleanup()
-
-    async def rerun(self) -> None:  # noqa: C901
-        """Start polling."""
-        runCount = self._runCount = self._runCount + 1
-        success: Optional[JSHandle] = None
-        error = None
-
-        try:
-            context = await self._frame.executionContext()
-            if context is None:
-                raise PageError('No execution context.')
-            success = await context.evaluateHandle(
-                waitForPredicatePageFunction,
-                self._predicateBody,
-                self._polling,
-                self._timeout,
-                *self._args,
-            )
-        except Exception as e:
-            error = e
-
-        if self.promise.done():
-            return
-
-        if self._terminated or runCount != self._runCount:
-            if success:
-                await success.dispose()
-            return
-
-        # Add try/except referring to puppeteer.
-        try:
-            if not error and success and (
-                    await self._frame.evaluate('s => !s', success)):
-                await success.dispose()
-                return
-        except NetworkError:
-            if success is not None:
-                await success.dispose()
-            return
-
-        # page is navigated and context is destroyed.
-        # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Execution context was destroyed' in error.args[0]):
-            return
-
-        # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Cannot find context with specified id' in error.args[0]):
-            return
-
-        if error:
-            self.promise.set_exception(error)
-        else:
-            self.promise.set_result(success)
-
-        self._cleanup()
-
-    def _cleanup(self) -> None:
-        if self._timeout and not self._timeoutError:
-            self._timeoutTimer.cancel()
-        self._frame._waitTasks.remove(self)
-
-
-waitForPredicatePageFunction = """
-async function waitForPredicatePageFunction(predicateBody, polling, timeout, ...args) {
-  const predicate = new Function('...args', predicateBody);
-  let timedOut = false;
-  if (timeout)
-    setTimeout(() => timedOut = true, timeout);
-  if (polling === 'raf')
-    return await pollRaf();
-  if (polling === 'mutation')
-    return await pollMutation();
-  if (typeof polling === 'number')
-    return await pollInterval(polling);
-
-  /**
-   * @return {!Promise<*>}
-   */
-  function pollMutation() {
-    const success = predicate.apply(null, args);
-    if (success)
-      return Promise.resolve(success);
-
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    const observer = new MutationObserver(mutations => {
-      if (timedOut) {
-        observer.disconnect();
-        fulfill();
-      }
-      const success = predicate.apply(null, args);
-      if (success) {
-        observer.disconnect();
-        fulfill(success);
-      }
-    });
-    observer.observe(document, {
-      childList: true,
-      subtree: true,
-      attributes: true
-    });
-    return result;
-  }
-
-  /**
-   * @return {!Promise<*>}
-   */
-  function pollRaf() {
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    onRaf();
-    return result;
-
-    function onRaf() {
-      if (timedOut) {
-        fulfill();
-        return;
-      }
-      const success = predicate.apply(null, args);
-      if (success)
-        fulfill(success);
-      else
-        requestAnimationFrame(onRaf);
-    }
-  }
-
-  /**
-   * @param {number} pollInterval
-   * @return {!Promise<*>}
-   */
-  function pollInterval(pollInterval) {
-    let fulfill;
-    const result = new Promise(x => fulfill = x);
-    onTimeout();
-    return result;
-
-    function onTimeout() {
-      if (timedOut) {
-        fulfill();
-        return;
-      }
-      const success = predicate.apply(null, args);
-      if (success)
-        fulfill(success);
-      else
-        setTimeout(onTimeout, pollInterval);
-    }
-  }
-}
-"""  # noqa: E501
