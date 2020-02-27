@@ -4,9 +4,8 @@
 """
 Timeout setting module
 
-puppeteer equivelent: TimeoutSettings.js
+puppeteer equivalent: TimeoutSettings.js
 """
-from typing import Union
 
 DEFAULT_TIMEOUT = 30_000  # 30 seconds
 
