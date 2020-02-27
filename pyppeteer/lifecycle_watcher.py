@@ -35,6 +35,7 @@ class LifecycleWatcher:
                  options: Dict = None, **kwargs: Dict[str, Union[bool, int, float, str]]) -> None:
         """Make new LifecycleWatcher"""
         options = merge_dict(options, kwargs)
+        self._futures = []
         self._validate_options_and_set_expected_lifecycle(options)
         self._frameManager = frameManager
         self._frame = frame
@@ -77,7 +78,12 @@ class LifecycleWatcher:
         self._newDocumentNavigationFuture = self._loop.create_future()
         self._terminationFuture = self._loop.create_future()
 
-        self._timeoutPromise = self._createTimeoutPromise()
+        self._timeoutFuture = self._createTimeoutPromise()
+
+        for class_attr in dir(self):
+            if class_attr.endswith('Future'):
+                self._futures.append(self.__getattribute__(class_attr))
+
         self._checkLifecycleComplete()
 
     def _validate_options_and_set_expected_lifecycle(self, options: Dict) -> None:
@@ -144,22 +150,22 @@ class LifecycleWatcher:
         return self._navigationRequest.response if self._navigationRequest else None
 
     def timeoutOrTerminationPromise(self) -> Awaitable:
-        return asyncio.wait([self._timeoutPromise, self._terminationFuture], return_when=FIRST_COMPLETED)
+        return asyncio.wait([self._timeoutFuture, self._terminationFuture], return_when=FIRST_COMPLETED)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
-        self._maximumTimer = self._loop.create_future()
+        self._maximumTimerFuture = self._loop.create_future()
         if self._timeout:
             errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'  # noqa: E501
 
             async def _timeout_func() -> None:
                 await asyncio.sleep(self._timeout / 1000)
-                self._maximumTimer.set_exception(TimeoutError(errorMessage))
+                self._maximumTimerFuture.set_exception(TimeoutError(errorMessage))
 
-            self._timeout_timer: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(
+            self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(
                 _timeout_func())  # noqa: E501
         else:
-            self._timeout_timer = self._loop.create_future()
-        return self._maximumTimer
+            self._timeoutTimerFuture = self._loop.create_future()
+        return self._maximumTimerFuture
 
     def _navigatedWithinDocument(self, frame: Frame = None) -> None:
         # note: frame never appears to specified, left in for compatibility
@@ -188,13 +194,6 @@ class LifecycleWatcher:
         return True
 
     def dispose(self) -> None:
-        self._cleanup()
-
-    def _cleanup(self) -> None:
         helper.removeEventListeners(self._eventListeners)
-        # not sure if every future has to be canceled manually or not
-        # if we cancel lifecycleFuture (as done in old source) in theory we should cancel
-        # every future we created during class instantiation
-        # self._lifecycleFuture.cancel()
-        self._maximumTimer.cancel()
-        self._timeout_timer.cancel()
+        for fut in self._futures:
+            fut.cancel()
