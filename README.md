@@ -3,18 +3,16 @@ pyppeteer2
 
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
 [![PyPI version](https://img.shields.io/pypi/pyversions/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
-[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://miyakogi.github.io/pyppeteer2)
-[![Travis status](https://travis-ci.org/miyakogi/pyppeteer2.svg)](https://travis-ci.org/miyakogi/pyppeteer2)
-[![AppVeyor status](https://ci.appveyor.com/api/projects/status/nb53tkg9po8v1blk?svg=true)](https://ci.appveyor.com/project/miyakogi/pyppeteer2)
-[![codecov](https://codecov.io/gh/miyakogi/pyppeteer2/branch/master/graph/badge.svg)](https://codecov.io/gh/miyakogi/pyppeteer2)
+[![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://pyppeteer.github.io/pyppeteer2/)
+[![Travis status](https://travis-ci.com/pyppeteer/pyppeteer2.svg)](https://travis-ci.com/pyppeteer/pyppeteer2)
+[![codecov](https://codecov.io/gh/pyppeteer/pyppeteer2/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer2)
 
-_Note: this is a WIP continuation of pyppeteer project_  
+_Note: this is a WIP continuation of the pyppeteer project_
 
-Unofficial Python port of
-[puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
+Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
 * Free software: MIT license (including the work distributed under the Apache 2.0 license)
-* Documentation: https://miyakogi.github.io/pyppeteer
+* Documentation: https://pyppeteer.github.io/pyppeteer2/
 
 ## Installation
 
@@ -23,10 +21,10 @@ pyppeteer2 requires Python >= 3.6
 Install with `pip` from PyPI:
 
 ```
-pip install pyppeteer
+pip install pyppeteer2
 ```
 
-Or install latest version from [github](https://github.com/pyppeteer/pyppeteer2/):
+Or install the latest version from [this github repo](https://github.com/pyppeteer/pyppeteer2/):
 
 ```
 pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
@@ -34,11 +32,13 @@ pip install -U git+https://github.com/pyppeteer/pyppeteer2@dev
 
 ## Usage
 
-> **Note**: When you run pyppeteer2 first time, it downloads a recent version of Chromium (~100MB) if it is not available.
-> If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer-install` command before prior to using this library.
+> **Note**: When you run pyppeteer2 for the first time, it downloads the latest version of Chromium (~150MB) if it is not found on your system. If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer2-install` command before prior to using this library.
+
+Full documentation can be found [here](https://pyppeteer.github.io/pyppeteer2/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [its troubleshooting guide](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for puppeteer2 users.
 
 ### Examples
-Open web page and take a screenshot.
+
+Open web page and take a screenshot:
 ```py
 import asyncio
 from pyppeteer import launch
@@ -53,8 +53,7 @@ async def main():
 asyncio.get_event_loop().run_until_complete(main())
 ```
 
-Evaluate javascript on a page.
-
+Evaluate javascript on a page:
 ```py
 import asyncio
 from pyppeteer import launch
@@ -80,30 +79,21 @@ async def main():
 asyncio.get_event_loop().run_until_complete(main())
 ```
 
-pyppeteer2 has almost same API as puppeteer.
-More APIs are listed in the
-[document](https://miyakogi.github.io/pyppeteer/reference.html).
-
-[Puppeteer's document](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#)
-and [troubleshooting](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also useful for pyppeteer users.
-
 ## Differences between puppeteer and pyppeteer2
 
-pyppeteer2 strives to replicate the puppeteer API as close as possible, however, fundamental differences between Javascript and Python make this difficult to do exactly.
+pyppeteer2 strives to replicate the puppeteer API as close as possible, however, fundamental differences between Javascript and Python make this difficult to do precisely. More information on specifics can be found in the [documentation](https://pyppeteer.github.io/pyppeteer2/reference.html).
 
 ### Keyword arguments for options
 
-Puppeteer uses object (dictionary in python) for passing options to
-functions/methods. pyppeteer2 accepts both dictionary and keyword arguments for
-options.
+puppeteer uses an object for passing options to functions/methods. pyppeteer2 methods/functions accept both dictionary (python equivalent to JavaScript's objects) and keyword arguments for options.
 
-Dictionary style option (similar to puppeteer):
+Dictionary style options (similar to puppeteer):
 
 ```python
 browser = await launch({'headless': True})
 ```
 
-Keyword argument style option (more pythonic, isn't it?):
+Keyword argument style options (more pythonic, isn't it?):
 
 ```python
 browser = await launch(headless=True)
@@ -111,19 +101,17 @@ browser = await launch(headless=True)
 
 ### Element selector method names
 
-In python, `$` is not a valid identifier. The equivalent methods to Puppeteer's `$`, `$$`, and `$x` and shorthand methods are listed below:
+In python, `$` is not a valid identifier. The equivalent methods to Puppeteer's `$`, `$$`, and `$x` methods are listed below, along with some shorthand methods for your convenience:
 
-| puppeteer | pyppeteer2               | pyppeteer2 shorthand |
-|-----------|-------------------------|---------------------|
-| Page.$()  | Page.querySelector()    | Page.J()            |
-| Page.$$() | Page.querySelectorAll() | Page.JJ()           |
-| Page.$x() | Page.xpath()            | Page.Jx()           |
+| puppeteer | pyppeteer2              | pyppeteer2 shorthand |
+|-----------|-------------------------|----------------------|
+| Page.$()  | Page.querySelector()    | Page.J()             |
+| Page.$$() | Page.querySelectorAll() | Page.JJ()            |
+| Page.$x() | Page.xpath()            | Page.Jx()            |
 
 ### Arguments of `Page.evaluate()` and `Page.querySelectorEval()`
 
-Puppeteer's version of `evaluate()` takes a JavaScript function or a string representation of a JavaScript expression. pyppeteer2 takes string representation of JavaScript expression or function. pyppeteer2 will try to automatically detect if the string is function or expression, but it will fail sometimes. If an expression
-string is erroneously treated as function and an error is raised, set `force_expr` to `True`,
-to force pyppeteer2 to treat the string as expression.
+puppeteer's version of `evaluate()` takes a JavaScript function or a string representation of a JavaScript expression. pyppeteer2 takes string representation of JavaScript expression or function. pyppeteer2 will try to automatically detect if the string is function or expression, but it will fail sometimes. If an expression is erroneously treated as function and an error is raised, try setting `force_expr` to `True`, to force pyppeteer2 to treat the string as expression.
 
 ### Examples:
 
