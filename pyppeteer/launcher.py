@@ -234,75 +234,7 @@ def get_ws_endpoint(url) -> str:
     return data['webSocketDebuggerUrl']
 
 
-async def launch(options: dict = None, **kwargs: Any) -> Browser:
-    """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
-    This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.
-    Available options are:
-    * ``ignoreHTTPSErrors`` (bool): Whether to ignore HTTPS errors. Defaults to
-      ``False``.
-    * ``headless`` (bool): Whether to run browser in headless mode. Defaults to
-      ``True`` unless ``appMode`` or ``devtools`` options is ``True``.
-    * ``executablePath`` (str): Path to a Chromium or Chrome executable to run
-      instead of default bundled Chromium.
-    * ``slowMo`` (int|float): Slow down pyppeteer operations by the specified
-      amount of milliseconds.
-    * ``defaultViewport`` (dict): Set a consistent viewport for each page.
-      Defaults to an 800x600 viewport. ``None`` disables default viewport.
-      * ``width`` (int): page width in pixels.
-      * ``height`` (int): page height in pixels.
-      * ``deviceScaleFactor`` (int|float): Specify device scale factor (can be
-        thought as dpr). Defaults to ``1``.
-      * ``isMobile`` (bool): Whether the ``meta viewport`` tag is taken into
-        account. Defaults to ``False``.
-      * ``hasTouch`` (bool): Specify if viewport supports touch events.
-        Defaults to ``False``.
-      * ``isLandscape`` (bool): Specify if viewport is in landscape mode.
-        Defaults to ``False``.
-    * ``args`` (List[str]): Additional arguments (flags) to pass to the browser
-      process.
-    * ``ignoreDefaultArgs`` (bool or List[str]): If ``True``, do not use
-      :func:`~pyppeteer.defaultArgs`. If list is given, then filter out given
-      default arguments. Dangerous option; use with care. Defaults to
-      ``False``.
-    * ``handleSIGINT`` (bool): Close the browser process on Ctrl+C. Defaults to
-      ``True``.
-    * ``handleSIGTERM`` (bool): Close the browser process on SIGTERM. Defaults
-      to ``True``.
-    * ``handleSIGHUP`` (bool): Close the browser process on SIGHUP. Defaults to
-      ``True``.
-    * ``dumpio`` (bool): Whether to pipe the browser process stdout and stderr
-      into ``process.stdout`` and ``process.stderr``. Defaults to ``False``.
-    * ``userDataDir`` (str): Path to a user data directory.
-    * ``env`` (dict): Specify environment variables that will be visible to the
-      browser. Defaults to same as python process.
-    * ``devtools`` (bool): Whether to auto-open a DevTools panel for each tab.
-      If this option is ``True``, the ``headless`` option will be set
-      ``False``.
-    * ``logLevel`` (int|str): Log level to print logs. Defaults to same as the
-      root logger.
-    * ``autoClose`` (bool): Automatically close browser process when script
-      completed. Defaults to ``True``.
-    * ``loop`` (asyncio.AbstractEventLoop): Event loop (**experimental**).
-    * ``appMode`` (bool): Deprecated.
-    This function combines 3 steps:
-    1. Infer a set of flags to launch chromium with using
-       :func:`~pyppeteer.defaultArgs`.
-    2. Launch browser and start managing its process according to the
-       ``executablePath``, ``handleSIGINT``, ``dumpio``, and other options.
-    3. Create an instance of :class:`~pyppeteer.browser.Browser` class and
-       initialize it with ``defaultViewport``, ``slowMo``, and
-       ``ignoreHTTPSErrors``.
-    ``ignoreDefaultArgs`` option can be used to customize behavior on the (1)
-    step. For example, to filter out ``--mute-audio`` from default arguments:
-    .. code::
-        browser = await launch(ignoreDefaultArgs=['--mute-audio'])
-    .. note::
-        Pyppeteer can also be used to control the Chrome browser, but it works
-        best with the version of Chromium it is bundled with. There is no
-        guarantee it will work with any other version. Use ``executablePath``
-        option with extreme caution.
-    """
-    return await Launcher(options, **kwargs).launch()
+
 
 
 async def connect(options: dict = None, **kwargs: Any) -> Browser:
