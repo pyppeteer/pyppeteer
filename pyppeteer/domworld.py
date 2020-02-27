@@ -1,7 +1,5 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator
-
-from mypy.binder import Union
+from typing import Any, List, Optional, Dict, Generator, Union
 
 from pyppeteer import helper
 from pyppeteer.element_handle import ElementHandle

@@ -72,11 +72,11 @@ class JSHandle(object):
             'objectId': self._remoteObject.get('objectId', ''),
             'ownProperties': True,
         })
-        result = dict()
+        result = {}
         for prop in response['result']:
             if not prop.get('enumerable'):
                 continue
-            result[prop.get('name')] = createJSHandle(self._context, prop.get('value'))
+            result[prop['name']] = createJSHandle(self._context, prop['value'])
         return result
 
     async def jsonValue(self) -> Dict:
@@ -96,6 +96,7 @@ class JSHandle(object):
 
     def asElement(self) -> Optional['ElementHandle']:
         """Return either null or the object handle itself."""
+        # todo: implement
         return None
 
     async def dispose(self) -> None:

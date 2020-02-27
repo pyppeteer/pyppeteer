@@ -53,7 +53,7 @@ class FrameManager(EventEmitter):
         self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
         self._timeoutSettings = timeoutSettings
         self._frames: OrderedDict[str, Frame] = OrderedDict()
-        self._contextIdToContext: Dict[int, ExecutionContext] = dict()
+        self._contextIdToContext: Dict[int, ExecutionContext] = {}
         self._isolatedWorlds: Set[str] = set()
 
         client.on(
