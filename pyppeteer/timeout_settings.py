@@ -16,14 +16,14 @@ class TimeoutSettings(object):
         self._defaultTimeout = None
         self._defaultNavigationTimeout = None
 
-    def setDefaultTimeout(self, timeout: Union[float, int]):
+    def setDefaultTimeout(self, timeout: float):
         self._defaultTimeout = timeout
 
-    def setDefaultNavigationTimeout(self, timeout: Union[float, int]):
+    def setDefaultNavigationTimeout(self, timeout: float):
         self._defaultNavigationTimeout = timeout
 
     @property
-    def navigationTimeout(self) -> Union[float, int]:
+    def navigationTimeout(self) -> float:
         if self._defaultNavigationTimeout:
             return self._defaultNavigationTimeout
         if self._defaultTimeout:
@@ -31,7 +31,7 @@ class TimeoutSettings(object):
         return DEFAULT_TIMEOUT
 
     @property
-    def timeout(self) -> Union[float, int]:
+    def timeout(self) -> float:
         if self._defaultTimeout:
             return self._defaultTimeout
         return DEFAULT_TIMEOUT
