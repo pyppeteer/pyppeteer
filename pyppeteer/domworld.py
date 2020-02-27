@@ -131,7 +131,7 @@ class DOMWorld(object):
             """
         )
 
-    async def SetContent(self, html, waitUntil=None, timeout=None):
+    async def setContent(self, html, waitUntil=None, timeout=None):
         if timeout is None:
             timeout = self._timeoutSettings.navigationTimeout
         if waitUntil is None:
