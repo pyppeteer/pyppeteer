@@ -36,11 +36,11 @@ class DOMWorld(object):
         self._detached = False
 
         # Aliases for query methods:
-        J = self.querySelector
-        Jx = self.xpath
-        Jeval = self.querySelectorEval
-        JJ = self.querySelectorAll
-        JJeval = self.querySelectorAllEval
+        self.J = self.querySelector
+        self.Jx = self.xpath
+        self.Jeval = self.querySelectorEval
+        self.JJ = self.querySelectorAll
+        self.JJeval = self.querySelectorAllEval
 
     @property
     def frame(self):
