@@ -35,6 +35,13 @@ class DOMWorld(object):
         self._waitTasks = set()
         self._detached = False
 
+        # Aliases for query methods:
+        J = self.querySelector
+        Jx = self.xpath
+        Jeval = self.querySelectorEval
+        JJ = self.querySelectorAll
+        JJeval = self.querySelectorAllEval
+
     @property
     def frame(self):
         return self._frame
@@ -105,15 +112,7 @@ class DOMWorld(object):
         value = await document.JJeval(selector, pageFunction, *args)
         return value
 
-    J = querySelector
-    #: Alias to :meth:`xpath`
-    Jx = xpath
-    #: Alias to :meth:`querySelectorEval`
-    Jeval = querySelectorEval
-    #: Alias to :meth:`querySelectorAll`
-    JJ = querySelectorAll
-    #: Alias to :meth:`querySelectorAllEval`
-    JJeval = querySelectorAllEval
+
 
     async def content(self):
         return await self.evaluate(
@@ -415,7 +414,7 @@ class WaitTask(object):
         """Terminate this task."""
         self._terminated = True
         if not self.promise.done():
-            self.promise.set_result(error)
+            self.promise.set_exception(error)
         self._cleanup()
 
     async def rerun(self) -> None:  # noqa: C901

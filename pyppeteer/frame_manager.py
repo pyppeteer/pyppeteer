@@ -111,6 +111,7 @@ class FrameManager(EventEmitter):
                 'Page.setLifecycleEventsEnabled',
                 {'enabled': True}
             ),
+            runtime_enabled(),
             await self._networkManager.initialize()
         )
 

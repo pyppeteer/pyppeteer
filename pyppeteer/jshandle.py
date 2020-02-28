@@ -1,5 +1,6 @@
 import asyncio
 import copy
+import logging
 import math
 import os
 from typing import Dict, Optional, List, Any
@@ -8,6 +9,8 @@ from pyppeteer import helper
 from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
+
+logger = logging.getLogger(__name__)
 
 
 def createJSHandle(context, remoteObject):
@@ -129,6 +132,13 @@ class ElementHandle(JSHandle):
         self._frameManager = frameManager
         self._disposed = False
 
+        # Aliases for query methods:
+        J = self.querySelector
+        Jx = self.xpath
+        Jeval = self.querySelectorEval
+        JJ = self.querySelectorAll
+        JJeval = self.querySelectorAllEval
+
     def asElement(self) -> Optional['ElementHandle']:
         return self
 
@@ -202,13 +212,13 @@ class ElementHandle(JSHandle):
             'y': y / 4,
         }
 
-    def _getBoxModel(self):
+    async def _getBoxModel(self):
         try:
-            return self._client.send(
+            return await self._client.send(
                 'DOM.getBoxModel', {'objectId': self._remoteObject['objectId']}
             )
         except Exception as e:
-            debugError(e)
+            debugError(logger, e)
 
     def _fromProtocolQuad(self, quad):
         return [
@@ -549,15 +559,6 @@ class ElementHandle(JSHandle):
             pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()
         return result
-
-    #: alias to :meth:`querySelector`
-    J = querySelector
-    #: alias to :meth:`querySelectorAll`
-    JJ = querySelectorAll
-    #: alias to :meth:`querySelectorEval`
-    Jeval = querySelectorEval
-    #: alias to :meth:`querySelectorAllEval`
-    JJeval = querySelectorAllEval
 
     async def xpath(self, expression: str) -> List['ElementHandle']:
         """Evaluate the XPath expression relative to this elementHandle.
