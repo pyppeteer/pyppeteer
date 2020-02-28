@@ -6,7 +6,6 @@
 import asyncio
 import re
 import logging
-from collections import OrderedDict
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
 EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(
-    r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$',
+    r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$',
     re.MULTILINE,
 )
 

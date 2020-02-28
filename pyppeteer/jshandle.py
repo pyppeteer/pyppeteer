@@ -140,9 +140,8 @@ class ElementHandle(JSHandle):
             }
         )
         frameId = nodeInfo.get('node', {}).get('frameId')
-        if not isinstance(frameId, str):
-            return
-        return self._frameManager.frame(frameId)
+        if isinstance(frameId, str):
+            return self._frameManager.frame(frameId)
 
     async def _scrollIntoViewIfNeeded(self):
         error = await self.evaluate(

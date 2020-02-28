@@ -393,7 +393,7 @@ class WaitTask(object):
 
         self.promise = self._loop.create_future()
 
-        async def timer(timeout: Union[int, float]) -> None:
+        async def timer(timeout: float) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
             self.terminate(TimeoutError(
