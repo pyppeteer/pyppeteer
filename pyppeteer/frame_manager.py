@@ -847,12 +847,11 @@ function(html) {
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
         """
         handle = await self._secondaryWorld.waitForSelector(selector, **kwargs)
-        if not handle:
-            return None
-        mainExecutionContext = await self._mainWorld.executionContext()
-        result = await mainExecutionContext._adoptElementHandle()
-        await handle.dispose()
-        return result
+        if handle:
+            mainExecutionContext = await self._mainWorld.executionContext()
+            result = await mainExecutionContext._adoptElementHandle()
+            await handle.dispose()
+            return result
 
     def waitForXPath(
             self,
