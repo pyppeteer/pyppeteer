@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
 from typing import Dict, Sequence, Union, TypedDict, List, Optional, Awaitable, Any
 from urllib.error import URLError
@@ -20,7 +21,7 @@ from pyppeteer.errors import BrowserError
 from pyppeteer.helper import debugError, logger
 from pyppeteer.util import get_free_port
 
-if sys.platform.startswith("win"):
+if sys.platform.startswith('win'):
     from signal import SIGHUP
 
 logger = logging.getLogger(__name__)
@@ -78,16 +79,16 @@ class BrowserRunner:
 
     def start(self, **kwargs: LaunchOptions):
         process_opts = {}
-        if kwargs.get("pipe"):
-            raise NotImplementedError("Communication via pipe not supported")
-        if kwargs.get("env"):
-            process_opts["env"] = kwargs.get("env")
+        if kwargs.get('pipe'):
+            raise NotImplementedError('Communication via pipe not supported')
+        if kwargs.get('env'):
+            process_opts['env'] = kwargs.get('env')
         # todo: dumpio. See: https://pptr.dev/#?product=Puppeteer&version=v2.1.1&show=api-puppeteerlaunchoptions
-        if not kwargs.get("dumpio"):
-            process_opts["stdout"] = subprocess.PIPE
-            process_opts["stderr"] = subprocess.STDOUT
+        if not kwargs.get('dumpio'):
+            process_opts['stdout'] = subprocess.PIPE
+            process_opts['stderr'] = subprocess.STDOUT
 
-        assert self.proc is None, "This process has previously been started"
+        assert self.proc is None, 'This process has previously been started'
 
         self.proc = subprocess.Popen([self.executable_path, *self.process_args], **process_opts)
         self._closed = False
@@ -95,21 +96,21 @@ class BrowserRunner:
         async def _close_proc(_, __):
             if not self._closed:
                 if self.connection and self.connection._connected:
-                    await self.connection.send("Browser.close")
+                    await self.connection.send('Browser.close')
                     await self.connection.dispose()
                 if self.temp_dir:
                     self._wait_for_proc_to_close()
                     self.temp_dir.cleanup()
 
-        if kwargs.get("autoClose"):
+        if kwargs.get('autoClose'):
             atexit.register(_close_proc)
-        if kwargs.get("handleSIGINT"):
+        if kwargs.get('handleSIGINT'):
             signal(SIGINT, _close_proc)
-        if kwargs.get("handleSIGTERM"):
+        if kwargs.get('handleSIGTERM'):
             signal(SIGTERM, _close_proc)
         # SIGHUP is not defined on windows
-        if not sys.platform.startswith("win"):
-            if kwargs.get("handleSIGINT"):
+        if not sys.platform.startswith('win'):
+            if kwargs.get('handleSIGINT'):
                 signal(SIGHUP, _close_proc)
 
     def _wait_for_proc_to_close(self):
@@ -123,7 +124,7 @@ class BrowserRunner:
     def _restore_default_signal_handlers(self):
         signal(SIGKILL, SIG_DFL)
         signal(SIGTERM, SIG_DFL)
-        if not sys.platform.startswith("win"):
+        if not sys.platform.startswith('win'):
             signal(SIGHUP, SIG_DFL)
 
     async def close(self) -> Awaitable[None]:
@@ -133,7 +134,7 @@ class BrowserRunner:
                 self.kill()
             elif self.connection:
                 try:
-                    return await self.connection.send("Browser.close")
+                    return await self.connection.send('Browser.close')
                 except Exception as e:
                     debugError(logger, e)
                     self.kill()
@@ -159,7 +160,7 @@ class BrowserRunner:
     ) -> Awaitable:
 
         if usePipe:
-            raise NotImplementedError("Communication via pipe not supported")
+            raise NotImplementedError('Communication via pipe not supported')
 
         delay = slowMo or 0
         ws_endpoint_url = waitForWSEndpoint(self.proc, timeout, preferredRevision)
@@ -174,49 +175,49 @@ class BrowserRunner:
 
 class ChromeLauncher:
     DEFAULT_ARGS = [
-        "--disable-background-networking",
-        "--enable-features=NetworkService,NetworkServiceInProcess",
-        "--disable-background-timer-throttling",
-        "--disable-backgrounding-occluded-windows",
-        "--disable-breakpad",
-        "--disable-client-side-phishing-detection",
-        "--disable-component-extensions-with-background-pages",
-        "--disable-default-apps",
-        "--disable-dev-shm-usage",
-        "--disable-extensions",
-        "--disable-features=TranslateUI",
-        "--disable-hang-monitor",
-        "--disable-ipc-flooding-protection",
-        "--disable-popup-blocking",
-        "--disable-prompt-on-repost",
-        "--disable-renderer-backgrounding",
-        "--disable-sync",
-        "--force-color-profile=srgb",
-        "--metrics-recording-only",
-        "--no-first-run",
-        "--enable-automation",
-        "--password-store=basic",
-        "--use-mock-keychain",
+        '--disable-background-networking',
+        '--enable-features=NetworkService,NetworkServiceInProcess',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-breakpad',
+        '--disable-client-side-phishing-detection',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-default-apps',
+        '--disable-dev-shm-usage',
+        '--disable-extensions',
+        '--disable-features=TranslateUI',
+        '--disable-hang-monitor',
+        '--disable-ipc-flooding-protection',
+        '--disable-popup-blocking',
+        '--disable-prompt-on-repost',
+        '--disable-renderer-backgrounding',
+        '--disable-sync',
+        '--force-color-profile=srgb',
+        '--metrics-recording-only',
+        '--no-first-run',
+        '--enable-automation',
+        '--password-store=basic',
+        '--use-mock-keychain',
     ]
-    product = "chrome"
+    product = 'chrome'
 
     def __init__(self, projectRoot: str, preferredRevision: str):
         self.projectRoot = projectRoot
         self.preferredRevision = preferredRevision
 
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
-        ignoreDefaultArgs = kwargs.get("ignoreDefaultArgs", False)
-        args = kwargs.get("args", [])
-        dumpio = kwargs.get("dumpio", False)
-        executablePath = kwargs.get("executablePath", None)
-        env = kwargs.get("env", os.environ)
-        handleSIGINT = kwargs.get("handleSIGINT", True)
-        handleSIGTERM = kwargs.get("handleSIGTERM", True)
-        handleSIGHUP = kwargs.get("handleSIGHUP", True)
-        ignoreHTTPSErrors = kwargs.get("ignoreHTTPSErrors", False)
-        defaultViewport = kwargs.get("defaultViewport", {"width": 800, "height": 600})
-        slowMo = kwargs.get("slowMo", 0)
-        timeout = kwargs.get("timeout", 30_000)
+        ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
+        args = kwargs.get('args', [])
+        dumpio = kwargs.get('dumpio', False)
+        executablePath = kwargs.get('executablePath', None)
+        env = kwargs.get('env', os.environ)
+        handleSIGINT = kwargs.get('handleSIGINT', True)
+        handleSIGTERM = kwargs.get('handleSIGTERM', True)
+        handleSIGHUP = kwargs.get('handleSIGHUP', True)
+        ignoreHTTPSErrors = kwargs.get('ignoreHTTPSErrors', False)
+        defaultViewport = kwargs.get('defaultViewport', {'width': 800, 'height': 600})
+        slowMo = kwargs.get('slowMo', 0)
+        timeout = kwargs.get('timeout', 30_000)
 
         chrome_args = []
         if not ignoreDefaultArgs:
@@ -229,7 +230,7 @@ class ChromeLauncher:
         if not any(x.startswith("--remote-debugging-") for x in chrome_args):
             chrome_args.append(f"--remote-debugging-port={get_free_port()}")
         if not any(x.startswith(f"--user-data-dir") for x in chrome_args):
-            profile_path = tempfile.TemporaryDirectory(prefix="pyppeteer2_profile_")
+            profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_profile_')
             chrome_args.append(f"--user-data-dir={profile_path.name}")
 
         chrome_executable = executablePath
@@ -251,7 +252,7 @@ class ChromeLauncher:
                 process=runner.proc,
                 closeCallback=runner.close,
             )
-            await browser.waitForTarget(lambda x: x.type() == "page")
+            await browser.waitForTarget(lambda x: x.type() == 'page')
             return browser
         finally:
             try:
@@ -261,10 +262,10 @@ class ChromeLauncher:
 
     def default_args(self, launch_kwargs: Dict[str, Any]):
         chrome_args = self.DEFAULT_ARGS[:]
-        devtools = launch_kwargs.get("devtools", False)
-        headless = launch_kwargs.get("headless", not devtools)
-        args = launch_kwargs.get("args", [])
-        userDataDir = launch_kwargs.get("userDataDir")
+        devtools = launch_kwargs.get('devtools', False)
+        headless = launch_kwargs.get('headless', not devtools)
+        args = launch_kwargs.get('args', [])
+        userDataDir = launch_kwargs.get('userDataDir')
 
         if userDataDir:
             chrome_args.append(f"--user-data-dir={userDataDir}")
@@ -296,13 +297,13 @@ def getWSEndpoint(url) -> str:
         except URLError:
             time.sleep(0.1)
 
-    return data["webSocketDebuggerUrl"]
+    return data['webSocketDebuggerUrl']
 
 
 def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str):
     assert proc.stdout is not None, "process STDERR wasn't piped"
     start = time.perf_counter()
-    for line in iter(proc.stdout.readline, b""):
+    for line in iter(proc.stdout.readline, b''):
         line = line.decode()
         if (start - time.perf_counter()) > timeout:
             raise TimeoutError(
@@ -319,21 +320,38 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
 
 
 def resolveExecutablePath(*_, **__):
-    pass
+    missing_txt = None
+    env = os.environ
+    EXECUTABLE_PATHS = [
+        'PYPPETEER2_EXECUTABLE_PATH'
+        'PYPPETEER_EXECUTABLE_PATH',
+        'PUPPETEER_EXECUTABLE_PATH',
+        'npm_config_puppeteer_executable_path',
+        'npm_package_config_puppeteer_executable_path',
+    ]
+    executable_env_vars = [env.get(x) for x in EXECUTABLE_PATHS]
+    executable = next((x for x in executable_env_vars if x), None)
+    if executable:
+        if not Path(executable).is_file():
+            missing_txt = 'Tried to use env variable to launch browser but '
+
+
+
+
 
 
 def launcher(projectRoot: str = None, prefferedRevision: str = None, product: str = None):
     """Returns the appropriate browser launcher class instance"""
     env = os.environ
     PRODUCT_ENV_VARS = [
-        "PUPPETEER_PRODUCT",
-        "npm_config_puppeteer_product",
-        "npm_package_config_puppeteer_product",
-        "PYPPETEER_PRODUCT",
+        'PUPPETEER_PRODUCT',
+        'npm_config_puppeteer_product',
+        'npm_package_config_puppeteer_product',
+        'PYPPETEER_PRODUCT',
     ]
     product_env_vars_val = [env.get(x) for x in PRODUCT_ENV_VARS]
     product = next(x for x in [product] + product_env_vars_val if x)
-    if product == "firefox":
+    if product == 'firefox':
         return FirefoxLauncher(projectRoot, prefferedRevision)
     else:
         return ChromeLauncher(projectRoot, prefferedRevision)
