@@ -3,11 +3,11 @@ import atexit
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import tempfile
 import time
-from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
 from typing import Dict, Sequence, Union, TypedDict, List, Optional, Awaitable, Any
 from urllib.error import URLError
@@ -19,7 +19,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import debugError, logger
-from pyppeteer.util import merge_dict, get_free_port
+from pyppeteer.util import get_free_port
 
 if sys.platform.startswith('win'):
     from signal import SIGHUP
@@ -61,11 +61,10 @@ class BrowserOptions(TypedDict):
 
 
 class BrowserRunner:
-    # todo: proper typing
-    def __init__(self, executable_path: str, process_args: Sequence[str], temp_dir: Union[Path, str]):
+    def __init__(self, executable_path: str, process_args: Sequence[str], temp_dir: tempfile.TemporaryDirectory = None):
         self.executable_path = executable_path
         self.process_args = process_args or []
-        self.temp_dir = Path(temp_dir) if isinstance(temp_dir, str) else temp_dir
+        self.temp_dir = temp_dir
 
         self.proc = None
         self.connection = None
@@ -79,7 +78,7 @@ class BrowserRunner:
             raise NotImplementedError('Communication via pipe not supported')
         if kwargs.get('env'):
             process_opts['env'] = kwargs.get('env')
-        # todo: dumpio
+        # todo: dumpio. See: https://pptr.dev/#?product=Puppeteer&version=v2.1.1&show=api-puppeteerlaunchoptions
         if not kwargs.get('dumpio'):
             process_opts['stdout'] = subprocess.PIPE
             process_opts['stderr'] = subprocess.STDOUT
@@ -89,10 +88,14 @@ class BrowserRunner:
         self.proc = subprocess.Popen([self.executable_path, *self.process_args], **process_opts)
         self._closed = False
 
-        def _close_proc(_, __):
+        async def _close_proc(_, __):
             if not self._closed:
-                # todo: implement cleaning up temp_dir
-                pass
+                if self.connection and self.connection._connected:
+                    await self.connection.send('Browser.close')
+                    await self.connection.dispose()
+                if self.temp_dir:
+                    self._wait_for_proc_to_close()
+                    self.temp_dir.cleanup()
 
         if kwargs.get('autoClose'):
             atexit.register(_close_proc)
@@ -104,6 +107,14 @@ class BrowserRunner:
         if not sys.platform.startswith('win'):
             if kwargs.get('handleSIGINT'):
                 signal(SIGHUP, _close_proc)
+
+    def _wait_for_proc_to_close(self):
+        if self.proc.poll() is None and not self._closed:
+            try:
+                self.proc.terminator()
+                self.proc.wait()
+            except Exception:
+                pass
 
     def _restore_default_signal_handlers(self):
         signal(SIGKILL, SIG_DFL)
@@ -126,10 +137,12 @@ class BrowserRunner:
     def kill(self) -> None:
         if self.proc and not self._closed and self.proc.returncode is not None:
             self._restore_default_signal_handlers()
-            self.proc.kill()
+            try:
+                self.proc.kill()
+            except Exception:
+                pass
         try:
-            # todo: implement cleaning up temp_dir
-            pass
+            self.temp_dir.cleanup()
         except Exception:
             pass
 
@@ -191,7 +204,6 @@ class ChromeLauncher:
         slowMo = kwargs.get('slowMo', 0)
         timeout = kwargs.get('timeout', 30_000)
 
-
         chrome_args = []
         if not ignoreDefaultArgs:
             chrome_args.extend(self.default_args(kwargs))
@@ -227,10 +239,6 @@ class ChromeLauncher:
             except Exception:
                 pass
 
-
-
-
-
     def default_args(self, launch_kwargs: Dict[str, Any]):
         chrome_args = self.DEFAULT_ARGS[:]
         devtools = launch_kwargs.get('devtools', False)
@@ -254,6 +262,7 @@ class FirefoxLauncher:
     def __init__(self):
         raise NotImplementedError()
 
+
 def getWSEndpoint(url) -> str:
     url += '/json/version'
     timeout = time.perf_counter() + 30
@@ -270,13 +279,24 @@ def getWSEndpoint(url) -> str:
     return data['webSocketDebuggerUrl']
 
 
-def waitForWSEndpoint():
-    # todo: implement
-    pass
+def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str):
+    assert proc.stdout is not None, 'process STDERR wasn\'t piped'
+    start = time.perf_counter()
+    for line in iter(proc.stdout.readline, b''):
+        line = line.decode()
+        if (start - time.perf_counter()) > timeout:
+            raise TimeoutError(f'Timed out after ${timeout * 1000:.0f}ms while trying to connect to the browser! '
+                               f'Only Chrome at revision {preferredRevision} is guaranteed to work.')
+        potential_match = re.match(r'DevTools listening on (ws://.*)\r+$$', line)
+        if potential_match:
+            return potential_match.group(1)
+    raise RuntimeError('Process ended before WebSockets endpoint could be found'
+                       f'Only Chrome at revision {preferredRevision} is guaranteed to work.')
 
 
 def resolveExecutablePath(*_, **__):
     pass
+
 
 def launcher(projectRoot: str = None, prefferedRevision: str = None, product: str = None):
     """Returns the appropriate browser launcher class instance"""
