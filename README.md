@@ -7,7 +7,7 @@ Pyppeteer2
 [![Travis status](https://travis-ci.org/miyakogi/pyppeteer2.svg)](https://travis-ci.org/miyakogi/pyppeteer2)
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/nb53tkg9po8v1blk?svg=true)](https://ci.appveyor.com/project/miyakogi/pyppeteer2)
 [![codecov](https://codecov.io/gh/miyakogi/pyppeteer2/branch/master/graph/badge.svg)](https://codecov.io/gh/miyakogi/pyppeteer2)
-_Note: this is a WIP continuation of pyppeteer project_ 
+_Note: this is a WIP continuation of pyppeteer project_  
 
 Unofficial Python port of
 [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless)
