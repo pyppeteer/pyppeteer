@@ -1496,7 +1496,7 @@ function addPageBinding(bindingName) {
         options = merge_dict(options, kwargs)
         conn = self._client._connection
         if conn is None:
-            raise PageError('Protocol Error: Connection Closed. '
+            raise PageError('Protocol Error: Connectoin Closed. '
                             'Most likely the page has been closed.')
         runBeforeUnload = bool(options.get('runBeforeUnload'))
         if runBeforeUnload:
