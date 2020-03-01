@@ -62,10 +62,10 @@ class BrowserOptions(TypedDict):
 
 class BrowserRunner:
     def __init__(
-            self,
-            executable_path: str,
-            process_args: Sequence[str],
-            temp_dir: tempfile.TemporaryDirectory = None,
+        self,
+        executable_path: str,
+        process_args: Sequence[str],
+        temp_dir: tempfile.TemporaryDirectory = None,
     ):
         self.executable_path = executable_path
         self.process_args = process_args or []
@@ -83,10 +83,17 @@ class BrowserRunner:
             raise NotImplementedError('Communication via pipe not supported')
         if kwargs.get('env'):
             process_opts['env'] = kwargs.get('env')
-        # todo: dumpio. See: https://pptr.dev/#?product=Puppeteer&version=v2.1.1&show=api-puppeteerlaunchoptions
         if not kwargs.get('dumpio'):
+            # we read stdout to check it for the ws endpoint
             process_opts['stdout'] = subprocess.PIPE
             process_opts['stderr'] = subprocess.STDOUT
+        else:
+            # todo: dumpio. See: https://pptr.dev/#?product=Puppeteer&version=v2.1.1&show=api-puppeteerlaunchoptions
+            # we need to tee proc stdout to both PIPE (so we can read it) and stdout (so users can see dumped IO)
+            # see these SO threads:
+            # https://stackoverflow.com/q/2996887/
+            # https://stackoverflow.com/q/17190221/
+            raise NotImplementedError(f'dumpio argument currently not implemented')
 
         assert self.proc is None, 'This process has previously been started'
 
@@ -152,11 +159,11 @@ class BrowserRunner:
             pass
 
     async def setupConnection(
-            self,
-            usePipe: bool = None,
-            timeout: float = None,
-            slowMo: float = None,
-            preferredRevision: str = None,
+        self,
+        usePipe: bool = None,
+        timeout: float = None,
+        slowMo: float = None,
+        preferredRevision: str = None,
     ) -> Connection:
 
         if usePipe:
@@ -180,16 +187,16 @@ class BaseBrowserLauncher:
         self.preferredRevision = preferredRevision
 
     async def connect(
-            self,
-            browserWSEndpoint: str = None,
-            browserURL: str = None,
-            transport: Any = None,
-            ignoreHTTPSErrors: bool = False,
-            slowMo: float = 0,
-            defaultViewport: Viewport = None,
+        self,
+        browserWSEndpoint: str = None,
+        browserURL: str = None,
+        transport: Any = None,
+        ignoreHTTPSErrors: bool = False,
+        slowMo: float = 0,
+        defaultViewport: Viewport = None,
     ):
         assert (
-                len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1
+            len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1
         ), 'exactly one of browserWSEndpoint, browserURL, transport must be specified'
 
         if transport:
@@ -209,7 +216,6 @@ class BaseBrowserLauncher:
         async def close_callback():
             await connection.send('Browser.close')
 
-        # PyInspectionChecker ignore
         context_ids = await connection.send('Target.getBrowserContexts')
         return Browser.create(
             connection=connection,
@@ -274,7 +280,9 @@ class ChromeLauncher(BaseBrowserLauncher):
         if not ignoreDefaultArgs:
             chrome_args.extend(self.default_args(**kwargs))
         elif isinstance(ignoreDefaultArgs, list):
-            chrome_args.extend([x for x in self.default_args(**kwargs) if x not in ignoreDefaultArgs])
+            chrome_args.extend(
+                [x for x in self.default_args(**kwargs) if x not in ignoreDefaultArgs]
+            )
         else:
             chrome_args.extend(args)
 
@@ -312,7 +320,7 @@ class ChromeLauncher(BaseBrowserLauncher):
                 process=runner.proc,
                 closeCallback=runner.close,
             )
-            await browser.waitForTarget(lambda x: x.type() == 'page')
+            await browser.waitForTarget(lambda x: x.type == 'page')
             return browser
         finally:
             try:
@@ -320,8 +328,13 @@ class ChromeLauncher(BaseBrowserLauncher):
             except Exception:
                 pass
 
-    def default_args(self, args: List[str] = None, devtools: bool = False, headless: bool = True,
-                     userDataDir: str = None):
+    def default_args(
+        self,
+        args: List[str] = None,
+        devtools: bool = False,
+        headless: bool = True,
+        userDataDir: str = None,
+    ):
         chrome_args = self.DEFAULT_ARGS[:]
         if userDataDir:
             chrome_args.append(f'--user-data-dir={userDataDir}')
@@ -350,14 +363,11 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'app.update.checkInstallTime': False,
         # Disable automatically upgrading Firefox
         'app.update.disabledForTesting': True,
-
-        # Increase the APZ content response timeout to 1 minute
+        # Increase the APZ content response timeout to 2 minute
         'apz.content_response_timeout': 60000,
-
         # Prevent various error message on the console
         # jest-puppeteer asserts that no error message is emitted by the console
         'browser.contentblocking.features.standard': '-tp,tpPrivate,cookieBehavior0,-cm,-fp',
-
         # Enable the dump function: which sends messages to the system
         # console
         # https://bugzilla.mozilla.org/show_bug.cgi?id=1543115
@@ -369,28 +379,24 @@ class FirefoxLauncher(BaseBrowserLauncher):
         # Background thumbnails in particular cause grief: and disabling
         # thumbnails in general cannot hurt
         'browser.pagethumbnails.capturing_disabled': True,
-
         # Disable safebrowsing components.
         'browser.safebrowsing.blockedURIs.enabled': False,
         'browser.safebrowsing.downloads.enabled': False,
         'browser.safebrowsing.malware.enabled': False,
         'browser.safebrowsing.passwords.enabled': False,
         'browser.safebrowsing.phishing.enabled': False,
-
         # Disable updates to search engines.
         'browser.search.update': False,
         # Do not restore the last open set of tabs if the browser has crashed
         'browser.sessionstore.resume_from_crash': False,
         # Skip check for default browser on startup
         'browser.shell.checkDefaultBrowser': False,
-
         # Disable newtabpage
         'browser.startup.homepage': 'about:blank',
         # Do not redirect user when a milstone upgrade of Firefox is detected
         'browser.startup.homepage_override.mstone': 'ignore',
         # Start with a blank page about:blank
         'browser.startup.page': 0,
-
         # Do not allow background tabs to be zombified on Android: otherwise for
         # tests that open additional tabs: the test harness tab itself might get
         # unloaded
@@ -399,7 +405,6 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'browser.tabs.warnOnCloseOtherTabs': False,
         # Do not warn when multiple tabs will be opened
         'browser.tabs.warnOnOpen': False,
-
         # Disable the UI tour.
         'browser.uitour.enabled': False,
         # Turn off search suggestions in the location bar so as not to trigger
@@ -409,7 +414,6 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'browser.usedOnWindows10.introURL': '',
         # Do not warn on quitting Firefox
         'browser.warnOnQuit': False,
-
         # Do not show datareporting policy notifications which can
         # interfere with tests
         'datareporting.healthreport.about.reportUrl': f'http://{_server}/dummy/abouthealthreport/',
@@ -421,48 +425,35 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'datareporting.policy.dataSubmissionEnabled': False,
         'datareporting.policy.dataSubmissionPolicyAccepted': False,
         'datareporting.policy.dataSubmissionPolicyBypassNotification': True,
-
         # DevTools JSONViewer sometimes fails to load dependencies with its require.js.
         # This doesn't affect Puppeteer but spams console (Bug 1424372)
         'devtools.jsonview.enabled': False,
-
         # Disable popup-blocker
         'dom.disable_open_during_load': False,
-
         # Enable the support for File object creation in the content process
         # Required for |Page.setFileInputFiles| protocol method.
         'dom.file.createInChild': True,
-
         # Disable the ProcessHangMonitor
         'dom.ipc.reportProcessHangs': False,
-
         # Disable slow script dialogues
         'dom.max_chrome_script_run_time': 0,
         'dom.max_script_run_time': 0,
-
         # Only load extensions from the application and user profile
         # AddonManager.SCOPE_PROFILE + AddonManager.SCOPE_APPLICATION
         'extensions.autoDisableScopes': 0,
         'extensions.enabledScopes': 5,
-
         # Disable metadata caching for installed add-ons by default
         'extensions.getAddons.cache.enabled': False,
-
         # Disable installing any distribution extensions or add-ons.
         'extensions.installDistroAddons': False,
-
         # Disabled screenshots extension
         'extensions.screenshots.disabled': True,
-
         # Turn off extension updates so they do not bother tests
         'extensions.update.enabled': False,
-
         # Turn off extension updates so they do not bother tests
         'extensions.update.notifyUser': False,
-
         # Make sure opening about:addons will not hit the network
         'extensions.webservice.discoverURL': f'http://{_server}/dummy/discoveryURL',
-
         # Allow the application to have focus even it runs in the background
         'focusmanager.testmode': True,
         # Disable useragent updates
@@ -476,35 +467,26 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'hangmonitor.timeout': 0,
         # Show chrome errors and warnings in the error console
         'javascript.options.showInConsole': True,
-
         # Disable download and usage of OpenH264: and Widevine plugins
         'media.gmp-manager.updateEnabled': False,
         # Prevent various error message on the console
         # jest-puppeteer asserts that no error message is emitted by the console
         'network.cookie.cookieBehavior': 0,
-
         # Do not prompt for temporary redirects
         'network.http.prompt-temp-redirect': False,
-
         # Disable speculative connections so they are not reported as leaking
         # when they are hanging around
         'network.http.speculative-parallel-limit': 0,
-
         # Do not automatically switch between offline and online
         'network.manage-offline-status': False,
-
         # Make sure SNTP requests do not hit the network
         'network.sntp.pools': _server,
-
         # Disable Flash.
         'plugin.state.flash': 0,
-
         'privacy.trackingprotection.enabled': False,
-
         # Enable Remote Agent
         # https://bugzilla.mozilla.org/show_bug.cgi?id=1544393
         'remote.enabled': True,
-
         # Don't do network connections for mitm priming
         'security.certerrors.mitm.priming.enabled': False,
         # Local documents have access to all other local documents,
@@ -512,26 +494,20 @@ class FirefoxLauncher(BaseBrowserLauncher):
         'security.fileuri.strict_origin_policy': False,
         # Do not wait for the notification button security delay
         'security.notification_enable_delay': 0,
-
         # Ensure blocklist updates do not hit the network
         'services.settings.server': f'http://{_server}/dummy/blocklist/',
-
         # Do not automatically fill sign-in forms with known usernames and
         # passwords
         'signon.autofillForms': False,
         # Disable password capture, so that tests that include forms are not
         # influenced by the presence of the persistent doorhanger notification
         'signon.rememberSignons': False,
-
         # Disable first-run welcome page
         'startup.homepage_welcome_url': 'about:blank',
-
         # Disable first-run welcome page
         'startup.homepage_welcome_url.additional': '',
-
         # Disable browser animations (tabs, fullscreen, sliding alerts)
         'toolkit.cosmeticAnimations.enabled': False,
-
         # We want to collect telemetry, but we don't want to send in the results
         'toolkit.telemetry.server': f'https://{_server}/dummy/telemetry/',
         # Prevent starting into safe mode after application crashes
@@ -545,8 +521,13 @@ class FirefoxLauncher(BaseBrowserLauncher):
     async def launch(self):
         pass
 
-    def default_args(self, args: List[str] = None, devtools: bool = False, headless: bool = True,
-                     userDataDir: str = None):
+    def default_args(
+        self,
+        args: List[str] = None,
+        devtools: bool = False,
+        headless: bool = True,
+        userDataDir: str = None,
+    ):
         proc_args = self.DEFAULT_ARGS[:]
         proc_args.extend(args)
         if userDataDir:
@@ -562,7 +543,9 @@ class FirefoxLauncher(BaseBrowserLauncher):
     async def _create_profile(self, **kwargs) -> tempfile.TemporaryDirectory:
         profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_firefox_profile')
         prefs = {**self.DEFAULT_PROFILE_PREFS, **kwargs}
-        serialized_prefs = [f'user_pref({json.dumps(key)}, {json.dumps(val)}' for key, val in prefs.items()]
+        serialized_prefs = [
+            f'user_pref({json.dumps(key)}, {json.dumps(val)}' for key, val in prefs.items()
+        ]
         with open(Path(profile_path.name).joinpath('user.js'), 'w') as user:
             user.write('\n'.join(serialized_prefs))
         return profile_path
@@ -604,7 +587,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
 
 
 def resolveExecutablePath(
-        projectRoot: str, preferred_revision: str
+    projectRoot: str, preferred_revision: str
 ) -> Tuple[Optional[str], Optional[str]]:
     env = os.environ
     EXECUTABLE_VARS = [
