@@ -6,6 +6,7 @@
 from types import SimpleNamespace
 
 from pyppeteer.connection import CDPSession
+from pyppeteer.errors import BrowserError
 
 
 class Dialog(object):
@@ -82,6 +83,8 @@ class Dialog(object):
 
     async def dismiss(self) -> None:
         """Dismiss the dialog."""
+        if self._handled:
+            raise BrowserError('Cannot dismiss dialog which is already handled!')
         self._handled = True
         await self._client.send('Page.handleJavaScriptDialog', {
             'accept': False,
