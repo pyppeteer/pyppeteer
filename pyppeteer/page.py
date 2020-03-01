@@ -9,19 +9,20 @@ import json
 import logging
 import math
 import mimetypes
-from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 from typing import TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer import helper
-from pyppeteer.connection import CDPSession
+from pyppeteer.Accessibility import Accessibility
+from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
+from pyppeteer.events import Events
 from pyppeteer.execution_context import JSHandle  # noqa: F401
 from pyppeteer.frame_manager import Frame  # noqa: F401
 from pyppeteer.frame_manager import FrameManager
@@ -29,6 +30,7 @@ from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.network_manager import NetworkManager, Response, Request
+from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.util import merge_dict
 from pyppeteer.worker import Worker
@@ -45,31 +47,10 @@ class Page(EventEmitter):
     This class provides methods to interact with a single tab of chrome. One
     :class:`~pyppeteer.browser.Browser` object might have multiple Page object.
 
-    The :class:`Page` class emits various :attr:`~Page.Events` which can be
+    The :class:`Page` class emits various :attr:`~Events.Page` which can be
     handled by using ``on`` or ``once`` method, which is inherited from
     `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``EventEmitter`` class.
     """
-
-    #: Available events.
-    Events = SimpleNamespace(
-        Close='close',
-        Console='console',
-        Dialog='dialog',
-        DOMContentLoaded='domcontentloaded',
-        Error='error',
-        PageError='pageerror',
-        Request='request',
-        Response='response',
-        RequestFailed='requestfailed',
-        RequestFinished='requestfinished',
-        FrameAttached='frameattached',
-        FrameDetached='framedetached',
-        FrameNavigated='framenavigated',
-        Load='load',
-        Metrics='metrics',
-        WorkerCreated='workercreated',
-        WorkerDestroyed='workerdestroyed',
-    )
 
     PaperFormats: Dict[str, Dict[str, float]] = dict(
         letter={'width': 8.5, 'height': 11},
@@ -85,11 +66,14 @@ class Page(EventEmitter):
     )
 
     @staticmethod
-    async def create(client: CDPSession, target: 'Target',
-                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                     screenshotTaskQueue: list = None) -> 'Page':
+    async def create(
+            client: CDPSession,
+            target: 'Target',
+            ignoreHTTPSErrors: bool,
+            defaultViewport: Optional[Dict],
+            screenshotTaskQueue: list = None
+    ) -> 'Page':
         """Async function which makes new page object."""
-        await client.send('Page.enable'),
         frameTree = (await client.send('Page.getFrameTree'))['frameTree']
         page = Page(client, target, frameTree, ignoreHTTPSErrors,
                     screenshotTaskQueue)
@@ -119,20 +103,21 @@ class Page(EventEmitter):
         self._target = target
         self._keyboard = Keyboard(client)
         self._mouse = Mouse(client, self._keyboard)
+        self._timeoutSettings = TimeoutSettings()
         self._touchscreen = Touchscreen(client, self._keyboard)
-        self._frameManager = FrameManager(client, frameTree, self)
-        self._networkManager = NetworkManager(client, self._frameManager)
+        self._accessibility = Accessibility(client)
+        self._frameManager = FrameManager(
+            client, self, ignoreHTTPSErrors, self._timeoutSettings
+        )
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
         self._pageBindings: Dict[str, Callable[..., Any]] = dict()
-        self._ignoreHTTPSErrors = ignoreHTTPSErrors
-        self._defaultNavigationTimeout = 30000  # milliseconds
-        self._javascriptEnabled = True
         self._coverage = Coverage(client)
+        self._javascriptEnabled = True
         self._viewport: Optional[Dict] = None
 
         if screenshotTaskQueue is None:
-            screenshotTaskQueue = list()
+            screenshotTaskQueue = []
         self._screenshotTaskQueue = screenshotTaskQueue
 
         self._workers: Dict[str, Worker] = dict()
@@ -142,14 +127,15 @@ class Page(EventEmitter):
             if targetInfo['type'] != 'worker':
                 # If we don't detach from service workers, they will never die.
                 try:
-                    client.send('Target.detachFromTarget', {
-                        'sessionId': event['sessionId'],
-                    })
+                    client.send(
+                        'Target.detachFromTarget', {
+                            'sessionId': event['sessionId'],
+                        })
                 except Exception as e:
                     debugError(logger, e)
                 return
             sessionId = event['sessionId']
-            session = client._createSession(targetInfo['type'], sessionId)
+            session = Connection.fromSession(client).session(sessionId)
             worker = Worker(
                 session,
                 targetInfo['url'],
@@ -157,41 +143,42 @@ class Page(EventEmitter):
                 self._handleException,
             )
             self._workers[sessionId] = worker
-            self.emit(Page.Events.WorkerCreated, worker)
+            self.emit(Events.Page.WorkerCreated, worker)
 
         def _onTargetDetached(event: Dict) -> None:
             sessionId = event['sessionId']
             worker = self._workers.get(sessionId)
             if worker is None:
                 return
-            self.emit(Page.Events.WorkerDestroyed, worker)
+            self.emit(Events.Page.WorkerDestroyed, worker)
             del self._workers[sessionId]
 
         client.on('Target.attachedToTarget', _onTargetAttached)
         client.on('Target.detachedFromTarget', _onTargetDetached)
 
         _fm = self._frameManager
-        _fm.on(FrameManager.Events.FrameAttached,
-               lambda event: self.emit(Page.Events.FrameAttached, event))
-        _fm.on(FrameManager.Events.FrameDetached,
-               lambda event: self.emit(Page.Events.FrameDetached, event))
-        _fm.on(FrameManager.Events.FrameNavigated,
-               lambda event: self.emit(Page.Events.FrameNavigated, event))
+        _fm.on(Events.FrameManager.FrameAttached,
+               lambda event: self.emit(Events.Page.FrameAttached, event))
+        _fm.on(Events.FrameManager.FrameDetached,
+               lambda event: self.emit(Events.Page.FrameDetached, event))
+        _fm.on(Events.FrameManager.FrameNavigated,
+               lambda event: self.emit(Events.Page.FrameNavigated, event))
 
-        _nm = self._networkManager
+        networkManager = self._frameManager.networkManager
+        _nm = networkManager
         _nm.on(NetworkManager.Events.Request,
-               lambda event: self.emit(Page.Events.Request, event))
+               lambda event: self.emit(Events.Page.Request, event))
         _nm.on(NetworkManager.Events.Response,
-               lambda event: self.emit(Page.Events.Response, event))
+               lambda event: self.emit(Events.Page.Response, event))
         _nm.on(NetworkManager.Events.RequestFailed,
-               lambda event: self.emit(Page.Events.RequestFailed, event))
+               lambda event: self.emit(Events.Page.RequestFailed, event))
         _nm.on(NetworkManager.Events.RequestFinished,
-               lambda event: self.emit(Page.Events.RequestFinished, event))
+               lambda event: self.emit(Events.Page.RequestFinished, event))
 
         client.on('Page.domContentEventFired',
-                  lambda event: self.emit(Page.Events.DOMContentLoaded))
+                  lambda event: self.emit(Events.Page.DOMContentLoaded))
         client.on('Page.loadEventFired',
-                  lambda event: self.emit(Page.Events.Load))
+                  lambda event: self.emit(Events.Page.Load))
         client.on('Runtime.consoleAPICalled',
                   lambda event: self._onConsoleAPI(event))
         client.on('Runtime.bindingCalled',
@@ -201,17 +188,17 @@ class Page(EventEmitter):
         client.on('Runtime.exceptionThrown',
                   lambda exception: self._handleException(
                       exception.get('exceptionDetails')))
-        client.on('Security.certificateError',
-                  lambda event: self._onCertificateError(event))
         client.on('Inspector.targetCrashed',
                   lambda event: self._onTargetCrashed())
         client.on('Performance.metrics',
                   lambda event: self._emitMetrics(event))
         client.on('Log.entryAdded',
                   lambda event: self._onLogEntryAdded(event))
+        client.on('Page.fileChooserOpened',
+                  lambda event: self._onFileChooser(event))
 
         def closed(fut: asyncio.futures.Future) -> None:
-            self.emit(Page.Events.Close)
+            self.emit(Events.Page.Close)
             self._closed = True
 
         self._target._isClosedPromise.add_done_callback(closed)
@@ -239,7 +226,7 @@ class Page(EventEmitter):
             helper.releaseObject(self._client, arg)
 
         if source != 'worker':
-            self.emit(Page.Events.Console, ConsoleMessage(level, text))
+            self.emit(Events.Page.Console, ConsoleMessage(level, text))
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -491,7 +478,7 @@ class Page(EventEmitter):
         * ``sameSite`` (str): ``'Strict'`` or ``'Lax'``
         """
         if not urls:
-            urls = (self.url, )
+            urls = (self.url,)
         resp = await self._client.send('Network.getCookies', {
             'urls': urls,
         })
@@ -706,7 +693,7 @@ function addPageBinding(bindingName) {
         return self._buildMetricsObject(response['metrics'])
 
     def _emitMetrics(self, event: Dict) -> None:
-        self.emit(Page.Events.Metrics, {
+        self.emit(Events.Page.Metrics, {
             'title': event['title'],
             'metrics': self._buildMetricsObject(event['metrics']),
         })
@@ -720,7 +707,7 @@ function addPageBinding(bindingName) {
 
     def _handleException(self, exceptionDetails: Dict) -> None:
         message = helper.getExceptionMessage(exceptionDetails)
-        self.emit(Page.Events.PageError, PageError(message))
+        self.emit(Events.Page.PageError, PageError(message))
 
     def _onConsoleAPI(self, event: dict) -> None:
         _id = event['executionContextId']
@@ -754,7 +741,7 @@ function addPageBinding(bindingName) {
             helper.debugError(logger, e)
 
     def _addConsoleMessage(self, type: str, args: List[JSHandle]) -> None:
-        if not self.listeners(Page.Events.Console):
+        if not self.listeners(Events.Page.Console):
             for arg in args:
                 self._client._loop.create_task(arg.dispose())
             return
@@ -769,7 +756,7 @@ function addPageBinding(bindingName) {
                     str(helper.valueFromRemoteObject(remoteObject)))
 
         message = ConsoleMessage(type, ' '.join(textTokens), args)
-        self.emit(Page.Events.Console, message)
+        self.emit(Events.Page.Console, message)
 
     def _onDialog(self, event: Any) -> None:
         dialogType = ''
@@ -784,7 +771,7 @@ function addPageBinding(bindingName) {
             dialogType = Dialog.Type.BeforeUnload
         dialog = Dialog(self._client, dialogType, event.get('message'),
                         event.get('defaultPrompt'))
-        self.emit(Page.Events.Dialog, dialog)
+        self.emit(Events.Page.Dialog, dialog)
 
     @property
     def url(self) -> str:
@@ -1731,7 +1718,6 @@ supportedMetrics = (
     'JSHeapUsedSize',
     'JSHeapTotalSize',
 )
-
 
 unitToPixels = {
     'px': 1,
