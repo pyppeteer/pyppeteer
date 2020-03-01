@@ -62,10 +62,10 @@ class BrowserOptions(TypedDict):
 
 class BrowserRunner:
     def __init__(
-            self,
-            executable_path: str,
-            process_args: Sequence[str],
-            temp_dir: tempfile.TemporaryDirectory = None,
+        self,
+        executable_path: str,
+        process_args: Sequence[str],
+        temp_dir: tempfile.TemporaryDirectory = None,
     ):
         self.executable_path = executable_path
         self.process_args = process_args or []
@@ -152,11 +152,11 @@ class BrowserRunner:
             pass
 
     async def setupConnection(
-            self,
-            usePipe: bool = None,
-            timeout: float = None,
-            slowMo: float = None,
-            preferredRevision: str = None,
+        self,
+        usePipe: bool = None,
+        timeout: float = None,
+        slowMo: float = None,
+        preferredRevision: str = None,
     ) -> Connection:
 
         if usePipe:
@@ -239,7 +239,9 @@ class ChromeLauncher:
             chrome_args.append(f'--user-data-dir={profile_path.name}')
 
         if not executablePath:
-            chrome_executable, missing_text = resolveExecutablePath(self.projectRoot, self.preferredRevision)
+            chrome_executable, missing_text = resolveExecutablePath(
+                self.projectRoot, self.preferredRevision
+            )
             if missing_text:
                 raise RuntimeError(missing_text)
         else:
@@ -247,7 +249,11 @@ class ChromeLauncher:
 
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
-            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio
+            handleSIGINT=handleSIGINT,
+            handleSIGHUP=handleSIGHUP,
+            handleSIGTERM=handleSIGTERM,
+            env=env,
+            dumpio=dumpio,
         )
 
         try:
@@ -286,10 +292,18 @@ class ChromeLauncher:
         chrome_args.extend(args)
         return chrome_args
 
-    async def connect(self, browserWSEndpoint: str = None, browserURL: str = None, transport: Any = None,
-                      ignoreHTTPSErrors: bool = False, slowMo: float = 0, defaultViewport: Viewport = None):
-        assert len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1, \
-            'exactly one of browserWSEndpoint, browserURL, transport must be specified'
+    async def connect(
+        self,
+        browserWSEndpoint: str = None,
+        browserURL: str = None,
+        transport: Any = None,
+        ignoreHTTPSErrors: bool = False,
+        slowMo: float = 0,
+        defaultViewport: Viewport = None,
+    ):
+        assert (
+            len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1
+        ), 'exactly one of browserWSEndpoint, browserURL, transport must be specified'
 
         if transport:
             connection = Connection('', transport, slowMo)
@@ -309,8 +323,14 @@ class ChromeLauncher:
             await connection.send('Browser.close')
 
         context_ids = await connection.send('Target.getBrowserContexts')
-        return Browser.create(connection=connection, contextIds=context_ids, ignoreHTTPSErrors=ignoreHTTPSErrors,
-                              defaultViewport=defaultViewport, process=None, closeCallback=close_callback)
+        return Browser.create(
+            connection=connection,
+            contextIds=context_ids,
+            ignoreHTTPSErrors=ignoreHTTPSErrors,
+            defaultViewport=defaultViewport,
+            process=None,
+            closeCallback=close_callback,
+        )
 
 
 class FirefoxLauncher:
@@ -353,7 +373,9 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
     )
 
 
-def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
+def resolveExecutablePath(
+    projectRoot: str, preferred_revision: str
+) -> Tuple[Optional[str], Optional[str]]:
     env = os.environ
     EXECUTABLE_VARS = [
         'PYPPETEER2_EXECUTABLE_PATH',
