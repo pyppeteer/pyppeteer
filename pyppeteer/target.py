@@ -16,14 +16,14 @@ if TYPE_CHECKING:
     from pyppeteer.browser import Browser, BrowserContext  # noqa: F401
 
 
-class Target(object):
+class Target:
     """Browser's target class."""
 
     def __init__(
             self,
             targetInfo: Dict,
-            browserContext: 'BrowserContext',
-            sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
+            browserContext: BrowserContext,
+            sessionFactory: Callable[[], Awaitable[CDPSession]],
             ignoreHTTPSErrors: bool,
             defaultViewport: Optional[Dict],
             screenshotTaskQueue: List,
@@ -91,7 +91,7 @@ class Target(object):
         if _type not in ['service_worker', 'shared_worker']:
             return
         if not self._workerPromise:
-            session = self._sessionFactory()
+            session = await self._sessionFactory()
             self._workerPromise = Worker(session, self._targetInfo['url'])
         return self._workerPromise
 
