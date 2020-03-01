@@ -27,14 +27,14 @@ if sys.platform.startswith('win'):
 logger = logging.getLogger(__name__)
 
 
-class ChromeArgOptions(TypedDict):
-    headless: Optional[bool]
+class ChromeArgOptions(TypedDict, total=False):
+    headless: bool
     args: List[str]
-    userDataDir: Optional[str]
-    devtools: Optional[bool]
+    userDataDir: str
+    devtools: bool
 
 
-class LaunchOptions(TypedDict):
+class LaunchOptions(TypedDict, total=False):
     executablePath: str
     ignoreDefaultArgs: Union[False, List[str]]
     handleSIGINT: bool
@@ -45,19 +45,19 @@ class LaunchOptions(TypedDict):
     env: Dict[str, Union[str, bool]]
 
 
-class Viewport(TypedDict):
+class Viewport(TypedDict, total=False):
     width: float
     height: float
-    deviceScaleFactor: Optional[float]
-    isMobile: Optional[bool]
-    isLandscape: Optional[bool]
-    hasTouch: Optional[bool]
+    deviceScaleFactor: float
+    isMobile: bool
+    isLandscape: bool
+    hasTouch: bool
 
 
-class BrowserOptions(TypedDict):
-    ignoreHTTPSErrors: Optional[bool]
-    defaultViewport: Optional[Viewport]
-    slowMo: Optional[bool]
+class BrowserOptions(TypedDict, total=False):
+    ignoreHTTPSErrors: bool
+    defaultViewport: Viewport
+    slowMo: float
 
 
 class BrowserRunner:
@@ -301,6 +301,9 @@ class ChromeLauncher(BaseBrowserLauncher):
         else:
             chrome_executable = executablePath
 
+        if '--remote-debugging-pipe' in chrome_args:
+            raise NotImplementedError('Communication via pipe not supported')
+
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
             handleSIGINT=handleSIGINT,
@@ -311,7 +314,12 @@ class ChromeLauncher(BaseBrowserLauncher):
         )
 
         try:
-            con = await runner.setupConnection()
+            con = await runner.setupConnection(
+                usePipe=False,
+                timeout=timeout,
+                slowMo=slowMo,
+                preferredRevision=self.preferredRevision,
+            )
             browser = await Browser.create(
                 connection=con,
                 contextIds=[],
