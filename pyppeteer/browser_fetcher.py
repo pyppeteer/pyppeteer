@@ -4,7 +4,7 @@
 """Chromium download module."""
 
 from io import BytesIO
-from typing import Union
+from typing import Union, TypedDict
 import logging
 import os
 from pathlib import Path
@@ -43,6 +43,14 @@ if NO_PROGRESS_BAR.lower() in ('1', 'true'):
 # }
 
 
+class RevisionInfo(TypedDict):
+    folderPath: Union[Path, os.PathLike[str]]
+    executablePath: Union[Path, os.PathLike[str]]
+    url: str
+    local: bool
+    revision: str
+
+
 def current_platform() -> str:
     """Get current platform name by short string."""
     if sys.platform.startswith('linux'):
@@ -71,6 +79,15 @@ def download_url(platform: str, host: str, revision: str) -> str:
     }
 
     return download_urls[platform]
+
+
+def archive_name(platform: str, revision: str) -> str:
+    if platform == 'linux':
+        return 'chrome-linux'
+    if platform == 'mac':
+        return 'chrome-mac'
+    if platform == 'win32' or platform == 'win64':
+        return 'chrome-win' if int(revision) > 591479 else 'chrome-win32'
 
 
 class BrowserFetcher:
