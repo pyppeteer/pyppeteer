@@ -9,7 +9,7 @@ import tempfile
 import time
 from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
-from typing import Dict, Sequence, Union, TypedDict, List, Optional, Awaitable, Any
+from typing import Dict, Sequence, Union, TypedDict, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -62,10 +62,10 @@ class BrowserOptions(TypedDict):
 
 class BrowserRunner:
     def __init__(
-        self,
-        executable_path: str,
-        process_args: Sequence[str],
-        temp_dir: tempfile.TemporaryDirectory = None,
+            self,
+            executable_path: str,
+            process_args: Sequence[str],
+            temp_dir: tempfile.TemporaryDirectory = None,
     ):
         self.executable_path = executable_path
         self.process_args = process_args or []
@@ -152,12 +152,12 @@ class BrowserRunner:
             pass
 
     async def setupConnection(
-        self,
-        usePipe: bool = None,
-        timeout: float = None,
-        slowMo: float = None,
-        preferredRevision: str = None,
-    ) -> Awaitable:
+            self,
+            usePipe: bool = None,
+            timeout: float = None,
+            slowMo: float = None,
+            preferredRevision: str = None,
+    ) -> Connection:
 
         if usePipe:
             raise NotImplementedError('Communication via pipe not supported')
@@ -165,7 +165,8 @@ class BrowserRunner:
         delay = slowMo or 0
         ws_endpoint_url = waitForWSEndpoint(self.proc, timeout, preferredRevision)
 
-        # chrome won't respond to pings, making websockets close the connection
+        # chrome won't respond to pings, making websockets close the connection,
+        # so we disable pinging it altogether and just assume it's still alive
         transport = await websockets.client.connect(
             ws_endpoint_url, max_size=None, ping_interval=None, ping_timeout=None
         )
@@ -205,6 +206,10 @@ class ChromeLauncher:
         self.projectRoot = projectRoot
         self.preferredRevision = preferredRevision
 
+    @property
+    def executable_path(self):
+        return resolveExecutablePath(self.projectRoot, self.preferredRevision)[0]
+
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
         ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
         args = kwargs.get('args', [])
@@ -227,19 +232,22 @@ class ChromeLauncher:
         else:
             chrome_args.extend(args)
 
-        if not any(x.startswith("--remote-debugging-") for x in chrome_args):
-            chrome_args.append(f"--remote-debugging-port={get_free_port()}")
-        if not any(x.startswith(f"--user-data-dir") for x in chrome_args):
+        if not any(x.startswith('--remote-debugging-') for x in chrome_args):
+            chrome_args.append(f'--remote-debugging-port={get_free_port()}')
+        if not any(x.startswith(f'--user-data-dir') for x in chrome_args):
             profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_profile_')
-            chrome_args.append(f"--user-data-dir={profile_path.name}")
+            chrome_args.append(f'--user-data-dir={profile_path.name}')
 
-        chrome_executable = executablePath
-        if not chrome_executable:
-            # todo: implement
-            chrome_executable = resolveExecutablePath(None)
+        if not executablePath:
+            chrome_executable, missing_text = resolveExecutablePath(self.projectRoot, self.preferredRevision)
+            if missing_text:
+                raise RuntimeError(missing_text)
+        else:
+            chrome_executable = executablePath
+
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
-            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM,
+            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio
         )
 
         try:
@@ -268,15 +276,41 @@ class ChromeLauncher:
         userDataDir = launch_kwargs.get('userDataDir')
 
         if userDataDir:
-            chrome_args.append(f"--user-data-dir={userDataDir}")
+            chrome_args.append(f'--user-data-dir={userDataDir}')
         if devtools:
-            chrome_args.append("--auto-open-devtools-for-tabs")
+            chrome_args.append('--auto-open-devtools-for-tabs')
         if headless:
-            chrome_args.extend(["--headless", "--hide-scrollbars", "--mute-audio"])
-        if all(x.startswith("-") for x in args):
-            chrome_args.append("about:blank")
+            chrome_args.extend(['--headless', '--hide-scrollbars', '--mute-audio'])
+        if all(x.startswith('-') for x in args):
+            chrome_args.append('about:blank')
         chrome_args.extend(args)
         return chrome_args
+
+    async def connect(self, browserWSEndpoint: str = None, browserURL: str = None, transport: Any = None,
+                      ignoreHTTPSErrors: bool = False, slowMo: float = 0, defaultViewport: Viewport = None):
+        assert len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1, \
+            'exactly one of browserWSEndpoint, browserURL, transport must be specified'
+
+        if transport:
+            connection = Connection('', transport, slowMo)
+        elif browserWSEndpoint:
+            transport = await websockets.client.connect(
+                browserWSEndpoint, max_size=None, ping_interval=None, ping_timeout=None
+            )
+            connection = Connection(browserWSEndpoint, transport, delay=slowMo)
+        elif browserURL:
+            browserWSEndpoint = getWSEndpoint(browserURL)
+            transport = await websockets.client.connect(
+                browserWSEndpoint, max_size=None, ping_interval=None, ping_timeout=None
+            )
+            connection = Connection(browserWSEndpoint, transport, delay=slowMo)
+
+        async def close_callback():
+            await connection.send('Browser.close')
+
+        context_ids = await connection.send('Target.getBrowserContexts')
+        return Browser.create(connection=connection, contextIds=context_ids, ignoreHTTPSErrors=ignoreHTTPSErrors,
+                              defaultViewport=defaultViewport, process=None, closeCallback=close_callback)
 
 
 class FirefoxLauncher:
@@ -285,11 +319,11 @@ class FirefoxLauncher:
 
 
 def getWSEndpoint(url) -> str:
-    url += "/json/version"
+    url += '/json/version'
     timeout = time.perf_counter() + 30
     while True:
         if time.perf_counter() > timeout:
-            raise BrowserError("Browser closed unexpectedly:\n")
+            raise BrowserError('Browser closed unexpectedly:\n')
         try:
             with urlopen(url) as f:
                 data = json.loads(f.read().decode())
@@ -301,43 +335,54 @@ def getWSEndpoint(url) -> str:
 
 
 def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str):
-    assert proc.stdout is not None, "process STDERR wasn't piped"
+    assert proc.stdout is not None, 'process STDOUT wasn\'t piped'
     start = time.perf_counter()
     for line in iter(proc.stdout.readline, b''):
         line = line.decode()
         if (start - time.perf_counter()) > timeout:
             raise TimeoutError(
-                f"Timed out after ${timeout * 1000:.0f}ms while trying to connect to the browser! "
-                f"Only Chrome at revision {preferredRevision} is guaranteed to work."
+                f'Timed out after ${timeout * 1000:.0f}ms while trying to connect to the browser! '
+                f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
             )
-        potential_match = re.match(r"DevTools listening on (ws://.*)\r+$$", line)
+        potential_match = re.match(r'DevTools listening on (ws://.*)\r+$$', line)
         if potential_match:
             return potential_match.group(1)
     raise RuntimeError(
-        "Process ended before WebSockets endpoint could be found"
-        f"Only Chrome at revision {preferredRevision} is guaranteed to work."
+        'Process ended before WebSockets endpoint could be found'
+        f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
     )
 
 
-def resolveExecutablePath(*_, **__):
-    missing_txt = None
+def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
     env = os.environ
-    EXECUTABLE_PATHS = [
-        'PYPPETEER2_EXECUTABLE_PATH'
+    EXECUTABLE_VARS = [
+        'PYPPETEER2_EXECUTABLE_PATH',
         'PYPPETEER_EXECUTABLE_PATH',
         'PUPPETEER_EXECUTABLE_PATH',
         'npm_config_puppeteer_executable_path',
         'npm_package_config_puppeteer_executable_path',
     ]
-    executable_env_vars = [env.get(x) for x in EXECUTABLE_PATHS]
-    executable = next((x for x in executable_env_vars if x), None)
+    REVISION_VARS = [
+        'PYPPETEER2_CHROMIUM_REVISION',
+        'PYPPETEER_CHROMIUM_REVISION',
+        'PUPPETEER_CHROMIUM_REVISION',
+    ]
+    executable = next((env.get(x) for x in EXECUTABLE_VARS if env.get(x)), None)
     if executable:
         if not Path(executable).is_file():
-            missing_txt = 'Tried to use env variable to launch browser but '
-
-
-
-
+            missing_txt = f'Tried to use env variables ({",".join(EXECUTABLE_VARS)}) to launch browser, but no executable was found at {executable}'
+            return None, missing_txt
+    browser_fetcher = BrowserFetcher(projectRoot)
+    revision = next((env.get(x) for x in REVISION_VARS if env.get(x)), None)
+    if revision:
+        revision_info = browser_fetcher.revision_info(revision)
+        if not revision_info.local:
+            missing_txt = f'Tried to use env variables ({",".join(REVISION_VARS)}) to launch browser, but did not find executable at {revision_info.executable_path}'
+            return None, missing_txt
+    revision_info = BrowserFetcher(preferred_revision)
+    if not revision_info.local:
+        missing_txt = 'Browser is not downloaded. Try running pypeteer2-install'
+    return revision_info.executable_path, missing_txt
 
 
 def launcher(projectRoot: str = None, prefferedRevision: str = None, product: str = None):
