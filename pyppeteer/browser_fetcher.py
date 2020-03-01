@@ -110,6 +110,44 @@ class BrowserFetcher:
         else:
             self.platform = platform
 
+    # def download(self, revision: str) -> RevisionInfo:
+    #     url = download_url(self.platform, self.host, revision)
+    #     folder_path = self.get_folder_path(revision)
+    #     zip_path = self.path.joinpath(f'download-{folder_path}.zip')
+
+    #     if folder_path.exists():
+    #         return self.revision_info(revision)
+
+    def revision_info(self, revision: str) -> RevisionInfo:
+        folder_path = self.get_folder_path(revision)
+
+        if self.platform == 'mac':
+            executable_path = folder_path.joinpath(
+                archive_name(self.platform, revision), 'Chromium.app',
+                'Contents', 'MacOS', 'Chromium')
+
+        if self.platform == 'linux':
+            executable_path = folder_path.joinpath(
+                archive_name(self.platform, revision), 'chrome')
+
+        if self.platform == 'win32' or self.platform == 'win64':
+            executable_path = folder_path.joinpath(
+                archive_name(self.platform, revision), 'chrome.exe')
+
+        url = download_url(self.platform, self.host, revision)
+        local = folder_path.exists()
+
+        return {
+            'revision': revision,
+            'executablePath': executable_path,
+            'folderPath': folder_path,
+            'local': local,
+            'url': url
+        }
+
+    def get_folder_path(self, revision: str) -> Path:
+        return self.path.joinpath(f'{self.platform}-{revision}')
+
     def can_download(self, revision: str) -> bool:
         url = download_url(self.platform, self.host, revision)
         http = urllib3.PoolManager()
