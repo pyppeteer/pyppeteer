@@ -15,6 +15,7 @@ class EmulationManager:
         self._client = client
         self._emulatingMobile = False
         self._hasTouch = False
+        self._emulatingMobile = False
 
     async def emulateViewport(self, viewport: dict) -> bool:
         """
