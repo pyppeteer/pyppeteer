@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Coverage module."""
-
+import asyncio
 from functools import cmp_to_key
 import logging
 from typing import Any, Dict, List
@@ -12,7 +12,6 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
 from pyppeteer.helper import debugError
-from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
 
@@ -50,16 +49,17 @@ class Coverage:
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(self, options: Dict = None, **kwargs: Any
-                              ) -> None:
+    async def startJSCoverage(
+            self,
+            resetOnNavigation: bool = True,
+            reportAnonymousScripts: bool = False,
+    ) -> None:
         """Start JS coverage measurement.
 
-        Available options are:
-
-        * ``resetOnNavigation`` (bool): Whether to reset coverage on every
-          navigation. Defaults to ``True``.
-        * ``reportAnonymousScript`` (bool): Whether anonymous script generated
-          by the page should be reported. Defaults to ``False``.
+        :param resetOnNavigation: Whether to reset coverage on every
+          navigation.
+        :param reportAnonymousScript: Whether anonymous script generated
+          by the page should be reported.
 
         .. note::
             Anonymous scripts are ones that don't have an associated url. These
@@ -68,8 +68,10 @@ class Coverage:
             ``True``, anonymous scripts will have
             ``__pyppeteer_evaluation_script__`` as their url.
         """
-        options = merge_dict(options, kwargs)
-        await self._jsCoverage.start(options)
+        await self._jsCoverage.start(
+            resetOnNavigation=resetOnNavigation,
+            reportAnonymousScripts=reportAnonymousScripts,
+        )
 
     async def stopJSCoverage(self) -> List:
         """Stop JS coverage measurement and get result.
@@ -90,17 +92,15 @@ class Coverage:
         """
         return await self._jsCoverage.stop()
 
-    async def startCSSCoverage(self, options: Dict = None, **kwargs: Any
-                               ) -> None:
+    async def startCSSCoverage(self, resetOnNavigation: bool = True) -> None:
         """Start CSS coverage measurement.
 
-        Available options are:
+        Available kwargs are:
 
-        * ``resetOnNavigation`` (bool): Whether to reset coverage on every
-          navigation. Defaults to ``True``.
+        :param resetOnNavigation: Whether to reset coverage on every
+          navigation.
         """
-        options = merge_dict(options, kwargs)
-        await self._cssCoverage.start(options)
+        await self._cssCoverage.start(resetOnNavigation=resetOnNavigation)
 
     async def stopCSSCoverage(self) -> List:
         """Stop CSS coverage measurement and get result.
@@ -134,31 +134,36 @@ class JSCoverage:
         self._eventListeners: List = list()
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(
+            self,
+            resetOnNavigation: bool = True,
+            reportAnonymousScripts: bool = False,
+    ) -> None:
         """Start coverage measurement."""
-        options = merge_dict(options, kwargs)
         if self._enabled:
             raise PageError('JSCoverage is always enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
-        self._reportAnonymousScript = bool(options.get('reportAnonymousScript'))  # noqa: E501
+        self._resetOnNavigation = resetOnNavigation
+        self._reportAnonymousScript = reportAnonymousScripts
         self._enabled = True
         self._scriptURLs.clear()
         self._scriptSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'Debugger.scriptParsed',
-                lambda e: self._client._loop.create_task(
-                    self._onScriptParsed(e))),
+                self._client,
+                'Debugger.scriptParsed',
+                lambda e: self._client._loop.create_task(self._onScriptParsed(e))),
             helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
+                self._client,
+                'Runtime.executionContextsCleared',
                 self._onExecutionContextsCleared),
         ]
-        await self._client.send('Profiler.enable')
-        await self._client.send('Profiler.startPreciseCoverage',
-                                {'callCount': False, 'detailed': True})
-        await self._client.send('Debugger.enable')
-        await self._client.send('Debugger.setSkipAllPauses', {'skip': True})
+        await asyncio.gather(
+            self._client.send('Profiler.enable'),
+            self._client.send('Profiler.startPreciseCoverage',
+                              {'callCount': False, 'detailed': True}),
+            self._client.send('Debugger.enable'),
+            self._client.send('Debugger.setSkipAllPauses', {'skip': True}),
+        )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
         if not self._resetOnNavigation:
@@ -177,8 +182,6 @@ class JSCoverage:
 
         scriptId = event.get('scriptId')
         url = event.get('url')
-        if not url and self._reportAnonymousScript:
-            url = f'debugger://VM{scriptId}'
         try:
             response = await self._client.send(
                 'Debugger.getScriptSource',
@@ -196,16 +199,19 @@ class JSCoverage:
             raise PageError('JSCoverage is not enabled.')
         self._enabled = False
 
-        result = await self._client.send('Profiler.takePreciseCoverage')
-        await self._client.send('Profiler.stopPreciseCoverage')
-        await self._client.send('Profiler.disable')
-        await self._client.send('Debugger.disable')
+        result = await asyncio.gather(
+            self._client.send('Profiler.takePreciseCoverage'),
+            self._client.send('Profiler.stopPreciseCoverage'),
+            self._client.send('Profiler.disable'),
+            self._client.send('Debugger.disable'),
+        )
         helper.removeEventListeners(self._eventListeners)
 
         coverage: List = []
         for entry in result.get('result', []):
-            url = self._scriptURLs.get(entry.get('scriptId'))
-            text = self._scriptSources.get(entry.get('scriptId'))
+            scriptId = entry.get('scriptId')
+            url = self._scriptURLs.get(scriptId)
+            text = self._scriptSources.get(scriptId)
             if text is None or url is None:
                 continue
             flattenRanges: List = []
@@ -227,28 +233,29 @@ class CSSCoverage:
         self._eventListeners: List = []
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(self, resetOnNavigation: bool = True) -> None:
         """Start coverage measurement."""
-        options = merge_dict(options, kwargs)
         if self._enabled:
             raise PageError('CSSCoverage is already enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
+        self._resetOnNavigation = resetOnNavigation
         self._enabled = True
         self._stylesheetURLs.clear()
         self._stylesheetSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'CSS.styleSheetAdded',
-                lambda e: self._client._loop.create_task(
-                    self._onStyleSheet(e))),
+                self._client,
+                'CSS.styleSheetAdded',
+                lambda e: self._client._loop.create_task(self._onStyleSheet(e))),
             helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
+                self._client,
+                'Runtime.executionContextsCleared',
                 self._onExecutionContextsCleared),
         ]
-        await self._client.send('DOM.enable')
-        await self._client.send('CSS.enable')
-        await self._client.send('CSS.startRuleUsageTracking')
+        await asyncio.gather(
+            self._client.send('DOM.enable'),
+            self._client.send('CSS.enable'),
+            self._client.send('CSS.startRuleUsageTracking'),
+        )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
         if not self._resetOnNavigation:
@@ -277,14 +284,16 @@ class CSSCoverage:
         if not self._enabled:
             raise PageError('CSSCoverage is not enabled.')
         self._enabled = False
-        result = await self._client.send('CSS.stopRuleUsageTracking')
-        await self._client.send('CSS.disable')
-        await self._client.send('DOM.disable')
+        ruleTrackingResponse = await self._client.send('CSS.stopRuleUsageTracking')
+        await asyncio.gather(
+            self._client.send('CSS.disable'),
+            self._client.send('DOM.disable')
+        )
         helper.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
         styleSheetIdToCoverage: Dict = {}
-        for entry in result['ruleUsage']:
+        for entry in ruleTrackingResponse['ruleUsage']:
             ranges = styleSheetIdToCoverage.get(entry['styleSheetId'])
             if not ranges:
                 ranges = []
@@ -307,9 +316,14 @@ class CSSCoverage:
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
-                            ) -> List[Any]:
-    """Convert ranges."""
+def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
+    """
+    Convert ranges.
+    NestedRange members support keys:
+        * startOffset: float
+        * endOffset: float
+        * count: int
+    """
     points: List = []
     for nested_range in nestedRanges:
         points.append({'offset': nested_range['startOffset'], 'type': 0,
