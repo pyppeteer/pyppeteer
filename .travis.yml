@@ -6,16 +6,16 @@ language: python
 matrix:
   include:
     - dist: xenial
-      python: 3.5
-      env: TOXENV="py35"
-    - dist: xenial
       python: 3.6
       env: TOXENV="py36"
     - dist: xenial
       python: 3.7
-      env: TOXENV="py37,doit,codecov"
+      env: TOXENV="py37"
+    - dist: xenial
+      python: 3.8
+      env: TOXENV="py38,doit,codecov"
     - os: osx
-      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3
+      osx_image: xcode10.2  # Python 3.7.2 running on macOS 10.14.3 upgrade this to py38
       language: shell
       env: TOXENV="py37"
       before_install: python3 --version
