@@ -10,4 +10,4 @@ doit
 pytest
 pytest-xdist
 pylint
-
+git+https://github.com/miyakogi/pyenchant.git
