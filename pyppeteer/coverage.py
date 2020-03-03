@@ -207,7 +207,7 @@ class JSCoverage:
         )
         helper.removeEventListeners(self._eventListeners)
 
-        coverage: List = []
+        coverage = []
         for entry in result.get('result', []):
             scriptId = entry.get('scriptId')
             url = self._scriptURLs.get(scriptId)
@@ -292,7 +292,7 @@ class CSSCoverage:
         helper.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
-        styleSheetIdToCoverage: Dict = {}
+        styleSheetIdToCoverage = {}
         for entry in ruleTrackingResponse['ruleUsage']:
             ranges = styleSheetIdToCoverage.get(entry['styleSheetId'])
             if not ranges:
@@ -317,6 +317,7 @@ class CSSCoverage:
 
 
 def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
+    # todo: typeddict for this
     """
     Convert ranges.
     NestedRange members support keys:
