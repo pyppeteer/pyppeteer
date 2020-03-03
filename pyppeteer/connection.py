@@ -24,7 +24,7 @@ logger_session = logging.getLogger(__name__ + '.CDPSession')
 class Connection(EventEmitter):
     """Connection management class."""
 
-    def __init__(self, url: str, transport, loop: asyncio.AbstractEventLoop,
+    def __init__(self, url: str, loop: asyncio.AbstractEventLoop,
                  delay: int = 0) -> None:
         """Make connection.
 
@@ -33,7 +33,6 @@ class Connection(EventEmitter):
         """
         super().__init__()
         self._url = url
-        self._ws = transport
         self._lastId = 0
         self._callbacks: Dict[int, asyncio.Future] = dict()
         self._delay = delay / 1000
@@ -41,6 +40,8 @@ class Connection(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self.connection: CDPSession
         self._connected = False
+        self._ws = websockets.client.connect(
+            self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None)
         self._recv_fut = self._loop.create_task(self._recv_loop())
         self._closeCallback: Optional[Callable[[], None]] = None
 
