@@ -470,7 +470,7 @@ class Page(EventEmitter):
     #: alias to :meth:`xpath`
     Jx = xpath
 
-    async def cookies(self, *urls: str) -> dict:
+    async def cookies(self, *urls: str) -> List[Dict[str, Union[str, int, bool]]]:
         """Get cookies.
 
         If no URLs are specified, this method returns cookies for the current
@@ -1496,7 +1496,7 @@ function addPageBinding(bindingName) {
         options = merge_dict(options, kwargs)
         conn = self._client._connection
         if conn is None:
-            raise PageError('Protocol Error: Connectoin Closed. '
+            raise PageError('Protocol Error: Connection Closed. '
                             'Most likely the page has been closed.')
         runBeforeUnload = bool(options.get('runBeforeUnload'))
         if runBeforeUnload:
