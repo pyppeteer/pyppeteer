@@ -17,7 +17,7 @@ from pyppeteer.util import merge_dict
 logger = logging.getLogger(__name__)
 
 
-class Coverage(object):
+class Coverage:
     """Coverage class.
 
     Coverage gathers information about parts of JavaScript and CSS that were
@@ -123,7 +123,7 @@ class Coverage(object):
         return await self._cssCoverage.stop()
 
 
-class JSCoverage(object):
+class JSCoverage:
     """JavaScript Coverage class."""
 
     def __init__(self, client: CDPSession) -> None:
@@ -216,7 +216,7 @@ class JSCoverage(object):
         return coverage
 
 
-class CSSCoverage(object):
+class CSSCoverage:
     """CSS Coverage class."""
 
     def __init__(self, client: CDPSession) -> None:
