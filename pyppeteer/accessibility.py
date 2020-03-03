@@ -7,7 +7,7 @@ class Accessibility(object):
     def __init__(self, client):
         self._client = client
 
-    async def snapshot(self, interstingOnly: bool = None, root: ElementHandle = None):
+    async def snapshot(self, interestingOnly: bool = False, root: ElementHandle = None):
         nodes = await self._client.send('Accessibility.getFullAXTree')
         backendNodeId = None
         if root:
@@ -43,7 +43,7 @@ class AXNode(object):
         :param payload: dict with keys nodeId, name, role, properties
         """
         self._payload = payload
-        self._children: List['AXNode'] = []
+        self._children: List[AXNode] = []
         self._richlyEditable = False
         self._editable = False
         self._focusable = False
@@ -146,7 +146,7 @@ class AXNode(object):
         return self.isLeafNode() and self._name
 
     def serialize(self):
-        properties: Dict[str, Union[str, float, bool]] = dict()
+        properties: Dict[str, Union[str, float, bool]] = {}
         for property in self._payload.get('properties', []):
             properties[property['name'].lower()] = property['value']['value']
         if self._payload.get('name'):
