@@ -1,5 +1,4 @@
-from collections import Set
-from typing import List
+from typing import List, Dict, Union, Set
 
 from pyppeteer.element_handle import ElementHandle
 
@@ -22,8 +21,8 @@ class Accessibility(object):
         needle = defaultRoot
         if backendNodeId:
             needle = [
-                node for node in defaultRoot
-                if node._payload.backendDOMNodeId == backendNodeId
+                node for node in defaultRoot.find(
+                    lambda node: node._payload.backendDOMNodeId == backendNodeId)
             ]
             if not needle:
                 return
@@ -39,36 +38,209 @@ class Accessibility(object):
 
 
 class AXNode(object):
-    def __init__(self, payload: 'AXNode'):
+    def __init__(self, payload: Dict):
+        """
+        :param payload: dict with keys nodeId, name, role, properties
+        """
         self._payload = payload
+        self._children: List['AXNode'] = []
+        self._richlyEditable = False
+        self._editable = False
+        self._focusable = False
+        self._expanded = False
+        self._hidden = False
+        self._name = payload.get('name', '')
+        self._role = payload.get('role', 'Unknown')
+        self._cacheHasFocusableChild = None
 
+        for property in payload['properties']:
+            _name = property['name']
+            _value = property['value']['value']
+            if _name == 'editable':
+                self._richlyEditable = _value == 'richtext'
+                self._editable = True
+            if _name == 'focusable':
+                self._focusable = _value
+            if _name == 'expanded':
+                self._expanded = _value
+            if _name == 'hidden':
+                self._hidden = _value
+
+    @property
     def _isPlainTextField(self):
-        pass
+        if self._richlyEditable:
+            return False
+        if self._editable:
+            return True
+        return self._role in ['textbox', 'ComboBox', 'searchbox']
 
+    @property
     def _isTextOnlyObject(self):
-        pass
+        return self._role in ['LineBreak', 'text', 'InlineTextBox']
 
+    @property
     def _hasFocusableChild(self):
-        pass
+        if self._cacheHasFocusableChild is None:
+            self._cacheHasFocusableChild = False
+            for child in self._children:
+                if child._focusable or child._hasFocusableChild:
+                    self._cacheHasFocusableChild = True
+                    break
+        return self._cacheHasFocusableChild
 
     def find(self, predicate):
-        pass
+        if predicate(self):
+            return self
+        for child in self._children:
+            result = child.find(predicate)
+            if result:
+                return result
 
     def isLeafNode(self):
-        pass
+        if self._children:
+            return True
+        # These types of objects may have children that we use as internal
+        # implementation details, but we want to expose them as leaves to platform
+        # accessibility APIs because screen readers might be confused if they find
+        # any children.
+        if self._isPlainTextField and self._isTextOnlyObject:
+            return True
+        # Roles whose children are only presentational according to the ARIA and
+        # HTML5 Specs should be hidden from screen readers.
+        # (Note that whilst ARIA buttons can have only presentational children, HTML5
+        # buttons are allowed to have content.)
+        if self._role in ['doc-cover', 'graphics-symbol', 'img',
+                          'Meter', 'scrollbar', 'slider',
+                          'separator', 'progressbar']:
+            return True
 
+        # here and below: android heuristics
+        if self._hasFocusableChild:
+            return False
+        if self._focusable and self._name:
+            return True
+        if self._role == 'heading' and self._name:
+            return True
+        return False
+
+    @property
     def isControl(self):
-        pass
+        return self._role in ['button', 'checkbox', 'ColorWell', 'combobox',
+                              'DisclosureTriangle', 'listbox', 'menu', 'menubar',
+                              'menuitem', 'menuitemcheckbox', 'menuitemradio',
+                              'radio', 'scrollbar', 'searchbox', 'slider',
+                              'spinbutton', 'switch', 'tab', 'texbox', 'tree']
 
     def isInteresting(self, insideControl: bool):
-        pass
+        role = self._role
+        if role == 'Ignored' or self._hidden:
+            return False
+        if self._focusable or self._richlyEditable:
+            return True
+        # If it 's not focusable but has a control role, then it' s interesting.
+        if self.isControl:
+            return True
+        # A non focusable child of a control is not interesting
+        if insideControl:
+            return False
+        return self.isLeafNode() and self._name
 
     def serialize(self):
-        pass
+        properties: Dict[str, Union[str, float, bool]] = dict()
+        for property in self._payload.get('properties', []):
+            properties[property['name'].lower()] = property['value']['value']
+        if self._payload.get('name'):
+            properties['name'] = self._payload['name']['value']
+        if self._payload.get('value'):
+            properties['value'] = self._payload['value']['value']
+        if self._payload.get('description'):
+            properties['description'] = self._payload['description']['value']
+
+        node = {'role': self._role}
+        userStringProperties = [
+            'name',
+            'value',
+            'description',
+            'keyshortcuts',
+            'roledescription',
+            'valuetext',
+        ]
+        for prop in userStringProperties:
+            if prop in properties:
+                continue
+            node[prop] = properties[prop]
+        booleanProperties = [
+            'disabled',
+            'expanded',
+            'focused',
+            'modal',
+            'multiline',
+            'multiselectable',
+            'readonly',
+            'required',
+            'selected',
+        ]
+        for prop in booleanProperties:
+            # WebArea's treat focus differently than other nodes. They report whether their frame  has focus,
+            # not whether focus is specifically on the root node.
+            if prop == 'focused' and self._role == 'WebArea':
+                continue
+            value = properties[prop]
+            if value:
+                node[prop] = value
+
+        tristateProperties = [
+            'checked',
+            'pressed',
+        ]
+        for prop in tristateProperties:
+            if prop in properties:
+                continue
+            value = properties[prop]
+            if value != 'mixed':
+                if value == 'true':
+                    value = True
+                else:
+                    value = False
+            node[prop] = value
+
+        numericProperties = [
+            'level',
+            'valuemax',
+            'valuemin',
+        ]
+        for prop in numericProperties:
+            if prop in properties:
+                continue
+            node[prop] = properties.get(prop)
+
+        tokenProperties = [
+            'autocomplete',
+            'haspopup',
+            'invalid',
+            'orientation',
+        ]
+        for prop in tokenProperties:
+            value = properties.get(prop)
+            if not value or value == 'false':
+                continue
+            node[prop] = value
+        return node
 
     @staticmethod
-    def createTree(payloads: List['AXNode']):
-        pass
+    def createTree(payloads: List[dict]) -> 'AXNode':
+        """
+
+        :param payloads: List of dictionaries of AXNode kwargs
+        :return:
+        """
+        nodeById = dict()
+        for payload in payloads:
+            nodeById[payload['nodeId']] = AXNode(payload)
+        for node in nodeById.values():
+            for childId in node._payload.get('childIds', []):
+                node._children.append(nodeById[childId])
+        return list(nodeById.values())[0]
 
 
 def collectInterstingNodes(
@@ -80,7 +252,7 @@ def collectInterstingNodes(
         collection.add(node)
     if node.isLeafNode():
         return
-    insideControl = insideControl or node.isControl()
+    insideControl = insideControl or node.isControl
     for child in node._children:
         collectInterstingNodes(collection, child, insideControl)
 
