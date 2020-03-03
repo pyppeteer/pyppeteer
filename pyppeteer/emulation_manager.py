@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """Emulation Manager module."""
+import asyncio
 
-from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 
 
-class EmulationManager(object):
+class EmulationManager:
     """EmulationManager class."""
 
     def __init__(self, client: CDPSession) -> None:
@@ -15,35 +15,38 @@ class EmulationManager(object):
         self._client = client
         self._emulatingMobile = False
         self._hasTouch = False
+        self._emulatingMobile = False
 
     async def emulateViewport(self, viewport: dict) -> bool:
-        """Evaluate viewport."""
-        options = dict()
+        """
+        Evaluate viewport.
+        :param viewport: dictionary which supports keys: isMobile, width, height,
+            deviceScaleFactor, isLandscape, hasTouch
+        """
         mobile = viewport.get('isMobile', False)
-        options['mobile'] = mobile
-        if 'width' in viewport:
-            options['width'] = helper.get_positive_int(viewport, 'width')
-        if 'height' in viewport:
-            options['height'] = helper.get_positive_int(viewport, 'height')
-
-        options['deviceScaleFactor'] = viewport.get('deviceScaleFactor', 1)
+        width = viewport.get('width')
+        height = viewport.get('height')
+        deviceScaleFactor = viewport.get('deviceScaleFactor', 1)
         if viewport.get('isLandscape'):
-            options['screenOrientation'] = {'angle': 90,
-                                            'type': 'landscapePrimary'}
+            screenOrientation = {'angle': 90, 'type': 'landscapePrimary'}
         else:
-            options['screenOrientation'] = {'angle': 0,
-                                            'type': 'portraitPrimary'}
+            screenOrientation = {'angle': 0, 'type': 'portraitPrimary'}
         hasTouch = viewport.get('hasTouch', False)
 
-        await self._client.send('Emulation.setDeviceMetricsOverride', options)
-        await self._client.send('Emulation.setTouchEmulationEnabled', {
-            'enabled': hasTouch,
-            'configuration': 'mobile' if mobile else 'desktop'
-        })
-
-        reloadNeeded = (self._emulatingMobile != mobile or
-                        self._hasTouch != hasTouch)
-
+        await asyncio.gather(
+            self._client.send(
+                'Emulation.setDeviceMetricsOverride', {
+                    'mobile': mobile,
+                    'width': width,
+                    'height': height,
+                    'deviceScaleFactor': deviceScaleFactor,
+                    'screenOrientation': screenOrientation,
+                }),
+            self._client.send(
+                'Emulation.setTouchEmulationEnabled', {'enabled': hasTouch}
+            )
+        )
+        reloadNeeded = self._emulatingMobile != mobile or self._hasTouch != hasTouch
         self._emulatingMobile = mobile
         self._hasTouch = hasTouch
         return reloadNeeded
