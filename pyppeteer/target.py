@@ -4,24 +4,30 @@
 """Target module."""
 
 import asyncio
-from typing import Any, Callable, Coroutine, Dict, List, Optional
-from typing import TYPE_CHECKING
+from typing import Callable, Dict, List, Optional, Awaitable, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
+from pyppeteer.events import Events
 from pyppeteer.page import Page
+from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
     from pyppeteer.browser import Browser, BrowserContext  # noqa: F401
 
 
-class Target(object):
+class Target:
     """Browser's target class."""
 
-    def __init__(self, targetInfo: Dict, browserContext: 'BrowserContext',
-                 sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
-                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                 screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
-                 ) -> None:
+    def __init__(
+            self,
+            targetInfo: Dict,
+            browserContext: BrowserContext,
+            sessionFactory: Callable[[], Awaitable[CDPSession]],
+            ignoreHTTPSErrors: bool,
+            defaultViewport: Optional[Dict],
+            screenshotTaskQueue: List,
+            loop: asyncio.AbstractEventLoop
+    ) -> None:
         self._targetInfo = targetInfo
         self._browserContext = browserContext
         self._targetId = targetInfo.get('targetId', '')
@@ -29,21 +35,29 @@ class Target(object):
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultViewport = defaultViewport
         self._screenshotTaskQueue = screenshotTaskQueue
+        self._page = None
+        self._workerPromise = None
         self._loop = loop
-        self._page: Optional[Page] = None
 
         self._initializedPromise = self._loop.create_future()
         self._isClosedPromise = self._loop.create_future()
-        self._isInitialized = (self._targetInfo['type'] != 'page'
-                               or self._targetInfo['url'] != '')
+        self._isInitialized = self._targetInfo['type'] != 'page' \
+                              or self._targetInfo['url'] != ''
         if self._isInitialized:
             self._initializedCallback(True)
 
-    def _initializedCallback(self, bl: bool) -> None:
-        # TODO: this may cause error on page close
-        if self._initializedPromise.done():
-            self._initializedPromise = self._loop.create_future()
-        self._initializedPromise.set_result(bl)
+    def _initializedCallback(self, success: bool) -> None:
+        if not success:
+            return self._initializedPromise.set_result(False)
+        # TODO below seems to always return True - why is even here?
+        opener = self.opener
+        if not opener or not opener._page or self.type != 'page':
+            return self._initializedPromise.set_result(True)
+        openerPage = opener._page
+        if not openerPage.listenerCount(Events.Page.Popup):
+            return self._initializedPromise.set_result(True)
+        openerPage.emit(Events.Page.Popup, openerPage)
+        return self._initializedPromise.set_result(True)
 
     def _closedCallback(self) -> None:
         self._isClosedPromise.set_result(None)
@@ -58,18 +72,27 @@ class Target(object):
         If the target is not of type "page" or "background_page", return
         ``None``.
         """
-        if (self._targetInfo['type'] in ['page', 'background_page'] and
-                self._page is None):
-            client = await self._sessionFactory()
-            new_page = await Page.create(
-                client, self,
+        if self._page:
+            return self._page
+        if self._targetInfo['type'] in ['page', 'background_page']:
+            session = await self._sessionFactory()
+            self._page = await Page.create(
+                session,
+                self,
                 self._ignoreHTTPSErrors,
                 self._defaultViewport,
                 self._screenshotTaskQueue,
             )
-            self._page = new_page
-            return new_page
         return self._page
+
+    async def worker(self):
+        _type = self._targetInfo['type']
+        if _type not in ['service_worker', 'shared_worker']:
+            return
+        if not self._workerPromise:
+            session = await self._sessionFactory()
+            self._workerPromise = Worker(session, self._targetInfo['url'])
+        return self._workerPromise
 
     @property
     def url(self) -> str:
@@ -84,7 +107,8 @@ class Target(object):
         ``'browser'``, or ``'other'``.
         """
         _type = self._targetInfo['type']
-        if _type in ['page', 'background_page', 'service_worker', 'browser']:
+        if _type in ['page', 'background_page', 'service_worker',
+                     'shared_worker', 'browser']:
             return _type
         return 'other'
 
