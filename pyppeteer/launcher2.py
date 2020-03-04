@@ -1,3 +1,4 @@
+import asyncio
 import atexit
 import json
 import logging
@@ -9,7 +10,7 @@ import tempfile
 import time
 from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
-from typing import Dict, Sequence, Union, TypedDict, List, Optional, Awaitable, Any, Tuple
+from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -24,19 +25,24 @@ from pyppeteer.util import get_free_port
 if sys.platform.startswith('win'):
     from signal import SIGHUP
 
+try:
+    from typing import TypedDict
+except ImportError:
+    from mypy_extensions import TypedDict
+
 logger = logging.getLogger(__name__)
 
 
 class ChromeArgOptions(TypedDict, total=False):
     headless: bool
-    args: List[str]
+    args: Sequence[str]
     userDataDir: str
     devtools: bool
 
 
 class LaunchOptions(TypedDict, total=False):
     executablePath: str
-    ignoreDefaultArgs: Union[False, List[str]]
+    ignoreDefaultArgs: Union[False, Sequence[str]]
     handleSIGINT: bool
     handleSIGTERM: bool
     handleSIGHUP: bool
@@ -60,12 +66,16 @@ class BrowserOptions(TypedDict, total=False):
     slowMo: float
 
 
+def _restore_default_signal_handlers():
+    signal(SIGKILL, SIG_DFL)
+    signal(SIGTERM, SIG_DFL)
+    if not sys.platform.startswith('win'):
+        signal(SIGHUP, SIG_DFL)
+
+
 class BrowserRunner:
     def __init__(
-        self,
-        executable_path: str,
-        process_args: Sequence[str],
-        temp_dir: tempfile.TemporaryDirectory = None,
+        self, executable_path: str, process_args: Sequence[str], temp_dir: tempfile.TemporaryDirectory = None,
     ):
         self.executable_path = executable_path
         self.process_args = process_args or []
@@ -83,6 +93,7 @@ class BrowserRunner:
             raise NotImplementedError('Communication via pipe not supported')
         if kwargs.get('env'):
             process_opts['env'] = kwargs.get('env')
+
         if not kwargs.get('dumpio'):
             # we read stdout to check it for the ws endpoint
             process_opts['stdout'] = subprocess.PIPE
@@ -93,32 +104,39 @@ class BrowserRunner:
             # see these SO threads:
             # https://stackoverflow.com/q/2996887/
             # https://stackoverflow.com/q/17190221/
-            raise NotImplementedError(f'dumpio argument currently not implemented')
+            raise NotImplementedError(f'dumpio argument currently  not implemented')
 
         assert self.proc is None, 'This process has previously been started'
 
+        logger.debug(f'Calling {self.executable_path} {" ".join(self.process_args)}')
         self.proc = subprocess.Popen([self.executable_path, *self.process_args], **process_opts)
         self._closed = False
 
-        async def _close_proc(_, __):
-            if not self._closed:
-                if self.connection and self.connection._connected:
-                    await self.connection.send('Browser.close')
-                    await self.connection.dispose()
-                if self.temp_dir:
-                    self._wait_for_proc_to_close()
-                    self.temp_dir.cleanup()
+        # ignore args from signals
+        def close_proc_wrapper(_, __):
+            asyncio.get_event_loop().run_until_complete(self._close_proc())
 
         if kwargs.get('autoClose'):
-            atexit.register(_close_proc)
+            atexit.register(close_proc_wrapper)
         if kwargs.get('handleSIGINT'):
-            signal(SIGINT, _close_proc)
+            signal(SIGINT, close_proc_wrapper)
         if kwargs.get('handleSIGTERM'):
-            signal(SIGTERM, _close_proc)
-        # SIGHUP is not defined on windows
-        if not sys.platform.startswith('win'):
-            if kwargs.get('handleSIGINT'):
-                signal(SIGHUP, _close_proc)
+            signal(SIGTERM, close_proc_wrapper)
+        if kwargs.get('handleSIGHUP'):
+            # SIGHUP is not defined on windows
+            if not sys.platform.startswith('win'):
+                signal(SIGHUP, close_proc_wrapper)
+            else:
+                logger.warning(f'SIGHUP is not defined on win_32')
+
+    async def _close_proc(self):
+        if not self._closed:
+            if self.connection and self.connection._connected:
+                await self.connection.send('Browser.close')
+                await self.connection.dispose()
+            if self.temp_dir:
+                self._wait_for_proc_to_close()
+                self.temp_dir.cleanup()
 
     def _wait_for_proc_to_close(self):
         if self.proc.poll() is None and not self._closed:
@@ -128,27 +146,22 @@ class BrowserRunner:
             except Exception:
                 pass
 
-    def _restore_default_signal_handlers(self):
-        signal(SIGKILL, SIG_DFL)
-        signal(SIGTERM, SIG_DFL)
-        if not sys.platform.startswith('win'):
-            signal(SIGHUP, SIG_DFL)
-
     async def close(self) -> Awaitable[None]:
         if not self._closed:
-            self._restore_default_signal_handlers()
+            _restore_default_signal_handlers()
             if self.temp_dir:
                 self.kill()
             elif self.connection:
                 try:
-                    return await self.connection.send('Browser.close')
+                    await self.connection.send('Browser.close')
                 except Exception as e:
                     debugError(logger, e)
                     self.kill()
+        return self._close_proc()
 
     def kill(self) -> None:
         if self.proc and not self._closed and self.proc.returncode is not None:
-            self._restore_default_signal_handlers()
+            _restore_default_signal_handlers()
             try:
                 self.proc.kill()
             except Exception:
@@ -159,30 +172,27 @@ class BrowserRunner:
             pass
 
     async def setupConnection(
-        self,
-        usePipe: bool = None,
-        timeout: float = None,
-        slowMo: float = None,
-        preferredRevision: str = None,
+        self, usePipe: bool = None, timeout: float = None, slowMo: float = 0, preferredRevision: str = None,
     ) -> Connection:
 
         if usePipe:
-            raise NotImplementedError('Communication via pipe not supported')
+            raise NotImplementedError('Communication via pipe not supported at this time')
 
-        delay = slowMo or 0
-        ws_endpoint_url = waitForWSEndpoint(self.proc, timeout, preferredRevision)
+        browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
 
         # chrome won't respond to pings, making websockets close the connection,
         # so we disable pinging it altogether and just assume it's still alive
-        transport = await websockets.client.connect(
-            ws_endpoint_url, max_size=None, ping_interval=None, ping_timeout=None
-        )
-        self.connection = Connection(ws_endpoint_url, transport, delay=delay)
+        transport = await WebSocketTransport.create(browser_ws_endpoint)
+        self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
         return self.connection
 
 
 class BaseBrowserLauncher:
-    def __init__(self, projectRoot: str, preferredRevision: str):
+    """
+    Implements common BrowserLauncher operations
+    """
+
+    def __init__(self, projectRoot: str = None, preferredRevision: str = None):
         self.projectRoot = projectRoot
         self.preferredRevision = preferredRevision
 
@@ -195,23 +205,24 @@ class BaseBrowserLauncher:
         slowMo: float = 0,
         defaultViewport: Viewport = None,
     ):
+        if defaultViewport is None:
+            defaultViewport = {'width': 800, 'height': 600}
+
         assert (
             len([x for x in (browserWSEndpoint, browserURL, transport) if x]) == 1
-        ), 'exactly one of browserWSEndpoint, browserURL, transport must be specified'
+        ), 'exactly one of browserWSEndpoint, browserURL, and transport must be specified'
 
         if transport:
             connection = Connection('', transport, slowMo)
         elif browserWSEndpoint:
-            transport = await websockets.client.connect(
-                browserWSEndpoint, max_size=None, ping_interval=None, ping_timeout=None
-            )
+            transport = await WebsocketTransport.create(browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport, delay=slowMo)
         elif browserURL:
             browserWSEndpoint = getWSEndpoint(browserURL)
-            transport = await websockets.client.connect(
-                browserWSEndpoint, max_size=None, ping_interval=None, ping_timeout=None
-            )
+            await WebsocketTransport.create(browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport, delay=slowMo)
+        else:
+            raise RuntimeError('No suitable arguments to connect with found (this should never be possible')
 
         async def close_callback():
             await connection.send('Browser.close')
@@ -255,11 +266,11 @@ class ChromeLauncher(BaseBrowserLauncher):
     ]
     product = 'chrome'
 
-    def __init__(self, projectRoot: str, preferredRevision: str):
+    def __init__(self, projectRoot: str = None, preferredRevision: str = None):
         super().__init__(projectRoot, preferredRevision)
 
     @property
-    def executable_path(self):
+    def executable_path(self) -> Optional[str]:
         return resolveExecutablePath(self.projectRoot, self.preferredRevision)[0]
 
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
@@ -270,19 +281,18 @@ class ChromeLauncher(BaseBrowserLauncher):
         env = kwargs.get('env', os.environ)
         handleSIGINT = kwargs.get('handleSIGINT', True)
         handleSIGTERM = kwargs.get('handleSIGTERM', True)
-        handleSIGHUP = kwargs.get('handleSIGHUP', True)
+        handleSIGHUP = kwargs.get('handleSIGHUP', not sys.platform.startswith('win'))
         ignoreHTTPSErrors = kwargs.get('ignoreHTTPSErrors', False)
         defaultViewport = kwargs.get('defaultViewport', {'width': 800, 'height': 600})
         slowMo = kwargs.get('slowMo', 0)
         timeout = kwargs.get('timeout', 30_000)
+        profile_path = None
 
         chrome_args = []
         if not ignoreDefaultArgs:
             chrome_args.extend(self.default_args(**kwargs))
         elif isinstance(ignoreDefaultArgs, list):
-            chrome_args.extend(
-                [x for x in self.default_args(**kwargs) if x not in ignoreDefaultArgs]
-            )
+            chrome_args.extend([x for x in self.default_args(**kwargs) if x not in ignoreDefaultArgs])
         else:
             chrome_args.extend(args)
 
@@ -293,35 +303,27 @@ class ChromeLauncher(BaseBrowserLauncher):
             chrome_args.append(f'--user-data-dir={profile_path.name}')
 
         if not executablePath:
-            chrome_executable, missing_text = resolveExecutablePath(
-                self.projectRoot, self.preferredRevision
-            )
+            chrome_executable, missing_text = resolveExecutablePath(self.projectRoot, self.preferredRevision)
             if missing_text:
                 raise RuntimeError(missing_text)
         else:
             chrome_executable = executablePath
 
+        usePipe = False
         if '--remote-debugging-pipe' in chrome_args:
-            raise NotImplementedError('Communication via pipe not supported')
+            usePipe = True
 
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
-            handleSIGINT=handleSIGINT,
-            handleSIGHUP=handleSIGHUP,
-            handleSIGTERM=handleSIGTERM,
-            env=env,
-            dumpio=dumpio,
+            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio,
         )
 
         try:
-            con = await runner.setupConnection(
-                usePipe=False,
-                timeout=timeout,
-                slowMo=slowMo,
-                preferredRevision=self.preferredRevision,
+            connection = await runner.setupConnection(
+                usePipe=usePipe, timeout=timeout, slowMo=slowMo, preferredRevision=self.preferredRevision,
             )
             browser = await Browser.create(
-                connection=con,
+                connection=connection,
                 contextIds=[],
                 ignoreHTTPSErrors=ignoreHTTPSErrors,
                 defaultViewport=defaultViewport,
@@ -330,30 +332,31 @@ class ChromeLauncher(BaseBrowserLauncher):
             )
             await browser.waitForTarget(lambda x: x.type == 'page')
             return browser
-        finally:
+        except Exception as e:
             try:
+                logger.error(e)
                 runner.kill()
             except Exception:
                 pass
+            finally:
+                raise e
 
     def default_args(
-        self,
-        args: List[str] = None,
-        devtools: bool = False,
-        headless: bool = True,
-        userDataDir: str = None,
-    ):
+        self,args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_,
+    ) -> List[str]:
+        if headless is None:
+            headless = not devtools
         chrome_args = self.DEFAULT_ARGS[:]
+        if isinstance(args, Sequence):
+            chrome_args.extend(args)
         if userDataDir:
             chrome_args.append(f'--user-data-dir={userDataDir}')
         if devtools:
             chrome_args.append('--auto-open-devtools-for-tabs')
         if headless:
-            chrome_args.extend(['--headless', '--hide-scrollbars', '--mute-audio'])
+            chrome_args.extend(('--headless', '--hide-scrollbars', '--mute-audio'))
         if all(x.startswith('-') for x in args):
             chrome_args.append('about:blank')
-        if isinstance(args, Sequence):
-            chrome_args.extend(args)
         return chrome_args
 
 
@@ -526,18 +529,80 @@ class FirefoxLauncher(BaseBrowserLauncher):
     def __init__(self, projectRoot: str, preferredRevision: str):
         super().__init__(projectRoot, preferredRevision)
 
-    async def launch(self):
-        pass
+    @property
+    def executablePath(self):
+        raise NotImplementedError('executablePath method not implemented')
+
+    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
+        ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
+        args = kwargs.get('args', [])
+        dumpio = kwargs.get('dumpio', False)
+        executablePath = kwargs.get('executablePath', None)
+        pipe = kwargs.get('pipe', False)
+        env = kwargs.get('env', os.environ)
+        handleSIGINT = kwargs.get('handleSIGINT', True)
+        handleSIGTERM = kwargs.get('handleSIGTERM', True)
+        handleSIGHUP = kwargs.get('handleSIGHUP', not sys.platform.startswith('win'))
+        ignoreHTTPSErrors = kwargs.get('ignoreHTTPSErrors', False)
+        defaultViewport = kwargs.get('defaultViewport', {'width': 800, 'height': 600})
+        slowMo = kwargs.get('slowMo', 0)
+        timeout = kwargs.get('timeout', 30_000)
+        profile_path = None
+
+        firefox_args = []
+        if not ignoreDefaultArgs:
+            firefox_args.extend(self.default_args(**kwargs))
+        elif isinstance(ignoreDefaultArgs, Sequence):
+            firefox_args.extend([x for x in self.default_args()])
+        else:
+            firefox_args.extend(args)
+
+        if '-profile' not in firefox_args and '--profile' not in firefox_args:
+            profile_path = tempfile.TemporaryDirectory('pyppyeteer2_firefox_profile_')
+            firefox_args.extend(('--profile', profile_path.name))
+
+        if not executablePath:
+            missing_text, executablePath = resolveExecutablePath(self.projectRoot, self.preferredRevision)
+            if missing_text:
+                raise RuntimeError(missing_text)
+
+        runner = BrowserRunner(executable_path=executablePath, process_args=firefox_args, temp_dir=profile_path)
+        runner.start(
+            handleSIGHUP=handleSIGHUP,
+            handleSIGTERM=handleSIGTERM,
+            handleSIGINT=handleSIGINT,
+            dumpio=dumpio,
+            env=env,
+            pipe=pipe,
+        )
+
+        try:
+            connection = await runner.setupConnection(
+                usePipe=pipe,
+                timeout=timeout,
+                slowMo=slowMo,
+                preferredRevision=self.preferredRevision,
+            )
+            browser = Browser.create(connection=connection, contextIds=[], ignoreHTTPSErrors=ignoreHTTPSErrors, defaultViewport=defaultViewport, process=runner.proc, closeCallback=runner.close)
+            await browser.waitForTarget(lambda t: t.type == 'page')
+            return browser
+        except Exception as e:
+            try:
+                logger.error(e)
+                runner.kill()
+            except Exception:
+                pass
+            finally:
+                raise e
 
     def default_args(
-        self,
-        args: List[str] = None,
-        devtools: bool = False,
-        headless: bool = True,
-        userDataDir: str = None,
+        self,args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_
     ):
+        if headless is None:
+            headless = not devtools
         proc_args = self.DEFAULT_ARGS[:]
-        proc_args.extend(args)
+        if isinstance(args, Sequence):
+            proc_args.extend(args)
         if userDataDir:
             proc_args.extend(['--profile', userDataDir])
         if headless:
@@ -546,14 +611,13 @@ class FirefoxLauncher(BaseBrowserLauncher):
             proc_args.append('--devtools')
         if all(x.startswith('-') for x in args):
             proc_args.append('about:blank')
+
         return proc_args
 
-    async def _create_profile(self, **kwargs) -> tempfile.TemporaryDirectory:
+    def _create_profile(self, extra_prefs: Dict[str, Any]) -> tempfile.TemporaryDirectory:
         profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_firefox_profile')
-        prefs = {**self.DEFAULT_PROFILE_PREFS, **kwargs}
-        serialized_prefs = [
-            f'user_pref({json.dumps(key)}, {json.dumps(val)}' for key, val in prefs.items()
-        ]
+        prefs = {**self.DEFAULT_PROFILE_PREFS, **extra_prefs}
+        serialized_prefs = [f'user_pref({json.dumps(key)}, {json.dumps(val)}' for key, val in prefs.items()]
         with open(Path(profile_path.name).joinpath('user.js'), 'w') as user:
             user.write('\n'.join(serialized_prefs))
         return profile_path
@@ -594,41 +658,29 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
     )
 
 
-def resolveExecutablePath(
-    projectRoot: str, preferred_revision: str
-) -> Tuple[Optional[str], Optional[str]]:
-    env = os.environ
-    EXECUTABLE_VARS = [
-        'PYPPETEER2_EXECUTABLE_PATH',
-        'PYPPETEER_EXECUTABLE_PATH',
-        'PUPPETEER_EXECUTABLE_PATH',
-        'npm_config_puppeteer_executable_path',
-        'npm_package_config_puppeteer_executable_path',
-    ]
-    REVISION_VARS = [
-        'PYPPETEER2_CHROMIUM_REVISION',
-        'PYPPETEER_CHROMIUM_REVISION',
-        'PUPPETEER_CHROMIUM_REVISION',
-    ]
-    executable = next((env.get(x) for x in EXECUTABLE_VARS if env.get(x)), None)
+def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
+    missing_text = None
+    exec_path_env_var = 'PYPPETEER2_EXECUTABLE_PATH'
+    revision_env_var = 'PYPPETEER2_CHROMIUM_REVISION'
+    executable = os.environ.get(exec_path_env_var)
     if executable:
         if not Path(executable).is_file():
-            missing_txt = f'Tried to use env variables ({",".join(EXECUTABLE_VARS)}) to launch browser, but no executable was found at {executable}'
-            return None, missing_txt
+            missing_text = f'Tried to use env variable ({exec_path_env_var}) to launch browser, but no executable was found at {executable}'
+            return None, missing_text
     browser_fetcher = BrowserFetcher(projectRoot)
-    revision = next((env.get(x) for x in REVISION_VARS if env.get(x)), None)
+    revision = os.environ.get(revision_env_var)
     if revision:
         revision_info = browser_fetcher.revision_info(revision)
         if not revision_info.local:
-            missing_txt = f'Tried to use env variables ({",".join(REVISION_VARS)}) to launch browser, but did not find executable at {revision_info.executable_path}'
-            return None, missing_txt
-    revision_info = BrowserFetcher(preferred_revision)
+            missing_text = f'Tried to use env variables ({revision_env_var}) to launch browser, but did not find executable at {revision_info.executable_path}'
+            return None, missing_text
+    revision_info = browser_fetcher.revision_info(preferred_revision)
     if not revision_info.local:
-        missing_txt = 'Browser is not downloaded. Try running pypeteer2-install'
-    return revision_info.executable_path, missing_txt
+        missing_text = 'Browser is not downloaded. Try running pypeteer2-install'
+    return revision_info.executable_path, missing_text
 
 
-def launcher(projectRoot: str = None, prefferedRevision: str = None, product: str = None):
+def launcher(projectRoot: str = None, preferredRevision: str = None, product: str = None):
     """Returns the appropriate browser launcher class instance"""
     env = os.environ
     PRODUCT_ENV_VARS = [
@@ -640,6 +692,6 @@ def launcher(projectRoot: str = None, prefferedRevision: str = None, product: st
     product_env_vars_val = [env.get(x) for x in PRODUCT_ENV_VARS]
     product = next(x for x in [product] + product_env_vars_val if x)
     if product == 'firefox':
-        return FirefoxLauncher(projectRoot, prefferedRevision)
+        return FirefoxLauncher(projectRoot, preferredRevision)
     else:
-        return ChromeLauncher(projectRoot, prefferedRevision)
+        return ChromeLauncher(projectRoot, preferredRevision)
