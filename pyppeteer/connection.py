@@ -24,8 +24,12 @@ logger_session = logging.getLogger(__name__ + '.CDPSession')
 class Connection(EventEmitter):
     """Connection management class."""
 
-    def __init__(self, url: str, loop: asyncio.AbstractEventLoop,
-                 delay: int = 0) -> None:
+    def __init__(
+            self,
+            url: str,
+            loop: asyncio.AbstractEventLoop,
+            delay: int = 0
+    ) -> None:
         """Make connection.
 
         :arg str url: WebSocket url to connect devtool.

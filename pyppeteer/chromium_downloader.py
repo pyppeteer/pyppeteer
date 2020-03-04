@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Chromium download module."""
+"""
+Chromium download module.
+
+Chromium is being downloaded from:
+https://commondatastorage.googleapis.com/chromium-browser-snapshots
+see full download instructions:
+https://www.chromium.org/getting-involved/download-chromium
+"""
 
 from io import BytesIO
 import logging
@@ -20,12 +27,10 @@ logger = logging.getLogger(__name__)
 
 DOWNLOADS_FOLDER = Path(__pyppeteer_home__) / 'local-chromium'
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
-DOWNLOAD_HOST = os.environ.get(
-    'PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
+DOWNLOAD_HOST = os.environ.get('PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
 
-REVISION = os.environ.get(
-    'PYPPETEER_CHROMIUM_REVISION', __chromium_revision__)
+REVISION = os.environ.get('PYPPETEER_CHROMIUM_REVISION', __chromium_revision__)
 
 NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
 if NO_PROGRESS_BAR.lower() in ('1', 'true'):
