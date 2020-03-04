@@ -177,13 +177,16 @@ class BrowserRunner:
 
         if usePipe:
             raise NotImplementedError('Communication via pipe not supported at this time')
+            # not currently support as we have no implementation for piping the stdout
+            # while also dumping to console
+            # may need to transition to asyncio.subprocess
+            # transport = PipeTransport(write_stream, read_stream)
+            # self.connection = Connection('', transport, delay=slowMo)
+        else:
+            browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
+            transport = await WebSocketTransport.create(browser_ws_endpoint)
+            self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
 
-        browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-
-        # chrome won't respond to pings, making websockets close the connection,
-        # so we disable pinging it altogether and just assume it's still alive
-        transport = await WebSocketTransport.create(browser_ws_endpoint)
-        self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
         return self.connection
 
 
