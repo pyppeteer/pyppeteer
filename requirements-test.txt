@@ -1,2 +1,0 @@
-syncer
-tornado>=5
