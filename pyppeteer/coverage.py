@@ -95,7 +95,6 @@ class Coverage:
     async def startCSSCoverage(self, resetOnNavigation: bool = True) -> None:
         """Start CSS coverage measurement.
 
-        Available kwargs are:
 
         :param resetOnNavigation: Whether to reset coverage on every
           navigation.
