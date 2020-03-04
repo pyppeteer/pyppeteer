@@ -8,8 +8,9 @@ from typing import Any, Callable, Dict, List, TYPE_CHECKING
 
 from pyee import EventEmitter
 
-from pyppeteer.execution_context import ExecutionContext, JSHandle
+from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helper import debugError
+from pyppeteer.jshandle import JSHandle
 
 if TYPE_CHECKING:
     from pyppeteer.connection import CDPSession  # noqa: F401
@@ -26,12 +27,15 @@ class Worker(EventEmitter):
     .. code::
 
         page.on('workercreated', lambda worker: print('Worker created:', worker.url))
-    """  # noqa: E501
+    """
 
-    def __init__(self, client: 'CDPSession', url: str,  # noqa: C901
-                 consoleAPICalled: Callable[[str, List[JSHandle]], None],
-                 exceptionThrown: Callable[[Dict], None]
-                 ) -> None:
+    def __init__(
+            self,
+            client: 'CDPSession',
+            url: str,
+            consoleAPICalled: Callable[[str, List[JSHandle]], None],
+            exceptionThrown: Callable[[Dict], None]
+    ) -> None:
         super().__init__()
         self._client = client
         self._url = url
@@ -51,8 +55,8 @@ class Worker(EventEmitter):
                 client, event['context'], jsHandleFactory)
             self._executionContextCallback(executionContext)
 
-        self._client.on('Runtime.executionContextCreated',
-                        onExecutionContentCreated)
+        self._client.once('Runtime.executionContextCreated',
+                          onExecutionContentCreated)
         try:
             # This might fail if the target is closed before we receive all
             # execution contexts.

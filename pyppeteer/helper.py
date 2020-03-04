@@ -86,15 +86,9 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
         raise ElementHandleError('Cannot extract value when objectId is given')
     value = remoteObject.get('unserializableValue')
     if value:
-        if value == '-0':
-            return -0
-        elif value == 'NaN':
-            return None
-        elif value == 'Infinity':
-            return math.inf
-        elif value == '-Infinity':
-            return -math.inf
-        else:
+        try:
+            value = unserializableValueMap[value]
+        except KeyError:
             raise ElementHandleError(
                 'Unsupported unserializable value: {}'.format(value))
     return remoteObject.get('value')
