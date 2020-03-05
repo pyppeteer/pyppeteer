@@ -12,7 +12,7 @@ class TaskQueue:
         fut.set_result(None)
         self._task_chain = fut
 
-    def post_task(self, task: Awaitable[Any]):
+    def post_task(self, task: Awaitable[Any]) -> Awaitable[None]:
         async def run_awaitable(prev):
             try:
                 await prev
