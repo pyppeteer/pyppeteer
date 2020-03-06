@@ -23,9 +23,9 @@ class WebsocketTransport:
         await self.ws.send(message)
 
     async def close(self, code: int = 1000, reason: str = '') -> None:
+        await self.ws.close(code=code, reason=reason)
         if self.onclose:
             await self.onclose()
-        await self.ws.close(code=code, reason=reason)
 
     async def recv(self) -> Data:
         data = await self.ws.recv()
