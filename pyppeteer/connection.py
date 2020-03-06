@@ -66,11 +66,11 @@ class Connection(EventEmitter):
         super().__init__()
         self._url = url
         self._lastId = 0
-        self._callbacks: Dict[int, asyncio.Future] = dict()
+        self._callbacks: Dict[int, asyncio.Future] = {}
         self._delay = delay / 1000
 
         self._loop = loop
-        self._sessions: Dict[str, CDPSession] = dict()
+        self._sessions: Dict[str, CDPSession] = {}
         self.connection: CDPSession
         self._connected = False
         self._ws = websockets.client.connect(
