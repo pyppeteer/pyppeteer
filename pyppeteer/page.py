@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 from pyee import EventEmitter
 
 from pyppeteer import helper
-from pyppeteer.Accessibility import Accessibility
+from pyppeteer.accessibility import Accessibility
 from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
@@ -68,11 +68,11 @@ class Page(EventEmitter):
     @staticmethod
     async def create(
             client: CDPSession,
-            target: 'Target',
+            target: Target,
             ignoreHTTPSErrors: bool,
             defaultViewport: Optional[Dict],
             screenshotTaskQueue: list = None
-    ) -> 'Page':
+    ) -> Page:
         """Async function which makes new page object."""
         page = Page(
             client=client,
@@ -88,7 +88,7 @@ class Page(EventEmitter):
     def __init__(
             self,
             client: CDPSession,
-            target: 'Target',  # noqa: C901
+            target: Target,
             ignoreHTTPSErrors: bool,
             screenshotTaskQueue: list = None
     ) -> None:
@@ -115,7 +115,7 @@ class Page(EventEmitter):
             screenshotTaskQueue = []
         self._screenshotTaskQueue = screenshotTaskQueue
 
-        self._workers: Dict[str, Worker] = dict()
+        self._workers: Dict[str, Worker] = {}
         self._disconnectPromise = None
 
         def _onTargetAttached(event: Dict) -> None:
@@ -162,7 +162,7 @@ class Page(EventEmitter):
 
         networkManager = self._frameManager.networkManager
         _nm = networkManager
-        _nm.on(NetworkManager.Events.Request,
+        _nm.on(Events.NetworkManager.Request,
                lambda event: self.emit(Events.Page.Request, event))
         _nm.on(NetworkManager.Events.Response,
                lambda event: self.emit(Events.Page.Response, event))
@@ -193,7 +193,7 @@ class Page(EventEmitter):
         client.on('Page.fileChooserOpened',
                   lambda event: self._onFileChooser(event))
 
-        def closed(fut: asyncio.futures.Future) -> None:
+        def closed(_)-> None:
             self.emit(Events.Page.Close)
             self._closed = True
 
@@ -212,12 +212,12 @@ class Page(EventEmitter):
             self._client.send('Log.enable'),
         )
 
-    async def _onFileChooser(self, event: dict):
+    async def _onFileChooser(self, event: Dict):
         if not self._fileChooserInterceptors.size:
             return
         frame = self._frameManager.frame(event['frameId'])
         context = await frame.executionContext()
-        element = await context._adoptBackednNodeId(event['backednNodeId'])
+        element = await context._adoptBackednNodeId(event['backendNodeId'])
         interceptors = copy(self._fileChooserInterceptors)
         self._fileChooserInterceptors.clear()
         fileChooser = FileChooser(self._client, element, event)
@@ -250,15 +250,15 @@ class Page(EventEmitter):
             latitude: float,
             accuracy: Optional[float]
     ) -> None:
-        if longitude < -180 or longitude > 180:
+        if -180 >= longitude >= 180:
             raise PageError(f'Invalid longitude {longitude}: '
                             f'precondition -180 <= LONGITUDE <= 180 failed')
-        if latitude < -90 or latitude > 90:
+        if -90 >= latitude >= 90:
             raise PageError(f'Invalid latitude {latitude}: '
                             f'precondition -90 <= LATITUDE <= 90 failed')
         if accuracy < 0:
             raise PageError(f'Invalid accuracy {accuracy}: '
-                            f'precondition 0 <= ACCURACY')
+                            f'precondition ACCURACY >= 0')
         await self._client.send(
             'Emulation.setGeolocationOverride', {
                 'longitude': longitude,
@@ -268,7 +268,7 @@ class Page(EventEmitter):
         )
 
     @property
-    def target(self) -> 'Target':
+    def target(self) -> Target:
         """Return a target this page created from."""
         return self._target
 
@@ -278,10 +278,10 @@ class Page(EventEmitter):
         return self._target.browser
 
     @property
-    def browserContext(self):
+    def browserContext(self) -> BrowserContext:
         return self._target.browserContext
 
-    def _onTargetCrashed(self):
+    def _onTargetCrashed(self) -> None:
         self.emit('error', PageError('Page crashed!'))
 
     def _onLogEntryAdded(self, event: Dict) -> None:
@@ -304,7 +304,7 @@ class Page(EventEmitter):
             )
 
     @property
-    def mainFrame(self) -> Optional['Frame']:
+    def mainFrame(self) -> Optional[Frame]:
         """Get main :class:`~pyppeteer.frame_manager.Frame` of this page."""
         return self._frameManager._mainFrame
 
@@ -324,11 +324,11 @@ class Page(EventEmitter):
         return self._coverage
 
     @property
-    def tracing(self):
+    def tracing(self) -> Tracing:
         return self._tracing
 
     @property
-    def accessibility(self):
+    def accessibility(self) -> Accessibility:
         return self._accessibility
 
     @property
@@ -431,7 +431,7 @@ class Page(EventEmitter):
         :arg JSHandle prototypeHandle: JSHandle of prototype object.
         """
         if not self.mainFrame:
-            raise PageError('no main frame.')
+            raise PageError('No main frame.')
         context = await self.mainFrame.executionContext()
         return await context.queryObjects(prototypeHandle)
 
@@ -488,7 +488,7 @@ class Page(EventEmitter):
     JJeval = querySelectorAllEval
     Jx = xpath
 
-    async def cookies(self, *urls: str) -> List[Dict[str, Union[str, int, bool]]]:
+    async def cookies(self, *urls: Sequence[str]) -> List[Dict[str, Union[str, int, bool]]]:
         """Get cookies.
 
         If no URLs are specified, this method returns cookies for the current
@@ -566,7 +566,7 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, **kwargs: str) -> ElementHandle:
+    async def addScriptTag(self, url: str = None, path: str = None, content: str = None, _type: str = None) -> ElementHandle:
         """Add script tag to this page.
 
         One of ``url``, ``path`` or ``content`` option is necessary.
@@ -921,7 +921,7 @@ class Page(EventEmitter):
         # TODO implement this
         if not self._disconnectPromise:
             self._disconnectPromise = self._loop.create_future()
-            self._client.once(Events.CDPSession.Disconnected)
+            self._client.once(Events.CDPSession.Disconnected, lambda: self._disconnectPromise.set_exception(PageError('Target Closed'))
         return self._disconnectPromise
 
     async def waitForRequest(
@@ -1080,7 +1080,6 @@ class Page(EventEmitter):
 
         * ``userAgent`` (str): user agent string.
         """
-        # skip its setting.
         await self.setViewport(viewport)
         await self.setUserAgent(userAgent)
 
@@ -1117,7 +1116,7 @@ class Page(EventEmitter):
             'media': mediaType or '',
         })
 
-    async def emulateMediaFeatures(self, features: List[dict] = None):
+    async def emulateMediaFeatures(self, features: List[Dict] = None):
         if not features:
             await self._client.send('Emulation.setEmulatedMedia', {'features': None})
         if isinstance(features, list):
