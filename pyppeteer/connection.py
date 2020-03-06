@@ -18,6 +18,7 @@ import websockets
 
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
+from pyppeteer.websocket_transport import WebsocketTransport
 
 if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
@@ -55,8 +56,11 @@ class Connection(EventEmitter):
     def __init__(
             self,
             url: str,
-            loop: asyncio.AbstractEventLoop,
-            delay: int = 0
+            transport: WebsocketTransport,
+            delay: int = 0,
+            loop: asyncio.AbstractEventLoop
+
+    ,
     ) -> None:
         """Make connection.
 
@@ -69,17 +73,14 @@ class Connection(EventEmitter):
         self._callbacks: Dict[int, asyncio.Future] = {}
         self._delay = delay / 1000
 
+        self._transport = transport
+        self._transport.onmessage = self._onMessage
+        self._transport.onclose = self._onClose
+
         self._loop = loop
         self._sessions: Dict[str, CDPSession] = {}
         self.connection: CDPSession
         self._connected = False
-        self._ws = websockets.client.connect(
-            self._url,
-            max_size=None,
-            loop=self._loop,
-            ping_interval=None,
-            ping_timeout=None,
-        )
         self._recv_fut = self._loop.create_task(self._recv_loop())
         self._closed = False
 
@@ -96,14 +97,12 @@ class Connection(EventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        async with self._ws as connection:
+        async with self._transport.create(self._url, self._loop) as connection:
             self._connected = True
             self.connection = connection
             while self._connected:
                 try:
-                    resp = await self.connection.recv()
-                    if resp:
-                        await self._onMessage(json.loads(resp))
+                    await self.connection.recv()
                 except (websockets.ConnectionClosed, ConnectionResetError):
                     logger.info('connection closed')
                     break
@@ -126,7 +125,7 @@ class Connection(EventEmitter):
     def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message via the connection."""
         # Detect connection availability from the second transmission
-        if self._lastId and not self._connected:  # Todo test if this is necessary
+        if self._lastId and not self._connected:
             raise ConnectionError('Connection is closed')
         id_ = self._rawSend({'method': method, 'params': params or {}})
         callback = self._loop.create_future()
@@ -184,6 +183,8 @@ class Connection(EventEmitter):
         if self._closed:
             return
         self._closed = True
+        self._transport.onmessage = None
+        self._transport.onclose = None
 
         for cb in self._callbacks.values():
             cb.set_exception(rewriteError(
@@ -207,7 +208,7 @@ class Connection(EventEmitter):
     async def dispose(self) -> None:
         """Close all connection."""
         self._connected = False
-        await self._onClose()
+        await self._transport.close()
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
