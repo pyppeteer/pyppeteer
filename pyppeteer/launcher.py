@@ -183,7 +183,7 @@ class BrowserRunner:
             # self.connection = Connection('', transport, delay=slowMo)
         else:
             browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-            transport = await WebSocketTransport.create(browser_ws_endpoint)
+            transport = await WebsocketTransport.create(browser_ws_endpoint)
             self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
 
         return self.connection
