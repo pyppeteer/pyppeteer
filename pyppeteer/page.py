@@ -52,18 +52,18 @@ class Page(EventEmitter):
     `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``EventEmitter`` class.
     """
 
-    PaperFormats: Dict[str, Dict[str, float]] = dict(
-        letter={'width': 8.5, 'height': 11},
-        legal={'width': 8.5, 'height': 14},
-        tabloid={'width': 11, 'height': 17},
-        ledger={'width': 17, 'height': 11},
-        a0={'width': 33.1, 'height': 46.8},
-        a1={'width': 23.4, 'height': 33.1},
-        a2={'width': 16.5, 'height': 23.4},
-        a3={'width': 11.7, 'height': 16.5},
-        a4={'width': 8.27, 'height': 11.7},
-        a5={'width': 5.83, 'height': 8.27},
-    )
+    PaperFormats: Dict[str, Dict[str, float]] = {
+        'letter': {'width': 8.5, 'height': 11},
+        'legal': {'width': 8.5, 'height': 14},
+        'tabloid': {'width': 11, 'height': 17},
+        'ledger': {'width': 17, 'height': 11},
+        'a0': {'width': 33.1, 'height': 46.8},
+        'a1': {'width': 23.4, 'height': 33.1},
+        'a2': {'width': 16.5, 'height': 23.4},
+        'a3': {'width': 11.7, 'height': 16.5},
+        'a4': {'width': 8.27, 'height': 11.7},
+        'a5': {'width': 5.83, 'height': 8.27},
+    }
 
     @staticmethod
     async def create(
