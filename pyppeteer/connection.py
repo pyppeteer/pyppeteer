@@ -24,12 +24,7 @@ logger_session = logging.getLogger(__name__ + '.CDPSession')
 class Connection(EventEmitter):
     """Connection management class."""
 
-    def __init__(
-            self,
-            url: str,
-            loop: asyncio.AbstractEventLoop,
-            delay: int = 0
-    ) -> None:
+    def __init__(self, url: str, loop: asyncio.AbstractEventLoop, delay: int = 0) -> None:
         """Make connection.
 
         :arg str url: WebSocket url to connect devtool.
@@ -45,7 +40,8 @@ class Connection(EventEmitter):
         self.connection: CDPSession
         self._connected = False
         self._ws = websockets.client.connect(
-            self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None)
+            self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None
+        )
         self._recv_fut = self._loop.create_task(self._recv_loop())
         self._closeCallback: Optional[Callable[[], None]] = None
 
@@ -91,11 +87,7 @@ class Connection(EventEmitter):
             params = dict()
         self._lastId += 1
         _id = self._lastId
-        msg = json.dumps(dict(
-            id=_id,
-            method=method,
-            params=params,
-        ))
+        msg = json.dumps(dict(id=_id, method=method, params=params,))
         logger_connection.debug(f'SEND: {msg}')
         self._loop.create_task(self._async_send(msg, _id))
         callback = self._loop.create_future()
@@ -111,7 +103,7 @@ class Connection(EventEmitter):
                 _createProtocolError(
                     callback.error,  # type: ignore
                     callback.method,  # type: ignore
-                    msg
+                    msg,
                 )
             )
         else:
@@ -152,10 +144,12 @@ class Connection(EventEmitter):
             self._closeCallback = None
 
         for cb in self._callbacks.values():
-            cb.set_exception(_rewriteError(
-                cb.error,  # type: ignore
-                f'Protocol error {cb.method}: Target closed.',  # type: ignore
-            ))
+            cb.set_exception(
+                _rewriteError(
+                    cb.error,  # type: ignore
+                    f'Protocol error {cb.method}: Target closed.',  # type: ignore
+                )
+            )
         self._callbacks.clear()
 
         for session in self._sessions.values():
@@ -175,10 +169,7 @@ class Connection(EventEmitter):
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
-        resp = await self.send(
-            'Target.attachToTarget',
-            {'targetId': targetInfo['targetId']}
-        )
+        resp = await self.send('Target.attachToTarget', {'targetId': targetInfo['targetId']})
         sessionId = resp.get('sessionId')
         session = CDPSession(self, targetInfo['type'], sessionId, self._loop)
         self._sessions[sessionId] = session
@@ -198,9 +189,13 @@ class CDPSession(EventEmitter):
     `here <https://chromedevtools.github.io/devtools-protocol/>`__.
     """
 
-    def __init__(self, connection: Union[Connection, 'CDPSession'],
-                 targetType: str, sessionId: str,
-                 loop: asyncio.AbstractEventLoop) -> None:
+    def __init__(
+        self,
+        connection: Union[Connection, 'CDPSession'],
+        targetType: str,
+        sessionId: str,
+        loop: asyncio.AbstractEventLoop,
+    ) -> None:
         """Make new session."""
         super().__init__()
         self._lastId = 0
@@ -219,8 +214,7 @@ class CDPSession(EventEmitter):
         """
         if not self._connection:
             raise NetworkError(
-                f'Protocol Error ({method}): Session closed. Most likely the '
-                f'{self._targetType} has been closed.'
+                f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
         self._lastId += 1
         _id = self._lastId
@@ -232,19 +226,18 @@ class CDPSession(EventEmitter):
         callback.error: Exception = NetworkError()  # type: ignore
         callback.method: str = method  # type: ignore
         try:
-            self._connection.send('Target.sendMessageToTarget', {
-                'sessionId': self._sessionId,
-                'message': msg,
-            })
+            self._connection.send('Target.sendMessageToTarget', {'sessionId': self._sessionId, 'message': msg,})
         except Exception as e:
             # The response from target might have been already dispatched
             if _id in self._callbacks:
                 del self._callbacks[_id]
                 _callback = self._callbacks[_id]
-                _callback.set_exception(_rewriteError(
-                    _callback.error,  # type: ignore
-                    e.args[0],
-                ))
+                _callback.set_exception(
+                    _rewriteError(
+                        _callback.error,  # type: ignore
+                        e.args[0],
+                    )
+                )
         return callback
 
     def _on_message(self, msg: str) -> None:  # noqa: C901
@@ -256,11 +249,13 @@ class CDPSession(EventEmitter):
             if callback:
                 del self._callbacks[_id]
                 if obj.get('error'):
-                    callback.set_exception(_createProtocolError(
-                        callback.error,  # type: ignore
-                        callback.method,  # type: ignore
-                        obj,
-                    ))
+                    callback.set_exception(
+                        _createProtocolError(
+                            callback.error,  # type: ignore
+                            callback.method,  # type: ignore
+                            obj,
+                        )
+                    )
                 else:
                     result = obj.get('result')
                     if callback and not callback.done():
@@ -287,15 +282,16 @@ class CDPSession(EventEmitter):
         """
         if not self._connection:
             raise NetworkError('Connection already closed.')
-        await self._connection.send('Target.detachFromTarget',
-                                    {'sessionId': self._sessionId})
+        await self._connection.send('Target.detachFromTarget', {'sessionId': self._sessionId})
 
     def _on_closed(self) -> None:
         for cb in self._callbacks.values():
-            cb.set_exception(_rewriteError(
-                cb.error,  # type: ignore
-                f'Protocol error {cb.method}: Target closed.',  # type: ignore
-            ))
+            cb.set_exception(
+                _rewriteError(
+                    cb.error,  # type: ignore
+                    f'Protocol error {cb.method}: Target closed.',  # type: ignore
+                )
+            )
         self._callbacks.clear()
         self._connection = None
 
@@ -305,8 +301,7 @@ class CDPSession(EventEmitter):
         return session
 
 
-def _createProtocolError(error: Exception, method: str, obj: Dict
-                         ) -> Exception:
+def _createProtocolError(error: Exception, method: str, obj: Dict) -> Exception:
     message = f'Protocol error ({method}): {obj["error"]["message"]}'
     if 'data' in obj['error']:
         message += f' {obj["error"]["data"]}'
@@ -314,5 +309,5 @@ def _createProtocolError(error: Exception, method: str, obj: Dict
 
 
 def _rewriteError(error: Exception, message: str) -> Exception:
-    error.args = (message, )
+    error.args = (message,)
     return error

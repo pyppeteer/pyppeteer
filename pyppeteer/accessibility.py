@@ -11,19 +11,12 @@ class Accessibility(object):
         nodes = await self._client.send('Accessibility.getFullAXTree')
         backendNodeId = None
         if root:
-            node = await self._client.send(
-                'DOM.describeNode', {
-                    'objectId': 'root._remoteObject.objectId',
-                }
-            )
+            node = await self._client.send('DOM.describeNode', {'objectId': 'root._remoteObject.objectId',})
             backendNodeId = node['backendNodeId']
         defaultRoot = AXNode.createTree(nodes)
         needle = defaultRoot
         if backendNodeId:
-            needle = [
-                node for node in defaultRoot.find(
-                    lambda node: node._payload.backendDOMNodeId == backendNodeId)
-            ]
+            needle = [node for node in defaultRoot.find(lambda node: node._payload.backendDOMNodeId == backendNodeId)]
             if not needle:
                 return
             needle = needle[0]
@@ -109,9 +102,16 @@ class AXNode(object):
         # HTML5 Specs should be hidden from screen readers.
         # (Note that whilst ARIA buttons can have only presentational children, HTML5
         # buttons are allowed to have content.)
-        if self._role in ['doc-cover', 'graphics-symbol', 'img',
-                          'Meter', 'scrollbar', 'slider',
-                          'separator', 'progressbar']:
+        if self._role in [
+            'doc-cover',
+            'graphics-symbol',
+            'img',
+            'Meter',
+            'scrollbar',
+            'slider',
+            'separator',
+            'progressbar',
+        ]:
             return True
 
         # here and below: android heuristics
@@ -125,11 +125,28 @@ class AXNode(object):
 
     @property
     def isControl(self):
-        return self._role in ['button', 'checkbox', 'ColorWell', 'combobox',
-                              'DisclosureTriangle', 'listbox', 'menu', 'menubar',
-                              'menuitem', 'menuitemcheckbox', 'menuitemradio',
-                              'radio', 'scrollbar', 'searchbox', 'slider',
-                              'spinbutton', 'switch', 'tab', 'texbox', 'tree']
+        return self._role in [
+            'button',
+            'checkbox',
+            'ColorWell',
+            'combobox',
+            'DisclosureTriangle',
+            'listbox',
+            'menu',
+            'menubar',
+            'menuitem',
+            'menuitemcheckbox',
+            'menuitemradio',
+            'radio',
+            'scrollbar',
+            'searchbox',
+            'slider',
+            'spinbutton',
+            'switch',
+            'tab',
+            'texbox',
+            'tree',
+        ]
 
     def isInteresting(self, insideControl: bool):
         role = self._role
@@ -243,11 +260,7 @@ class AXNode(object):
         return list(nodeById.values())[0]
 
 
-def collectInterstingNodes(
-        collection: Set[AXNode],
-        node: AXNode,
-        insideControl: bool
-):
+def collectInterstingNodes(collection: Set[AXNode], node: AXNode, insideControl: bool):
     if node.isInteresting(insideControl):
         collection.add(node)
     if node.isLeafNode():

@@ -49,11 +49,7 @@ class Coverage:
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(
-            self,
-            resetOnNavigation: bool = True,
-            reportAnonymousScripts: bool = False,
-    ) -> None:
+    async def startJSCoverage(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
         """Start JS coverage measurement.
 
         :param resetOnNavigation: Whether to reset coverage on every
@@ -69,8 +65,7 @@ class Coverage:
             ``__pyppeteer_evaluation_script__`` as their url.
         """
         await self._jsCoverage.start(
-            resetOnNavigation=resetOnNavigation,
-            reportAnonymousScripts=reportAnonymousScripts,
+            resetOnNavigation=resetOnNavigation, reportAnonymousScripts=reportAnonymousScripts,
         )
 
     async def stopJSCoverage(self) -> List:
@@ -133,11 +128,7 @@ class JSCoverage:
         self._eventListeners: List = list()
         self._resetOnNavigation = False
 
-    async def start(
-            self,
-            resetOnNavigation: bool = True,
-            reportAnonymousScripts: bool = False,
-    ) -> None:
+    async def start(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
         """Start coverage measurement."""
         if self._enabled:
             raise PageError('JSCoverage is always enabled.')
@@ -148,18 +139,13 @@ class JSCoverage:
         self._scriptSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client,
-                'Debugger.scriptParsed',
-                lambda e: self._client._loop.create_task(self._onScriptParsed(e))),
-            helper.addEventListener(
-                self._client,
-                'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+                self._client, 'Debugger.scriptParsed', lambda e: self._client._loop.create_task(self._onScriptParsed(e))
+            ),
+            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await asyncio.gather(
             self._client.send('Profiler.enable'),
-            self._client.send('Profiler.startPreciseCoverage',
-                              {'callCount': False, 'detailed': True}),
+            self._client.send('Profiler.startPreciseCoverage', {'callCount': False, 'detailed': True}),
             self._client.send('Debugger.enable'),
             self._client.send('Debugger.setSkipAllPauses', {'skip': True}),
         )
@@ -182,10 +168,7 @@ class JSCoverage:
         scriptId = event.get('scriptId')
         url = event.get('url')
         try:
-            response = await self._client.send(
-                'Debugger.getScriptSource',
-                {'scriptId': scriptId}
-            )
+            response = await self._client.send('Debugger.getScriptSource', {'scriptId': scriptId})
             self._scriptURLs[scriptId] = url
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
@@ -242,13 +225,9 @@ class CSSCoverage:
         self._stylesheetSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client,
-                'CSS.styleSheetAdded',
-                lambda e: self._client._loop.create_task(self._onStyleSheet(e))),
-            helper.addEventListener(
-                self._client,
-                'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+                self._client, 'CSS.styleSheetAdded', lambda e: self._client._loop.create_task(self._onStyleSheet(e))
+            ),
+            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await asyncio.gather(
             self._client.send('DOM.enable'),
@@ -268,10 +247,7 @@ class CSSCoverage:
         if not header.get('sourceURL'):
             return
         try:
-            response = await self._client.send(
-                'CSS.getStyleSheetText',
-                {'styleSheetId': header['styleSheetId']}
-            )
+            response = await self._client.send('CSS.getStyleSheetText', {'styleSheetId': header['styleSheetId']})
             self._stylesheetURLs[header['styleSheetId']] = header['sourceURL']
             self._stylesheetSources[header['styleSheetId']] = response['text']
         except Exception as e:
@@ -284,10 +260,7 @@ class CSSCoverage:
             raise PageError('CSSCoverage is not enabled.')
         self._enabled = False
         ruleTrackingResponse = await self._client.send('CSS.stopRuleUsageTracking')
-        await asyncio.gather(
-            self._client.send('CSS.disable'),
-            self._client.send('DOM.disable')
-        )
+        await asyncio.gather(self._client.send('CSS.disable'), self._client.send('DOM.disable'))
         helper.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
@@ -297,19 +270,19 @@ class CSSCoverage:
             if not ranges:
                 ranges = []
                 styleSheetIdToCoverage[entry['styleSheetId']] = ranges
-            ranges.append({
-                'startOffset': entry['startOffset'],
-                'endOffset': entry['endOffset'],
-                'count': 1 if entry['used'] else 0
-            })
+            ranges.append(
+                {
+                    'startOffset': entry['startOffset'],
+                    'endOffset': entry['endOffset'],
+                    'count': 1 if entry['used'] else 0,
+                }
+            )
 
         coverage = []
         for styleSheetId in self._stylesheetURLs:
             url = self._stylesheetURLs.get(styleSheetId)
             text = self._stylesheetSources.get(styleSheetId)
-            ranges = convertToDisjointRanges(
-                styleSheetIdToCoverage.get(styleSheetId, [])
-            )
+            ranges = convertToDisjointRanges(styleSheetIdToCoverage.get(styleSheetId, []))
             coverage.append({'url': url, 'ranges': ranges, 'text': text})
 
         return coverage
@@ -326,10 +299,8 @@ def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
     """
     points: List = []
     for nested_range in nestedRanges:
-        points.append({'offset': nested_range['startOffset'], 'type': 0,
-                       'range': nested_range})
-        points.append({'offset': nested_range['endOffset'], 'type': 1,
-                       'range': nested_range})
+        points.append({'offset': nested_range['startOffset'], 'type': 0, 'range': nested_range})
+        points.append({'offset': nested_range['endOffset'], 'type': 1, 'range': nested_range})
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:
@@ -354,9 +325,7 @@ def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:
-        if (hitCountStack and
-                lastOffset < point['offset'] and
-                hitCountStack[len(hitCountStack) - 1] > 0):
+        if hitCountStack and lastOffset < point['offset'] and hitCountStack[len(hitCountStack) - 1] > 0:
             lastResult = results[-1] if results else None
             if lastResult and lastResult['end'] == lastOffset:
                 lastResult['end'] = point['offset']

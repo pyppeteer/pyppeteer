@@ -29,21 +29,14 @@ logger = logging.getLogger(__name__)
 
 UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
 EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(
-    r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$',
-    re.MULTILINE,
-)
+SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
 class FrameManager(EventEmitter):
     """FrameManager class."""
 
     def __init__(
-            self,
-            client: CDPSession,
-            page: Any,
-            ignoreHTTPSErrors: bool,
-            timeoutSettings: 'TimeoutSettings'
+        self, client: CDPSession, page: Any, ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
     ) -> None:
         """Make new frame manager."""
         super().__init__()
@@ -57,49 +50,27 @@ class FrameManager(EventEmitter):
 
         client.on(
             'Page.frameAttached',
-            lambda event: self._onFrameAttached(
-                event.get('frameId', ''), event.get('parentFrameId', ''))
+            lambda event: self._onFrameAttached(event.get('frameId', ''), event.get('parentFrameId', '')),
         )
-        client.on(
-            'Page.frameNavigated',
-            lambda event: self._onFrameNavigated(event.get('frame'))
-        )
+        client.on('Page.frameNavigated', lambda event: self._onFrameNavigated(event.get('frame')))
         client.on(
             'Page.navigatedWithinDocument',
-            lambda event: self._onFrameNavigatedWithinDocument(
-                event.get('frameId'), event.get('url'))
+            lambda event: self._onFrameNavigatedWithinDocument(event.get('frameId'), event.get('url')),
         )
+        client.on('Page.frameDetached', lambda event: self._onFrameDetached(event.get('frameId')))
+        client.on('Page.frameStoppedLoading', lambda event: self._onFrameStoppedLoading(event.get('frameId')))
         client.on(
-            'Page.frameDetached',
-            lambda event: self._onFrameDetached(event.get('frameId'))
-        )
-        client.on(
-            'Page.frameStoppedLoading',
-            lambda event: self._onFrameStoppedLoading(event.get('frameId'))
-        )
-        client.on(
-            'Runtime.executionContextCreated',
-            lambda event: self._onExecutionContextCreated(event.get('context'))
+            'Runtime.executionContextCreated', lambda event: self._onExecutionContextCreated(event.get('context'))
         )
         client.on(
             'Runtime.executionContextDestroyed',
-            lambda event: self._onExecutionContextDestroyed(
-                event.get('executionContextId'))
+            lambda event: self._onExecutionContextDestroyed(event.get('executionContextId')),
         )
-        client.on(
-            'Runtime.executionContextsCleared',
-            lambda event: self._onExecutionContextsCleared()
-        )
-        client.on(
-            'Page.lifecycleEvent',
-            lambda event: self._onLifecycleEvent(event)
-        )
+        client.on('Runtime.executionContextsCleared', lambda event: self._onExecutionContextsCleared())
+        client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
     async def initiliaze(self):
-        frameTree = await asyncio.gather(
-            self._client.send('Page.enable'),
-            self._client.send('Page.getFrameTree'),
-        )
+        frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'),)
         self._handleFrameTree(frameTree)
 
         async def runtime_enabled():
@@ -107,12 +78,9 @@ class FrameManager(EventEmitter):
             await self._ensureIsolatedWorld(UTILITY_WORLD_NAME)
 
         await asyncio.gather(
-            self._client.send(
-                'Page.setLifecycleEventsEnabled',
-                {'enabled': True}
-            ),
+            self._client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
             runtime_enabled(),
-            await self._networkManager.initialize()
+            await self._networkManager.initialize(),
         )
 
     @property
@@ -120,24 +88,19 @@ class FrameManager(EventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-            self,
-            frame: 'Frame',
-            url: str,
-            referer: str = None,
-            timeout: int = None,
-            waitUntil: Union[str, List[str]] = None,
+        self,
+        frame: 'Frame',
+        url: str,
+        referer: str = None,
+        timeout: int = None,
+        waitUntil: Union[str, List[str]] = None,
     ):
         ensureNewDocumentNavigation = False
 
         async def navigate(url: str, referer: str, frameId: str):
             try:
                 response = await self._client.send(
-                    'Page.navigate',
-                    {
-                        'url': url,
-                        'referer': referer,
-                        'frameId': frameId,
-                    }
+                    'Page.navigate', {'url': url, 'referer': referer, 'frameId': frameId,}
                 )
                 # todo local functions in python cannot modify outer namespaces
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
@@ -154,40 +117,39 @@ class FrameManager(EventEmitter):
             timeout = self._timeoutSettings.navigationTimeout
 
         watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
-        error = await asyncio.wait([
-            navigate(url, referer, frame._id),
-            watcher.timeoutOrTerminationPromise()
-        ], return_when=asyncio.FIRST_COMPLETED)
+        error = await asyncio.wait(
+            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationPromise()],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
         if not error:
             if ensureNewDocumentNavigation:
                 nav_promise = watcher.newDocumentNavigationPromise()
             else:
                 nav_promise = watcher.sameDocumentNavigationPromise()
-            error = await asyncio.wait([
-                watcher.timeoutOrTerminationPromise(),
-                nav_promise,
-            ], return_when=asyncio.FIRST_COMPLETED)
+            error = await asyncio.wait(
+                [watcher.timeoutOrTerminationPromise(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
+            )
         watcher.dispose()
         if error:
             raise error
         return watcher.navigationResponse()
 
     async def waitForFrameNavigation(
-            self,
-            frame: 'Frame',
-            waitUntil: Union[str, List[str]] = None,
-            timeout: int = None
+        self, frame: 'Frame', waitUntil: Union[str, List[str]] = None, timeout: int = None
     ):
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
         watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
-        error = asyncio.wait([
-            watcher.timeoutOrTerminationPromise(),
-            watcher.sameDocumentNavigationPromise(),
-            watcher.newDocumentNavigationPromise(),
-        ], return_when=asyncio.FIRST_COMPLETED)
+        error = asyncio.wait(
+            [
+                watcher.timeoutOrTerminationPromise(),
+                watcher.sameDocumentNavigationPromise(),
+                watcher.newDocumentNavigationPromise(),
+            ],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
         watcher.dispose()
         if error:
             raise error
@@ -211,8 +173,7 @@ class FrameManager(EventEmitter):
         frame = frameTree['frame']
         if 'parentId' in frame:
             self._onFrameAttached(
-                frame['id'],
-                frame['parentId'],
+                frame['id'], frame['parentId'],
             )
         self._onFrameNavigated(frame)
         if 'childFrames' not in frameTree:
@@ -252,8 +213,7 @@ class FrameManager(EventEmitter):
         else:
             frame = self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise PageError('We either navigate top level or have old version '
-                            'of the navigated frame')
+            raise PageError('We either navigate top level or have old version ' 'of the navigated frame')
 
         # Detach all child frames first.
         if frame:
@@ -283,21 +243,16 @@ class FrameManager(EventEmitter):
         self._isolatedWorlds.add(name)
         await self._client.send(
             'Page.addScriptToEvaluateOnNewDocument',
-            {
-                'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}',
-                'worldName': name,
-            }
+            {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name,},
         )
         # todo wrap in debugerror?
         await asyncio.gather(
-            *[self._client.send(
-                'Page.createIsolatedWorld',
-                {
-                    'frameId': frame._id,
-                    'grantUniversalAccess': True,
-                    'worldName': name,
-                }
-            ) for frame in self.frames()]
+            *[
+                self._client.send(
+                    'Page.createIsolatedWorld', {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name,}
+                )
+                for frame in self.frames()
+            ]
         )
 
     def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
@@ -321,8 +276,7 @@ class FrameManager(EventEmitter):
         if frame:
             if auxData and not auxData['isDefault']:
                 world = frame._mainWorld
-            elif contextPayload.get('name') == UTILITY_WORLD_NAME \
-                    and not frame._secondaryWorld._hasContext():
+            elif contextPayload.get('name') == UTILITY_WORLD_NAME and not frame._secondaryWorld._hasContext():
                 # In case of multiple sessions to the same target, there's a race between
                 # connections so we might end up creating multiple isolated worlds.
                 # We can use either.
@@ -330,11 +284,7 @@ class FrameManager(EventEmitter):
         if auxData and auxData.get('type') == 'isolated':
             self._isolatedWorlds.add(contextPayload['name'])
 
-        context = ExecutionContext(
-            self._client,
-            contextPayload,
-            world
-        )
+        context = ExecutionContext(self._client, contextPayload, world)
         if world:
             world._setContext(context)
         self._contextIdToContext[contextPayload['id']] = context
@@ -357,9 +307,7 @@ class FrameManager(EventEmitter):
         """Get stored ``ExecutionContext`` by ``id``."""
         context = self._contextIdToContext.get(contextId)
         if not context:
-            raise ElementHandleError(
-                f'INTERNAL ERROR: missing context with id = {contextId}'
-            )
+            raise ElementHandleError(f'INTERNAL ERROR: missing context with id = {contextId}')
         return context
 
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
@@ -377,11 +325,7 @@ class Frame(object):
     """
 
     def __init__(
-            self,
-            frameManager: FrameManager,
-            client: CDPSession,
-            parentFrame: Optional['Frame'],
-            frameId: str
+        self, frameManager: FrameManager, client: CDPSession, parentFrame: Optional['Frame'], frameId: str
     ) -> None:
         self._frameManager = frameManager
         self._client = client
@@ -424,9 +368,7 @@ class Frame(object):
         else:
             self._documentPromise = None
             self._contextPromise = self._client._loop.create_future()
-            self._contextResolveCallback = (
-                lambda _context: self._contextPromise.set_result(_context)
-            )
+            self._contextResolveCallback = lambda _context: self._contextPromise.set_result(_context)
 
     async def goto(self, url, **kwargs):
         return await self._frameManager.navigateFrame(self, url, **kwargs)
@@ -452,8 +394,7 @@ class Frame(object):
             raise PageError('this frame has no context.')
         return await context.evaluateHandle(pageFunction, *args)
 
-    async def evaluate(self, pageFunction: str, *args: Any,
-                       force_expr: bool = False) -> Any:
+    async def evaluate(self, pageFunction: str, *args: Any, force_expr: bool = False) -> Any:
         """Evaluate pageFunction on this frame.
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
@@ -461,8 +402,7 @@ class Frame(object):
         context = await self.executionContext()
         if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await context.evaluate(
-            pageFunction, *args, force_expr=force_expr)
+        return await context.evaluate(pageFunction, *args, force_expr=force_expr)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.
@@ -496,8 +436,7 @@ class Frame(object):
         value = await document.xpath(expression)
         return value
 
-    async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
         """Execute function on element which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
@@ -505,8 +444,7 @@ class Frame(object):
         document = await self._document()
         return await document.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Optional[Dict]:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Optional[Dict]:
         """Execute function on all elements which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
@@ -537,7 +475,8 @@ class Frame(object):
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        return await self.evaluate('''
+        return await self.evaluate(
+            '''
 () => {
   let retVal = '';
   if (document.doctype)
@@ -546,7 +485,8 @@ class Frame(object):
     retVal += document.documentElement.outerHTML;
   return retVal;
 }
-        '''.strip())
+        '''.strip()
+        )
 
     async def setContent(self, html: str) -> None:
         """Set content to this page."""
@@ -632,31 +572,32 @@ function(html) {
             if 'type' in options:
                 args.append(options['type'])
             try:
-                return (await context.evaluateHandle(*args)  # type: ignore
-                        ).asElement()
+                return (
+                    await context.evaluateHandle(*args)  # type: ignore
+                ).asElement()
             except ElementHandleError as e:
                 raise PageError(f'Loading script from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
-            contents = contents + '//# sourceURL={}'.format(
-                options['path'].replace('\n', ''))
+            contents = contents + '//# sourceURL={}'.format(options['path'].replace('\n', ''))
             args = [addScriptContent, contents]
             if 'type' in options:
                 args.append(options['type'])
-            return (await context.evaluateHandle(*args)  # type: ignore
-                    ).asElement()
+            return (
+                await context.evaluateHandle(*args)  # type: ignore
+            ).asElement()
 
         if isinstance(options.get('content'), str):
             args = [addScriptContent, options['content']]
             if 'type' in options:
                 args.append(options['type'])
-            return (await context.evaluateHandle(*args)  # type: ignore
-                    ).asElement()
+            return (
+                await context.evaluateHandle(*args)  # type: ignore
+            ).asElement()
 
-        raise ValueError(
-            'Provide an object with a `url`, `path` or `content` property')
+        raise ValueError('Provide an object with a `url`, `path` or `content` property')
 
     async def addStyleTag(self, options: Dict) -> ElementHandle:
         """Add style tag to this frame.
@@ -698,28 +639,34 @@ function(html) {
         if isinstance(options.get('url'), str):
             url = options['url']
             try:
-                return (await context.evaluateHandle(  # type: ignore
-                    addStyleUrl, url)).asElement()
+                return (
+                    await context.evaluateHandle(  # type: ignore
+                        addStyleUrl, url
+                    )
+                ).asElement()
             except ElementHandleError as e:
                 raise PageError(f'Loading style from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
-            contents = contents + '/*# sourceURL={}*/'.format(
-                options['path'].replace('\n', ''))
-            return (await context.evaluateHandle(  # type: ignore
-                addStyleContent, contents)).asElement()
+            contents = contents + '/*# sourceURL={}*/'.format(options['path'].replace('\n', ''))
+            return (
+                await context.evaluateHandle(  # type: ignore
+                    addStyleContent, contents
+                )
+            ).asElement()
 
         if isinstance(options.get('content'), str):
-            return (await context.evaluateHandle(  # type: ignore
-                addStyleContent, options['content'])).asElement()
+            return (
+                await context.evaluateHandle(  # type: ignore
+                    addStyleContent, options['content']
+                )
+            ).asElement()
 
-        raise ValueError(
-            'Provide an object with a `url`, `path` or `content` property')
+        raise ValueError('Provide an object with a `url`, `path` or `content` property')
 
-    async def click(self, selector: str, options: dict = None, **kwargs: Any
-                    ) -> None:
+    async def click(self, selector: str, options: dict = None, **kwargs: Any) -> None:
         """Click element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.click`.
@@ -760,12 +707,10 @@ function(html) {
         """
         for value in values:
             if not isinstance(value, str):
-                raise TypeError(
-                    'Values must be string. '
-                    f'Found {value} of type {type(value)}'
-                )
+                raise TypeError('Values must be string. ' f'Found {value} of type {type(value)}')
         return await self.querySelectorEval(  # type: ignore
-            selector, '''
+            selector,
+            '''
 (element, values) => {
     if (element.nodeName.toLowerCase() !== 'select')
         throw new Error('Element is not a <select> element.');
@@ -782,7 +727,9 @@ function(html) {
     element.dispatchEvent(new Event('change', { 'bubbles': true }));
     return options.filter(option => option.selected).map(options => options.value)
 }
-        ''', values)  # noqa: E501
+        ''',
+            values,
+        )  # noqa: E501
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.
@@ -795,8 +742,7 @@ function(html) {
         await handle.tap()
         await handle.dispose()
 
-    async def type(self, selector: str, text: str, options: dict = None,
-                   **kwargs: Any) -> None:
+    async def type(self, selector: str, text: str, options: dict = None, **kwargs: Any) -> None:
         """Type ``text`` on the element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.type`.
@@ -809,10 +755,7 @@ function(html) {
         await handle.dispose()
 
     def waitFor(
-            self,
-            selectorOrFunctionOrTimeout: Union[str, int, float],
-            *args: Any,
-            **kwargs: Any
+        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
     ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
@@ -825,23 +768,14 @@ function(html) {
                 return self.waitForXPath(string, **kwargs)
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            return self._client._loop.create_task(
-                asyncio.sleep(selectorOrFunctionOrTimeout / 1000)
-            )
+            return self._client._loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
         if helper.is_jsfunc(selectorOrFunctionOrTimeout):
-            return self.waitForFunction(
-                selectorOrFunctionOrTimeout, *args, **kwargs
-            )
+            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client._loop.create_future()
-        f.set_exception(BrowserError(f'Unsupported target type:'
-                                     f' {type(selectorOrFunctionOrTimeout)}'))
+        f.set_exception(BrowserError(f'Unsupported target type:' f' {type(selectorOrFunctionOrTimeout)}'))
         return f
 
-    async def waitForSelector(
-            self,
-            selector: str,
-            **kwargs: Any
-    ) -> Optional[ElementHandle]:
+    async def waitForSelector(self, selector: str, **kwargs: Any) -> Optional[ElementHandle]:
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
@@ -853,12 +787,7 @@ function(html) {
             await handle.dispose()
             return result
 
-    def waitForXPath(
-            self,
-            xpath: str,
-            options: dict = None,
-            **kwargs: Any
-    ) -> 'WaitTask':
+    def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.
@@ -871,12 +800,7 @@ function(html) {
         await handle.dispose()
         return result
 
-    def waitForFunction(
-            self,
-            pageFunction: str,
-            *args,
-            **kwargs: Any
-    ) -> 'WaitTask':
+    def waitForFunction(self, pageFunction: str, *args, **kwargs: Any) -> 'WaitTask':
         """Wait until the function completes.
 
         Details see :meth:`pyppeteer.page.Page.waitForFunction`.
@@ -910,8 +834,7 @@ function(html) {
 
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
-            waitTask.terminate(
-                PageError('waitForFunction failed: frame got detached.'))
+            waitTask.terminate(PageError('waitForFunction failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)

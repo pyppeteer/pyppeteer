@@ -30,11 +30,11 @@ class Worker(EventEmitter):
     """
 
     def __init__(
-            self,
-            client: 'CDPSession',
-            url: str,
-            consoleAPICalled: Callable[[str, List[JSHandle]], None],
-            exceptionThrown: Callable[[Dict], None]
+        self,
+        client: 'CDPSession',
+        url: str,
+        consoleAPICalled: Callable[[str, List[JSHandle]], None],
+        exceptionThrown: Callable[[Dict], None],
     ) -> None:
         super().__init__()
         self._client = client
@@ -51,12 +51,10 @@ class Worker(EventEmitter):
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 return JSHandle(executionContext, client, remoteObject)
 
-            executionContext = ExecutionContext(
-                client, event['context'], jsHandleFactory)
+            executionContext = ExecutionContext(client, event['context'], jsHandleFactory)
             self._executionContextCallback(executionContext)
 
-        self._client.once('Runtime.executionContextCreated',
-                          onExecutionContentCreated)
+        self._client.once('Runtime.executionContextCreated', onExecutionContentCreated)
         try:
             # This might fail if the target is closed before we receive all
             # execution contexts.
@@ -72,8 +70,7 @@ class Worker(EventEmitter):
 
         self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
         self._client.on(
-            'Runtime.exceptionThrown',
-            lambda exception: exceptionThrown(exception['exceptionDetails']),
+            'Runtime.exceptionThrown', lambda exception: exceptionThrown(exception['exceptionDetails']),
         )
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
@@ -93,13 +90,11 @@ class Worker(EventEmitter):
 
         Shortcut for ``(await worker.executionContext).evaluate(pageFunction, *args)``.
         """  # noqa: E501
-        return await (await self._executionContextPromise).evaluate(
-            pageFunction, *args)
+        return await (await self._executionContextPromise).evaluate(pageFunction, *args)
 
     async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
         """Evaluate ``pageFunction`` with ``args`` and return :class:`~pyppeteer.execution_context.JSHandle`.
 
         Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.
         """  # noqa: E501
-        return await (await self._executionContextPromise).evaluateHandle(
-            pageFunction, *args)
+        return await (await self._executionContextPromise).evaluateHandle(pageFunction, *args)

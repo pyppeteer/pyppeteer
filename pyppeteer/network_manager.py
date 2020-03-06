@@ -29,18 +29,10 @@ class NetworkManager(EventEmitter):
     """NetworkManager class."""
 
     Events = SimpleNamespace(
-        Request='request',
-        Response='response',
-        RequestFailed='requestfailed',
-        RequestFinished='requestfinished',
+        Request='request', Response='response', RequestFailed='requestfailed', RequestFinished='requestfinished',
     )
 
-    def __init__(
-            self,
-            client: CDPSession,
-            ignoreHttpsErrors: bool,
-            frameManager: FrameManager
-    ) -> None:
+    def __init__(self, client: CDPSession, ignoreHttpsErrors: bool, frameManager: FrameManager) -> None:
         """Make new NetworkManager."""
         super().__init__()
         self._client = client
@@ -68,30 +60,21 @@ class NetworkManager(EventEmitter):
     async def initialize(self):
         await self._client.send('Network.enable')
         if self._ignoreHTTPSErrors:
-            await self._client.send(
-                'Security.setIgnoreCertificateErrors',
-                {'ignore': True}
-            )
+            await self._client.send('Security.setIgnoreCertificateErrors', {'ignore': True})
 
     async def authenticate(self, credentials: Dict[str, str]) -> None:
         """Provide credentials for http auth."""
         self._credentials = credentials
         await self._updateProtocolRequestInterception()
 
-    async def setExtraHTTPHeaders(
-            self,
-            extraHTTPHeaders: Dict[str, str]
-    ) -> None:
+    async def setExtraHTTPHeaders(self, extraHTTPHeaders: Dict[str, str]) -> None:
         """Set extra http headers."""
         self._extraHTTPHeaders = OrderedDict()
         for k, v in extraHTTPHeaders.items():
             if not isinstance(v, str):
-                raise TypeError(
-                    f'Expected value of header "{k}" to be string, '
-                    f'but {type(v)} is found.')
+                raise TypeError(f'Expected value of header "{k}" to be string, ' f'but {type(v)} is found.')
             self._extraHTTPHeaders[k.lower()] = v
-        await self._client.send('Network.setExtraHTTPHeaders',
-                                {'headers': self._extraHTTPHeaders})
+        await self._client.send('Network.setExtraHTTPHeaders', {'headers': self._extraHTTPHeaders})
 
     def extraHTTPHeaders(self) -> Dict[str, str]:
         """Get extra http headers."""
@@ -102,19 +85,14 @@ class NetworkManager(EventEmitter):
         if self._offline == value:
             return
         self._offline = value
-        await self._client.send('Network.emulateNetworkConditions', {
-            'offline': self._offline,
-            'latency': 0,
-            'downloadThroughput': -1,
-            'uploadThroughput': -1,
-        })
+        await self._client.send(
+            'Network.emulateNetworkConditions',
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
+        )
 
     async def setUserAgent(self, userAgent: str) -> None:
         """Set user agent."""
-        await self._client.send(
-            'Network.setUserAgentOverride',
-            {'userAgent': userAgent}
-        )
+        await self._client.send('Network.setUserAgentOverride', {'userAgent': userAgent})
 
     async def setCacheEnabled(self, enabled: bool) -> None:
         self._userCacheDisabled = not enabled
@@ -126,33 +104,22 @@ class NetworkManager(EventEmitter):
         await self._updateProtocolRequestInterception()
 
     async def _updateProtocolRequestInterception(self) -> None:
-        enabled = (self._userRequestInterceptionEnabled or bool(self._credentials))
+        enabled = self._userRequestInterceptionEnabled or bool(self._credentials)
         if enabled == self._protocolRequestInterceptionEnabled:
             return
         self._protocolRequestInterceptionEnabled = enabled
         if enabled:
             await asyncio.gather(
                 self._updateProtocolCacheDisabled(),
-                self._client.send(
-                    'Fetch.enable',
-                    {
-                        'handleAuthRequests': True,
-                        'patterns': {'urlPattern': '*'}
-                    }
-                )
+                self._client.send('Fetch.enable', {'handleAuthRequests': True, 'patterns': {'urlPattern': '*'}}),
             )
         else:
-            await asyncio.gather(
-                self._updateProtocolCacheDisabled(),
-                self._client.send('Fetch.disable')
-            )
+            await asyncio.gather(self._updateProtocolCacheDisabled(), self._client.send('Fetch.disable'))
 
     async def _updateProtocolCacheDisabled(self):
         await self._client.send(
             'Network.setCacheDisabled',
-            {'cacheDisabled':
-                 self._userCacheDisabled or self._protocolRequestInterceptionEnabled
-             }
+            {'cacheDisabled': self._userCacheDisabled or self._protocolRequestInterceptionEnabled},
         )
 
     async def _onRequestWillBeSent(self, event: Dict) -> None:
@@ -182,20 +149,13 @@ class NetworkManager(EventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {
-                    "response": response,
-                    "username": username,
-                    "password": password,
-                },
-            }
+                'authChallengeResponse': {"response": response, "username": username, "password": password,},
+            },
         )
 
     async def _onRequestPaused(self, event: Dict):
         if self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
-            await self._client.send(
-                'Fetch.continueRequest',
-                {'requestId': event.get('requestId')}
-            )
+            await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
         requestId = event.get('networkId')
         interceptionId = event.get('requestId')
         if requestId in self._requestIdToRequestWillBeSent:
@@ -220,7 +180,7 @@ class NetworkManager(EventEmitter):
             interceptionId=interceptionId,
             allowInterception=self._userRequestInterceptionEnabled,
             event=event,
-            redirectChain=redirectChain
+            redirectChain=redirectChain,
         )
         self._requestIdToRequest[event['requestId']] = request
         self.emit(NetworkManager.Events.Request, request)
@@ -231,13 +191,13 @@ class NetworkManager(EventEmitter):
             request._fromMemoryCache = True
 
     def _handleRequestRedirect(
-            self,
-            request: 'Request',
-            status: int,
-            headers: Dict,
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None
+        self,
+        request: 'Request',
+        status: int,
+        headers: Dict,
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
     ) -> None:
         response = Response(
             client=self._client,
@@ -250,9 +210,7 @@ class NetworkManager(EventEmitter):
         )
         request._response = response
         request._redirectChain.append(request)
-        response._bodyLoadedPromiseFulfill(
-            NetworkError('Response body is unavailable for redirect response')
-        )
+        response._bodyLoadedPromiseFulfill(NetworkError('Response body is unavailable for redirect response'))
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.Response, response)
@@ -319,18 +277,17 @@ class Request(object):
     """
 
     def __init__(
-            self,
-            client: CDPSession,
-            frame: Frame,
-            interceptionId: Optional[str],
-            allowInterception: bool,
-            event: dict,
-            redirectChain: List['Request']
+        self,
+        client: CDPSession,
+        frame: Frame,
+        interceptionId: Optional[str],
+        allowInterception: bool,
+        event: dict,
+        redirectChain: List['Request'],
     ) -> None:
         self._client = client
         self._requestId = event['requestId']
-        self._isNavigationRequest = self._requestId == event.get('loaderId') \
-                                    and event['type'] == 'Document'
+        self._isNavigationRequest = self._requestId == event.get('loaderId') and event['type'] == 'Document'
         self._interceptionId = interceptionId
         self._allowInterception = allowInterception
         self._interceptionHandled = False
@@ -456,10 +413,7 @@ class Request(object):
         options = {'interceptionId': self._interceptionId}
         options.update(overrides)
         try:
-            await self._client.send(
-                'Network.continueRequest',
-                options
-            )
+            await self._client.send('Network.continueRequest', options)
         except Exception as e:
             debugError(logger, e)
 
@@ -511,7 +465,8 @@ class Request(object):
                     'responsePhrase': status_phrase,
                     'responseHeaders': responseHeaders,
                     'body': base64.b64encode(responseBody).decode('ascii'),
-                })
+                },
+            )
         except Exception as e:
             debugError(logger, e)
 
@@ -560,11 +515,7 @@ class Request(object):
         self._interceptionHandled = True
         try:
             await self._client.send(
-                'Fetch.failRequest',
-                {
-                    'requestId': self._interceptionId,
-                    'errorReason': errorReason
-                }
+                'Fetch.failRequest', {'requestId': self._interceptionId, 'errorReason': errorReason}
             )
         except Exception as e:
             debugError(logger, e)
@@ -592,17 +543,17 @@ class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
     def __init__(
-            self,
-            client: CDPSession,
-            request: Request,
-            status: int,
-            headers: Dict[str, str],
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None,
-            remoteIpAdress: str = '',
-            remotePort: str = '',
-            statusText: str = '',
+        self,
+        client: CDPSession,
+        request: Request,
+        status: int,
+        headers: Dict[str, str],
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
+        remoteIpAdress: str = '',
+        remotePort: str = '',
+        statusText: str = '',
     ) -> None:
         self._client = client
         self._request = request
@@ -672,9 +623,7 @@ class Response(object):
         result = await self._bodyLoadedPromise
         if isinstance(result, Exception):
             raise result
-        response = await self._client.send('Network.getResponseBody', {
-            'requestId': self._request._requestId
-        })
+        response = await self._client.send('Network.getResponseBody', {'requestId': self._request._requestId})
         body = response.get('body', b'')
         if response.get('base64Encoded'):
             return base64.b64decode(body)
@@ -728,14 +677,7 @@ class Response(object):
 class SecurityDetails(object):
     """Class represents responses which are received by page."""
 
-    def __init__(
-            self,
-            subjectName: str,
-            issuer: str,
-            validFrom: int,
-            validTo: int,
-            protocol: str
-    ) -> None:
+    def __init__(self, subjectName: str, issuer: str, validFrom: int, validTo: int, protocol: str) -> None:
         self._subjectName = subjectName
         self._issuer = issuer
         self._validFrom = validFrom

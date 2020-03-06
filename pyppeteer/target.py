@@ -19,14 +19,14 @@ class Target:
     """Browser's target class."""
 
     def __init__(
-            self,
-            targetInfo: Dict,
-            browserContext: BrowserContext,
-            sessionFactory: Callable[[], Awaitable[CDPSession]],
-            ignoreHTTPSErrors: bool,
-            defaultViewport: Optional[Dict],
-            screenshotTaskQueue: List,
-            loop: asyncio.AbstractEventLoop
+        self,
+        targetInfo: Dict,
+        browserContext: BrowserContext,
+        sessionFactory: Callable[[], Awaitable[CDPSession]],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        screenshotTaskQueue: List,
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         self._targetInfo = targetInfo
         self._browserContext = browserContext
@@ -41,8 +41,7 @@ class Target:
 
         self._initializedPromise = self._loop.create_future()
         self._isClosedPromise = self._loop.create_future()
-        self._isInitialized = self._targetInfo['type'] != 'page' \
-                              or self._targetInfo['url'] != ''
+        self._isInitialized = self._targetInfo['type'] != 'page' or self._targetInfo['url'] != ''
         if self._isInitialized:
             self._initializedCallback(True)
 
@@ -77,11 +76,7 @@ class Target:
         if self._targetInfo['type'] in ['page', 'background_page']:
             session = await self._sessionFactory()
             self._page = await Page.create(
-                session,
-                self,
-                self._ignoreHTTPSErrors,
-                self._defaultViewport,
-                self._screenshotTaskQueue,
+                session, self, self._ignoreHTTPSErrors, self._defaultViewport, self._screenshotTaskQueue,
             )
         return self._page
 
@@ -107,8 +102,7 @@ class Target:
         ``'browser'``, or ``'other'``.
         """
         _type = self._targetInfo['type']
-        if _type in ['page', 'background_page', 'service_worker',
-                     'shared_worker', 'browser']:
+        if _type in ['page', 'background_page', 'service_worker', 'shared_worker', 'browser']:
             return _type
         return 'other'
 
@@ -136,8 +130,7 @@ class Target:
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo
 
-        if not self._isInitialized and (self._targetInfo['type'] != 'page' or
-                                        self._targetInfo['url'] != ''):
+        if not self._isInitialized and (self._targetInfo['type'] != 'page' or self._targetInfo['url'] != ''):
             self._isInitialized = True
             self._initializedCallback(True)
             return

@@ -69,9 +69,7 @@ class Pyppeteer:
     def _launcher(self):
         if not self._lazyLauncher:
             self._lazyLauncher = Launcher(
-                projectRoot=self._projectRoot,
-                preferredRevision=self._preferredRevision,
-                product=self.productName
+                projectRoot=self._projectRoot, preferredRevision=self._preferredRevision, product=self.productName
             )
         return self._lazyLauncher
 

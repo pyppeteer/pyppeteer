@@ -19,21 +19,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(
-    r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$',
-    re.MULTILINE,
-)
+SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(
-            self,
-            client: CDPSession,
-            contextPayload: Dict,
-            world: 'DOMWorld',
-    ) -> None:
+    def __init__(self, client: CDPSession, contextPayload: Dict, world: 'DOMWorld',) -> None:
         self._client = client
         self._world = world
         self._contextId = contextPayload.get('id')
@@ -57,12 +49,7 @@ class ExecutionContext(object):
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def _evaluateInternal(
-            self,
-            returnByValue: bool,
-            pageFunction: str,
-            *args
-    ):
+    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args):
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
         try:
@@ -70,17 +57,19 @@ class ExecutionContext(object):
                 expressionWithSourceUrl = pageFunction
             else:
                 expressionWithSourceUrl = f'{pageFunction}\n{suffix}'
-            remoteObject = await self._client.send('Runtime.evaluate', {
-                'expression': expressionWithSourceUrl,
-                'contextId': self._contextId,
-                'returnByValue': returnByValue,
-                'awaitPromise': True,
-                'userGesture': True,
-            })
+            remoteObject = await self._client.send(
+                'Runtime.evaluate',
+                {
+                    'expression': expressionWithSourceUrl,
+                    'contextId': self._contextId,
+                    'returnByValue': returnByValue,
+                    'awaitPromise': True,
+                    'userGesture': True,
+                },
+            )
         except Exception as e:
             exceptionDetails = rewriteError(e)
-            raise type(e)(f'Evaluation failed:'
-                          f' {helper.getExceptionMessage(exceptionDetails)}')
+            raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
         if returnByValue:
             return helper.valueFromRemoteObject(remoteObject)
         else:
@@ -90,36 +79,24 @@ class ExecutionContext(object):
         if prototypeHandle._disposed:
             raise ElementHandleError('Prototype JSHandle is disposed')
         if not prototypeHandle._remoteObject.get('objectId'):
-            raise ElementHandleError('Prototype JSHandle must not be referencing '
-                                     'primitive value')
+            raise ElementHandleError('Prototype JSHandle must not be referencing ' 'primitive value')
         response = await self._client.send(
-            'Runtime.queryObjects',
-            {
-                'prototypeObjectId': prototypeHandle._remoteObject['objectId']
-            }
+            'Runtime.queryObjects', {'prototypeObjectId': prototypeHandle._remoteObject['objectId']}
         )
         return createJSHandle(context=self, remoteObject=response.get('objects'))
 
     async def _adoptBackednNodeId(self, backendNodeId: 'BackendNodeId'):
         obj = await self._client.send(
-            'DOM.resolveNode',
-            {
-                'backednNodeId': backendNodeId,
-                'executionContextId': self._contextId,
-            }
+            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId,}
         )
         return createJSHandle(context=self, remoteObject=obj)
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
         if elementHandle.executionContext() == self:
-            raise ElementHandleError('Cannot adopt handle that already '
-                                     'belongs to this execution context')
+            raise ElementHandleError('Cannot adopt handle that already ' 'belongs to this execution context')
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
-        nodeInfo = await self._client.send(
-            'DOM.describeNode',
-            {'objectId': elementHandle._remoteObject['objectId']}
-        )
+        nodeInfo = await self._client.send('DOM.describeNode', {'objectId': elementHandle._remoteObject['objectId']})
         return self._adoptBackednNodeId(nodeInfo['node']['backendNodeId'])
 
 

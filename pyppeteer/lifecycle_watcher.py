@@ -31,8 +31,14 @@ pyppeteerToProtocolLifecycle = {
 class LifecycleWatcher:
     """LifecycleWatcher class."""
 
-    def __init__(self, frameManager: FrameManager, frame: Frame, timeout: int,
-                 options: Dict = None, **kwargs: Dict[str, Union[bool, int, float, str]]) -> None:
+    def __init__(
+        self,
+        frameManager: FrameManager,
+        frame: Frame,
+        timeout: int,
+        options: Dict = None,
+        **kwargs: Dict[str, Union[bool, int, float, str]],
+    ) -> None:
         """Make new LifecycleWatcher"""
         options = merge_dict(options, kwargs)
         self._futures = []
@@ -47,29 +53,18 @@ class LifecycleWatcher:
             helper.addEventListener(
                 self._frameManager._client,
                 Events.CDPSession.Disconnected,
-                partial(self._terminate,
-                        BrowserError('Navigation failed because browser has disconnected'))
+                partial(self._terminate, BrowserError('Navigation failed because browser has disconnected')),
             ),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.LifecycleEvent,
-                self._checkLifecycleComplete,
+                self._frameManager, FrameManager.Events.LifecycleEvent, self._checkLifecycleComplete,
             ),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.FrameNavigatedWithinDocument,
-                self._navigatedWithinDocument,
+                self._frameManager, FrameManager.Events.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
+            helper.addEventListener(self._frameManager, FrameManager.Events.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.FrameDetached,
-                self._onFrameDetached,
+                self._frameManager.networkManager(), Events.NetworkManager.Request, self._onRequest,
             ),
-            helper.addEventListener(
-                self._frameManager.networkManager(),
-                Events.NetworkManager.Request,
-                self._onRequest,
-            )
         ]
         self._loop = self._frameManager._client._loop
 
@@ -93,24 +88,20 @@ class LifecycleWatcher:
                 raise DeprecationError(f'`{deprecated_opt}` option is no longer supported.')
 
         if options.get('waitUntil') == 'networkidle':
-            raise DeprecationError(
-                '`networkidle` option is no longer supported. '
-                'Use `networkidle2` instead.')
+            raise DeprecationError('`networkidle` option is no longer supported. ' 'Use `networkidle2` instead.')
         if options.get('waitUntil') == 'documentloaded':
             import logging
+
             logging.getLogger(__name__).warning(
-                '`documentloaded` option is no longer supported. '
-                'Use `domcontentloaded` instead.')
+                '`documentloaded` option is no longer supported. ' 'Use `domcontentloaded` instead.'
+            )
         _waitUntil = options.get('waitUntil', 'load')
         if isinstance(_waitUntil, list):
             waitUntil = _waitUntil
         elif isinstance(_waitUntil, str):
             waitUntil = [_waitUntil]
         else:
-            raise TypeError(
-                '`waitUntil` option should be str or List of str, '
-                f'but got type {type(_waitUntil)}'
-            )
+            raise TypeError('`waitUntil` option should be str or List of str, ' f'but got type {type(_waitUntil)}')
         self._expectedLifecycle: List[str] = []
         for value in waitUntil:
             try:
@@ -162,7 +153,8 @@ class LifecycleWatcher:
                 self._maximumTimerFuture.set_exception(TimeoutError(errorMessage))
 
             self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(
-                _timeout_func())  # noqa: E501
+                _timeout_func()
+            )  # noqa: E501
         else:
             self._timeoutTimerFuture = self._loop.create_future()
         return self._maximumTimerFuture

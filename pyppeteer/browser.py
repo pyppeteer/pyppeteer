@@ -33,11 +33,16 @@ class Browser(EventEmitter):
         Disconnected='disconnected',
     )
 
-    def __init__(self, connection: Connection, contextIds: List[str],
-                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                 process: Optional[Popen] = None,
-                 closeCallback: Callable[[], Awaitable[None]] = None,
-                 **kwargs: Any) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultViewport = defaultViewport
@@ -62,20 +67,15 @@ class Browser(EventEmitter):
             self._contexts[contextId] = BrowserContext(self, contextId)
 
         self._targets: Dict[str, Target] = dict()
-        self._connection.setClosedCallback(
-            lambda: self.emit(Browser.Events.Disconnected)
+        self._connection.setClosedCallback(lambda: self.emit(Browser.Events.Disconnected))
+        self._connection.on(
+            'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
         )
         self._connection.on(
-            'Target.targetCreated',
-            lambda event: loop.create_task(self._targetCreated(event)),
+            'Target.targetDestroyed', lambda event: loop.create_task(self._targetDestroyed(event)),
         )
         self._connection.on(
-            'Target.targetDestroyed',
-            lambda event: loop.create_task(self._targetDestroyed(event)),
-        )
-        self._connection.on(
-            'Target.targetInfoChanged',
-            lambda event: loop.create_task(self._targetInfoChanged(event)),
+            'Target.targetInfoChanged', lambda event: loop.create_task(self._targetInfoChanged(event)),
         )
 
     @property
@@ -123,20 +123,21 @@ class Browser(EventEmitter):
         return self._defaultContext
 
     async def _disposeContext(self, contextId: str) -> None:
-        await self._connection.send('Target.disposeBrowserContext', {
-            'browserContextId': contextId,
-        })
+        await self._connection.send('Target.disposeBrowserContext', {'browserContextId': contextId,})
         self._contexts.pop(contextId, None)
 
     @staticmethod
-    async def create(connection: Connection, contextIds: List[str],
-                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                     process: Optional[Popen] = None,
-                     closeCallback: Callable[[], Awaitable[None]] = None,
-                     **kwargs: Any) -> 'Browser':
+    async def create(
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> 'Browser':
         """Create browser object."""
-        browser = Browser(connection, contextIds, ignoreHTTPSErrors,
-                          defaultViewport, process, closeCallback)
+        browser = Browser(connection, contextIds, ignoreHTTPSErrors, defaultViewport, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -199,8 +200,7 @@ class Browser(EventEmitter):
         if contextId:
             options['browserContextId'] = contextId
 
-        targetId = (await self._connection.send(
-            'Target.createTarget', options)).get('targetId')
+        targetId = (await self._connection.send('Target.createTarget', options)).get('targetId')
         target = self._targets.get(targetId)
         if target is None or not await target._initializedPromise:
             raise BrowserError('Failed to create target for page.')
@@ -315,9 +315,7 @@ class BrowserContext(EventEmitter):
     """
 
     Events = SimpleNamespace(
-        TargetCreated='targetcreated',
-        TargetDestroyed='targetdestroyed',
-        TargetChanged='targetchanged',
+        TargetCreated='targetcreated', TargetDestroyed='targetdestroyed', TargetChanged='targetchanged',
     )
 
     def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
@@ -339,10 +337,7 @@ class BrowserContext(EventEmitter):
         Non-visible pages, such as ``"background_page"``, will not be listed
         here. You can find them using :meth:`pyppeteer.target.Target.page`.
         """
-        pages = [
-            target.page() for target in self.targets()
-            if target.type == 'page'
-        ]
+        pages = [target.page() for target in self.targets() if target.type == 'page']
         return [page for page in await asyncio.gather(*pages) if page]
 
     def isIncognite(self) -> bool:
@@ -350,10 +345,7 @@ class BrowserContext(EventEmitter):
 
         Use :meth:`isIncognito` method instead.
         """
-        logger.warning(
-            'isIncognite is deprecated. '
-            'Use isIncognito instead.'
-        )
+        logger.warning('isIncognite is deprecated. ' 'Use isIncognito instead.')
         return self.isIncognito()
 
     def isIncognito(self) -> bool:

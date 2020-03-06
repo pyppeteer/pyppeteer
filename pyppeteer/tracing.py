@@ -43,10 +43,15 @@ class Tracing(object):
         """
         options = merge_dict(options, kwargs)
         defaultCategories = [
-            '-*', 'devtools.timeline', 'v8.execute',
+            '-*',
+            'devtools.timeline',
+            'v8.execute',
             'disabled-by-default-devtools.timeline',
-            'disabled-by-default-devtools.timeline.frame', 'toplevel',
-            'blink.console', 'blink.user_timing', 'latencyInfo',
+            'disabled-by-default-devtools.timeline.frame',
+            'toplevel',
+            'blink.console',
+            'blink.user_timing',
+            'latencyInfo',
             'disabled-by-default-devtools.timeline.stack',
             'disabled-by-default-v8.cpu_profiler',
             'disabled-by-default-v8.cpu_profiler.hires',
@@ -59,10 +64,9 @@ class Tracing(object):
 
         self._path = options.get('path', '')
         self._recording = True
-        await self._client.send('Tracing.start', {
-            'transferMode': 'ReturnAsStream',
-            'categories': ','.join(categoriesArray),
-        })
+        await self._client.send(
+            'Tracing.start', {'transferMode': 'ReturnAsStream', 'categories': ','.join(categoriesArray),}
+        )
 
     async def stop(self) -> str:
         """Stop tracing.
@@ -74,9 +78,7 @@ class Tracing(object):
             'Tracing.tracingComplete',
             lambda event: self._client._loop.create_task(
                 self._readStream(event.get('stream'), self._path)
-            ).add_done_callback(
-                lambda fut: contentFuture.set_result(fut.result())
-            )
+            ).add_done_callback(lambda fut: contentFuture.set_result(fut.result())),
         )
         await self._client.send('Tracing.end')
         self._recording = False
