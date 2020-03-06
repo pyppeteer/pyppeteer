@@ -11,8 +11,7 @@ class TestJSCoverage(BaseTestCase):
     async def test_js_coverage(self):
         await self.page.coverage.startJSCoverage()
         await self.page.goto(
-            self.url + 'static/jscoverage/simple.html',
-            waitUntil='networkidle0',
+            self.url + 'static/jscoverage/simple.html', waitUntil='networkidle0',
         )
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
@@ -49,8 +48,7 @@ class TestJSCoverage(BaseTestCase):
         await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
         await self.page.goto(self.url + 'static/jscoverage/eval.html')
         coverage = await self.page.coverage.stopJSCoverage()
-        assert any(entry for entry in coverage
-                            if entry['url'].startswith('debugger://'))
+        assert any(entry for entry in coverage if entry['url'].startswith('debugger://'))
         assert len(coverage) == 2
 
     @sync
@@ -90,8 +88,7 @@ class TestJSCoverage(BaseTestCase):
         entry = coverage[0]
         assert len(entry['ranges']) == 1
         range = entry['ranges'][0]
-        assert entry['text'][range['start']:range['end']] ==
-            'console.log(\'used!\');'
+        assert entry['text'][range['start'] : range['end']] == 'console.log(\'used!\');'
 
     @sync
     async def test_no_coverage(self):
@@ -144,8 +141,7 @@ class TestCSSCoverage(BaseTestCase):
         assert '/csscoverage/simple.html' in coverage[0]['url']
         assert coverage[0]['ranges'] == [{'start': 1, 'end': 22}]
         range = coverage[0]['ranges'][0]
-        assert coverage[0]['text'][range['start']:range['end']] ==
-            'div { color: green; }'
+        assert coverage[0]['text'][range['start'] : range['end']] == 'div { color: green; }'
 
     @sync
     async def test_css_coverage_url(self):
@@ -201,8 +197,7 @@ class TestCSSCoverage(BaseTestCase):
         await self.page.coverage.startCSSCoverage()
         await self.page.addStyleTag(content='body { margin: 10px; }')
         # trigger style recalc
-        margin = await self.page.evaluate(
-            '() => window.getComputedStyle(document.body).margin')
+        margin = await self.page.evaluate('() => window.getComputedStyle(document.body).margin')
         assert margin == '10px'
         coverage = await self.page.coverage.stopCSSCoverage()
         assert coverage == []

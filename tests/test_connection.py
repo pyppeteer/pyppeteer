@@ -22,8 +22,7 @@ class TestCDPSession(BaseTestCase):
     async def test_create_session(self):
         client = await self.page.target.createCDPSession()
         await client.send('Runtime.enable')
-        await client.send('Runtime.evaluate',
-                          {'expression': 'window.foo = "bar"'})
+        await client.send('Runtime.evaluate', {'expression': 'window.foo = "bar"'})
         foo = await self.page.evaluate('window.foo')
         assert foo == 'bar'
 
@@ -48,13 +47,9 @@ class TestCDPSession(BaseTestCase):
     async def test_detach(self):
         client = await self.page.target.createCDPSession()
         await client.send('Runtime.enable')
-        evalResponse = await client.send(
-            'Runtime.evaluate', {'expression': '1 + 2', 'returnByValue': True})
+        evalResponse = await client.send('Runtime.evaluate', {'expression': '1 + 2', 'returnByValue': True})
         assert evalResponse['result']['value'] == 3
 
         await client.detach()
         with pytest.raises(NetworkError):
-            await client.send(
-                'Runtime.evaluate',
-                {'expression': '1 + 3', 'returnByValue': True}
-            )
+            await client.send('Runtime.evaluate', {'expression': '1 + 3', 'returnByValue': True})

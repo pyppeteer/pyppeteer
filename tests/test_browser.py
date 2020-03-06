@@ -24,7 +24,7 @@ class TestBrowser(unittest.TestCase):
             '--no-sandbox',
             '--disable-extensions-except={}'.format(extensionPath),
             '--load-extensions={}'.format(extensionPath),
-        ]
+        ],
     }
 
     def waitForBackgroundPageTarget(self, browser):
@@ -82,19 +82,16 @@ class TestBrowser(unittest.TestCase):
         browser1.on('disconnected', lambda: discon1.append(1))
         browser2.on('disconnected', lambda: discon2.append(1))
 
-        await asyncio.wait([
-            browser2.disconnect(),
-            waitEvent(browser2, 'disconnected'),
-        ])
+        await asyncio.wait(
+            [browser2.disconnect(), waitEvent(browser2, 'disconnected'),]
+        )
         assert len(discon) == 0
         assert len(discon1) == 0
         assert len(discon2) == 1
 
-        await asyncio.wait([
-            waitEvent(browser1, 'disconnected'),
-            waitEvent(browser, 'disconnected'),
-            browser.close(),
-        ])
+        await asyncio.wait(
+            [waitEvent(browser1, 'disconnected'), waitEvent(browser, 'disconnected'), browser.close(),]
+        )
         assert len(discon) == 1
         assert len(discon1) == 1
         assert len(discon2) == 1
@@ -138,12 +135,14 @@ class TestBrowser(unittest.TestCase):
             await req.respond({'body': 'YO, GOOGLE.COM'})
 
         page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
-        await page.evaluate('''() => {
+        await page.evaluate(
+            '''() => {
             const frame = document.createElement('iframe');
             frame.setAttribute('src', 'https://google.com/');
             document.body.appendChild(frame);
             return new Promise(x => frame.onload = x);
-        }''')
+        }'''
+        )
         await page.waitForSelector('iframe[src="https://google.com/"]')
         urls = []
         for frame in page.frames:

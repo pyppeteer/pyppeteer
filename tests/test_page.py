@@ -4,24 +4,24 @@
 import asyncio
 import math
 import os
-from pathlib import Path
 import sys
 import time
 import unittest
+from pathlib import Path
 
+import pytest
 from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, NetworkError, PageError
 from pyppeteer.errors import TimeoutError
-
 from .base import BaseTestCase
 from .frame_utils import attachFrame
 from .utils import waitEvent
-import pytest
 
 iPhone = {
     'name': 'iPhone 6',
-    'userAgent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',  # noqa: E501
+    'userAgent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+    # noqa: E501
     'viewport': {
         'width': 375,
         'height': 667,
@@ -29,7 +29,7 @@ iPhone = {
         'isMobile': True,
         'hasTouch': True,
         'isLandscape': False,
-    }
+    },
 }
 
 
@@ -47,12 +47,14 @@ class TestEvaluate(BaseTestCase):
     @sync
     async def test_error_on_reload(self):
         with pytest.raises(Exception) as cm:
-            await self.page.evaluate('''() => {
+            await self.page.evaluate(
+                '''() => {
                 location.reload();
                 return new Promise(resolve => {
                     setTimeout(() => resolve(1), 0);
                 }
-        )}''')
+        )}'''
+            )
         assert 'Protocol error' in cm.exception.args[0]
 
     @sync
@@ -63,8 +65,7 @@ class TestEvaluate(BaseTestCase):
             frameEvaluation.set_result(await frame.evaluate('() => 6 * 7'))
 
         self.page.on(
-            'framenavigated',
-            lambda frame: asyncio.ensure_future(evaluate_frame(frame)),
+            'framenavigated', lambda frame: asyncio.ensure_future(evaluate_frame(frame)),
         )
         await self.page.goto(self.url + 'empty')
         await frameEvaluation
@@ -77,13 +78,8 @@ class TestEvaluate(BaseTestCase):
             result = await self.page.evaluate('(a, b) => a + b', a, b)
             return result
 
-        await self.page.exposeFunction(
-            'callController',
-            lambda *args: asyncio.ensure_future(callController(*args))
-        )
-        result = await self.page.evaluate(
-            'async function() { return await callController(9, 3); }'
-        )
+        await self.page.exposeFunction('callController', lambda *args: asyncio.ensure_future(callController(*args)))
+        result = await self.page.evaluate('async function() { return await callController(9, 3); }')
         assert result == 27
 
     @sync
@@ -133,10 +129,7 @@ class TestEvaluate(BaseTestCase):
 
     @sync
     async def test_accept_none(self):
-        result = await self.page.evaluate(
-            '(a, b) => Object.is(a, null) && Object.is(b, "foo")',
-            None, 'foo',
-        )
+        result = await self.page.evaluate('(a, b) => Object.is(a, null) && Object.is(b, "foo")', None, 'foo',)
         assert result
 
     @sync
@@ -151,12 +144,14 @@ class TestEvaluate(BaseTestCase):
 
     @sync
     async def test_fail_for_circular_object(self):
-        result = await self.page.evaluate('''() => {
+        result = await self.page.evaluate(
+            '''() => {
             const a = {};
             const b = {a};
             a.b = b;
             return a;
-        }''')
+        }'''
+        )
         assert result is None
 
     @sync
@@ -166,8 +161,7 @@ class TestEvaluate(BaseTestCase):
 
     @sync
     async def test_evaluate_force_expression(self):
-        result = await self.page.evaluate(
-            '() => null;\n1 + 2;', force_expr=True)
+        result = await self.page.evaluate('() => null;\n1 + 2;', force_expr=True)
         assert result == 3
 
     @sync
@@ -203,8 +197,7 @@ class TestEvaluate(BaseTestCase):
         body = await self.page.frames[1].J('body')
         with pytest.raises(ElementHandleError) as cm:
             await self.page.evaluate('body => body.innerHTML', body)
-        assert 'JSHandles can be evaluated only in the context they were created' in
-            cm.exception.args[0]
+        assert 'JSHandles can be evaluated only in the context they were created' in cm.exception.args[0]
 
     @sync
     async def test_object_handle_as_argument(self):
@@ -233,10 +226,9 @@ class TestEvaluate(BaseTestCase):
     async def test_nice_error_after_navigation(self):
         executionContext = await self.page.mainFrame.executionContext()
 
-        await asyncio.wait([
-            self.page.waitForNavigation(),
-            executionContext.evaluate('window.location.reload()'),
-        ])
+        await asyncio.wait(
+            [self.page.waitForNavigation(), executionContext.evaluate('window.location.reload()'),]
+        )
 
         with pytest.raises(NetworkError) as cm:
             await executionContext.evaluate('() => null')
@@ -336,7 +328,8 @@ class TestConsole(BaseTestCase):
     async def test_console_event_many(self):
         messages = []
         self.page.on('console', lambda m: messages.append(m))
-        await self.page.evaluate('''
+        await self.page.evaluate(
+            '''
 // A pair of time/timeEnd generates only one Console API call.
 console.time('calling console.time');
 console.timeEnd('calling console.time');
@@ -345,10 +338,10 @@ console.dir('calling console.dir');
 console.warn('calling console.warn');
 console.error('calling console.error');
 console.log(Promise.resolve('should not wait until resolved!'));
-        ''')
+        '''
+        )
         await asyncio.sleep(0.1)
-        assert [msg.type for msg in messages] ==
-            ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
+        assert [msg.type for msg in messages] == ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
         assert 'calling console.time' in messages[0].text
         assert [msg.text for msg in messages[1:]] == [
             'calling console.trace',
@@ -373,8 +366,7 @@ console.log(Promise.resolve('should not wait until resolved!'));
         await self.page.goto('about:blank')
         messages = []
         self.page.on('console', lambda m: messages.append(m))
-        asyncio.ensure_future(self.page.evaluate(
-            'async url => fetch(url).catch(e => {})', self.url + 'empty'))
+        asyncio.ensure_future(self.page.evaluate('async url => fetch(url).catch(e => {})', self.url + 'empty'))
         await waitEvent(self.page, 'console')
         assert len(messages) == 1
         message = messages[0]
@@ -459,28 +451,29 @@ class TestGoto(BaseTestCase):
     @sync
     async def test_goto_documentloaded(self):
         import logging
+
         with self.assertLogs('pyppeteer', logging.WARNING):
-            response = await self.page.goto(
-                self.url + 'empty', waitUntil='documentloaded')
+            response = await self.page.goto(self.url + 'empty', waitUntil='documentloaded')
         assert response.status == 200
 
     @sync
     async def test_goto_domcontentloaded(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='domcontentloaded')
+        response = await self.page.goto(self.url + 'empty', waitUntil='domcontentloaded')
         assert response.status == 200
 
     @unittest.skip('This test should be fixed')
     @sync
     async def test_goto_history_api_beforeunload(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.evaluate('''() => {
+        await self.page.evaluate(
+            '''() => {
             window.addEventListener(
                 'beforeunload',
                 () => history.replaceState(null, 'initial', window.location.href),
                 false,
             );
-        }''')  # noqa: E501
+        }'''
+        )  # noqa: E501
         response = await self.page.goto(self.url + 'static/grid.html')
         assert response
         assert response.status == 200
@@ -492,14 +485,12 @@ class TestGoto(BaseTestCase):
 
     @sync
     async def test_nav_networkidle0(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle0')
+        response = await self.page.goto(self.url + 'empty', waitUntil='networkidle0')
         assert response.status == 200
 
     @sync
     async def test_nav_networkidle2(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle2')
+        response = await self.page.goto(self.url + 'empty', waitUntil='networkidle2')
         assert response.status == 200
 
     @sync
@@ -595,8 +586,7 @@ class TestWaitForNavigation(BaseTestCase):
     async def test_wait_for_navigatoin(self):
         await self.page.goto(self.url + 'empty')
         results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.evaluate('(url) => window.location.href = url', self.url)
+            self.page.waitForNavigation(), self.page.evaluate('(url) => window.location.href = url', self.url)
         )
         response = results[0]
         assert response.status == 200
@@ -611,10 +601,7 @@ class TestWaitForNavigation(BaseTestCase):
     async def test_click_anchor_link(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('<a href="#foobar">foobar</a>')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
-        )
+        results = await asyncio.gather(self.page.waitForNavigation(), self.page.click('a'),)
         assert results[0] is None
         assert self.page.url == self.url + 'empty#foobar'
 
@@ -629,41 +616,40 @@ class TestWaitForNavigation(BaseTestCase):
     @sync
     async def test_history_push_state(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
             <a onclick='javascript:pushState()'>SPA</a>
             <script>
                 function pushState() { history.pushState({}, '', 'wow.html') }
             </script>
-        ''')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
+        '''
         )
+        results = await asyncio.gather(self.page.waitForNavigation(), self.page.click('a'),)
         assert results[0] is None
         assert self.page.url == self.url + 'wow.html'
 
     @sync
     async def test_history_replace_state(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
             <a onclick='javascript:replaceState()'>SPA</a>
             <script>
                 function replaceState() {
                     history.replaceState({}, '', 'replaced.html');
                 }
             </script>
-        ''')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
+        '''
         )
+        results = await asyncio.gather(self.page.waitForNavigation(), self.page.click('a'),)
         assert results[0] is None
         assert self.page.url == self.url + 'replaced.html'
 
     @sync
     async def test_dom_history_back_forward(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
             <a id="back" onclick='javascript:goBack()'>back</a>
             <a id="forward" onclick='javascript:goForward()'>forward</a>
             <script>
@@ -672,26 +658,20 @@ class TestWaitForNavigation(BaseTestCase):
                 history.pushState({}, '', '/first.html');
                 history.pushState({}, '', '/second.html');
             </script>
-        ''')
-        assert self.page.url == self.url + 'second.html'
-        results_back = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a#back'),
+        '''
         )
+        assert self.page.url == self.url + 'second.html'
+        results_back = await asyncio.gather(self.page.waitForNavigation(), self.page.click('a#back'),)
         assert results_back[0] is None
         assert self.page.url == self.url + 'first.html'
 
-        results_forward = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a#forward'),
-        )
+        results_forward = await asyncio.gather(self.page.waitForNavigation(), self.page.click('a#forward'),)
         assert results_forward[0] is None
         assert self.page.url == self.url + 'second.html'
 
     @sync
     async def test_subframe_issues(self):
-        navigationPromise = asyncio.ensure_future(
-            self.page.goto(self.url + 'static/one-frame.html'))
+        navigationPromise = asyncio.ensure_future(self.page.goto(self.url + 'static/one-frame.html'))
         frame = await waitEvent(self.page, 'frameattached')
         fut = asyncio.get_event_loop().create_future()
 
@@ -710,11 +690,13 @@ class TestWaitForRequest(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         results = await asyncio.gather(
             self.page.waitForRequest(self.url + 'static/digits/2.png'),
-            self.page.evaluate('''() => {
+            self.page.evaluate(
+                '''() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }''')
+            }'''
+            ),
         )
         request = results[0]
         assert request.url == self.url + 'static/digits/2.png'
@@ -728,11 +710,13 @@ class TestWaitForRequest(BaseTestCase):
 
         results = await asyncio.gather(
             self.page.waitForRequest(predicate),
-            self.page.evaluate('''() => {
+            self.page.evaluate(
+                '''() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }''')
+            }'''
+            ),
         )
         request = results[0]
         assert request.url == self.url + 'static/digits/2.png'
@@ -741,15 +725,14 @@ class TestWaitForRequest(BaseTestCase):
     async def test_no_timeout(self):
         await self.page.goto(self.url + 'empty')
         results = await asyncio.gather(
-            self.page.waitForRequest(
-                self.url + 'static/digits/2.png',
-                timeout=0,
-            ),
-            self.page.evaluate('''() => setTimeout(() => {
+            self.page.waitForRequest(self.url + 'static/digits/2.png', timeout=0,),
+            self.page.evaluate(
+                '''() => setTimeout(() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }, 50)''')
+            }, 50)'''
+            ),
         )
         request = results[0]
         assert request.url == self.url + 'static/digits/2.png'
@@ -761,11 +744,13 @@ class TestWaitForResponse(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         results = await asyncio.gather(
             self.page.waitForResponse(self.url + 'static/digits/2.png'),
-            self.page.evaluate('''() => {
+            self.page.evaluate(
+                '''() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }''')
+            }'''
+            ),
         )
         response = results[0]
         assert response.url == self.url + 'static/digits/2.png'
@@ -779,11 +764,13 @@ class TestWaitForResponse(BaseTestCase):
 
         results = await asyncio.gather(
             self.page.waitForResponse(predicate),
-            self.page.evaluate('''() => {
+            self.page.evaluate(
+                '''() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }''')
+            }'''
+            ),
         )
         response = results[0]
         assert response.url == self.url + 'static/digits/2.png'
@@ -792,15 +779,14 @@ class TestWaitForResponse(BaseTestCase):
     async def test_no_timeout(self):
         await self.page.goto(self.url + 'empty')
         results = await asyncio.gather(
-            self.page.waitForResponse(
-                self.url + 'static/digits/2.png',
-                timeout=0,
-            ),
-            self.page.evaluate('''() => setTimeout(() => {
+            self.page.waitForResponse(self.url + 'static/digits/2.png', timeout=0,),
+            self.page.evaluate(
+                '''() => setTimeout(() => {
                 fetch('/static/digits/1.png');
                 fetch('/static/digits/2.png');
                 fetch('/static/digits/3.png');
-            }, 50)''')
+            }, 50)'''
+            ),
         )
         response = results[0]
         assert response.url == self.url + 'static/digits/2.png'
@@ -826,10 +812,12 @@ class TestGoBack(BaseTestCase):
     @sync
     async def test_history_api(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.evaluate('''() => {
+        await self.page.evaluate(
+            '''() => {
             history.pushState({}, '', '/first.html');
             history.pushState({}, '', '/second.html');
-        }''')
+        }'''
+        )
         assert self.page.url == self.url + 'second.html'
 
         await self.page.goBack()
@@ -929,27 +917,21 @@ class TestRequest(BaseTestCase):
 class TestQuerySelector(BaseTestCase):
     @sync
     async def test_jeval(self):
-        await self.page.setContent(
-            '<section id="testAttribute">43543</section>')
+        await self.page.setContent('<section id="testAttribute">43543</section>')
         idAttribute = await self.page.Jeval('section', 'e => e.id')
         assert idAttribute == 'testAttribute'
 
     @sync
     async def test_jeval_argument(self):
         await self.page.setContent('<section>hello</section>')
-        text = await self.page.Jeval(
-            'section', '(e, suffix) => e.textContent + suffix', ' world!')
+        text = await self.page.Jeval('section', '(e, suffix) => e.textContent + suffix', ' world!')
         assert text == 'hello world!'
 
     @sync
     async def test_jeval_argument_element(self):
         await self.page.setContent('<section>hello</section><div> world</div>')
         divHandle = await self.page.J('div')
-        text = await self.page.Jeval(
-            'section',
-            '(e, div) => e.textContent + div.textContent',
-            divHandle,
-        )
+        text = await self.page.Jeval('section', '(e, div) => e.textContent + div.textContent', divHandle,)
         assert text == 'hello world'
 
     @sync
@@ -957,13 +939,11 @@ class TestQuerySelector(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         with pytest.raises(ElementHandleError) as cm:
             await self.page.Jeval('section', 'e => e.id')
-        assert 'failed to find element matching selector "section"' in
-            cm.exception.args[0]
+        assert 'failed to find element matching selector "section"' in cm.exception.args[0]
 
     @sync
     async def test_JJeval(self):
-        await self.page.setContent(
-            '<div>hello</div><div>beautiful</div><div>world</div>')
+        await self.page.setContent('<div>hello</div><div>beautiful</div><div>world</div>')
         divsCount = await self.page.JJeval('div', 'divs => divs.length')
         assert divsCount == 3
 
@@ -1017,18 +997,18 @@ class TestQuerySelector(BaseTestCase):
 class TestUserAgent(BaseTestCase):
     @sync
     async def test_user_agent(self):
-        assert 'Mozilla' in await self.page.evaluate(
-            '() => navigator.userAgent')
+        assert 'Mozilla' in await self.page.evaluate('() => navigator.userAgent')
         await self.page.setUserAgent('foobar')
         await self.page.goto(self.url)
-        assert 'foobar' == await self.page.evaluate(
-            '() => navigator.userAgent')
+        assert 'foobar' == await self.page.evaluate('() => navigator.userAgent')
 
     @sync
     async def test_user_agent_mobile_emulate(self):
         await self.page.goto(self.url + 'static/mobile.html')
         assert 'Chrome' in await self.page.evaluate('navigator.userAgent')
-        await self.page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1')  # noqa: E501
+        await self.page.setUserAgent(
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1'
+        )  # noqa: E501
         assert 'Safari' in await self.page.evaluate('navigator.userAgent')
 
 
@@ -1038,6 +1018,7 @@ class TestExtraHTTPHeader(BaseTestCase):
         await self.page.setExtraHTTPHeaders({'foo': 'bar'})
 
         from tornado.web import RequestHandler
+
         requests = []
 
         class HeaderFetcher(RequestHandler):
@@ -1082,8 +1063,7 @@ class TestAuthenticateDisable(BaseTestCase):
         response = await self.page.goto(self.url + 'auth')
         assert response.status == 200
         await self.page.authenticate(None)
-        response = await self.page.goto(
-            'http://127.0.0.1:{}/auth'.format(self.port))
+        response = await self.page.goto('http://127.0.0.1:{}/auth'.format(self.port))
         assert response.status == 401
 
 
@@ -1105,8 +1085,7 @@ class TestSetContent(BaseTestCase):
 
     @sync
     async def test_with_html4_doctype(self):
-        doctype = ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" '
-                   '"http://www.w3.org/TR/html4/strict.dtd">')
+        doctype = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" ' '"http://www.w3.org/TR/html4/strict.dtd">'
         await self.page.setContent(doctype + '<div>hello</div>')
         result = await self.page.content()
         assert result == doctype + self.expectedOutput
@@ -1144,8 +1123,7 @@ class TestSetBypassCSP(BaseTestCase):
         await self.page.addScriptTag(content='window.__injected = 42;')
         assert await self.page.evaluate('window.__injected') == 42
 
-        await self.page.goto(
-            'http://127.0.0.1:{}/static/csp.html'.format(self.port))
+        await self.page.goto('http://127.0.0.1:{}/static/csp.html'.format(self.port))
         await self.page.addScriptTag(content='window.__injected = 42;')
         assert await self.page.evaluate('window.__injected') == 42
 
@@ -1160,8 +1138,7 @@ class TestAddScriptTag(BaseTestCase):
     @sync
     async def test_script_tag_url(self):
         await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(
-            url='/static/injectedfile.js')
+        scriptHandle = await self.page.addScriptTag(url='/static/injectedfile.js')
         assert scriptHandle.asElement() is not None
         assert await self.page.evaluate('__injected') == 42
 
@@ -1170,75 +1147,78 @@ class TestAddScriptTag(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         with pytest.raises(PageError) as cm:
             await self.page.addScriptTag({'url': '/nonexistsfile.js'})
-        assert cm.exception.args[0] ==
-                         'Loading script from /nonexistsfile.js failed'
+        assert cm.exception.args[0] == 'Loading script from /nonexistsfile.js failed'
 
-    @sync
-    async def test_script_tag_path(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedfile.js')
-        await self.page.goto(self.url + 'empty')
-        scriptHanlde = await self.page.addScriptTag(path=path)
-        assert scriptHanlde.asElement() is not None
-        assert await self.page.evaluate('__injected') == 42
 
-    @sync
-    async def test_script_tag_path_source_map(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedfile.js')
-        await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(path=path)
-        result = await self.page.evaluate('__injectedError.stack')
-        assert str(Path('static') / 'injectedfile.js') in result
+@sync
+async def test_script_tag_path(self):
+    curdir = Path(__file__).parent
+    path = str(curdir / 'static' / 'injectedfile.js')
+    await self.page.goto(self.url + 'empty')
+    scriptHanlde = await self.page.addScriptTag(path=path)
+    assert scriptHanlde.asElement() is not None
+    assert await self.page.evaluate('__injected') == 42
 
-    @sync
-    async def test_script_tag_content(self):
-        await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(
-            content='window.__injected = 35;')
-        assert scriptHandle.asElement() is not None
-        assert await self.page.evaluate('__injected') == 35
 
-    @sync
-    async def test_scp_error_content(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with pytest.raises(ElementHandleError):
-            await self.page.addScriptTag(content='window.__injected = 35;')
+@sync
+async def test_script_tag_path_source_map(self):
+    curdir = Path(__file__).parent
+    path = str(curdir / 'static' / 'injectedfile.js')
+    await self.page.goto(self.url + 'empty')
+    await self.page.addScriptTag(path=path)
+    result = await self.page.evaluate('__injectedError.stack')
+    assert str(Path('static') / 'injectedfile.js') in result
 
-    @sync
-    async def test_scp_error_url(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with pytest.raises(PageError):
-            await self.page.addScriptTag(
-                url='http://127.0.0.1:{}/static/injectedfile.js'.format(self.port)  # noqa: E501
-            )
 
-    @sync
-    async def test_module_url(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(
-            url='/static/es6/es6import.js', type='module')
-        assert await self.page.evaluate('__es6injected') == 42
+@sync
+async def test_script_tag_content(self):
+    await self.page.goto(self.url + 'empty')
+    scriptHandle = await self.page.addScriptTag(content='window.__injected = 35;')
+    assert scriptHandle.asElement() is not None
+    assert await self.page.evaluate('__injected') == 35
 
-    @sync
-    async def test_module_path(self):
-        await self.page.goto(self.url + 'empty')
-        curdir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(curdir, 'static', 'es6', 'es6pathimport.js')
-        await self.page.addScriptTag(path=path, type='module')
-        await self.page.waitForFunction('window.__es6injected')
-        assert await self.page.evaluate('__es6injected') == 42
 
-    @sync
-    async def test_module_content(self):
-        await self.page.goto(self.url + 'empty')
-        content = '''
+@sync
+async def test_scp_error_content(self):
+    await self.page.goto(self.url + 'static/csp.html')
+    with pytest.raises(ElementHandleError):
+        await self.page.addScriptTag(content='window.__injected = 35;')
+
+
+@sync
+async def test_scp_error_url(self):
+    await self.page.goto(self.url + 'static/csp.html')
+    with pytest.raises(PageError):
+        await self.page.addScriptTag(url='http://127.0.0.1:{}/static/injectedfile.js'.format(self.port))  # noqa: E501
+
+
+@sync
+async def test_module_url(self):
+    await self.page.goto(self.url + 'empty')
+    await self.page.addScriptTag(url='/static/es6/es6import.js', type='module')
+    assert await self.page.evaluate('__es6injected') == 42
+
+
+@sync
+async def test_module_path(self):
+    await self.page.goto(self.url + 'empty')
+    curdir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(curdir, 'static', 'es6', 'es6pathimport.js')
+    await self.page.addScriptTag(path=path, type='module')
+    await self.page.waitForFunction('window.__es6injected')
+    assert await self.page.evaluate('__es6injected') == 42
+
+
+@sync
+async def test_module_content(self):
+    await self.page.goto(self.url + 'empty')
+    content = '''
             import num from '/static/es6/es6module.js';
             window.__es6injected = num;
         '''
-        await self.page.addScriptTag(content=content, type='module')
-        await self.page.waitForFunction('window.__es6injected')
-        assert await self.page.evaluate('__es6injected') == 42
+    await self.page.addScriptTag(content=content, type='module')
+    await self.page.waitForFunction('window.__es6injected')
+    assert await self.page.evaluate('__es6injected') == 42
 
 
 class TestAddStyleTag(BaseTestCase):
@@ -1249,7 +1229,9 @@ class TestAddStyleTag(BaseTestCase):
             await self.page.addStyleTag('/static/injectedstyle.css')
 
     async def get_bgcolor(self):
-        return await self.page.evaluate('() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")')  # noqa: E501
+        return await self.page.evaluate(
+            '() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")'
+        )  # noqa: E501
 
     @sync
     async def test_style_tag_url(self):
@@ -1264,52 +1246,52 @@ class TestAddStyleTag(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         with pytest.raises(PageError) as cm:
             await self.page.addStyleTag(url='/nonexistfile.css')
-        assert cm.exception.args[0] ==
-                         'Loading style from /nonexistfile.css failed'
+        assert cm.exception.args[0] == 'Loading style from /nonexistfile.css failed'
 
-    @sync
-    async def test_style_tag_path(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedstyle.css')
-        await self.page.goto(self.url + 'empty')
-        assert await self.get_bgcolor() == 'rgba(0, 0, 0, 0)'
-        styleHandle = await self.page.addStyleTag(path=path)
-        assert styleHandle.asElement() is not None
-        assert await self.get_bgcolor() == 'rgb(255, 0, 0)'
 
-    @sync
-    async def test_style_tag_path_source_map(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedstyle.css')
-        await self.page.goto(self.url + 'empty')
-        await self.page.addStyleTag(path=str(path))
-        styleHandle = await self.page.J('style')
-        styleContent = await self.page.evaluate(
-            'style => style.innerHTML', styleHandle)
-        assert str(Path('static') / 'injectedstyle.css') in styleContent
+@sync
+async def test_style_tag_path(self):
+    curdir = Path(__file__).parent
+    path = str(curdir / 'static' / 'injectedstyle.css')
+    await self.page.goto(self.url + 'empty')
+    assert await self.get_bgcolor() == 'rgba(0, 0, 0, 0)'
+    styleHandle = await self.page.addStyleTag(path=path)
+    assert styleHandle.asElement() is not None
+    assert await self.get_bgcolor() == 'rgb(255, 0, 0)'
 
-    @sync
-    async def test_style_tag_content(self):
-        await self.page.goto(self.url + 'empty')
-        assert await self.get_bgcolor() == 'rgba(0, 0, 0, 0)'
-        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
-        assert styleHandle.asElement() is not None
-        assert await self.get_bgcolor() == 'rgb(0, 128, 0)'
 
-    @sync
-    async def test_csp_error_content(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with pytest.raises(ElementHandleError):
-            await self.page.addStyleTag(
-                content='body { background-color: green; }')
+@sync
+async def test_style_tag_path_source_map(self):
+    curdir = Path(__file__).parent
+    path = str(curdir / 'static' / 'injectedstyle.css')
+    await self.page.goto(self.url + 'empty')
+    await self.page.addStyleTag(path=str(path))
+    styleHandle = await self.page.J('style')
+    styleContent = await self.page.evaluate('style => style.innerHTML', styleHandle)
+    assert str(Path('static') / 'injectedstyle.css') in styleContent
 
-    @sync
-    async def test_csp_error_url(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with pytest.raises(PageError):
-            await self.page.addStyleTag(
-                url='http://127.0.0.1:{}/static/injectedstyle.css'.format(self.port)  # noqa: E501
-            )
+
+@sync
+async def test_style_tag_content(self):
+    await self.page.goto(self.url + 'empty')
+    assert await self.get_bgcolor() == 'rgba(0, 0, 0, 0)'
+    styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
+    assert styleHandle.asElement() is not None
+    assert await self.get_bgcolor() == 'rgb(0, 128, 0)'
+
+
+@sync
+async def test_csp_error_content(self):
+    await self.page.goto(self.url + 'static/csp.html')
+    with pytest.raises(ElementHandleError):
+        await self.page.addStyleTag(content='body { background-color: green; }')
+
+
+@sync
+async def test_csp_error_url(self):
+    await self.page.goto(self.url + 'static/csp.html')
+    with pytest.raises(PageError):
+        await self.page.addStyleTag(url='http://127.0.0.1:{}/static/injectedstyle.css'.format(self.port))  # noqa: E501
 
 
 class TestUrl(BaseTestCase):
@@ -1366,11 +1348,9 @@ class TestViewport(BaseTestCase):
     @sync
     async def test_detect_by_modernizr(self):
         await self.page.goto(self.url + 'static/detect-touch.html')
-        assert await self.page.evaluate('document.body.textContent.trim()') ==
-            'NO'
+        assert await self.page.evaluate('document.body.textContent.trim()') == 'NO'
         await self.page.setViewport(self.iPhoneViewport)
-        assert await self.page.evaluate('document.body.textContent.trim()') ==
-            'YES'
+        assert await self.page.evaluate('document.body.textContent.trim()') == 'YES'
 
     @sync
     async def test_detect_touch_viewport_touch(self):
@@ -1381,16 +1361,13 @@ class TestViewport(BaseTestCase):
     @sync
     async def test_landscape_emulation(self):
         await self.page.goto(self.url + 'static/mobile.html')
-        assert await self.page.evaluate('screen.orientation.type') ==
-            'portrait-primary'
+        assert await self.page.evaluate('screen.orientation.type') == 'portrait-primary'
         iPhoneLandscapeViewport = self.iPhoneViewport.copy()
         iPhoneLandscapeViewport['isLandscape'] = True
         await self.page.setViewport(iPhoneLandscapeViewport)
-        assert await self.page.evaluate('screen.orientation.type') ==
-            'landscape-primary'
+        assert await self.page.evaluate('screen.orientation.type') == 'landscape-primary'
         await self.page.setViewport({'width': 100, 'height': 100})
-        assert await self.page.evaluate('screen.orientation.type') ==
-            'portrait-primary'
+        assert await self.page.evaluate('screen.orientation.type') == 'portrait-primary'
 
 
 class TestEmulate(BaseTestCase):
@@ -1406,8 +1383,7 @@ class TestEmulate(BaseTestCase):
         await self.page.emulate(iPhone)
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
-        await self.page.evaluate(
-            'button => button.style.marginTop = "200px"', button)
+        await self.page.evaluate('button => button.style.marginTop = "200px"', button)
         await button.click()
         assert await self.page.evaluate('result') == 'Clicked'
 
@@ -1435,15 +1411,13 @@ class TestJavaScriptEnabled(BaseTestCase):
     @sync
     async def test_set_javascript_enabled(self):
         await self.page.setJavaScriptEnabled(False)
-        await self.page.goto(
-            'data:text/html, <script>var something = "forbidden"</script>')
+        await self.page.goto('data:text/html, <script>var something = "forbidden"</script>')
         with pytest.raises(ElementHandleError) as cm:
             await self.page.evaluate('something')
         assert 'something is not defined' in cm.exception.args[0]
 
         await self.page.setJavaScriptEnabled(True)
-        await self.page.goto(
-            'data:text/html, <script>var something = "forbidden"</script>')
+        await self.page.goto('data:text/html, <script>var something = "forbidden"</script>')
         assert await self.page.evaluate('something') == 'forbidden'
 
 
@@ -1473,8 +1447,7 @@ class TestCacheEnabled(BaseTestCase):
             responses[res.url.split('/').pop()] = res
 
         self.page.on('response', set_response)
-        await self.page.goto(self.url + 'static/cached/one-style.html',
-                             waitUntil='networkidle2')
+        await self.page.goto(self.url + 'static/cached/one-style.html', waitUntil='networkidle2')
         await self.page.reload(waitUntil='networkidle2')
         assert responses.get('one-style.css').fromCache
 
@@ -1568,10 +1541,7 @@ class TestSelect(BaseTestCase):
     async def test_select_deselect(self):
         await self.page.select('select', 'blue', 'green', 'red')
         await self.page.select('select')
-        result = await self.page.Jeval(
-            'select',
-            'elm => Array.from(elm.options).every(option => !option.selected)'
-        )
+        result = await self.page.Jeval('select', 'elm => Array.from(elm.options).every(option => !option.selected)')
         assert result
 
     @sync
@@ -1579,10 +1549,7 @@ class TestSelect(BaseTestCase):
         await self.page.evaluate('makeMultiple();')
         await self.page.select('select', 'blue', 'green', 'red')
         await self.page.select('select')
-        result = await self.page.Jeval(
-            'select',
-            'elm => Array.from(elm.options).every(option => !option.selected)'
-        )
+        result = await self.page.Jeval('select', 'elm => Array.from(elm.options).every(option => !option.selected)')
         assert result
 
     @sync
@@ -1597,25 +1564,23 @@ class TestCookie(BaseTestCase):
         await self.page.goto(self.url)
         cookies = await self.page.cookies()
         assert cookies == []
-        await self.page.evaluate(
-            'document.cookie = "username=John Doe"'
-        )
+        await self.page.evaluate('document.cookie = "username=John Doe"')
         cookies = await self.page.cookies()
-        assert cookies == [{
-            'name': 'username',
-            'value': 'John Doe',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 16,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }]
+        assert cookies == [
+            {
+                'name': 'username',
+                'value': 'John Doe',
+                'domain': 'localhost',
+                'path': '/',
+                'expires': -1,
+                'size': 16,
+                'httpOnly': False,
+                'secure': False,
+                'session': True,
+            }
+        ]
         await self.page.setCookie({'name': 'password', 'value': '123456'})
-        cookies = await self.page.evaluate(
-            '() => document.cookie'
-        )
+        cookies = await self.page.evaluate('() => document.cookie')
         assert cookies == 'username=John Doe; password=123456'
         cookies = await self.page.cookies()
         assert cookies in [
@@ -1630,7 +1595,8 @@ class TestCookie(BaseTestCase):
                     'httpOnly': False,
                     'secure': False,
                     'session': True,
-                }, {
+                },
+                {
                     'name': 'username',
                     'value': 'John Doe',
                     'domain': 'localhost',
@@ -1640,7 +1606,7 @@ class TestCookie(BaseTestCase):
                     'httpOnly': False,
                     'secure': False,
                     'session': True,
-                }
+                },
             ],
             [
                 {
@@ -1653,7 +1619,8 @@ class TestCookie(BaseTestCase):
                     'httpOnly': False,
                     'secure': False,
                     'session': True,
-                }, {
+                },
+                {
                     'name': 'password',
                     'value': '123456',
                     'domain': 'localhost',
@@ -1663,26 +1630,26 @@ class TestCookie(BaseTestCase):
                     'httpOnly': False,
                     'secure': False,
                     'session': True,
-                }
-            ]
+                },
+            ],
         ]
         await self.page.deleteCookie({'name': 'username'})
-        cookies = await self.page.evaluate(
-            '() => document.cookie'
-        )
+        cookies = await self.page.evaluate('() => document.cookie')
         assert cookies == 'password=123456'
         cookies = await self.page.cookies()
-        assert cookies == [{
-            'name': 'password',
-            'value': '123456',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }]
+        assert cookies == [
+            {
+                'name': 'password',
+                'value': '123456',
+                'domain': 'localhost',
+                'path': '/',
+                'expires': -1,
+                'size': 14,
+                'httpOnly': False,
+                'secure': False,
+                'session': True,
+            }
+        ]
 
     @sync
     async def test_cookie_blank_page(self):
@@ -1695,9 +1662,7 @@ class TestCookie(BaseTestCase):
         with pytest.raises(PageError):
             await self.page.setCookie(
                 {'name': 'example-cookie', 'value': 'best'},
-                {'url': 'about:blank',
-                 'name': 'example-cookie-blank',
-                 'value': 'best'}
+                {'url': 'about:blank', 'name': 'example-cookie-blank', 'value': 'best'},
             )
 
     @sync
@@ -1711,9 +1676,7 @@ class TestCookie(BaseTestCase):
         with pytest.raises(PageError):
             await self.page.setCookie(
                 {'name': 'example-cookie', 'value': 'best'},
-                {'url': 'data:,hello',
-                 'name': 'example-cookie-blank',
-                 'value': 'best'}
+                {'url': 'data:,hello', 'name': 'example-cookie-blank', 'value': 'best'},
             )
 
 
@@ -1721,79 +1684,70 @@ class TestCookieWithPath(BaseTestCase):
     @sync
     async def test_set_cookie_with_path(self):
         await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'gridcookie',
-            'value': 'GRID',
-            'path': '/static/grid.html',
-        })
-        assert await self.page.cookies() == [{
-            'name': 'gridcookie',
-            'value': 'GRID',
-            'path': '/static/grid.html',
-            'domain': 'localhost',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }]
+        await self.page.setCookie(
+            {'name': 'gridcookie', 'value': 'GRID', 'path': '/static/grid.html',}
+        )
+        assert await self.page.cookies() == [
+            {
+                'name': 'gridcookie',
+                'value': 'GRID',
+                'path': '/static/grid.html',
+                'domain': 'localhost',
+                'expires': -1,
+                'size': 14,
+                'httpOnly': False,
+                'secure': False,
+                'session': True,
+            }
+        ]
 
 
 class TestCookieDelete(BaseTestCase):
     @sync
     async def test_delete_cookie(self):
         await self.page.goto(self.url)
-        await self.page.setCookie({
-            'name': 'cookie1',
-            'value': '1',
-        }, {
-            'name': 'cookie2',
-            'value': '2',
-        }, {
-            'name': 'cookie3',
-            'value': '3',
-        })
-        assert await self.page.evaluate('document.cookie') ==
-            'cookie1=1; cookie2=2; cookie3=3'
+        await self.page.setCookie(
+            {'name': 'cookie1', 'value': '1',}, {'name': 'cookie2', 'value': '2',}, {'name': 'cookie3', 'value': '3',}
+        )
+        assert await self.page.evaluate('document.cookie') == 'cookie1=1; cookie2=2; cookie3=3'
         await self.page.deleteCookie({'name': 'cookie2'})
-        assert await self.page.evaluate('document.cookie') ==
-            'cookie1=1; cookie3=3'
+        assert await self.page.evaluate('document.cookie') == 'cookie1=1; cookie3=3'
 
 
 class TestCookieDomain(BaseTestCase):
     @sync
     async def test_different_domain(self):
         await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'example-cookie',
-            'value': 'best',
-            'url': 'https://www.example.com',
-        })
+        await self.page.setCookie(
+            {'name': 'example-cookie', 'value': 'best', 'url': 'https://www.example.com',}
+        )
         assert await self.page.evaluate('document.cookie') == ''
         assert await self.page.cookies() == []
-        assert await self.page.cookies('https://www.example.com') == [{
-            'name': 'example-cookie',
-            'value': 'best',
-            'domain': 'www.example.com',
-            'path': '/',
-            'expires': -1,
-            'size': 18,
-            'httpOnly': False,
-            'secure': True,
-            'session': True,
-        }]
+        assert await self.page.cookies('https://www.example.com') == [
+            {
+                'name': 'example-cookie',
+                'value': 'best',
+                'domain': 'www.example.com',
+                'path': '/',
+                'expires': -1,
+                'size': 18,
+                'httpOnly': False,
+                'secure': True,
+                'session': True,
+            }
+        ]
 
 
 class TestCookieFrames(BaseTestCase):
     @sync
     async def test_frame(self):
         await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'localhost-cookie',
-            'value': 'best',
-        })
+        await self.page.setCookie(
+            {'name': 'localhost-cookie', 'value': 'best',}
+        )
         url_127 = 'http://127.0.0.1:{}'.format(self.port)
-        await self.page.evaluate('''src => {
+        await self.page.evaluate(
+            '''src => {
             let fulfill;
             const promise = new Promise(x => fulfill = x);
             const iframe = document.createElement('iframe');
@@ -1801,40 +1755,42 @@ class TestCookieFrames(BaseTestCase):
             iframe.onload = fulfill;
             iframe.src = src;
             return promise;
-        }''', url_127)
-        await self.page.setCookie({
-            'name': '127-cookie',
-            'value': 'worst',
-            'url': url_127,
-        })
+        }''',
+            url_127,
+        )
+        await self.page.setCookie(
+            {'name': '127-cookie', 'value': 'worst', 'url': url_127,}
+        )
 
-        assert await self.page.evaluate('document.cookie') ==
-            'localhost-cookie=best'
-        assert await self.page.frames[1].evaluate('document.cookie') ==
-            '127-cookie=worst'
+        assert await self.page.evaluate('document.cookie') == 'localhost-cookie=best'
+        assert await self.page.frames[1].evaluate('document.cookie') == '127-cookie=worst'
 
-        assert await self.page.cookies() == [{
-            'name': 'localhost-cookie',
-            'value': 'best',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 20,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }]
-        assert await self.page.cookies(url_127) == [{
-            'name': '127-cookie',
-            'value': 'worst',
-            'domain': '127.0.0.1',
-            'path': '/',
-            'expires': -1,
-            'size': 15,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }]
+        assert await self.page.cookies() == [
+            {
+                'name': 'localhost-cookie',
+                'value': 'best',
+                'domain': 'localhost',
+                'path': '/',
+                'expires': -1,
+                'size': 20,
+                'httpOnly': False,
+                'secure': False,
+                'session': True,
+            }
+        ]
+        assert await self.page.cookies(url_127) == [
+            {
+                'name': '127-cookie',
+                'value': 'worst',
+                'domain': '127.0.0.1',
+                'path': '/',
+                'expires': -1,
+                'size': 15,
+                'httpOnly': False,
+                'secure': False,
+                'session': True,
+            }
+        ]
 
 
 class TestEvents(BaseTestCase):
@@ -1848,11 +1804,9 @@ class TestEvents(BaseTestCase):
             newPagePromise.set_result(page)
 
         self.context.once(
-            'targetcreated',
-            lambda target: loop.create_task(page_created(target)),
+            'targetcreated', lambda target: loop.create_task(page_created(target)),
         )
-        await self.page.evaluate(
-            'window["newPage"] = window.open("about:blank")')
+        await self.page.evaluate('window["newPage"] = window.open("about:blank")')
         newPage = await newPagePromise
 
         closedPromise = loop.create_future()

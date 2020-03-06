@@ -13,28 +13,18 @@ class TestQueryObject(BaseTestCase):
     @sync
     async def test_query_objects(self):
         await self.page.goto(self.url + 'empty')
-        await self.page.evaluate(
-            '() => window.set = new Set(["hello", "world"])'
-        )
+        await self.page.evaluate('() => window.set = new Set(["hello", "world"])')
         prototypeHandle = await self.page.evaluateHandle('() => Set.prototype')
         objectsHandle = await self.page.queryObjects(prototypeHandle)
-        count = await self.page.evaluate(
-            'objects => objects.length',
-            objectsHandle,
-        )
+        count = await self.page.evaluate('objects => objects.length', objectsHandle,)
         assert count == 1
-        values = await self.page.evaluate(
-            'objects => Array.from(objects[0].values())',
-            objectsHandle,
-        )
+        values = await self.page.evaluate('objects => Array.from(objects[0].values())', objectsHandle,)
         assert values == ['hello', 'world']
 
     @sync
     async def test_query_objects_disposed(self):
         await self.page.goto(self.url + 'empty')
-        prototypeHandle = await self.page.evaluateHandle(
-            '() => HTMLBodyElement.prototype'
-        )
+        prototypeHandle = await self.page.evaluateHandle('() => HTMLBodyElement.prototype')
         await prototypeHandle.dispose()
         with pytest.raises(ElementHandleError):
             await self.page.queryObjects(prototypeHandle)
@@ -50,9 +40,7 @@ class TestQueryObject(BaseTestCase):
 class TestJSHandle(BaseTestCase):
     @sync
     async def test_get_property(self):
-        handle1 = await self.page.evaluateHandle(
-            '() => ({one: 1, two: 2, three: 3})'
-        )
+        handle1 = await self.page.evaluateHandle('() => ({one: 1, two: 2, three: 3})')
         handle2 = await handle1.getProperty('two')
         assert await handle2.jsonValue() == 2
 
@@ -64,9 +52,7 @@ class TestJSHandle(BaseTestCase):
 
     @sync
     async def test_json_date_fail(self):
-        handle = await self.page.evaluateHandle(
-            '() => new Date("2017-09-26T00:00:00.000Z")'
-        )
+        handle = await self.page.evaluateHandle('() => new Date("2017-09-26T00:00:00.000Z")')
         json = await handle.jsonValue()
         assert json == {}
 
@@ -75,8 +61,7 @@ class TestJSHandle(BaseTestCase):
         windowHandle = await self.page.evaluateHandle('window')
         with pytest.raises(NetworkError) as cm:
             await windowHandle.jsonValue()
-        assert 'Object reference chain is too long' in
-                      cm.exception.args[0]
+        assert 'Object reference chain is too long' in cm.exception.args[0]
 
     @sync
     async def test_get_properties(self):
@@ -88,7 +73,8 @@ class TestJSHandle(BaseTestCase):
 
     @sync
     async def test_return_non_own_properties(self):
-        aHandle = await self.page.evaluateHandle('''() => {
+        aHandle = await self.page.evaluateHandle(
+            '''() => {
             class A {
                 constructor() {
                     this.a = '1';
@@ -101,7 +87,8 @@ class TestJSHandle(BaseTestCase):
                 }
             }
             return new B();
-        }''')
+        }'''
+        )
         properties = await aHandle.getProperties()
         assert await properties.get('a').jsonValue() == '1'
         assert await properties.get('b').jsonValue() == '2'
@@ -121,14 +108,10 @@ class TestJSHandle(BaseTestCase):
     @sync
     async def test_as_element_text_node(self):
         await self.page.setContent('<div>ee!</div>')
-        aHandle = await self.page.evaluateHandle(
-            '() => document.querySelector("div").firstChild')
+        aHandle = await self.page.evaluateHandle('() => document.querySelector("div").firstChild')
         element = aHandle.asElement()
         assert element
-        assert await self.page.evaluate(
-            '(e) => e.nodeType === HTMLElement.TEXT_NODE',
-            element,
-        )
+        assert await self.page.evaluate('(e) => e.nodeType === HTMLElement.TEXT_NODE', element,)
 
     @sync
     async def test_to_string_number(self):

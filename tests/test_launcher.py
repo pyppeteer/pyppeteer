@@ -20,7 +20,7 @@ import websockets
 from pyppeteer import connect, launch, executablePath, defaultArgs
 from pyppeteer.chromium_downloader import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
-from pyppeteer.launcher import Launcher
+from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
 
 from .base import DEFAULT_OPTIONS
@@ -41,8 +41,7 @@ class TestLauncher(unittest.TestCase):
     def check_default_args(self, launcher):
         for opt in self.headless_options:
             assert opt in launcher.chromeArguments
-        assert any(opt for opt in launcher.chromeArguments
-                            if opt.startswith('--user-data-dir'))
+        assert any(opt for opt in launcher.chromeArguments if opt.startswith('--user-data-dir'))
 
     def test_no_option(self):
         launcher = Launcher()
@@ -85,8 +84,7 @@ class TestLauncher(unittest.TestCase):
     def test_user_data_dir(self):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
         self.check_default_args(launcher)
-        assert '--user-data-dir=/path/to/profile' in
-                      launcher.chromeArguments
+        assert '--user-data-dir=/path/to/profile' in launcher.chromeArguments
         assert launcher.temporaryUserDataDir is None
 
     @sync
@@ -147,11 +145,7 @@ class TestLauncher(unittest.TestCase):
     def test_dumpio_default(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
-        proc = subprocess.run(
-            [sys.executable, path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        proc = subprocess.run([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         assert 'DUMPIO_TEST' not in proc.stdout.decode()
         assert 'DUMPIO_TEST' not in proc.stderr.decode()
 
@@ -159,11 +153,7 @@ class TestLauncher(unittest.TestCase):
     def test_dumpio_enable(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
-        proc = subprocess.run(
-            [sys.executable, path, '--dumpio'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        proc = subprocess.run([sys.executable, path, '--dumpio'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         # console.log output is sent to stderr
         assert 'DUMPIO_TEST' not in proc.stdout.decode()
         assert 'DUMPIO_TEST' in proc.stderr.decode()
@@ -298,10 +288,7 @@ class TestLogLevel(unittest.TestCase):
     @sync
     async def test_connect_debug(self):
         browser = await launch(args=['--no-sandbox'])
-        browser2 = await connect(
-            browserWSEndpoint=browser.wsEndpoint,
-            logLevel=logging.DEBUG,
-        )
+        browser2 = await connect(browserWSEndpoint=browser.wsEndpoint, logLevel=logging.DEBUG,)
         page = await browser2.newPage()
         await page.close()
         await browser2.disconnect()
@@ -357,8 +344,7 @@ class TestUserDataDir(unittest.TestCase):
     async def test_user_data_dir_args(self):
         options = {}
         options.update(DEFAULT_OPTIONS)
-        options['args'] = (options['args'] +
-                           ['--user-data-dir={}'.format(self.datadir)])
+        options['args'] = options['args'] + ['--user-data-dir={}'.format(self.datadir)]
         browser = await launch(options)
         assert len(glob.glob(os.path.join(self.datadir, '**'))) > 0
         await browser.close()
@@ -382,8 +368,7 @@ class TestUserDataDir(unittest.TestCase):
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_user_data_dir_restore_cookie_in_browser(self):
-        browser = await launch(
-            DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
@@ -429,11 +414,7 @@ class TestClose(unittest.TestCase):
     async def test_close(self):
         curdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(curdir, 'closeme.py')
-        proc = subprocess.run(
-            [sys.executable, path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
+        proc = subprocess.run([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,)
         assert proc.returncode == 0
         wsEndPoint = proc.stdout.decode()
         # chrome should be already closed, so fail to connect websocket

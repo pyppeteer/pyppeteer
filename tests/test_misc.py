@@ -33,17 +33,16 @@ class TestDefaultArgs(unittest.TestCase):
 
 class TestToInches(unittest.TestCase):
     def test_px(self):
-        assert convertPrintParameterToInches('12px') ==
-            12.0 / 96
+        assert convertPrintParameterToInches('12px') == 12.0 / 96
 
     def test_inch(self):
-        assert round(abs(convertPrintParameterToInches('12in')-12.0), 7) == 0
+        assert round(abs(convertPrintParameterToInches('12in') - 12.0), 7) == 0
 
     def test_cm(self):
-        assert round(abs(convertPrintParameterToInches('12cm')-12.0 * 37.8 / 96), 7) == 0
+        assert round(abs(convertPrintParameterToInches('12cm') - 12.0 * 37.8 / 96), 7) == 0
 
     def test_mm(self):
-        assert round(abs(convertPrintParameterToInches('12mm')-12.0 * 3.78 / 96), 7) == 0
+        assert round(abs(convertPrintParameterToInches('12mm') - 12.0 * 3.78 / 96), 7) == 0
 
 
 class TestPositiveInt(unittest.TestCase):
