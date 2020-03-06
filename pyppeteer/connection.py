@@ -25,7 +25,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 logger_connection = logging.getLogger(__name__ + '.Connection')
-logger_session = logging.getLogger(__name__ + '.CDPSession')
 
 
 class TargetInfo(TypedDict, total=False):
@@ -58,9 +57,7 @@ class Connection(EventEmitter):
             url: str,
             transport: WebsocketTransport,
             delay: int = 0,
-            loop: asyncio.AbstractEventLoop
-
-    ,
+            loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Make connection.
 
