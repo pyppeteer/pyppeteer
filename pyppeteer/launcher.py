@@ -14,13 +14,12 @@ from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
-import websockets
-
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import debugError, logger
 from pyppeteer.util import get_free_port
+from pyppeteer.websocket_transport import WebsocketTransport
 
 if sys.platform.startswith('win'):
     from signal import SIGHUP
