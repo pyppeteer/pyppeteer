@@ -11,6 +11,7 @@ from pyppeteer.errors import ElementHandleError
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame
+import pytest
 
 
 class TestBoundingBox(BaseTestCase):
@@ -20,7 +21,7 @@ class TestBoundingBox(BaseTestCase):
         await self.page.goto(self.url + 'static/grid.html')
         elementHandle = await self.page.J('.box:nth-of-type(13)')
         box = await elementHandle.boundingBox()
-        self.assertEqual({'x': 100, 'y': 50, 'width': 50, 'height': 50}, box)
+        assert {'x': 100, 'y': 50, 'width': 50, 'height': 50} == box
 
     @sync
     async def test_nested_frame(self):
@@ -35,15 +36,15 @@ class TestBoundingBox(BaseTestCase):
         #     {'x': 28, 'y': 28, 'width': 264, 'height': 16},
         #     {'x': 28, 'y': 260, 'width': 264, 'height': 16},
         # ])
-        self.assertEqual(box['x'], 28)
-        self.assertIn(box['y'], [28, 260])
-        self.assertEqual(box['width'], 264)
+        assert box['x'] == 28
+        assert box['y'] in [28, 260]
+        assert box['width'] == 264
 
     @sync
     async def test_invisible_element(self):
         await self.page.setContent('<div style="display: none;">hi</div>')
         element = await self.page.J('div')
-        self.assertIsNone(await element.boundingBox())
+        assert await element.boundingBox() is None
 
     @sync
     async def test_force_layout(self):
@@ -56,12 +57,12 @@ class TestBoundingBox(BaseTestCase):
             elementHandle,
         )
         box = await elementHandle.boundingBox()
-        self.assertEqual(box, {
+        assert box == {
             'x': 8,
             'y': 8,
             'width': 100,
             'height': 200,
-        })
+        }
 
     @sync
     async def test_svg(self):
@@ -76,7 +77,7 @@ class TestBoundingBox(BaseTestCase):
             const rect = e.getBoundingClientRect();
             return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
         }''', element)  # noqa: E501
-        self.assertEqual(pptrBoundingBox, webBoundingBox)
+        assert pptrBoundingBox == webBoundingBox
 
 
 class TestBoxModel(BaseTestCase):
@@ -125,31 +126,31 @@ class TestBoxModel(BaseTestCase):
 
         # query div's boxModel and assert box values
         box = await divHandle.boxModel()
-        self.assertEqual(box['width'], 6)
-        self.assertEqual(box['height'], 7)
-        self.assertEqual(box['margin'][0], {
+        assert box['width'] == 6
+        assert box['height'] == 7
+        assert box['margin'][0] == {
             'x': 1 + 4,
             'y': 2 + 5,
-        })
-        self.assertEqual(box['border'][0], {
+        }
+        assert box['border'][0] == {
             'x': 1 + 4 + 3,
             'y': 2 + 5,
-        })
-        self.assertEqual(box['padding'][0], {
+        }
+        assert box['padding'][0] == {
             'x': 1 + 4 + 3 + 1,
             'y': 2 + 5,
-        })
-        self.assertEqual(box['content'][0], {
+        }
+        assert box['content'][0] == {
             'x': 1 + 4 + 3 + 1 + 2,
             'y': 2 + 5,
-        })
+        }
 
     @sync
     async def test_box_model_invisible(self):
         await self.page.setContent('<div style="display:none;">hi</div>')
         element = await self.page.J('div')
         with self.assertLogs('pyppeteer.element_handle', logging.DEBUG):
-            self.assertIsNone(await element.boxModel())
+            assert await element.boxModel() is None
 
     @sync
     async def test_debug_error(self):
@@ -157,11 +158,11 @@ class TestBoxModel(BaseTestCase):
         element = await self.page.J('div')
         pyppeteer.DEBUG = True
         with self.assertLogs('pyppeteer.element_handle', logging.ERROR):
-            self.assertIsNone(await element.boxModel())
+            assert await element.boxModel() is None
         pyppeteer.DEBUG = False
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             with self.assertLogs('pyppeteer.element_handle', logging.INFO):
-                self.assertIsNone(await element.boxModel())
+                assert await element.boxModel() is None
 
 
 class TestContentFrame(BaseTestCase):
@@ -171,7 +172,7 @@ class TestContentFrame(BaseTestCase):
         await attachFrame(self.page, 'frame1', self.url + 'empty')
         elementHandle = await self.page.J('#frame1')
         frame = await elementHandle.contentFrame()
-        self.assertEqual(frame, self.page.frames[1])
+        assert frame == self.page.frames[1]
 
 
 class TestClick(BaseTestCase):
@@ -180,46 +181,44 @@ class TestClick(BaseTestCase):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await button.click()
-        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
+        assert await self.page.evaluate('result') == 'Clicked'
 
     @sync
     async def test_shadow_dom(self):
         await self.page.goto(self.url + 'static/shadow.html')
         button = await self.page.evaluateHandle('() => button')
         await button.click()
-        self.assertTrue(await self.page.evaluate('clicked'))
+        assert await self.page.evaluate('clicked')
 
     @sync
     async def test_text_node(self):
         await self.page.goto(self.url + 'static/button.html')
         buttonTextNode = await self.page.evaluateHandle(
             '() => document.querySelector("button").firstChild')
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await buttonTextNode.click()
-        self.assertEqual('Node is not of type HTMLElement',
-                         cm.exception.args[0])
+        assert 'Node is not of type HTMLElement' ==
+                         cm.exception.args[0]
 
     @sync
     async def test_detached_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.remove()', button)
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual('Node is detached from document',
-                         cm.exception.args[0])
+        assert 'Node is detached from document' ==
+                         cm.exception.args[0]
 
     @sync
     async def test_hidden_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.style.display = "none"', button)
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual(
-            'Node is either not visible or not an HTMLElement',
-            cm.exception.args[0],
-        )
+        assert 'Node is either not visible or not an HTMLElement' ==
+            cm.exception.args[0]
 
     @sync
     async def test_recursively_hidden_node(self):
@@ -227,23 +226,19 @@ class TestClick(BaseTestCase):
         button = await self.page.J('button')
         await self.page.evaluate(
             'btn => btn.parentElement.style.display = "none"', button)
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual(
-            'Node is either not visible or not an HTMLElement',
-            cm.exception.args[0],
-        )
+        assert 'Node is either not visible or not an HTMLElement' ==
+            cm.exception.args[0]
 
     @sync
     async def test_br_node(self):
         await self.page.setContent('hello<br>goodbye')
         br = await self.page.J('br')
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await br.click()
-        self.assertEqual(
-            'Node is either not visible or not an HTMLElement',
-            cm.exception.args[0],
-        )
+        assert 'Node is either not visible or not an HTMLElement' ==
+            cm.exception.args[0]
 
 
 class TestHover(BaseTestCase):
@@ -252,11 +247,9 @@ class TestHover(BaseTestCase):
         await self.page.goto(self.url + 'static/scrollable.html')
         button = await self.page.J('#button-6')
         await button.hover()
-        self.assertEqual(
-            await self.page.evaluate(
-                'document.querySelector("button:hover").id'),
+        assert await self.page.evaluate(
+                'document.querySelector("button:hover").id') ==
             'button-6'
-        )
 
 
 class TestIsIntersectingViewport(BaseTestCase):
@@ -266,7 +259,7 @@ class TestIsIntersectingViewport(BaseTestCase):
         for i in range(11):
             button = await self.page.J('#btn{}'.format(i))
             visible = i < 10
-            self.assertEqual(await button.isIntersectingViewport(), visible)
+            assert await button.isIntersectingViewport() == visible
 
 
 class TestScreenshot(BaseTestCase):
@@ -295,7 +288,7 @@ div.to-screenshot {
         size = await self.page.evaluate(
             '() => ({ w: window.innerWidth, h: window.innerHeight })'
         )
-        self.assertEqual({'w': 500, 'h': 500}, size)
+        assert {'w': 500, 'h': 500} == size
 
 
 class TestQuerySelector(BaseTestCase):
@@ -308,7 +301,7 @@ class TestQuerySelector(BaseTestCase):
         second = await html.J('.second')
         inner = await second.J('.inner')
         content = await self.page.evaluate('e => e.textContent', inner)
-        self.assertEqual(content, 'A')
+        assert content == 'A'
 
     @sync
     async def test_J_none(self):
@@ -317,7 +310,7 @@ class TestQuerySelector(BaseTestCase):
         ''')
         html = await self.page.J('html')
         second = await html.J('.third')
-        self.assertIsNone(second)
+        assert second is None
 
     @sync
     async def test_Jeval(self):
@@ -329,7 +322,7 @@ class TestQuerySelector(BaseTestCase):
         </body></html>''')
         tweet = await self.page.J('.tweet')
         content = await tweet.Jeval('.like', 'node => node.innerText')
-        self.assertEqual(content, '100')
+        assert content == '100'
 
     @sync
     async def test_Jeval_subtree(self):
@@ -337,17 +330,17 @@ class TestQuerySelector(BaseTestCase):
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         content = await elementHandle.Jeval('.a', 'node => node.innerText')
-        self.assertEqual(content, 'a-child-div')
+        assert content == 'a-child-div'
 
     @sync
     async def test_Jeval_with_missing_selector(self):
         htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
-        with self.assertRaises(ElementHandleError) as cm:
+        with pytest.raises(ElementHandleError) as cm:
             await elementHandle.Jeval('.a', 'node => node.innerText')
-        self.assertIn('Error: failed to find element matching selector ".a"',
-                      cm.exception.args[0])
+        assert 'Error: failed to find element matching selector ".a"' in
+                      cm.exception.args[0]
 
     @sync
     async def test_JJ(self):
@@ -356,14 +349,14 @@ class TestQuerySelector(BaseTestCase):
         ''')
         html = await self.page.J('html')
         elements = await html.JJ('div')
-        self.assertEqual(len(elements), 2)
+        assert len(elements) == 2
         if sys.version_info >= (3, 6):
             result = []
             for elm in elements:
                 result.append(
                     await self.page.evaluate('(e) => e.textContent', elm)
                 )
-            self.assertEqual(result, ['A', 'B'])
+            assert result == ['A', 'B']
 
     @sync
     async def test_JJ_empty(self):
@@ -372,7 +365,7 @@ class TestQuerySelector(BaseTestCase):
         ''')
         html = await self.page.J('html')
         elements = await html.JJ('div')
-        self.assertEqual(len(elements), 0)
+        assert len(elements) == 0
 
     @sync
     async def test_JJEval(self):
@@ -383,7 +376,7 @@ class TestQuerySelector(BaseTestCase):
         tweet = await self.page.J('.tweet')
         content = await tweet.JJeval(
             '.like', 'nodes => nodes.map(n => n.innerText)')
-        self.assertEqual(content, ['100', '10'])
+        assert content == ['100', '10']
 
     @sync
     async def test_JJEval_subtree(self):
@@ -397,7 +390,7 @@ class TestQuerySelector(BaseTestCase):
         elementHandle = await self.page.J('#myId')
         content = await elementHandle.JJeval(
             '.a', 'nodes => nodes.map(n => n.innerText)')
-        self.assertEqual(content, ['a1-child-div', 'a2-child-div'])
+        assert content == ['a1-child-div', 'a2-child-div']
 
     @sync
     async def test_JJEval_missing_selector(self):
@@ -405,7 +398,7 @@ class TestQuerySelector(BaseTestCase):
             '<div class="a">not-a-child-div</div><div id="myId"></div>')
         elementHandle = await self.page.J('#myId')
         nodesLength = await elementHandle.JJeval('.a', 'nodes => nodes.length')
-        self.assertEqual(nodesLength, 0)
+        assert nodesLength == 0
 
     @sync
     async def test_xpath(self):
@@ -416,11 +409,11 @@ class TestQuerySelector(BaseTestCase):
         second = await html.xpath('./body/div[contains(@class, \'second\')]')
         inner = await second[0].xpath('./div[contains(@class, \'inner\')]')
         content = await self.page.evaluate('(e) => e.textContent', inner[0])
-        self.assertEqual(content, 'A')
+        assert content == 'A'
 
     @sync
     async def test_xpath_not_found(self):
         await self.page.goto(self.url + 'empty')
         html = await self.page.querySelector('html')
         element = await html.xpath('/div[contains(@class, \'third\')]')
-        self.assertEqual(element, [])
+        assert element == []
