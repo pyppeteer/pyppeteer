@@ -36,7 +36,7 @@ from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Browser, Target  # noqa: F401
+    from pyppeteer.browser import Browser, Target, BrowserContext  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -193,7 +193,7 @@ class Page(EventEmitter):
         client.on('Page.fileChooserOpened',
                   lambda event: self._onFileChooser(event))
 
-        def closed(_)-> None:
+        def closed(_) -> None:
             self.emit(Events.Page.Close)
             self._closed = True
 
@@ -234,7 +234,6 @@ class Page(EventEmitter):
             timeout = self._timeoutSettings.timeout()
 
         promise = self._loop.create_future()
-        promise = asyncio.Future()
         callback = promise.result
         self._fileChooserInterceptors.append(callback())
         # todo double check helpers
@@ -566,7 +565,8 @@ class Page(EventEmitter):
                 'cookies': items,
             })
 
-    async def addScriptTag(self, url: str = None, path: str = None, content: str = None, _type: str = None) -> ElementHandle:
+    async def addScriptTag(self, url: str = None, path: str = None, content: str = None,
+                           _type: str = None) -> ElementHandle:
         """Add script tag to this page.
 
         One of ``url``, ``path`` or ``content`` option is necessary.
@@ -872,10 +872,10 @@ class Page(EventEmitter):
             timeout: float = None,
             waitUntil: Union[str, List[str]] = None,
     ):
-        return await asyncio.gather(
+        return (await asyncio.gather(
             self.waitForNavigation(timeout=timeout, waitUntil=waitUntil),
             self._client.send('Page.reload')
-        )[0]
+        ))[0]
 
     async def waitForNavigation(
             self,
@@ -918,10 +918,14 @@ class Page(EventEmitter):
             timeout=timeout, waitUntil=waitUntil)
 
     def _sessionClosePromise(self):
-        # TODO implement this
         if not self._disconnectPromise:
             self._disconnectPromise = self._loop.create_future()
-            self._client.once(Events.CDPSession.Disconnected, lambda: self._disconnectPromise.set_exception(PageError('Target Closed'))
+            self._client.once(
+                Events.CDPSession.Disconnected,
+                lambda: self._disconnectPromise.set_exception(
+                    PageError('Target Closed')
+                )
+            )
         return self._disconnectPromise
 
     async def waitForRequest(
@@ -1121,7 +1125,7 @@ class Page(EventEmitter):
             await self._client.send('Emulation.setEmulatedMedia', {'features': None})
         if isinstance(features, list):
             for feature in features:
-                if not re.match('/^prefers-(?:color-scheme|reduced-motion)$/',
+                if not re.match(r'/prefers-(?:color-scheme|reduced-motion)/',
                                 feature.get('name', '')):
                     return True
         await self._client.send('Emulation.setEmulatedMedia', {'features': features})
@@ -1840,4 +1844,4 @@ class FileChooser:
     async def cancel(self):
         if self._handled:
             raise ValueError('Cannot cancel Filechooser which is already handled!')
-        self._handled = true
+        self._handled = True
