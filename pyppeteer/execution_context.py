@@ -23,7 +23,6 @@ EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
-
 class ExecutionContext(object):
     """Execution Context class."""
 
