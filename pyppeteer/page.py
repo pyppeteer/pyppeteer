@@ -10,6 +10,7 @@ import logging
 import math
 import mimetypes
 import re
+from copy import copy
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
@@ -21,7 +22,6 @@ from pyppeteer.accessibility import Accessibility
 from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
-from pyppeteer.element_handle import ElementHandle
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.events import Events
@@ -30,6 +30,7 @@ from pyppeteer.frame_manager import Frame
 from pyppeteer.frame_manager import FrameManager
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
+from pyppeteer.jshandle import ElementHandle, createJSHandle
 from pyppeteer.network_manager import NetworkManager, Response, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
@@ -146,6 +147,7 @@ class Page(EventEmitter):
         _nm.on(NetworkManager.Events.Response, lambda event: self.emit(Events.Page.Response, event))
         _nm.on(NetworkManager.Events.RequestFailed, lambda event: self.emit(Events.Page.RequestFailed, event))
         _nm.on(NetworkManager.Events.RequestFinished, lambda event: self.emit(Events.Page.RequestFinished, event))
+        self._fileChooserInterceptors = set()
 
         client.on('Page.domContentEventFired', lambda event: self.emit(Events.Page.DOMContentLoaded))
         client.on('Page.loadEventFired', lambda event: self.emit(Events.Page.Load))
@@ -175,7 +177,7 @@ class Page(EventEmitter):
         )
 
     async def _onFileChooser(self, event: Dict):
-        if not self._fileChooserInterceptors.size:
+        if not self._fileChooserInterceptors:
             return
         frame = self._frameManager.frame(event['frameId'])
         context = await frame.executionContext()
@@ -187,17 +189,16 @@ class Page(EventEmitter):
             interceptor.call(None, fileChooser)
 
     async def waitForFileChooser(self, timeout: float = None):
-        if not self._fileChooserInterceptors.size:
+        if not self._fileChooserInterceptors:
             await self._client.send('Page.setInterceptFileChooserDialog', {'enabled': True})
         if not timeout:
-            timeout = self._timeoutSettings.timeout()
+            timeout = self._timeoutSettings.timeout
 
         promise = self._loop.create_future()
         callback = promise.result
-        self._fileChooserInterceptors.append(callback())
-        # todo double check helpers
+        self._fileChooserInterceptors.add(callback())
         try:
-            return helper.waitWithTimeout(promise, 'waiting for file chooser')
+            return await asyncio.wait_for(promise, timeout=timeout)
         except Exception as e:
             self._fileChooserInterceptors.remove(callback())
             raise e
@@ -656,7 +657,7 @@ class Page(EventEmitter):
         context = self._frameManager.executionContextById(_id)
         values: List[JSHandle] = []
         for arg in event.get('args', []):
-            values.append(self._frameManager.createJSHandle(context, arg))
+            values.append(createJSHandle(context, arg))
         self._addConsoleMessage(event['type'], values)
 
     def _onBindingCalled(self, event: Dict) -> None:
@@ -729,7 +730,7 @@ class Page(EventEmitter):
 
         :arg str html: HTML markup to assign to the page.
         """
-        await self.mainFrame.setContent(html, html=html, timeout=timeout, waitUntil=waitUntil)
+        await self.mainFrame.setContent(html=html, timeout=timeout, waitUntil=waitUntil)
 
     async def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: Union[str, List[str]] = None,
