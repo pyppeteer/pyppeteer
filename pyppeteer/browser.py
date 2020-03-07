@@ -12,6 +12,7 @@ from pyee import EventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
+from pyppeteer.events import Events
 from pyppeteer.page import Page
 from pyppeteer.target import Target
 
@@ -239,14 +240,15 @@ class Browser(EventEmitter):
 
         def check(target):
             if predicate(target):
-                self.remove_listener('Target.targetCreated', check)
-                self.remove_listener('targetchanged', check)
                 result.set_result(target)
                 result.done()
 
-        self.on('Target.targetCreated', check)
-        self.on('targetchanged', check)
-        return await asyncio.wait_for(result, timeout=timeout)
+        self.on(Events.Browser.TargetCreated, check)
+        self.on(Events.Browser.TargetChanged, check)
+        result = await asyncio.wait_for(result, timeout=timeout)
+        self.remove_listener(Events.Browser.TargetCreated, check)
+        self.remove_listener(Events.Browser.TargetChanged, check)
+        return result
 
     async def pages(self) -> List[Page]:
         """Get all pages of this browser.
