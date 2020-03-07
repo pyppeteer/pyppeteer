@@ -65,7 +65,7 @@ class Pyppeteer:
     @property
     def _launcher(self):
         if not self._lazyLauncher:
-            self._lazyLauncher = Launcher(
+            self._lazyLauncher = launcher(
                 projectRoot=self._projectRoot, preferredRevision=self._preferredRevision, product=self.productName
             )
         return self._lazyLauncher
@@ -81,10 +81,6 @@ version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
 __all__ = [
-    'connect',
-    'launch',
-    'executablePath',
-    'defaultArgs',
     'version',
     'version_info',
 ]
