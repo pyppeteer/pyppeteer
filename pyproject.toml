@@ -51,6 +51,7 @@ appdirs = "^1.4.3"
 tqdm = "^4.42.1"
 pyee = "^7.0.1"
 urllib3 = "^1.25.8"
+aenum = "^2.2.3"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.14.3"
