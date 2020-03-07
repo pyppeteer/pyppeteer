@@ -10,9 +10,10 @@ from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
-from pyppeteer.jshandle import createJSHandle
+from pyppeteer.jshandle import createJSHandle, JSHandle
 
 if TYPE_CHECKING:
+    from pyppeteer.domworld import DOMWorld
     from pyppeteer.element_handle import ElementHandle  # noqa: F401
     from pyppeteer.frame_manager import Frame  # noqa: F401
 
@@ -22,10 +23,11 @@ EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
+
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: CDPSession, contextPayload: Dict, world: 'DOMWorld',) -> None:
+    def __init__(self, client: CDPSession, contextPayload: Dict, world: DOMWorld,) -> None:
         self._client = client
         self._world = world
         self._contextId = contextPayload.get('id')
@@ -43,7 +45,7 @@ class ExecutionContext(object):
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any) -> 'JSHandle':
+    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
         """Execute ``pageFunction`` on this context.
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
@@ -85,7 +87,7 @@ class ExecutionContext(object):
         )
         return createJSHandle(context=self, remoteObject=response.get('objects'))
 
-    async def _adoptBackednNodeId(self, backendNodeId: 'BackendNodeId'):
+    async def _adoptBackendNodeId(self, backendNodeId: int):
         obj = await self._client.send(
             'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId,}
         )
@@ -97,7 +99,7 @@ class ExecutionContext(object):
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
         nodeInfo = await self._client.send('DOM.describeNode', {'objectId': elementHandle._remoteObject['objectId']})
-        return self._adoptBackednNodeId(nodeInfo['node']['backendNodeId'])
+        return self._adoptBackendNodeId(nodeInfo['node']['backendNodeId'])
 
 
 def rewriteError(error: Exception) -> Union[None, Dict[str, Dict[str, str]]]:
