@@ -11,7 +11,7 @@ import math
 import mimetypes
 import re
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
 
 from pyee import EventEmitter
@@ -72,7 +72,7 @@ class Page(EventEmitter):
             ignoreHTTPSErrors: bool,
             defaultViewport: Optional[Dict],
             screenshotTaskQueue: list = None
-    ) -> Page:
+    ) -> 'Page':
         """Async function which makes new page object."""
         page = Page(
             client=client,
@@ -579,7 +579,12 @@ class Page(EventEmitter):
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
         """
-        return await self.mainFrame.addScriptTag(**kwargs)
+        return await self.mainFrame.addScriptTag({
+            'url': url,
+            'path': path,
+            'content': content,
+            '_type': _type,
+        })
 
     async def addStyleTag(self, **kwargs: str) -> ElementHandle:
         """Add style or link tag to this page.

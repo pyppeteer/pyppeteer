@@ -14,9 +14,8 @@ from pyee import EventEmitter
 from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.events import Events
-from pyppeteer.jshandle import JSHandle
+from pyppeteer.jshandle import JSHandle, ElementHandle
 from pyppeteer.connection import CDPSession
-from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import BrowserError
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.errors import ElementHandleError, PageError

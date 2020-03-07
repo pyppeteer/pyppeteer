@@ -57,7 +57,7 @@ class Connection(EventEmitter):
             url: str,
             transport: WebsocketTransport,
             delay: int = 0,
-            loop: asyncio.AbstractEventLoop,
+            loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         """Make connection.
 
@@ -74,7 +74,7 @@ class Connection(EventEmitter):
         self._transport.onmessage = self._onMessage
         self._transport.onclose = self._onClose
 
-        self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
         self.connection: CDPSession
         self._connected = False
