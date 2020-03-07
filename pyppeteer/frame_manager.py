@@ -6,7 +6,6 @@
 import asyncio
 import re
 import logging
-from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import EventEmitter
@@ -115,7 +114,7 @@ class FrameManager(EventEmitter):
         if timeout is None:
             timeout = self._timeoutSettings.navigationTimeout
 
-        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = await asyncio.wait(
             [navigate(url, referer, frame._id), watcher.timeoutOrTerminationPromise()],
             return_when=asyncio.FIRST_COMPLETED,
@@ -571,9 +570,7 @@ function(html) {
             if 'type' in options:
                 args.append(options['type'])
             try:
-                return (
-                    await context.evaluateHandle(*args)  # type: ignore
-                ).asElement()
+                return (await context.evaluateHandle(*args)).asElement()  # type: ignore
             except ElementHandleError as e:
                 raise PageError(f'Loading script from {url} failed') from e
 
@@ -584,17 +581,13 @@ function(html) {
             args = [addScriptContent, contents]
             if 'type' in options:
                 args.append(options['type'])
-            return (
-                await context.evaluateHandle(*args)  # type: ignore
-            ).asElement()
+            return (await context.evaluateHandle(*args)).asElement()  # type: ignore
 
         if isinstance(options.get('content'), str):
             args = [addScriptContent, options['content']]
             if 'type' in options:
                 args.append(options['type'])
-            return (
-                await context.evaluateHandle(*args)  # type: ignore
-            ).asElement()
+            return (await context.evaluateHandle(*args)).asElement()  # type: ignore
 
         raise ValueError('Provide an object with a `url`, `path` or `content` property')
 
@@ -638,11 +631,7 @@ function(html) {
         if isinstance(options.get('url'), str):
             url = options['url']
             try:
-                return (
-                    await context.evaluateHandle(  # type: ignore
-                        addStyleUrl, url
-                    )
-                ).asElement()
+                return (await context.evaluateHandle(addStyleUrl, url)).asElement()  # type: ignore
             except ElementHandleError as e:
                 raise PageError(f'Loading style from {url} failed') from e
 
@@ -650,18 +639,10 @@ function(html) {
             with open(options['path']) as f:
                 contents = f.read()
             contents = contents + '/*# sourceURL={}*/'.format(options['path'].replace('\n', ''))
-            return (
-                await context.evaluateHandle(  # type: ignore
-                    addStyleContent, contents
-                )
-            ).asElement()
+            return (await context.evaluateHandle(addStyleContent, contents)).asElement()  # type: ignore
 
         if isinstance(options.get('content'), str):
-            return (
-                await context.evaluateHandle(  # type: ignore
-                    addStyleContent, options['content']
-                )
-            ).asElement()
+            return (await context.evaluateHandle(addStyleContent, options['content'])).asElement()  # type: ignore
 
         raise ValueError('Provide an object with a `url`, `path` or `content` property')
 

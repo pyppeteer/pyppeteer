@@ -676,7 +676,9 @@ class Page(EventEmitter):
 
         expression = helper.evaluationString(deliverResult, name, seq, result)
         try:
-            self._client.send('Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId'],})
+            self._client.send(
+                'Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId']},
+            )
         except Exception as e:
             helper.debugError(logger, e)
 

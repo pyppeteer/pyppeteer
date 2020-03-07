@@ -1,6 +1,6 @@
 from typing import List, Dict, Union, Set
 
-from pyppeteer.element_handle import ElementHandle
+from pyppeteer.jshandle import ElementHandle
 
 
 class Accessibility(object):
