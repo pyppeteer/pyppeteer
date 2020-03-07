@@ -20,7 +20,7 @@ class Accessibility(object):
             if not needle:
                 return
             needle = needle[0]
-        if not interstingOnly:
+        if not interestingOnly:
             return serializeTree(needle)[0]
 
         interestingNodes = set()

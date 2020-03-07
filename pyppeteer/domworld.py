@@ -5,7 +5,7 @@ from pyppeteer import helper
 from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import BrowserError, PageError, NetworkError
 from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.frame_manager import Frame
+from pyppeteer.frame_manager import Frame, FrameManager
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.timeout_settings import TimeoutSettings
@@ -18,7 +18,7 @@ async def readFileAsync(path, file):
 
 class DOMWorld(object):
     def __init__(
-        self, frameManager: 'FrameManager', frame: Frame, timeoutSettings: TimeoutSettings,
+        self, frameManager: FrameManager, frame: Frame, timeoutSettings: TimeoutSettings,
     ):
         self._frameManager = frameManager
         self._frame = frame

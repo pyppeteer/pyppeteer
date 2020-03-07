@@ -12,7 +12,7 @@ from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 from pyee import EventEmitter
 
 from pyppeteer import helper
-from pyppeteer.domworld import DOMWorld
+from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.events import Events
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.connection import CDPSession
@@ -44,7 +44,7 @@ class FrameManager(EventEmitter):
         self._page = page
         self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
         self._timeoutSettings = timeoutSettings
-        self._frames: OrderedDict[str, Frame] = OrderedDict()
+        self._frames = {}
         self._contextIdToContext: Dict[int, ExecutionContext] = {}
         self._isolatedWorlds: Set[str] = set()
 

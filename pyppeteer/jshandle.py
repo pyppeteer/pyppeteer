@@ -3,11 +3,16 @@ import copy
 import logging
 import math
 import os
-from typing import Dict, Optional, List, Any
+from idlelib.rpc import RemoteObject
+from typing import Dict, Optional, List, Any, TYPE_CHECKING
 
 from pyppeteer import helper
+from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
+from pyppeteer.execution_context import ExecutionContext
+from pyppeteer.frame_manager import FrameManager
 from pyppeteer.helper import debugError
+from pyppeteer.page import Page
 from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
@@ -112,11 +117,11 @@ class JSHandle(object):
 class ElementHandle(JSHandle):
     def __init__(
         self,
-        context: 'ExecutionContext',
-        client: 'CDPSession',
-        remoteObject: 'RemoteObject',
-        page: 'Page',
-        frameManager: 'FrameManager',
+        context: ExecutionContext,
+        client: CDPSession,
+        remoteObject: RemoteObject,
+        page: Page,
+        frameManager: FrameManager,
     ):
         super().__init__(context, client, remoteObject)
         self._page = page
