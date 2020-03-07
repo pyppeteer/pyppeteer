@@ -10,12 +10,10 @@ from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
-from pyppeteer.jshandle import createJSHandle, JSHandle
+from pyppeteer.jshandle import createJSHandle, JSHandle, ElementHandle
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
-    from pyppeteer.element_handle import ElementHandle  # noqa: F401
-    from pyppeteer.frame_manager import Frame  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
