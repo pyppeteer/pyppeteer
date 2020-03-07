@@ -162,7 +162,7 @@ class AXNode(object):
             return False
         return self.isLeafNode() and self._name
 
-    def serialize(self):
+    def serialize(self): # noqa C901
         properties: Dict[str, Union[str, float, bool]] = {}
         for property in self._payload.get('properties', []):
             properties[property['name'].lower()] = property['value']['value']
