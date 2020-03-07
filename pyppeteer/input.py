@@ -16,7 +16,7 @@ from pyppeteer.us_keyboard_layout import keyDefinitions
 from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
-    from typing import Set  # noqa: F401
+    from typing import Set
 
 
 class Keyboard(object):

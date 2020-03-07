@@ -27,14 +27,11 @@ _log_handler.setLevel(logging.DEBUG)
 _logger.addHandler(_log_handler)
 _logger.propagate = False
 
-from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
-from pyppeteer.launcher import defaultArgs  # noqa: E402
-
 from typing import Dict, Any
 
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
-from pyppeteer.launcher import Launcher
+from pyppeteer.launcher import launcher
 from pyppeteer.browser_fetcher import BrowserFetcher
 
 

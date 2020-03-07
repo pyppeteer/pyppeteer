@@ -10,17 +10,17 @@ import json
 import logging
 from collections import OrderedDict
 from types import SimpleNamespace
-from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
-from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.helper import debugError
 
 if TYPE_CHECKING:
-    from typing import Set  # noqa: F401
+    from pyppeteer.frame_manager import FrameManager, Frame
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class NetworkManager(EventEmitter):
         Request='request', Response='response', RequestFailed='requestfailed', RequestFinished='requestfinished',
     )
 
-    def __init__(self, client: CDPSession, ignoreHttpsErrors: bool, frameManager: FrameManager) -> None:
+    def __init__(self, client: CDPSession, ignoreHttpsErrors: bool, frameManager: 'FrameManager') -> None:
         """Make new NetworkManager."""
         super().__init__()
         self._client = client
@@ -183,7 +183,7 @@ class NetworkManager(EventEmitter):
             redirectChain=redirectChain,
         )
         self._requestIdToRequest[event['requestId']] = request
-        self.emit(NetworkManager.Events.Request, request)
+        self.emit(Events.NetworkManager.Request, request)
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
         request = self._requestIdToRequest.get(event.get('requestId'))
@@ -213,8 +213,8 @@ class NetworkManager(EventEmitter):
         response._bodyLoadedPromiseFulfill(NetworkError('Response body is unavailable for redirect response'))
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
-        self.emit(NetworkManager.Events.Response, response)
-        self.emit(NetworkManager.Events.RequestFinished, request)
+        self.emit(Events.NetworkManager.Response, response)
+        self.emit(Events.NetworkManager.RequestFinished, request)
 
     def _onResponseReceived(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
@@ -226,7 +226,7 @@ class NetworkManager(EventEmitter):
         event_response['request'] = request
         response = Response(**event_response)
         request._response = response
-        self.emit(NetworkManager.Events.Response, response)
+        self.emit(Events.NetworkManager.Response, response)
 
     def _onLoadingFinished(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
@@ -239,7 +239,7 @@ class NetworkManager(EventEmitter):
             response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
-        self.emit(NetworkManager.Events.RequestFinished, request)
+        self.emit(Events.NetworkManager.RequestFinished, request)
 
     def _onLoadingFailed(self, event: dict) -> None:
         request = self._requestIdToRequest.get(event['requestId'])
@@ -253,7 +253,7 @@ class NetworkManager(EventEmitter):
             response._bodyLoadedPromiseFulfill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
-        self.emit(NetworkManager.Events.RequestFailed, request)
+        self.emit(Events.NetworkManager.RequestFailed, request)
 
 
 class Request(object):
@@ -279,7 +279,7 @@ class Request(object):
     def __init__(
         self,
         client: CDPSession,
-        frame: Frame,
+        frame: 'Frame',
         interceptionId: Optional[str],
         allowInterception: bool,
         event: dict,
@@ -347,7 +347,7 @@ class Request(object):
         return self._response
 
     @property
-    def frame(self) -> Optional[Frame]:
+    def frame(self) -> Optional['Frame']:
         """Return a matching :class:`~pyppeteer.frame_manager.frame` object.
 
         Return ``None`` if navigating to error page.

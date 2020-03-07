@@ -24,7 +24,7 @@ SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MU
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: CDPSession, contextPayload: Dict, world: DOMWorld,) -> None:
+    def __init__(self, client: CDPSession, contextPayload: Dict, world: 'DOMWorld') -> None:
         self._client = client
         self._world = world
         self._contextId = contextPayload.get('id')

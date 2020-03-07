@@ -10,14 +10,16 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 import asyncio
 from asyncio import FIRST_COMPLETED
 from functools import partial
-from typing import Awaitable, Dict, List, Union, Optional
+from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
 from pyppeteer.events import Events
-from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.network_manager import Request
-from pyppeteer.util import merge_dict
+
+if TYPE_CHECKING:
+    from pyppeteer.frame_manager import FrameManager, Frame
+
 
 pyppeteerToProtocolLifecycle = {
     'load': 'load',
@@ -33,14 +35,12 @@ class LifecycleWatcher:
 
     def __init__(
         self,
-        frameManager: FrameManager,
-        frame: Frame,
+        frameManager: 'FrameManager',
+        frame: 'Frame',
         timeout: int,
         options: Dict = None,
-        **kwargs: Dict[str, Union[bool, int, float, str]],
     ) -> None:
         """Make new LifecycleWatcher"""
-        options = merge_dict(options, kwargs)
         self._futures = []
         self._validate_options_and_set_expected_lifecycle(options)
         self._frameManager = frameManager
@@ -56,12 +56,12 @@ class LifecycleWatcher:
                 partial(self._terminate, BrowserError('Navigation failed because browser has disconnected')),
             ),
             helper.addEventListener(
-                self._frameManager, FrameManager.Events.LifecycleEvent, self._checkLifecycleComplete,
+                self._frameManager, Events.FrameManager.LifecycleEvent, self._checkLifecycleComplete,
             ),
             helper.addEventListener(
-                self._frameManager, FrameManager.Events.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
+                self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helper.addEventListener(self._frameManager, FrameManager.Events.FrameDetached, self._onFrameDetached,),
+            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(
                 self._frameManager.networkManager(), Events.NetworkManager.Request, self._onRequest,
             ),
@@ -127,7 +127,7 @@ class LifecycleWatcher:
         if request.frame == self._frame and request.isNavigationRequest():
             self._navigationRequest = request
 
-    def _onFrameDetached(self, frame: Frame = None) -> None:
+    def _onFrameDetached(self, frame: 'Frame' = None) -> None:
         # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._terminationFuture.set_exception(PageError('Navigating frame was detached'))
@@ -159,7 +159,7 @@ class LifecycleWatcher:
             self._timeoutTimerFuture = self._loop.create_future()
         return self._maximumTimerFuture
 
-    def _navigatedWithinDocument(self, frame: Frame = None) -> None:
+    def _navigatedWithinDocument(self, frame: 'Frame' = None) -> None:
         # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._hasSameDocumentNavigation = True
@@ -176,7 +176,7 @@ class LifecycleWatcher:
         if self._frame._loaderId != self._initialLoaderId:
             self._newDocumentNavigationFuture.set_result(None)
 
-    def _checkLifecycle(self, frame: Frame, expectedLifecycle: List[str]) -> bool:
+    def _checkLifecycle(self, frame: 'Frame', expectedLifecycle: List[str]) -> bool:
         for event in expectedLifecycle:
             if event not in frame._lifecycleEvents:
                 return False

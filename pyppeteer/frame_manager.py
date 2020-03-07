@@ -734,7 +734,7 @@ function(html) {
         await handle.type(text, options)
         await handle.dispose()
 
-    def waitFor(
+    async def waitFor(
         self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
     ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
@@ -767,7 +767,7 @@ function(html) {
             await handle.dispose()
             return result
 
-    def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
+    async def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.

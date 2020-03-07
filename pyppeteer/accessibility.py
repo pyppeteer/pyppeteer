@@ -1,13 +1,14 @@
-from typing import List, Dict, Union, Set
+from typing import List, Dict, Union, Set, TYPE_CHECKING
 
-from pyppeteer.jshandle import ElementHandle
+if TYPE_CHECKING:
+    from pyppeteer.jshandle import ElementHandle
 
 
 class Accessibility(object):
     def __init__(self, client):
         self._client = client
 
-    async def snapshot(self, interestingOnly: bool = False, root: ElementHandle = None):
+    async def snapshot(self, interestingOnly: bool = False, root: 'ElementHandle' = None):
         nodes = await self._client.send('Accessibility.getFullAXTree')
         backendNodeId = None
         if root:

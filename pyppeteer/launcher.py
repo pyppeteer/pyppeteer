@@ -21,13 +21,13 @@ from pyppeteer.helper import debugError
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 
-if sys.platform.startswith('win'):
+if not sys.platform.startswith('win'):
     from signal import SIGHUP
 
 try:
-    from typing import TypedDict
+    from typing import TypedDict, Literal
 except ImportError:
-    from mypy_extensions import TypedDict
+    from typing_extensions import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ChromeArgOptions(TypedDict, total=False):
 
 class LaunchOptions(TypedDict, total=False):
     executablePath: str
-    ignoreDefaultArgs: Union[False, Sequence[str]]
+    ignoreDefaultArgs: Union[Literal[False], Sequence[str]]
     handleSIGINT: bool
     handleSIGTERM: bool
     handleSIGHUP: bool

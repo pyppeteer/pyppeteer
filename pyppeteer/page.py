@@ -26,8 +26,6 @@ from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import JSHandle
-from pyppeteer.frame_manager import Frame
-from pyppeteer.frame_manager import FrameManager
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
@@ -37,7 +35,9 @@ from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Browser, Target, BrowserContext  # noqa: F401
+    from pyppeteer.target import Target
+    from pyppeteer.frame_manager import Frame, FrameManager
+    from pyppeteer.browser import Browser, Target, BrowserContext
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class Page(EventEmitter):
     @staticmethod
     async def create(
         client: CDPSession,
-        target: Target,
+        target: 'Target',
         ignoreHTTPSErrors: bool,
         defaultViewport: Optional[Dict],
         screenshotTaskQueue: list = None,
@@ -84,7 +84,7 @@ class Page(EventEmitter):
         return page
 
     def __init__(
-        self, client: CDPSession, target: Target, ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None
+        self, client: CDPSession, target: 'Target', ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None
     ) -> None:
         super().__init__()
         self._closed = False
@@ -144,9 +144,9 @@ class Page(EventEmitter):
         networkManager = self._frameManager.networkManager
         _nm = networkManager
         _nm.on(Events.NetworkManager.Request, lambda event: self.emit(Events.Page.Request, event))
-        _nm.on(NetworkManager.Events.Response, lambda event: self.emit(Events.Page.Response, event))
-        _nm.on(NetworkManager.Events.RequestFailed, lambda event: self.emit(Events.Page.RequestFailed, event))
-        _nm.on(NetworkManager.Events.RequestFinished, lambda event: self.emit(Events.Page.RequestFinished, event))
+        _nm.on(Events.NetworkManager.Response, lambda event: self.emit(Events.Page.Response, event))
+        _nm.on(Events.NetworkManager.RequestFailed, lambda event: self.emit(Events.Page.RequestFailed, event))
+        _nm.on(Events.NetworkManager.RequestFinished, lambda event: self.emit(Events.Page.RequestFinished, event))
         self._fileChooserInterceptors = set()
 
         client.on('Page.domContentEventFired', lambda event: self.emit(Events.Page.DOMContentLoaded))
@@ -215,7 +215,7 @@ class Page(EventEmitter):
         )
 
     @property
-    def target(self) -> Target:
+    def target(self) -> 'Target':
         """Return a target this page created from."""
         return self._target
 
@@ -225,7 +225,7 @@ class Page(EventEmitter):
         return self._target.browser
 
     @property
-    def browserContext(self) -> BrowserContext:
+    def browserContext(self) -> 'BrowserContext':
         return self._target.browserContext
 
     def _onTargetCrashed(self) -> None:
@@ -246,7 +246,7 @@ class Page(EventEmitter):
             self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
 
     @property
-    def mainFrame(self) -> Optional[Frame]:
+    def mainFrame(self) -> Optional['Frame']:
         """Get main :class:`~pyppeteer.frame_manager.Frame` of this page."""
         return self._frameManager._mainFrame
 
@@ -567,7 +567,7 @@ class Page(EventEmitter):
         await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': expression})
 
-        async def _evaluate(frame: Frame) -> None:
+        async def _evaluate(frame: 'Frame') -> None:
             try:
                 await frame.evaluate(expression, force_expr=True)
             except Exception as e:
@@ -863,7 +863,7 @@ class Page(EventEmitter):
             return False
 
         return await helper.waitForEvent(
-            self._frameManager.networkManager, NetworkManager.Events.Request, predicate, timeout, self._client._loop,
+            self._frameManager.networkManager, Events.NetworkManager.Request, predicate, timeout, self._client._loop,
         )
 
     async def waitForResponse(
@@ -897,7 +897,7 @@ class Page(EventEmitter):
             return False
 
         return await helper.waitForEvent(
-            self._frameManager.networkManager, NetworkManager.Events.Response, predicate, timeout, self._client._loop,
+            self._frameManager.networkManager, Events.NetworkManager.Response, predicate, timeout, self._client._loop,
         )
 
     async def goBack(self, timeout: float = None, waitUntil: Union[str, List[str]] = None,) -> Optional[Response]:
@@ -1466,7 +1466,7 @@ class Page(EventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args, **kwargs) -> Awaitable:
+    async def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args, **kwargs) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
 
         This method behaves differently with respect to the first argument:

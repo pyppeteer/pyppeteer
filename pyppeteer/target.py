@@ -12,7 +12,7 @@ from pyppeteer.page import Page
 from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
-    from pyppeteer.browser import Browser, BrowserContext  # noqa: F401
+    from pyppeteer.browser import Browser, BrowserContext
 
 
 class Target:
@@ -21,7 +21,7 @@ class Target:
     def __init__(
         self,
         targetInfo: Dict,
-        browserContext: BrowserContext,
+        browserContext: 'BrowserContext',
         sessionFactory: Callable[[], Awaitable[CDPSession]],
         ignoreHTTPSErrors: bool,
         defaultViewport: Optional[Dict],
