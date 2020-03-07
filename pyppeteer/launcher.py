@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
+from signal import signal, SIGTERM, SIGINT, SIG_DFL
 from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -66,8 +66,8 @@ class BrowserOptions(TypedDict, total=False):
 
 
 def _restore_default_signal_handlers():
-    signal(SIGKILL, SIG_DFL)
     signal(SIGTERM, SIG_DFL)
+    signal(SIGINT, SIG_DFL)
     if not sys.platform.startswith('win'):
         signal(SIGHUP, SIG_DFL)
 
