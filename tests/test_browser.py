@@ -13,6 +13,7 @@ from pyppeteer import connect, launch
 
 from .base import BaseTestCase, DEFAULT_OPTIONS
 from .utils import waitEvent
+import pytest
 
 
 class TestBrowser(unittest.TestCase):
@@ -23,7 +24,7 @@ class TestBrowser(unittest.TestCase):
             '--no-sandbox',
             '--disable-extensions-except={}'.format(extensionPath),
             '--load-extensions={}'.format(extensionPath),
-        ]
+        ],
     }
 
     def waitForBackgroundPageTarget(self, browser):
@@ -46,26 +47,26 @@ class TestBrowser(unittest.TestCase):
     async def test_browser_process(self):
         browser = await launch(DEFAULT_OPTIONS)
         process = browser.process
-        self.assertGreater(process.pid, 0)
+        assert process.pid > 0
         wsEndpoint = browser.wsEndpoint
         browser2 = await connect({'browserWSEndpoint': wsEndpoint})
-        self.assertIsNone(browser2.process)
+        assert browser2.process is None
         await browser.close()
 
     @sync
     async def test_version(self):
         browser = await launch(DEFAULT_OPTIONS)
         version = await browser.version()
-        self.assertTrue(len(version) > 0)
-        self.assertTrue(version.startswith('Headless'))
+        assert len(version) > 0
+        assert version.startswith('Headless')
         await browser.close()
 
     @sync
     async def test_user_agent(self):
         browser = await launch(DEFAULT_OPTIONS)
         userAgent = await browser.userAgent()
-        self.assertGreater(len(userAgent), 0)
-        self.assertIn('WebKit', userAgent)
+        assert len(userAgent) > 0
+        assert 'WebKit' in userAgent
         await browser.close()
 
     @sync
@@ -81,22 +82,19 @@ class TestBrowser(unittest.TestCase):
         browser1.on('disconnected', lambda: discon1.append(1))
         browser2.on('disconnected', lambda: discon2.append(1))
 
-        await asyncio.wait([
-            browser2.disconnect(),
-            waitEvent(browser2, 'disconnected'),
-        ])
-        self.assertEqual(len(discon), 0)
-        self.assertEqual(len(discon1), 0)
-        self.assertEqual(len(discon2), 1)
+        await asyncio.wait(
+            [browser2.disconnect(), waitEvent(browser2, 'disconnected'),]
+        )
+        assert len(discon) == 0
+        assert len(discon1) == 0
+        assert len(discon2) == 1
 
-        await asyncio.wait([
-            waitEvent(browser1, 'disconnected'),
-            waitEvent(browser, 'disconnected'),
-            browser.close(),
-        ])
-        self.assertEqual(len(discon), 1)
-        self.assertEqual(len(discon1), 1)
-        self.assertEqual(len(discon2), 1)
+        await asyncio.wait(
+            [waitEvent(browser1, 'disconnected'), waitEvent(browser, 'disconnected'), browser.close(),]
+        )
+        assert len(discon) == 1
+        assert len(discon1) == 1
+        assert len(discon2) == 1
 
     @sync
     async def test_crash(self):
@@ -110,7 +108,7 @@ class TestBrowser(unittest.TestCase):
             if errors:
                 break
         await browser.close()
-        self.assertTrue(errors)
+        assert errors
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
@@ -120,7 +118,7 @@ class TestBrowser(unittest.TestCase):
         backgroundPageTarget = await self.waitForBackgroundPageTarget(browser)
         await page.close()
         await browser.close()
-        self.assertTrue(backgroundPageTarget)
+        assert backgroundPageTarget
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
@@ -137,18 +135,20 @@ class TestBrowser(unittest.TestCase):
             await req.respond({'body': 'YO, GOOGLE.COM'})
 
         page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
-        await page.evaluate('''() => {
+        await page.evaluate(
+            '''() => {
             const frame = document.createElement('iframe');
             frame.setAttribute('src', 'https://google.com/');
             document.body.appendChild(frame);
             return new Promise(x => frame.onload = x);
-        }''')
+        }'''
+        )
         await page.waitForSelector('iframe[src="https://google.com/"]')
         urls = []
         for frame in page.frames:
             urls.append(frame.url)
         urls.sort()
-        self.assertEqual(urls, [example_page, 'https://google.com/'])
+        assert urls == [example_page, 'https://google.com/']
         await browser.close()
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
@@ -156,17 +156,17 @@ class TestBrowser(unittest.TestCase):
     async def test_background_page(self):
         browserWithExtension = await launch(self.extensionOptions)
         backgroundPageTarget = await self.waitForBackgroundPageTarget(browserWithExtension)  # noqa: E501
-        self.assertIsNotNone(backgroundPageTarget)
+        assert backgroundPageTarget is not None
         page = await backgroundPageTarget.page()
-        self.assertEqual(await page.evaluate('2 * 3'), 6)
+        assert await page.evaluate('2 * 3') == 6
         await browserWithExtension.close()
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_waitForTarget(self):
         browser = await launch(**DEFAULT_OPTIONS)
-        self.assertIsNotNone(await browser.waitForTarget(lambda target: target))
-        with self.assertRaises(asyncio.exceptions.TimeoutError):
+        assert await browser.waitForTarget(lambda target: target) is not None
+        with pytest.raises(asyncio.exceptions.TimeoutError):
             await browser.waitForTarget(lambda target: False, timeout=100),
 
 
@@ -174,9 +174,9 @@ class TestPageClose(BaseTestCase):
     @sync
     async def test_not_visible_in_browser_pages(self):
         newPage = await self.context.newPage()
-        self.assertIn(newPage, await self.browser.pages())
+        assert newPage in await self.browser.pages()
         await newPage.close()
-        self.assertNotIn(newPage, await self.browser.pages())
+        assert newPage not in await self.browser.pages()
 
     @sync
     async def test_before_unload(self):
@@ -185,15 +185,15 @@ class TestPageClose(BaseTestCase):
         await newPage.click('body')
         asyncio.ensure_future(newPage.close(runBeforeUnload=True))
         dialog = await waitEvent(newPage, 'dialog')
-        self.assertEqual(dialog.type, 'beforeunload')
-        self.assertEqual(dialog.defaultValue, '')
-        self.assertEqual(dialog.message, '')
+        assert dialog.type == 'beforeunload'
+        assert dialog.defaultValue == ''
+        assert dialog.message == ''
         asyncio.ensure_future(dialog.accept())
         await waitEvent(newPage, 'close')
 
     @sync
     async def test_page_close_state(self):
         newPage = await self.context.newPage()
-        self.assertFalse(newPage.isClosed())
+        assert not newPage.isClosed()
         await newPage.close()
-        self.assertTrue(newPage.isClosed())
+        assert newPage.isClosed()

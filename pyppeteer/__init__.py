@@ -27,14 +27,11 @@ _log_handler.setLevel(logging.DEBUG)
 _logger.addHandler(_log_handler)
 _logger.propagate = False
 
-from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
-from pyppeteer.launcher import defaultArgs  # noqa: E402
-
 from typing import Dict, Any
 
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
-from pyppeteer.launcher import Launcher
+from pyppeteer.launcher import launcher
 from pyppeteer.browser_fetcher import BrowserFetcher
 
 
@@ -68,10 +65,8 @@ class Pyppeteer:
     @property
     def _launcher(self):
         if not self._lazyLauncher:
-            self._lazyLauncher = Launcher(
-                projectRoot=self._projectRoot,
-                preferredRevision=self._preferredRevision,
-                product=self.productName
+            self._lazyLauncher = launcher(
+                projectRoot=self._projectRoot, preferredRevision=self._preferredRevision, product=self.productName
             )
         return self._lazyLauncher
 
@@ -86,10 +81,6 @@ version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
 __all__ = [
-    'connect',
-    'launch',
-    'executablePath',
-    'defaultArgs',
     'version',
     'version_info',
 ]

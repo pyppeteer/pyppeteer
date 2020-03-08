@@ -10,6 +10,7 @@ from syncer import sync
 from pyppeteer import launch
 from pyppeteer.chromium_downloader import current_platform
 from pyppeteer.errors import NetworkError
+import pytest
 
 
 class TestBrowserCrash(unittest.TestCase):
@@ -26,10 +27,10 @@ class TestBrowserCrash(unittest.TestCase):
             # wait for terminating browser process
             await asyncio.sleep(1)
 
-        with self.assertRaises(NetworkError):
+        with pytest.raises(NetworkError):
             await page.querySelector("title")
-        with self.assertRaises(NetworkError):
+        with pytest.raises(NetworkError):
             with self.assertLogs('pyppeteer', logging.ERROR):
                 await page.querySelector("title")
-        with self.assertRaises(ConnectionError):
+        with pytest.raises(ConnectionError):
             await browser.newPage()

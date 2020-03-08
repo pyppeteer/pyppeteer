@@ -1,14 +1,20 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator, Union
+from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING
 
 from pyppeteer import helper
-from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import BrowserError, PageError, NetworkError
-from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.frame_manager import Frame
-from pyppeteer.jshandle import JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.timeout_settings import TimeoutSettings
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
+if TYPE_CHECKING:
+    from pyppeteer.jshandle import JSHandle, ElementHandle
+    from pyppeteer.frame_manager import Frame, FrameManager
+    from pyppeteer.execution_context import ExecutionContext
 
 
 async def readFileAsync(path, file):
@@ -18,10 +24,7 @@ async def readFileAsync(path, file):
 
 class DOMWorld(object):
     def __init__(
-            self,
-            frameManager: 'FrameManager',
-            frame: Frame,
-            timeoutSettings: TimeoutSettings,
+        self, frameManager: 'FrameManager', frame: 'Frame', timeoutSettings: TimeoutSettings,
     ):
         self._frameManager = frameManager
         self._frame = frame
@@ -46,7 +49,7 @@ class DOMWorld(object):
     def frame(self):
         return self._frame
 
-    def _setContext(self, context: ExecutionContext):
+    def _setContext(self, context: 'ExecutionContext'):
         pass
         # TODO Promises
 
@@ -60,8 +63,10 @@ class DOMWorld(object):
 
     def executionContext(self):
         if self._detached:
-            raise BrowserError('Execution Context is not available in detached '
-                               f'frame: {self._frame.url} (are you trying to evaluate?)')
+            raise BrowserError(
+                'Execution Context is not available in detached '
+                f'frame: {self._frame.url} (are you trying to evaluate?)'
+            )
         return self._contextPromise
 
     async def evaluateHandle(self, pageFunction: str, *args):
@@ -84,16 +89,11 @@ class DOMWorld(object):
         document = await self._document()
         return await document.xpath(expression)
 
-    async def querySelectorEval(
-            self,
-            selector: str,
-            pageFunction: str,
-            *args: Any
-    ) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
         document = await self._document()
         return await document.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
         """Get all elements which matches `selector`.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
@@ -102,8 +102,7 @@ class DOMWorld(object):
         value = await document.querySelectorAll(selector)
         return value
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Optional[Dict]:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Optional[Dict]:
         """Execute function on all elements which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
@@ -111,8 +110,6 @@ class DOMWorld(object):
         document = await self._document()
         value = await document.JJeval(selector, pageFunction, *args)
         return value
-
-
 
     async def content(self):
         return await self.evaluate(
@@ -140,16 +137,13 @@ class DOMWorld(object):
               document.write(html);
               document.close();
             }
-            """, html)
-        watcher = LifecycleWatcher(
-            self._frameManager, self._frame,
-            waitUntil=waitUntil, timeout=timeout
+            """,
+            html,
         )
+        watcher = LifecycleWatcher(
+            frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout)
         error = await asyncio.wait(
-            [
-                watcher.timeoutOrTerminationPromise(),
-                watcher.lifecyclePromise(),
-            ], return_when=asyncio.FIRST_COMPLETED
+            [watcher.timeoutOrTerminationPromise(), watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
         )
         watcher.dispose()
         if error:
@@ -250,7 +244,7 @@ class DOMWorld(object):
         if not handle:
             raise BrowserError(f'No node found for selector: {selector}')
 
-    async def click(self, selector: str, **kwargs):
+    async def click(self, selector: str, button: Literal['left', 'right', 'middle'] = None, clickCount: int = None):
         """
         :param selector:
         :param kwargs:
@@ -259,7 +253,7 @@ class DOMWorld(object):
         :return:
         """
         handle = await self._select_handle(selector)
-        await handle.click(**kwargs)
+        await handle.click(button=button, clickCount=clickCount)
         await handle.dispose()
 
     async def focus(self, selector: str):
@@ -288,8 +282,8 @@ class DOMWorld(object):
         await handle.type(text, **kwargs)
         await handle.dispose()
 
-    async def waitForSelector(self, selector, **kwargs):
-        return self._waitForSelectorOrXpath(selector, isXpath=False, **kwargs)
+    async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None):
+        return self._waitForSelectorOrXpath(selector, isXpath=False, visible=visible, hidden=hidden, timeout=timeout)
 
     async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args):
         if not timeout:
@@ -299,23 +293,14 @@ class DOMWorld(object):
     async def title(self):
         return self.evaluate('() => document.title')
 
-    async def _waitForSelectorOrXpath(
-            self,
-            selectorOrXpath,
-            isXPath,
-            visible=False,
-            hidden=False,
-            timeout=None
-    ):
+    async def _waitForSelectorOrXpath(self, selectorOrXpath, isXPath, visible=False, hidden=False, timeout=None):
         if not timeout:
-            self._timeoutSettings.timeout
+            timeout = self._timeoutSettings.timeout
         if visible or hidden:
             polling = 'raf'
         else:
             polling = 'mutation'
-        title = f"{'XPath' if isXPath else 'selector'} " \
-                f"{selectorOrXpath}" \
-                f"{' to be hidden' if hidden else ''}"
+        title = f"{'XPath' if isXPath else 'selector'} " f"{selectorOrXpath}" f"{' to be hidden' if hidden else ''}"
         predicate = """
         function predicate(selectorOrXPath, isXPath, waitForVisible, waitForHidden) {
           const node = isXPath
@@ -356,23 +341,21 @@ class WaitTask(object):
     """
 
     def __init__(
-            self,
-            domWorld: DOMWorld,
-            predicateBody: str,
-            title: str,
-            polling: Union[str, int],
-            timeout: float,
-            loop: asyncio.AbstractEventLoop,
-            *args: Any
+        self,
+        domWorld: DOMWorld,
+        predicateBody: str,
+        title: str,
+        polling: Union[str, int],
+        timeout: float,
+        loop: asyncio.AbstractEventLoop,
+        *args: Any,
     ) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
                 raise ValueError(f'Unknown polling: {polling}')
         elif isinstance(polling, (int, float)):
             if polling <= 0:
-                raise ValueError(
-                    f'Cannot poll with non-positive interval: {polling}'
-                )
+                raise ValueError(f'Cannot poll with non-positive interval: {polling}')
         else:
             raise ValueError(f'Unknown polling option: {polling}')
 
@@ -395,9 +378,7 @@ class WaitTask(object):
         async def timer(timeout: float) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
-            self.terminate(TimeoutError(
-                f'Waiting for {title} failed: timeout {timeout}ms exceeds.'
-            ))
+            self.terminate(TimeoutError(f'Waiting for {title} failed: timeout {timeout}ms exceeds.'))
 
         if timeout:
             self._timeoutTimer = self._loop.create_task(timer(self._timeout))
@@ -420,7 +401,7 @@ class WaitTask(object):
     async def rerun(self) -> None:  # noqa: C901
         """Start polling."""
         runCount = self._runCount = self._runCount + 1
-        success: Optional[JSHandle] = None
+        success: Optional['JSHandle'] = None
         error = None
 
         try:
@@ -428,11 +409,7 @@ class WaitTask(object):
             if context is None:
                 raise PageError('No execution context.')
             success = await context.evaluateHandle(
-                waitForPredicatePageFunction,
-                self._predicateBody,
-                self._polling,
-                self._timeout,
-                *self._args,
+                waitForPredicatePageFunction, self._predicateBody, self._polling, self._timeout, *self._args,
             )
         except Exception as e:
             error = e
@@ -447,8 +424,7 @@ class WaitTask(object):
 
         # Add try/except referring to puppeteer.
         try:
-            if not error and success and (
-                    await self._domWorld.evaluate('s => !s', success)):
+            if not error and success and (await self._domWorld.evaluate('s => !s', success)):
                 await success.dispose()
                 return
         except NetworkError:
@@ -458,13 +434,11 @@ class WaitTask(object):
 
         # page is navigated and context is destroyed.
         # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Execution context was destroyed' in error.args[0]):
+        if isinstance(error, NetworkError) and 'Execution context was destroyed' in error.args[0]:
             return
 
         # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Cannot find context with specified id' in error.args[0]):
+        if isinstance(error, NetworkError) and 'Cannot find context with specified id' in error.args[0]:
             return
 
         if error:

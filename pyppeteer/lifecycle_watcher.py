@@ -10,14 +10,16 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 import asyncio
 from asyncio import FIRST_COMPLETED
 from functools import partial
-from typing import Awaitable, Dict, List, Union, Optional
+from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
 from pyppeteer.events import Events
-from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.network_manager import Request
-from pyppeteer.util import merge_dict
+
+if TYPE_CHECKING:
+    from pyppeteer.frame_manager import FrameManager, Frame
+
 
 pyppeteerToProtocolLifecycle = {
     'load': 'load',
@@ -31,10 +33,14 @@ pyppeteerToProtocolLifecycle = {
 class LifecycleWatcher:
     """LifecycleWatcher class."""
 
-    def __init__(self, frameManager: FrameManager, frame: Frame, timeout: int,
-                 options: Dict = None, **kwargs: Dict[str, Union[bool, int, float, str]]) -> None:
+    def __init__(
+        self,
+        frameManager: 'FrameManager',
+        frame: 'Frame',
+        timeout: int,
+        options: Dict = None,
+    ) -> None:
         """Make new LifecycleWatcher"""
-        options = merge_dict(options, kwargs)
         self._futures = []
         self._validate_options_and_set_expected_lifecycle(options)
         self._frameManager = frameManager
@@ -47,29 +53,18 @@ class LifecycleWatcher:
             helper.addEventListener(
                 self._frameManager._client,
                 Events.CDPSession.Disconnected,
-                partial(self._terminate,
-                        BrowserError('Navigation failed because browser has disconnected'))
+                partial(self._terminate, BrowserError('Navigation failed because browser has disconnected')),
             ),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.LifecycleEvent,
-                self._checkLifecycleComplete,
+                self._frameManager, Events.FrameManager.LifecycleEvent, self._checkLifecycleComplete,
             ),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.FrameNavigatedWithinDocument,
-                self._navigatedWithinDocument,
+                self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
+            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(
-                self._frameManager,
-                FrameManager.Events.FrameDetached,
-                self._onFrameDetached,
+                self._frameManager.networkManager(), Events.NetworkManager.Request, self._onRequest,
             ),
-            helper.addEventListener(
-                self._frameManager.networkManager(),
-                Events.NetworkManager.Request,
-                self._onRequest,
-            )
         ]
         self._loop = self._frameManager._client._loop
 
@@ -93,24 +88,20 @@ class LifecycleWatcher:
                 raise DeprecationError(f'`{deprecated_opt}` option is no longer supported.')
 
         if options.get('waitUntil') == 'networkidle':
-            raise DeprecationError(
-                '`networkidle` option is no longer supported. '
-                'Use `networkidle2` instead.')
+            raise DeprecationError('`networkidle` option is no longer supported. ' 'Use `networkidle2` instead.')
         if options.get('waitUntil') == 'documentloaded':
             import logging
+
             logging.getLogger(__name__).warning(
-                '`documentloaded` option is no longer supported. '
-                'Use `domcontentloaded` instead.')
+                '`documentloaded` option is no longer supported. ' 'Use `domcontentloaded` instead.'
+            )
         _waitUntil = options.get('waitUntil', 'load')
         if isinstance(_waitUntil, list):
             waitUntil = _waitUntil
         elif isinstance(_waitUntil, str):
             waitUntil = [_waitUntil]
         else:
-            raise TypeError(
-                '`waitUntil` option should be str or List of str, '
-                f'but got type {type(_waitUntil)}'
-            )
+            raise TypeError('`waitUntil` option should be str or List of str, ' f'but got type {type(_waitUntil)}')
         self._expectedLifecycle: List[str] = []
         for value in waitUntil:
             try:
@@ -136,7 +127,7 @@ class LifecycleWatcher:
         if request.frame == self._frame and request.isNavigationRequest():
             self._navigationRequest = request
 
-    def _onFrameDetached(self, frame: Frame = None) -> None:
+    def _onFrameDetached(self, frame: 'Frame' = None) -> None:
         # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._terminationFuture.set_exception(PageError('Navigating frame was detached'))
@@ -162,12 +153,13 @@ class LifecycleWatcher:
                 self._maximumTimerFuture.set_exception(TimeoutError(errorMessage))
 
             self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(
-                _timeout_func())  # noqa: E501
+                _timeout_func()
+            )  # noqa: E501
         else:
             self._timeoutTimerFuture = self._loop.create_future()
         return self._maximumTimerFuture
 
-    def _navigatedWithinDocument(self, frame: Frame = None) -> None:
+    def _navigatedWithinDocument(self, frame: 'Frame' = None) -> None:
         # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._hasSameDocumentNavigation = True
@@ -184,7 +176,7 @@ class LifecycleWatcher:
         if self._frame._loaderId != self._initialLoaderId:
             self._newDocumentNavigationFuture.set_result(None)
 
-    def _checkLifecycle(self, frame: Frame, expectedLifecycle: List[str]) -> bool:
+    def _checkLifecycle(self, frame: 'Frame', expectedLifecycle: List[str]) -> bool:
         for event in expectedLifecycle:
             if event not in frame._lifecycleEvents:
                 return False

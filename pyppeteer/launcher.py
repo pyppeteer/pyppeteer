@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from signal import signal, SIGTERM, SIGINT, SIGKILL, SIG_DFL
+from signal import signal, SIGTERM, SIGINT, SIG_DFL
 from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
@@ -17,17 +17,17 @@ from urllib.request import urlopen
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
-from pyppeteer.helper import debugError, logger
+from pyppeteer.helper import debugError
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 
-if sys.platform.startswith('win'):
+if not sys.platform.startswith('win'):
     from signal import SIGHUP
 
 try:
-    from typing import TypedDict
+    from typing import TypedDict, Literal
 except ImportError:
-    from mypy_extensions import TypedDict
+    from typing_extensions import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class ChromeArgOptions(TypedDict, total=False):
 
 class LaunchOptions(TypedDict, total=False):
     executablePath: str
-    ignoreDefaultArgs: Union[False, Sequence[str]]
+    ignoreDefaultArgs: Union[Literal[False], Sequence[str]]
     handleSIGINT: bool
     handleSIGTERM: bool
     handleSIGHUP: bool
@@ -66,8 +66,8 @@ class BrowserOptions(TypedDict, total=False):
 
 
 def _restore_default_signal_handlers():
-    signal(SIGKILL, SIG_DFL)
     signal(SIGTERM, SIG_DFL)
+    signal(SIGINT, SIG_DFL)
     if not sys.platform.startswith('win'):
         signal(SIGHUP, SIG_DFL)
 

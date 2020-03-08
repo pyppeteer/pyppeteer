@@ -6,17 +6,19 @@ import asyncio
 import logging
 from subprocess import Popen
 from types import SimpleNamespace
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
-from pyppeteer.page import Page
+from pyppeteer.events import Events
 from pyppeteer.target import Target
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from pyppeteer.page import Page
 
 class Browser(EventEmitter):
     """Browser class.
@@ -33,11 +35,16 @@ class Browser(EventEmitter):
         Disconnected='disconnected',
     )
 
-    def __init__(self, connection: Connection, contextIds: List[str],
-                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                 process: Optional[Popen] = None,
-                 closeCallback: Callable[[], Awaitable[None]] = None,
-                 **kwargs: Any) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultViewport = defaultViewport
@@ -62,20 +69,15 @@ class Browser(EventEmitter):
             self._contexts[contextId] = BrowserContext(self, contextId)
 
         self._targets: Dict[str, Target] = dict()
-        self._connection.setClosedCallback(
-            lambda: self.emit(Browser.Events.Disconnected)
+        self._connection.setClosedCallback(lambda: self.emit(Events.Browser.Disconnected))
+        self._connection.on(
+            'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
         )
         self._connection.on(
-            'Target.targetCreated',
-            lambda event: loop.create_task(self._targetCreated(event)),
+            'Target.targetDestroyed', lambda event: loop.create_task(self._targetDestroyed(event)),
         )
         self._connection.on(
-            'Target.targetDestroyed',
-            lambda event: loop.create_task(self._targetDestroyed(event)),
-        )
-        self._connection.on(
-            'Target.targetInfoChanged',
-            lambda event: loop.create_task(self._targetInfoChanged(event)),
+            'Target.targetInfoChanged', lambda event: loop.create_task(self._targetInfoChanged(event)),
         )
 
     @property
@@ -123,20 +125,21 @@ class Browser(EventEmitter):
         return self._defaultContext
 
     async def _disposeContext(self, contextId: str) -> None:
-        await self._connection.send('Target.disposeBrowserContext', {
-            'browserContextId': contextId,
-        })
+        await self._connection.send('Target.disposeBrowserContext', {'browserContextId': contextId,})
         self._contexts.pop(contextId, None)
 
     @staticmethod
-    async def create(connection: Connection, contextIds: List[str],
-                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                     process: Optional[Popen] = None,
-                     closeCallback: Callable[[], Awaitable[None]] = None,
-                     **kwargs: Any) -> 'Browser':
+    async def create(
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> 'Browser':
         """Create browser object."""
-        browser = Browser(connection, contextIds, ignoreHTTPSErrors,
-                          defaultViewport, process, closeCallback)
+        browser = Browser(connection, contextIds, ignoreHTTPSErrors, defaultViewport, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -162,16 +165,16 @@ class Browser(EventEmitter):
             raise BrowserError('target should not exist before create.')
         self._targets[targetInfo['targetId']] = target
         if await target._initializedPromise:
-            self.emit(Browser.Events.TargetCreated, target)
-            context.emit(BrowserContext.Events.TargetCreated, target)
+            self.emit(Events.Browser.TargetCreated, target)
+            context.emit(Events.BrowserContext.TargetCreated, target)
 
     async def _targetDestroyed(self, event: Dict) -> None:
         target = self._targets[event['targetId']]
         del self._targets[event['targetId']]
         target._closedCallback()
         if await target._initializedPromise:
-            self.emit(Browser.Events.TargetDestroyed, target)
-            target.browserContext.emit(BrowserContext.Events.TargetDestroyed, target)  # noqa: E501
+            self.emit(Events.Browser.TargetDestroyed, target)
+            target.browserContext.emit(Events.BrowserContext.TargetDestroyed, target)  # noqa: E501
         target._initializedCallback(False)
 
     async def _targetInfoChanged(self, event: Dict) -> None:
@@ -182,25 +185,24 @@ class Browser(EventEmitter):
         wasInitialized = target._isInitialized
         target._targetInfoChanged(event['targetInfo'])
         if wasInitialized and previousURL != target.url:
-            self.emit(Browser.Events.TargetChanged, target)
-            target.browserContext.emit(BrowserContext.Events.TargetChanged, target)  # noqa: E501
+            self.emit(Events.Browser.TargetChanged, target)
+            target.browserContext.emit(Events.BrowserContext.TargetChanged, target)  # noqa: E501
 
     @property
     def wsEndpoint(self) -> str:
         """Return websocket end point url."""
         return self._connection.url
 
-    async def newPage(self) -> Page:
+    async def newPage(self) -> 'Page':
         """Make new page on this browser and return its object."""
         return await self._defaultContext.newPage()
 
-    async def _createPageInContext(self, contextId: Optional[str]) -> Page:
+    async def _createPageInContext(self, contextId: Optional[str]) -> 'Page':
         options = {'url': 'about:blank'}
         if contextId:
             options['browserContextId'] = contextId
 
-        targetId = (await self._connection.send(
-            'Target.createTarget', options)).get('targetId')
+        targetId = (await self._connection.send('Target.createTarget', options)).get('targetId')
         target = self._targets.get(targetId)
         if target is None or not await target._initializedPromise:
             raise BrowserError('Failed to create target for page.')
@@ -239,16 +241,17 @@ class Browser(EventEmitter):
 
         def check(target):
             if predicate(target):
-                self.remove_listener('Target.targetCreated', check)
-                self.remove_listener('targetchanged', check)
                 result.set_result(target)
                 result.done()
 
-        self.on('Target.targetCreated', check)
-        self.on('targetchanged', check)
-        return await asyncio.wait_for(result, timeout=timeout)
+        self.on(Events.Browser.TargetCreated, check)
+        self.on(Events.Browser.TargetChanged, check)
+        result = await asyncio.wait_for(result, timeout=timeout)
+        self.remove_listener(Events.Browser.TargetCreated, check)
+        self.remove_listener(Events.Browser.TargetChanged, check)
+        return result
 
-    async def pages(self) -> List[Page]:
+    async def pages(self) -> List['Page']:
         """Get all pages of this browser.
 
         Non visible pages, such as ``"background_page"``, will not be listed
@@ -315,9 +318,7 @@ class BrowserContext(EventEmitter):
     """
 
     Events = SimpleNamespace(
-        TargetCreated='targetcreated',
-        TargetDestroyed='targetdestroyed',
-        TargetChanged='targetchanged',
+        TargetCreated='targetcreated', TargetDestroyed='targetdestroyed', TargetChanged='targetchanged',
     )
 
     def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
@@ -333,16 +334,13 @@ class BrowserContext(EventEmitter):
                 targets.append(target)
         return targets
 
-    async def pages(self) -> List[Page]:
+    async def pages(self) -> List['Page']:
         """Return list of all open pages.
 
         Non-visible pages, such as ``"background_page"``, will not be listed
         here. You can find them using :meth:`pyppeteer.target.Target.page`.
         """
-        pages = [
-            target.page() for target in self.targets()
-            if target.type == 'page'
-        ]
+        pages = [target.page() for target in self.targets() if target.type == 'page']
         return [page for page in await asyncio.gather(*pages) if page]
 
     def isIncognite(self) -> bool:
@@ -350,10 +348,7 @@ class BrowserContext(EventEmitter):
 
         Use :meth:`isIncognito` method instead.
         """
-        logger.warning(
-            'isIncognite is deprecated. '
-            'Use isIncognito instead.'
-        )
+        logger.warning('isIncognite is deprecated. ' 'Use isIncognito instead.')
         return self.isIncognito()
 
     def isIncognito(self) -> bool:
@@ -366,7 +361,7 @@ class BrowserContext(EventEmitter):
         """
         return bool(self._id)
 
-    async def newPage(self) -> Page:
+    async def newPage(self) -> 'Page':
         """Create a new page in the browser context."""
         return await self._browser._createPageInContext(self._id)
 

@@ -7,62 +7,51 @@ import unittest
 import pyppeteer
 from pyppeteer.helper import debugError, get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
+import pytest
 
 
 class TestVersion(unittest.TestCase):
     def test_version(self):
         version = pyppeteer.version
-        self.assertTrue(isinstance(version, str))
-        self.assertEqual(version.count('.'), 2)
+        assert isinstance(version, str)
+        assert version.count('.') == 2
 
     def test_version_info(self):
         vinfo = pyppeteer.version_info
-        self.assertEqual(len(vinfo), 3)
+        assert len(vinfo) == 3
         for i in vinfo:
-            self.assertTrue(isinstance(i, int))
+            assert isinstance(i, int)
 
 
 class TestDefaultArgs(unittest.TestCase):
     def test_default_args(self):
-        self.assertIn('--no-first-run', pyppeteer.defaultArgs())
-        self.assertIn('--headless', pyppeteer.defaultArgs())
-        self.assertNotIn('--headless', pyppeteer.defaultArgs({'headless': False}))  # noqa: E501
-        self.assertIn('--user-data-dir=foo', pyppeteer.defaultArgs(userDataDir='foo'))  # noqa: E501
+        assert '--no-first-run' in pyppeteer.defaultArgs()
+        assert '--headless' in pyppeteer.defaultArgs()
+        assert '--headless' not in pyppeteer.defaultArgs({'headless': False})  # noqa: E501
+        assert '--user-data-dir=foo' in pyppeteer.defaultArgs(userDataDir='foo')  # noqa: E501
 
 
 class TestToInches(unittest.TestCase):
     def test_px(self):
-        self.assertEqual(
-            convertPrintParameterToInches('12px'),
-            12.0 / 96,
-        )
+        assert convertPrintParameterToInches('12px') == 12.0 / 96
 
     def test_inch(self):
-        self.assertAlmostEqual(
-            convertPrintParameterToInches('12in'),
-            12.0,
-        )
+        assert round(abs(convertPrintParameterToInches('12in') - 12.0), 7) == 0
 
     def test_cm(self):
-        self.assertAlmostEqual(
-            convertPrintParameterToInches('12cm'),
-            12.0 * 37.8 / 96,
-        )
+        assert round(abs(convertPrintParameterToInches('12cm') - 12.0 * 37.8 / 96), 7) == 0
 
     def test_mm(self):
-        self.assertAlmostEqual(
-            convertPrintParameterToInches('12mm'),
-            12.0 * 3.78 / 96,
-        )
+        assert round(abs(convertPrintParameterToInches('12mm') - 12.0 * 3.78 / 96), 7) == 0
 
 
 class TestPositiveInt(unittest.TestCase):
     def test_badtype(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             get_positive_int({'a': 'b'}, 'a')
 
     def test_negative_int(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             get_positive_int({'a': -1}, 'a')
 
 
@@ -77,7 +66,7 @@ class TestDebugError(unittest.TestCase):
     def test_debug_default(self):
         with self.assertLogs('pyppeteer.test', logging.DEBUG):
             debugError(self.logger, 'test')
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             with self.assertLogs('pyppeteer', logging.INFO):
                 debugError(self.logger, 'test')
 
@@ -93,11 +82,11 @@ class TestDebugError(unittest.TestCase):
         pyppeteer.DEBUG = False
         with self.assertLogs('pyppeteer.test', logging.DEBUG):
             debugError(self.logger, 'test')
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             with self.assertLogs('pyppeteer.test', logging.INFO):
                 debugError(self.logger, 'test')
 
     def test_debug_logger(self):
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             with self.assertLogs('pyppeteer', logging.DEBUG):
                 debugError(logging.getLogger('test'), 'test message')

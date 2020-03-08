@@ -38,7 +38,7 @@ if NO_PROGRESS_BAR.lower() in ('1', 'true'):
 
 # Windows archive name changed at r591479.
 windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
-    
+
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
@@ -48,8 +48,7 @@ downloadURLs = {
 
 chromiumExecutable = {
     'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chrome',
-    'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' /
-            'Contents' / 'MacOS' / 'Chromium'),
+    'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'),
     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
     'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
 }
@@ -61,9 +60,7 @@ def current_platform() -> str:
         return 'linux'
     elif sys.platform.startswith('darwin'):
         return 'mac'
-    elif (sys.platform.startswith('win') or
-          sys.platform.startswith('msys') or
-          sys.platform.startswith('cyg')):
+    elif sys.platform.startswith('win') or sys.platform.startswith('msys') or sys.platform.startswith('cyg'):
         if sys.maxsize > 2 ** 31 - 1:
             return 'win64'
         return 'win32'
@@ -77,8 +74,7 @@ def get_url() -> str:
 
 def download_zip(url: str) -> BytesIO:
     """Download data from url."""
-    logger.warning('start chromium download.\n'
-                   'Download may take a few minutes.')
+    logger.warning('start chromium download.\n' 'Download may take a few minutes.')
 
     # disable warnings so that we don't need a cert.
     # see https://urllib3.readthedocs.io/en/latest/advanced-usage.html for more
@@ -94,10 +90,7 @@ def download_zip(url: str) -> BytesIO:
         except (KeyError, ValueError, AttributeError):
             total_length = 0
 
-        process_bar = tqdm(
-            total=total_length,
-            file=os.devnull if NO_PROGRESS_BAR else None,
-        )
+        process_bar = tqdm(total=total_length, file=os.devnull if NO_PROGRESS_BAR else None,)
 
         # 10 * 1024
         _data = BytesIO()
@@ -116,19 +109,16 @@ def extract_zip(data: BytesIO, path: Path) -> None:
     if current_platform() == 'mac':
         import subprocess
         import shutil
+
         zip_path = path / 'chrome.zip'
         if not path.exists():
             path.mkdir(parents=True)
         with zip_path.open('wb') as f:
             f.write(data.getvalue())
         if not shutil.which('unzip'):
-            raise OSError('Failed to automatically extract chromium.'
-                          f'Please unzip {zip_path} manually.')
+            raise OSError('Failed to automatically extract chromium.' f'Please unzip {zip_path} manually.')
         proc = subprocess.run(
-            ['unzip', str(zip_path)],
-            cwd=str(path),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            ['unzip', str(zip_path)], cwd=str(path), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
         if proc.returncode != 0:
             logger.error(proc.stdout.decode())
@@ -141,8 +131,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
     exec_path = chromium_executable()
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
-    exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP |
-                    stat.S_IXUSR)
+    exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP | stat.S_IXUSR)
     logger.warning(f'chromium extracted to: {path}')
 
 
@@ -156,10 +145,7 @@ def chromium_excutable() -> Path:
 
     Use `chromium_executable` instead.
     """
-    logger.warning(
-        '`chromium_excutable` function is deprecated. '
-        'Use `chromium_executable instead.'
-    )
+    logger.warning('`chromium_excutable` function is deprecated. ' 'Use `chromium_executable instead.')
     return chromium_executable()
 
 
