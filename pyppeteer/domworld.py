@@ -1,10 +1,15 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING, Literal
+from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.errors import BrowserError, PageError, NetworkError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.timeout_settings import TimeoutSettings
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 if TYPE_CHECKING:
     from pyppeteer.jshandle import JSHandle, ElementHandle
