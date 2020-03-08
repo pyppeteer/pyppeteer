@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator, Union
+from typing import Any, List, Optional, Dict, Generator, Union, Literal
 
 from pyppeteer import helper
 from pyppeteer.element_handle import ElementHandle
@@ -136,7 +136,7 @@ class DOMWorld(object):
         )
         watcher = LifecycleWatcher(self._frameManager, self._frame, waitUntil=waitUntil, timeout=timeout)
         error = await asyncio.wait(
-            [watcher.timeoutOrTerminationPromise(), watcher.lifecyclePromise(),], return_when=asyncio.FIRST_COMPLETED
+            [watcher.timeoutOrTerminationPromise(), watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
         )
         watcher.dispose()
         if error:
@@ -237,7 +237,7 @@ class DOMWorld(object):
         if not handle:
             raise BrowserError(f'No node found for selector: {selector}')
 
-    async def click(self, selector: str, **kwargs):
+    async def click(self, selector: str, button: Literal['left', 'right', 'middle'] = None, clickCount: int = None):
         """
         :param selector:
         :param kwargs:
@@ -246,7 +246,7 @@ class DOMWorld(object):
         :return:
         """
         handle = await self._select_handle(selector)
-        await handle.click(**kwargs)
+        await handle.click(button=button, clickCount=clickCount)
         await handle.dispose()
 
     async def focus(self, selector: str):
@@ -275,8 +275,8 @@ class DOMWorld(object):
         await handle.type(text, **kwargs)
         await handle.dispose()
 
-    async def waitForSelector(self, selector, **kwargs):
-        return self._waitForSelectorOrXpath(selector, isXpath=False, **kwargs)
+    async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None):
+        return self._waitForSelectorOrXpath(selector, isXpath=False, visible=visible, hidden=hidden, timeout=timeout)
 
     async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args):
         if not timeout:
@@ -288,7 +288,7 @@ class DOMWorld(object):
 
     async def _waitForSelectorOrXpath(self, selectorOrXpath, isXPath, visible=False, hidden=False, timeout=None):
         if not timeout:
-            self._timeoutSettings.timeout
+            timeout = self._timeoutSettings.timeout
         if visible or hidden:
             polling = 'raf'
         else:

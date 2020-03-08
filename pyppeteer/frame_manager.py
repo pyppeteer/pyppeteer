@@ -341,54 +341,30 @@ class Frame(object):
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-        # todo remove this?
-        self._documentPromise: Optional[ElementHandle] = None
-        self._contextResolveCallback = lambda _: None
-        self._setDefaultContext(None)
-
         self._waitTasks: Set[WaitTask] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-    def _addExecutionContext(self, context: ExecutionContext) -> None:
-        if context._isDefault:
-            self._setDefaultContext(context)
+        # aliases
+        self.goto = self._frameManager.navigateFrame
+        self.waitForSelector = self._frameManager.waitForFrameNavigation
+        self.click = self._secondaryWorld.click
 
-    def _removeExecutionContext(self, context: ExecutionContext) -> None:
-        if context._isDefault:
-            self._setDefaultContext(None)
-
-    def _setDefaultContext(self, context: Optional[ExecutionContext]) -> None:
-        if context is not None:
-            self._contextResolveCallback(context)  # type: ignore
-            self._contextResolveCallback = lambda _: None
-            for waitTask in self._waitTasks:
-                self._client._loop.create_task(waitTask.rerun())
-        else:
-            self._documentPromise = None
-            self._contextPromise = self._client._loop.create_future()
-            self._contextResolveCallback = lambda _context: self._contextPromise.set_result(_context)
-
-    async def goto(self, url, **kwargs):
-        return await self._frameManager.navigateFrame(self, url, **kwargs)
-
-    async def waitForNavigation(self, **kwargs):
-        return await self._frameManager.waitForFrameNavigation(self, **kwargs)
-
+    @property
     async def executionContext(self) -> Optional[ExecutionContext]:
         """Return execution context of this frame.
 
         Return :class:`~pyppeteer.execution_context.ExecutionContext`
         associated to this frame.
         """
-        return await self._contextPromise
+        return await self._mainWorld.executionContext()
 
     async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
         """Execute function on this frame.
 
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
-        context = await self.executionContext()
+        context = await self.executionContext
         if context is None:
             raise PageError('this frame has no context.')
         return await context.evaluateHandle(pageFunction, *args)
@@ -401,7 +377,7 @@ class Frame(object):
         context = await self.executionContext()
         if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await context.evaluate(pageFunction, *args, force_expr=force_expr)
+        return await context.evaluate(pageFunction, *args)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.
@@ -461,47 +437,24 @@ class Frame(object):
         value = await document.querySelectorAll(selector)
         return value
 
-    #: Alias to :meth:`querySelector`
+    # Aliases for selector methods
     J = querySelector
-    #: Alias to :meth:`xpath`
     Jx = xpath
-    #: Alias to :meth:`querySelectorEval`
     Jeval = querySelectorEval
-    #: Alias to :meth:`querySelectorAll`
     JJ = querySelectorAll
-    #: Alias to :meth:`querySelectorAllEval`
     JJeval = querySelectorAllEval
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        return await self.evaluate(
-            '''
-() => {
-  let retVal = '';
-  if (document.doctype)
-    retVal = new XMLSerializer().serializeToString(document.doctype);
-  if (document.documentElement)
-    retVal += document.documentElement.outerHTML;
-  return retVal;
-}
-        '''.strip()
-        )
+        return await self._secondaryWorld.content()
 
-    async def setContent(self, html: str) -> None:
-        """Set content to this page."""
-        func = '''
-function(html) {
-  document.open();
-  document.write(html);
-  document.close();
-}
-'''
-        await self.evaluate(func, html)
+    async def setContent(self, html, waitUntil=None, timeout=None):
+        return await self._secondaryWorld.setContent(html, waitUntil=waitUntil, timeout=timeout)
 
     @property
     def name(self) -> str:
         """Get frame name."""
-        return self.__dict__.get('_name', '')
+        return getattr(self, '_name', '')
 
     @property
     def url(self) -> str:
@@ -528,154 +481,15 @@ function(html) {
         """
         return self._detached
 
-    async def addScriptTag(self, options: Dict) -> ElementHandle:  # noqa: C901
+    async def addScriptTag(self, url=None, path=None, content=None, type=''):
         """Add script tag to this frame.
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        context = await self.executionContext()
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
+        return self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
 
-        addScriptUrl = '''
-        async function addScriptUrl(url, type) {
-            const script = document.createElement('script');
-            script.src = url;
-            if (type)
-                script.type = type;
-            const promise = new Promise((res, rej) => {
-                script.onload = res;
-                script.onerror = rej;
-            });
-            document.head.appendChild(script);
-            await promise;
-            return script;
-        }'''
-
-        addScriptContent = '''
-        function addScriptContent(content, type = 'text/javascript') {
-            const script = document.createElement('script');
-            script.type = type;
-            script.text = content;
-            let error = null;
-            script.onerror = e => error = e;
-            document.head.appendChild(script);
-            if (error)
-                throw error;
-            return script;
-        }'''
-
-        if isinstance(options.get('url'), str):
-            url = options['url']
-            args = [addScriptUrl, url]
-            if 'type' in options:
-                args.append(options['type'])
-            try:
-                return (
-                    await context.evaluateHandle(*args)  # type: ignore
-                ).asElement()
-            except ElementHandleError as e:
-                raise PageError(f'Loading script from {url} failed') from e
-
-        if isinstance(options.get('path'), str):
-            with open(options['path']) as f:
-                contents = f.read()
-            contents = contents + '//# sourceURL={}'.format(options['path'].replace('\n', ''))
-            args = [addScriptContent, contents]
-            if 'type' in options:
-                args.append(options['type'])
-            return (
-                await context.evaluateHandle(*args)  # type: ignore
-            ).asElement()
-
-        if isinstance(options.get('content'), str):
-            args = [addScriptContent, options['content']]
-            if 'type' in options:
-                args.append(options['type'])
-            return (
-                await context.evaluateHandle(*args)  # type: ignore
-            ).asElement()
-
-        raise ValueError('Provide an object with a `url`, `path` or `content` property')
-
-    async def addStyleTag(self, options: Dict) -> ElementHandle:
-        """Add style tag to this frame.
-
-        Details see :meth:`pyppeteer.page.Page.addStyleTag`.
-        """
-        context = await self.executionContext()
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-
-        addStyleUrl = '''
-        async function (url) {
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            link.href = url;
-            const promise = new Promise((res, rej) => {
-                link.onload = res;
-                link.onerror = rej;
-            });
-            document.head.appendChild(link);
-            await promise;
-            return link;
-        }'''
-
-        addStyleContent = '''
-        async function (content) {
-            const style = document.createElement('style');
-            style.type = 'text/css';
-            style.appendChild(document.createTextNode(content));
-            const promise = new Promise((res, rej) => {
-                style.onload = res;
-                style.onerror = rej;
-            });
-            document.head.appendChild(style);
-            await promise;
-            return style;
-        }'''
-
-        if isinstance(options.get('url'), str):
-            url = options['url']
-            try:
-                return (
-                    await context.evaluateHandle(  # type: ignore
-                        addStyleUrl, url
-                    )
-                ).asElement()
-            except ElementHandleError as e:
-                raise PageError(f'Loading style from {url} failed') from e
-
-        if isinstance(options.get('path'), str):
-            with open(options['path']) as f:
-                contents = f.read()
-            contents = contents + '/*# sourceURL={}*/'.format(options['path'].replace('\n', ''))
-            return (
-                await context.evaluateHandle(  # type: ignore
-                    addStyleContent, contents
-                )
-            ).asElement()
-
-        if isinstance(options.get('content'), str):
-            return (
-                await context.evaluateHandle(  # type: ignore
-                    addStyleContent, options['content']
-                )
-            ).asElement()
-
-        raise ValueError('Provide an object with a `url`, `path` or `content` property')
-
-    async def click(self, selector: str, options: dict = None, **kwargs: Any) -> None:
-        """Click element which matches ``selector``.
-
-        Details see :meth:`pyppeteer.page.Page.click`.
-        """
-        options = merge_dict(options, kwargs)
-        handle = await self.J(selector)
-        if not handle:
-            raise PageError('No node found for selector: ' + selector)
-        await handle.click(options)
-        await handle.dispose()
+    async def addStyleTag(self, url=None, path=None, content=None):
+        return self._mainWorld.addStyleTag(url=url, path=path, content=content)
 
     async def focus(self, selector: str) -> None:
         """Focus element which matches ``selector``.

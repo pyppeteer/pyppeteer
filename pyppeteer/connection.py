@@ -78,7 +78,7 @@ class Connection(EventEmitter):
         self._closed = False
 
     @staticmethod
-    def fromSession(cls, session: 'CDPSession'):
+    def fromSession(session: 'CDPSession'):
         return session._connection
 
     def session(self, sessionId):

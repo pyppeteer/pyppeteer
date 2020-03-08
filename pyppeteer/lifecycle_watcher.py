@@ -56,12 +56,12 @@ class LifecycleWatcher:
                 partial(self._terminate, BrowserError('Navigation failed because browser has disconnected')),
             ),
             helper.addEventListener(
-                self._frameManager, FrameManager.Events.LifecycleEvent, self._checkLifecycleComplete,
+                self._frameManager, Events.FrameMaanger.LifecycleEvent, self._checkLifecycleComplete,
             ),
             helper.addEventListener(
-                self._frameManager, FrameManager.Events.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
+                self._frameManager, Events.FrameMaanger.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helper.addEventListener(self._frameManager, FrameManager.Events.FrameDetached, self._onFrameDetached,),
+            helper.addEventListener(self._frameManager, Events.FrameMaanger.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(
                 self._frameManager.networkManager(), Events.NetworkManager.Request, self._onRequest,
             ),
