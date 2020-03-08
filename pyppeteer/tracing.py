@@ -4,10 +4,9 @@
 """Tracing module."""
 
 from pathlib import Path
-from typing import Any
+from typing import Sequence
 
 from pyppeteer.connection import CDPSession
-from pyppeteer.util import merge_dict
 
 
 class Tracing(object):
@@ -29,7 +28,7 @@ class Tracing(object):
         self._recording = False
         self._path = ''
 
-    async def start(self, options: dict = None, **kwargs: Any) -> None:
+    async def start(self, path: str = '', screenshots: bool = False, categories: Sequence[str] = None) -> None:
         """Start tracing.
 
         Only one trace can be active at a time per browser.
@@ -41,7 +40,6 @@ class Tracing(object):
         * ``categories`` (List[str]): Specify custom categories to use instead
           of default.
         """
-        options = merge_dict(options, kwargs)
         defaultCategories = [
             '-*',
             'devtools.timeline',
@@ -57,15 +55,15 @@ class Tracing(object):
             'disabled-by-default-v8.cpu_profiler.hires',
         ]
 
-        categoriesArray = options.get('categories', defaultCategories)
+        categories = categories or defaultCategories
 
-        if options.get('screenshots'):
-            categoriesArray.append('disabled-by-default-devtools.screenshot')
+        if screenshots:
+            categories.append('disabled-by-default-devtools.screenshot')
 
-        self._path = options.get('path', '')
+        self._path = path
         self._recording = True
         await self._client.send(
-            'Tracing.start', {'transferMode': 'ReturnAsStream', 'categories': ','.join(categoriesArray),}
+            'Tracing.start', {'transferMode': 'ReturnAsStream', 'categories': ','.join(categories),}
         )
 
     async def stop(self) -> str:

@@ -209,7 +209,7 @@ class Keyboard(object):
         """
         for char in text:
             if char in keyDefinitions:
-                await self.press(char, {'delay': delay})
+                await self.press(char, delay)
             else:
                 if delay:
                     await asyncio.sleep(delay / 1000)

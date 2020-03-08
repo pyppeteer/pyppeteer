@@ -233,7 +233,7 @@ class ElementHandle(JSHandle):
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
 
-    async def click(self, options: dict = None, **kwargs: Any) -> None:
+    async def click(self, button: str = 'left', clickCount: int = 1, delay: float = 0) -> None:
         """Click the center of this element.
 
         If needed, this method scrolls element into view. If the element is
@@ -251,8 +251,7 @@ class ElementHandle(JSHandle):
         obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
-        options = merge_dict(options, kwargs)
-        await self._page.mouse.click(x, y, options)
+        await self._page.mouse.click(x, y, button=button, clickCount=clickCount, delay=delay)
 
     async def select(self, values: List[str]) -> List[str]:
         return await self.evaluate(
@@ -298,16 +297,15 @@ class ElementHandle(JSHandle):
         """Focus on this element."""
         await self.executionContext.evaluate('element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None, **kwargs) -> None:
+    async def type(self, text: str, delay: float = 0) -> None:
         """Focus the element and then type text.
 
         Details see :meth:`pyppeteer.input.Keyboard.type` method.
         """
-        options = merge_dict(options, kwargs)
         await self.focus()
-        await self._page.keyboard.type(text, options)
+        await self._page.keyboard.type(text, delay)
 
-    async def press(self, key: str, options: Dict = None, **kwargs) -> None:
+    async def press(self, key: str, text: str = None, delay: float = 0) -> None:
         """Press ``key`` onto the element.
 
         This method focuses the element, and then uses
@@ -323,9 +321,8 @@ class ElementHandle(JSHandle):
         * ``delay`` (int|float): Time to wait between ``keydown`` and
           ``keyup``. Defaults to 0.
         """
-        options = merge_dict(options, kwargs)
         await self.focus()
-        await self._page.keyboard.press(key, options)
+        await self._page.keyboard.press(key, text=text, delay=delay)
 
     async def boundingBox(self) -> Optional[Dict[str, float]]:
         """Return bounding box of this element.

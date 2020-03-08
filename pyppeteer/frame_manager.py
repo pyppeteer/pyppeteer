@@ -21,7 +21,6 @@ from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings
-from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
 
@@ -554,16 +553,15 @@ class Frame(object):
         await handle.tap()
         await handle.dispose()
 
-    async def type(self, selector: str, text: str, options: dict = None, **kwargs: Any) -> None:
+    async def type(self, selector: str, text: str, delay: float = 0) -> None:
         """Type ``text`` on the element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.type`.
         """
-        options = merge_dict(options, kwargs)
         handle = await self.querySelector(selector)
         if handle is None:
-            raise PageError('Cannot find {} on this page'.format(selector))
-        await handle.type(text, options)
+            raise PageError(f'Cannot find {selector} on this page')
+        await handle.type(text, delay)
         await handle.dispose()
 
     def waitFor(
