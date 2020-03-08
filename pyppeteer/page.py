@@ -37,7 +37,7 @@ from pyppeteer.worker import Worker
 if TYPE_CHECKING:
     from pyppeteer.target import Target
     from pyppeteer.frame_manager import Frame, FrameManager
-    from pyppeteer.browser import Browser, Target, BrowserContext
+    from pyppeteer.browser import Browser, BrowserContext
 
 logger = logging.getLogger(__name__)
 
