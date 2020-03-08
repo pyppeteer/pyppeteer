@@ -20,11 +20,12 @@ import websockets
 from pyppeteer import connect, launch, executablePath, defaultArgs
 from pyppeteer.browser_fetcher import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
-from pyppeteer.launcher import Launcher
+from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
 
 from .base import DEFAULT_OPTIONS
 from .server import get_application
+import pytest
 
 
 class TestLauncher(unittest.TestCase):
@@ -39,35 +40,34 @@ class TestLauncher(unittest.TestCase):
 
     def check_default_args(self, launcher):
         for opt in self.headless_options:
-            self.assertIn(opt, launcher.chromeArguments)
-        self.assertTrue(any(opt for opt in launcher.chromeArguments
-                            if opt.startswith('--user-data-dir')))
+            assert opt in launcher.chromeArguments
+        assert any(opt for opt in launcher.chromeArguments if opt.startswith('--user-data-dir'))
 
     def test_no_option(self):
         launcher = Launcher()
         self.check_default_args(launcher)
-        self.assertEqual(launcher.chromeExecutable, str(chromium_executable()))
+        assert launcher.chromeExecutable == str(chromium_executable())
 
     def test_disable_headless(self):
         launcher = Launcher({'headless': False})
         for opt in self.headless_options:
-            self.assertNotIn(opt, launcher.chromeArguments)
+            assert opt not in launcher.chromeArguments
 
     def test_disable_default_args(self):
         launcher = Launcher(ignoreDefaultArgs=True)
         # check default args
-        self.assertNotIn('--no-first-run', launcher.chromeArguments)
+        assert '--no-first-run' not in launcher.chromeArguments
         # check automation args
-        self.assertNotIn('--enable-automation', launcher.chromeArguments)
+        assert '--enable-automation' not in launcher.chromeArguments
 
     def test_executable(self):
         launcher = Launcher({'executablePath': '/path/to/chrome'})
-        self.assertEqual(launcher.chromeExecutable, '/path/to/chrome')
+        assert launcher.chromeExecutable == '/path/to/chrome'
 
     def test_args(self):
         launcher = Launcher({'args': ['--some-args']})
         self.check_default_args(launcher)
-        self.assertIn('--some-args', launcher.chromeArguments)
+        assert '--some-args' in launcher.chromeArguments
 
     def test_filter_ignore_default_args(self):
         _defaultArgs = defaultArgs()
@@ -77,16 +77,15 @@ class TestLauncher(unittest.TestCase):
             # ignore first and third default arguments
             ignoreDefaultArgs=[_defaultArgs[0], _defaultArgs[2]],
         )
-        self.assertNotIn(_defaultArgs[0], launcher.cmd)
-        self.assertIn(_defaultArgs[1], launcher.cmd)
-        self.assertNotIn(_defaultArgs[2], launcher.cmd)
+        assert _defaultArgs[0] not in launcher.cmd
+        assert _defaultArgs[1] in launcher.cmd
+        assert _defaultArgs[2] not in launcher.cmd
 
     def test_user_data_dir(self):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
         self.check_default_args(launcher)
-        self.assertIn('--user-data-dir=/path/to/profile',
-                      launcher.chromeArguments)
-        self.assertIsNone(launcher.temporaryUserDataDir)
+        assert '--user-data-dir=/path/to/profile' in launcher.chromeArguments
+        assert launcher.temporaryUserDataDir is None
 
     @sync
     async def test_close_no_connection(self):
@@ -109,7 +108,7 @@ class TestLauncher(unittest.TestCase):
         app = get_application()
         server = app.listen(port)
         response = await page.goto('https://localhost:{}'.format(port))
-        self.assertTrue(response.ok)
+        assert response.ok
         await browser.close()
         server.stop()
 
@@ -125,8 +124,8 @@ class TestLauncher(unittest.TestCase):
         page.on('request', lambda req: asyncio.ensure_future(check(req)))
         # TODO: should use user-signed cert
         response = await page.goto('https://google.com/')
-        self.assertIsNotNone(response)
-        self.assertEqual(response.status, 200)
+        assert response is not None
+        assert response.status == 200
 
     @sync
     async def test_await_after_close(self):
@@ -134,38 +133,30 @@ class TestLauncher(unittest.TestCase):
         page = await browser.newPage()
         promise = page.evaluate('() => new Promise(r => {})')
         await browser.close()
-        with self.assertRaises(NetworkError):
+        with pytest.raises(NetworkError):
             await promise
 
     @sync
     async def test_invalid_executable_path(self):
-        with self.assertRaises(FileNotFoundError):
+        with pytest.raises(FileNotFoundError):
             await launch(DEFAULT_OPTIONS, executablePath='not-a-path')
 
     @unittest.skipIf(sys.platform.startswith('win'), 'skip on windows')
     def test_dumpio_default(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
-        proc = subprocess.run(
-            [sys.executable, path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
-        self.assertNotIn('DUMPIO_TEST', proc.stderr.decode())
+        proc = subprocess.run([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
+        assert 'DUMPIO_TEST' not in proc.stdout.decode()
+        assert 'DUMPIO_TEST' not in proc.stderr.decode()
 
     @unittest.skipIf(sys.platform.startswith('win'), 'skip on windows')
     def test_dumpio_enable(self):
         basedir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(basedir, 'dumpio.py')
-        proc = subprocess.run(
-            [sys.executable, path, '--dumpio'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
+        proc = subprocess.run([sys.executable, path, '--dumpio'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,)
         # console.log output is sent to stderr
-        self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
-        self.assertIn('DUMPIO_TEST', proc.stderr.decode())
+        assert 'DUMPIO_TEST' not in proc.stdout.decode()
+        assert 'DUMPIO_TEST' in proc.stderr.decode()
 
     @sync
     async def test_default_viewport(self):
@@ -176,8 +167,8 @@ class TestLauncher(unittest.TestCase):
         }
         browser = await launch(options)
         page = await browser.newPage()
-        self.assertEqual(await page.evaluate('window.innerWidth'), 456)
-        self.assertEqual(await page.evaluate('window.innerHeight'), 789)
+        assert await page.evaluate('window.innerWidth') == 456
+        assert await page.evaluate('window.innerHeight') == 789
         await browser.close()
 
     @sync
@@ -186,7 +177,7 @@ class TestLauncher(unittest.TestCase):
         options['defaultViewport'] = None
         browser = await launch(options)
         page = await browser.newPage()
-        self.assertIsNone(page.viewport)
+        assert page.viewport is None
         await browser.close()
 
 
@@ -198,7 +189,7 @@ class TestDefaultURL(unittest.TestCase):
         url_list = []
         for page in pages:
             url_list.append(page.url)
-        self.assertEqual(url_list, ['about:blank'])
+        assert url_list == ['about:blank']
         await browser.close()
 
     @unittest.skipIf('CI' in os.environ, 'Skip in-browser test on CI')
@@ -211,7 +202,7 @@ class TestDefaultURL(unittest.TestCase):
         url_list = []
         for page in pages:
             url_list.append(page.url)
-        self.assertEqual(url_list, ['about:blank'])
+        assert url_list == ['about:blank']
         await browser.close()
 
     @sync
@@ -221,10 +212,10 @@ class TestDefaultURL(unittest.TestCase):
         options['args'].append(customUrl)
         browser = await launch(options)
         pages = await browser.pages()
-        self.assertEqual(len(pages), 1)
+        assert len(pages) == 1
         if pages[0].url != customUrl:
             await pages[0].waitForNavigation()
-        self.assertEqual(pages[0].url, customUrl)
+        assert pages[0].url == customUrl
         await browser.close()
 
 
@@ -257,9 +248,9 @@ class TestLogLevel(unittest.TestCase):
         browser = await launch(args=['--no-sandbox'])
         await browser.close()
 
-        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
-        self.assertFalse(self.logger.isEnabledFor(logging.INFO))
-        self.assertFalse(self.logger.isEnabledFor(logging.DEBUG))
+        assert self.logger.isEnabledFor(logging.WARN)
+        assert not self.logger.isEnabledFor(logging.INFO)
+        assert not self.logger.isEnabledFor(logging.DEBUG)
         self.mock.assert_not_called()
 
     @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
@@ -268,11 +259,11 @@ class TestLogLevel(unittest.TestCase):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.INFO)
         await browser.close()
 
-        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
-        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
-        self.assertFalse(self.logger.isEnabledFor(logging.DEBUG))
+        assert self.logger.isEnabledFor(logging.WARN)
+        assert self.logger.isEnabledFor(logging.INFO)
+        assert not self.logger.isEnabledFor(logging.DEBUG)
 
-        self.assertIn('listening on', self.mock.call_args_list[0][0][0])
+        assert 'listening on' in self.mock.call_args_list[0][0][0]
 
     @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
@@ -280,38 +271,35 @@ class TestLogLevel(unittest.TestCase):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.DEBUG)
         await browser.close()
 
-        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
-        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
-        self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
+        assert self.logger.isEnabledFor(logging.WARN)
+        assert self.logger.isEnabledFor(logging.INFO)
+        assert self.logger.isEnabledFor(logging.DEBUG)
 
-        self.assertIn('listening on', self.mock.call_args_list[0][0][0])
+        assert 'listening on' in self.mock.call_args_list[0][0][0]
         if self.mock.call_args_list[1][0][0] == '\n':
             # python < 3.7.3
-            self.assertIn('SEND', self.mock.call_args_list[2][0][0])
-            self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+            assert 'SEND' in self.mock.call_args_list[2][0][0]
+            assert 'RECV' in self.mock.call_args_list[4][0][0]
         else:
-            self.assertIn('SEND', self.mock.call_args_list[1][0][0])
-            self.assertIn('RECV', self.mock.call_args_list[2][0][0])
+            assert 'SEND' in self.mock.call_args_list[1][0][0]
+            assert 'RECV' in self.mock.call_args_list[2][0][0]
 
     @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_connect_debug(self):
         browser = await launch(args=['--no-sandbox'])
-        browser2 = await connect(
-            browserWSEndpoint=browser.wsEndpoint,
-            logLevel=logging.DEBUG,
-        )
+        browser2 = await connect(browserWSEndpoint=browser.wsEndpoint, logLevel=logging.DEBUG,)
         page = await browser2.newPage()
         await page.close()
         await browser2.disconnect()
         await browser.close()
 
-        self.assertTrue(self.logger.isEnabledFor(logging.WARN))
-        self.assertTrue(self.logger.isEnabledFor(logging.INFO))
-        self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
+        assert self.logger.isEnabledFor(logging.WARN)
+        assert self.logger.isEnabledFor(logging.INFO)
+        assert self.logger.isEnabledFor(logging.DEBUG)
 
-        self.assertIn('SEND', self.mock.call_args_list[0][0][0])
-        self.assertIn('RECV', self.mock.call_args_list[2][0][0])
+        assert 'SEND' in self.mock.call_args_list[0][0][0]
+        assert 'RECV' in self.mock.call_args_list[2][0][0]
 
 
 class TestUserDataDir(unittest.TestCase):
@@ -347,21 +335,20 @@ class TestUserDataDir(unittest.TestCase):
         browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)
         # Open a page to make sure its functional
         await browser.newPage()
-        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
+        assert len(glob.glob(os.path.join(self.datadir, '**'))) > 0
         await browser.close()
-        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
+        assert len(glob.glob(os.path.join(self.datadir, '**'))) > 0
 
     @unittest.skipIf(sys.platform.startswith('cyg'), 'Fails on cygwin')
     @sync
     async def test_user_data_dir_args(self):
         options = {}
         options.update(DEFAULT_OPTIONS)
-        options['args'] = (options['args'] +
-                           ['--user-data-dir={}'.format(self.datadir)])
+        options['args'] = options['args'] + ['--user-data-dir={}'.format(self.datadir)]
         browser = await launch(options)
-        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
+        assert len(glob.glob(os.path.join(self.datadir, '**'))) > 0
         await browser.close()
-        self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
+        assert len(glob.glob(os.path.join(self.datadir, '**'))) > 0
 
     @sync
     async def test_user_data_dir_restore_state(self):
@@ -376,13 +363,12 @@ class TestUserDataDir(unittest.TestCase):
         await page2.goto(self.url + 'empty')
         result = await page2.evaluate('() => localStorage.hey')
         await browser2.close()
-        self.assertEqual(result, 'hello')
+        assert result == 'hello'
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_user_data_dir_restore_cookie_in_browser(self):
-        browser = await launch(
-            DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
@@ -393,7 +379,7 @@ class TestUserDataDir(unittest.TestCase):
         await page2.goto(self.url + 'empty')
         result = await page2.evaluate('() => document.cookie')
         await browser2.close()
-        self.assertEqual(result, 'foo=true')
+        assert result == 'foo=true'
 
 
 class TestTargetEvents(unittest.TestCase):
@@ -419,7 +405,7 @@ class TestTargetEvents(unittest.TestCase):
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.close()
-        self.assertEqual(['CREATED', 'CHANGED', 'DESTROYED'], events)
+        assert ['CREATED', 'CHANGED', 'DESTROYED'] == events
         await browser.close()
 
 
@@ -428,15 +414,11 @@ class TestClose(unittest.TestCase):
     async def test_close(self):
         curdir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(curdir, 'closeme.py')
-        proc = subprocess.run(
-            [sys.executable, path],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        self.assertEqual(proc.returncode, 0)
+        proc = subprocess.run([sys.executable, path], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,)
+        assert proc.returncode == 0
         wsEndPoint = proc.stdout.decode()
         # chrome should be already closed, so fail to connect websocket
-        with self.assertRaises(OSError):
+        with pytest.raises(OSError):
             await websockets.client.connect(wsEndPoint)
 
 
@@ -449,7 +431,7 @@ class TestEventLoop(unittest.TestCase):
             page = await browser.newPage()
             await page.goto('http://example.com')
             result = await page.evaluate('() => 1 + 2')
-            self.assertEqual(result, 3)
+            assert result == 3
             await page.close()
             await browser.close()
 
@@ -462,11 +444,11 @@ class TestConnect(unittest.TestCase):
         browser = await launch(DEFAULT_OPTIONS)
         browser2 = await connect(browserWSEndpoint=browser.wsEndpoint)
         page = await browser2.newPage()
-        self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
+        assert await page.evaluate('() => 7 * 8') == 56
 
         await browser2.disconnect()
         page2 = await browser.newPage()
-        self.assertEqual(await page2.evaluate('() => 7 * 6'), 42)
+        assert await page2.evaluate('() => 7 * 6') == 42
         await browser.close()
 
     @sync
@@ -477,7 +459,7 @@ class TestConnect(unittest.TestCase):
 
         browser2 = await connect(browserWSEndpoint=browserWSEndpoint)
         page = await browser2.newPage()
-        self.assertEqual(await page.evaluate('() => 7 * 8'), 56)
+        assert await page.evaluate('() => 7 * 8') == 56
         await browser.close()
 
     @unittest.skip('This test hangs')
@@ -486,9 +468,9 @@ class TestConnect(unittest.TestCase):
         browser = await launch(DEFAULT_OPTIONS)
         browserWSEndpoint = browser.wsEndpoint
         await browser.close()
-        with self.assertRaises(Exception):
+        with pytest.raises(Exception):
             await connect(browserWSEndpoint=browserWSEndpoint)
 
     @sync
     async def test_executable_path(self):
-        self.assertTrue(os.path.exists(executablePath()))
+        assert os.path.exists(executablePath())

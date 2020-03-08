@@ -28,9 +28,7 @@ def debugError(_logger: logging.Logger, msg: Any) -> None:
 
 def evaluationString(fun: str, *args: Any) -> str:
     """Convert function and arguments to str."""
-    _args = ', '.join([
-        json.dumps('undefined' if arg is None else arg) for arg in args
-    ])
+    _args = ', '.join([json.dumps('undefined' if arg is None else arg) for arg in args])
     expr = f'({fun})({_args})'
     return expr
 
@@ -45,17 +43,18 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     if stackTrace:
         for callframe in stackTrace.get('callFrames'):
             location = (
-                str(callframe.get('url', '')) + ':' +
-                str(callframe.get('lineNumber', '')) + ':' +
-                str(callframe.get('columnNumber'))
+                str(callframe.get('url', ''))
+                + ':'
+                + str(callframe.get('lineNumber', ''))
+                + ':'
+                + str(callframe.get('columnNumber'))
             )
             functionName = callframe.get('functionName', '<anonymous>')
             message = message + f'\n    at {functionName} ({location})'
     return message
 
 
-def addEventListener(emitter: EventEmitter, eventName: str, handler: Callable
-                     ) -> Dict[str, Any]:
+def addEventListener(emitter: EventEmitter, eventName: str, handler: Callable) -> Dict[str, Any]:
     """Add handler to the emitter and return emitter/handler."""
     emitter.on(eventName, handler)
     return {'emitter': emitter, 'eventName': eventName, 'handler': handler}
@@ -89,13 +88,11 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
         try:
             value = unserializableValueMap[value]
         except KeyError:
-            raise ElementHandleError(
-                'Unsupported unserializable value: {}'.format(value))
+            raise ElementHandleError('Unsupported unserializable value: {}'.format(value))
     return remoteObject.get('value')
 
 
-def releaseObject(client: CDPSession, remoteObject: dict
-                  ) -> Awaitable:
+def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
     """Release remote object."""
     objectId = remoteObject.get('objectId')
     fut_none = client._loop.create_future()
@@ -103,9 +100,7 @@ def releaseObject(client: CDPSession, remoteObject: dict
     if not objectId:
         return fut_none
     try:
-        return client.send('Runtime.releaseObject', {
-            'objectId': objectId
-        })
+        return client.send('Runtime.releaseObject', {'objectId': objectId})
     except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
@@ -113,9 +108,13 @@ def releaseObject(client: CDPSession, remoteObject: dict
     return fut_none
 
 
-def waitForEvent(emitter: EventEmitter, eventName: str,  # noqa: C901
-                 predicate: Callable[[Any], bool], timeout: float,
-                 loop: asyncio.AbstractEventLoop) -> Awaitable:
+def waitForEvent(
+    emitter: EventEmitter,
+    eventName: str,  # noqa: C901
+    predicate: Callable[[Any], bool],
+    timeout: float,
+    loop: asyncio.AbstractEventLoop,
+) -> Awaitable:
     """Wait for an event emitted from the emitter."""
     promise = loop.create_future()
 
@@ -127,8 +126,7 @@ def waitForEvent(emitter: EventEmitter, eventName: str,  # noqa: C901
 
     async def timeoutTimer() -> None:
         await asyncio.sleep(timeout / 1000)
-        rejectCallback(
-            TimeoutError('Timeout exceeded while waiting for event'))
+        rejectCallback(TimeoutError('Timeout exceeded while waiting for event'))
 
     def _listener(target: Any) -> None:
         if not predicate(target):
@@ -152,11 +150,9 @@ def get_positive_int(obj: dict, name: str) -> int:
     """Get and check the value of name in obj is positive integer."""
     value = obj[name]
     if not isinstance(value, int):
-        raise TypeError(
-            f'{name} must be integer: {type(value)}')
+        raise TypeError(f'{name} must be integer: {type(value)}')
     elif value < 0:
-        raise ValueError(
-            f'{name} must be positive integer: {value}')
+        raise ValueError(f'{name} must be positive integer: {value}')
     return value
 
 

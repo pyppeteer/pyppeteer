@@ -51,6 +51,9 @@ appdirs = "^1.4.3"
 tqdm = "^4.42.1"
 pyee = "^7.0.1"
 urllib3 = "^1.25.8"
+aenum = "^2.2.3"
+typing_extensions = { version ="^3.7.4", python = '<3.8'}
+async_generator = { version = "^1.10", python = '<3.7'}
 
 [tool.poetry.dev-dependencies]
 tox = "^3.14.3"

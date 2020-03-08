@@ -35,16 +35,16 @@ class EmulationManager:
 
         await asyncio.gather(
             self._client.send(
-                'Emulation.setDeviceMetricsOverride', {
+                'Emulation.setDeviceMetricsOverride',
+                {
                     'mobile': mobile,
                     'width': width,
                     'height': height,
                     'deviceScaleFactor': deviceScaleFactor,
                     'screenOrientation': screenOrientation,
-                }),
-            self._client.send(
-                'Emulation.setTouchEmulationEnabled', {'enabled': hasTouch}
-            )
+                },
+            ),
+            self._client.send('Emulation.setTouchEmulationEnabled', {'enabled': hasTouch}),
         )
         reloadNeeded = self._emulatingMobile != mobile or self._hasTouch != hasTouch
         self._emulatingMobile = mobile

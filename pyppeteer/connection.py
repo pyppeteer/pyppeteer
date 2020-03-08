@@ -11,7 +11,7 @@ from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any
 try:
     from typing import TypedDict
 except ImportError:
-    from mypy_extensions import TypedDict
+    from typing_extensions import TypedDict
 
 from pyee import EventEmitter
 import websockets
@@ -21,7 +21,7 @@ from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport
 
 if TYPE_CHECKING:
-    from typing import Optional  # noqa: F401
+    from typing import Optional
 
 logger = logging.getLogger(__name__)
 logger_connection = logging.getLogger(__name__ + '.Connection')
@@ -53,11 +53,7 @@ class Connection(EventEmitter):
     """Connection management class."""
 
     def __init__(
-            self,
-            url: str,
-            transport: WebsocketTransport,
-            delay: int = 0,
-            loop: asyncio.AbstractEventLoop,
+        self, url: str, transport: WebsocketTransport, delay: int = 0, loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         """Make connection.
 
@@ -74,7 +70,7 @@ class Connection(EventEmitter):
         self._transport.onmessage = self._onMessage
         self._transport.onclose = self._onClose
 
-        self._loop = loop
+        self._loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
         self.connection: CDPSession
         self._connected = False
@@ -82,7 +78,7 @@ class Connection(EventEmitter):
         self._closed = False
 
     @staticmethod
-    def fromSession(cls, session: 'CDPSession'):
+    def fromSession(session: 'CDPSession'):
         return session._connection
 
     def session(self, sessionId):
@@ -147,10 +143,7 @@ class Connection(EventEmitter):
         if msg.get('method') == 'Target.attachedToTarget':
             sessionId = msg['params']['sessionId']
             self._sessions[sessionId] = CDPSession(
-                connection=self,
-                targetType=msg['params']['targetInfo']['type'],
-                sessionId=sessionId,
-                loop=self._loop
+                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self._loop
             )
         elif msg.get('method') == 'Target.detachedFromTarget':
             session = self._sessions.get(msg['params']['sessionId'])
@@ -168,9 +161,7 @@ class Connection(EventEmitter):
             if callback:
                 del self._callbacks[msg['id']]
                 if msg.get('error'):
-                    callback.set_exception(
-                        createProtocolError(callback.error, callback.method, msg)
-                    )
+                    callback.set_exception(createProtocolError(callback.error, callback.method, msg))
                 else:
                     callback.set_result(msg.get('result'))
         else:
@@ -184,10 +175,12 @@ class Connection(EventEmitter):
         self._transport.onclose = None
 
         for cb in self._callbacks.values():
-            cb.set_exception(rewriteError(
-                cb.error,  # type: ignore
-                f'Protocol error {cb.method}: Target closed.',  # type: ignore
-            ))
+            cb.set_exception(
+                rewriteError(
+                    cb.error,  # type: ignore
+                    f'Protocol error {cb.method}: Target closed.',  # type: ignore
+                )
+            )
         self._callbacks.clear()
 
         for session in self._sessions.values():
@@ -209,10 +202,7 @@ class Connection(EventEmitter):
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
-        resp = await self.send(
-            'Target.attachToTarget',
-            {'targetId': targetInfo['targetId']}
-        )
+        resp = await self.send('Target.attachToTarget', {'targetId': targetInfo['targetId']})
         sessionId = resp.get('sessionId')
         # TODO puppeteer code indicates that _sessions should already have session open
         session = CDPSession(self, targetInfo['type'], sessionId, self._loop)
@@ -234,11 +224,11 @@ class CDPSession(EventEmitter):
     """
 
     def __init__(
-            self,
-            connection: Union[Connection, 'CDPSession'],
-            targetType: str,
-            sessionId: str,
-            loop: asyncio.AbstractEventLoop
+        self,
+        connection: Union[Connection, 'CDPSession'],
+        targetType: str,
+        sessionId: str,
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Make new session."""
         super().__init__()
@@ -256,8 +246,7 @@ class CDPSession(EventEmitter):
         """
         if not self._connection:
             raise NetworkError(
-                f'Protocol Error ({method}): Session closed. Most likely the '
-                f'{self._targetType} has been closed.'
+                f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
         id_ = self._connection._rawSend({'method': method, 'params': params or {}})
 
@@ -273,17 +262,18 @@ class CDPSession(EventEmitter):
         if id_ and callback:
             del self._callbacks[id_]
             if msg.get('error'):
-                callback.set_exception(createProtocolError(
-                    callback.error,  # type: ignore
-                    callback.method,  # type: ignore
-                    msg,
-                ))
+                callback.set_exception(
+                    createProtocolError(
+                        callback.error,  # type: ignore
+                        callback.method,  # type: ignore
+                        msg,
+                    )
+                )
             else:
                 callback.set_result(msg.get('result'))
         else:
             if msg.get('id'):
-                raise ConnectionError('Received unexpected message '
-                                      f'with no callback: {msg}')
+                raise ConnectionError('Received unexpected message ' f'with no callback: {msg}')
             self.emit(msg.get('method'), msg.get('params'))
 
     async def detach(self) -> None:
@@ -293,17 +283,17 @@ class CDPSession(EventEmitter):
         messages.
         """
         if not self._connection:
-            raise NetworkError('Session already detached. Most likely'
-                               f'the {self._targetType} has been closed')
-        await self._connection.send('Target.detachFromTarget',
-                                    {'sessionId': self._sessionId})
+            raise NetworkError('Session already detached. Most likely' f'the {self._targetType} has been closed')
+        await self._connection.send('Target.detachFromTarget', {'sessionId': self._sessionId})
 
     def _onClosed(self) -> None:
         for cb in self._callbacks.values():
-            cb.set_exception(rewriteError(
-                cb.error,  # type: ignore
-                f'Protocol error {cb.method}: Target closed.',  # type: ignore
-            ))
+            cb.set_exception(
+                rewriteError(
+                    cb.error,  # type: ignore
+                    f'Protocol error {cb.method}: Target closed.',  # type: ignore
+                )
+            )
         self._callbacks.clear()
         self._connection = None
         self.emit(Events.CDPSession.Disconnected)
@@ -315,8 +305,7 @@ class CDPSession(EventEmitter):
         return session
 
 
-def createProtocolError(error: Exception, method: str, obj: Dict
-                        ) -> Exception:
+def createProtocolError(error: Exception, method: str, obj: Dict) -> Exception:
     message = f'Protocol error ({method}): {obj["error"]["message"]}'
     if 'data' in obj['error']:
         message += f' {obj["error"]["data"]}'
