@@ -47,8 +47,6 @@ DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get(
     'PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 
-REVISION = os.environ.get('PYPPETEER2_CHROMIUM_REVISION', __chromium_revision__)
-
 NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
 
 # chromiumExecutable = {
@@ -150,7 +148,7 @@ class BrowserFetcher:
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
     def download(self, revision: str = None) -> RevisionInfo:
-        revision = revision or '722234'
+        revision = revision or __chromium_revision__
         url = download_url(self._platform, self.downloadHost, revision)
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
