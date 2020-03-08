@@ -13,7 +13,7 @@ try:
 except ImportError:
     from typing_extensions import TypedDict
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 import websockets
 
 from pyppeteer.errors import NetworkError
@@ -49,7 +49,7 @@ class Message(TypedDict):
     result: Any
 
 
-class Connection(EventEmitter):
+class Connection(AsyncIOEventEmitter):
     """Connection management class."""
 
     def __init__(
@@ -210,7 +210,7 @@ class Connection(EventEmitter):
         return session
 
 
-class CDPSession(EventEmitter):
+class CDPSession(AsyncIOEventEmitter):
     """Chrome Devtools Protocol Session.
 
     The :class:`CDPSession` instances are used to talk raw Chrome Devtools

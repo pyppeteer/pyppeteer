@@ -11,7 +11,7 @@ import logging
 from collections import OrderedDict
 from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NetworkManager(EventEmitter):
+class NetworkManager(AsyncIOEventEmitter):
     """NetworkManager class."""
 
     def __init__(self, client: CDPSession, ignoreHttpsErrors: bool, frameManager: 'FrameManager') -> None:

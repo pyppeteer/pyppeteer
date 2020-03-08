@@ -8,7 +8,7 @@ import re
 import logging
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
@@ -29,7 +29,7 @@ EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
-class FrameManager(EventEmitter):
+class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(

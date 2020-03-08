@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.accessibility import Accessibility
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Page(EventEmitter):
+class Page(AsyncIOEventEmitter):
     """Page class.
 
     This class provides methods to interact with a single tab of chrome. One
@@ -50,7 +50,7 @@ class Page(EventEmitter):
 
     The :class:`Page` class emits various :attr:`~Events.Page` which can be
     handled by using ``on`` or ``once`` method, which is inherited from
-    `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``EventEmitter`` class.
+    `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``AsyncIOEventEmitter`` class.
     """
 
     PaperFormats: Dict[str, Dict[str, float]] = {
