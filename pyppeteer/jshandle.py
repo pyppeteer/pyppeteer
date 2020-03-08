@@ -422,7 +422,7 @@ class ElementHandle(JSHandle):
         clip['y'] = clip['y'] + pageY
         opt = {'clip': clip}
         opt.update(options)
-        imageData = await self._page.screenshot(opt)
+        imageData = await self._page.screenshot(**opt)
 
         if needsViewportReset:
             await self._page.setViewport(original_viewport)
