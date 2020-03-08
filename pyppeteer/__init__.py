@@ -11,8 +11,7 @@ from appdirs import AppDirs
 __author__ = """Hiroyuki Takagi"""
 __email__ = 'pyppeteer@protonmail.com'
 __version__ = '0.2.2'
-__chromium_revision__ = '743021'  # 2020-02-20
-# __chromium_revision__ = '588429'
+__chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 DEBUG = False
