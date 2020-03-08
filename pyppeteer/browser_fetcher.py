@@ -9,11 +9,14 @@ import shutil
 import struct
 import sys
 from distutils.util import strtobool
+from io import BytesIO
 from pathlib import Path
 from typing import Union, List, Optional, Sequence
 from urllib import request
+from zipfile import ZipFile
 
 import urllib3
+from tqdm import tqdm
 
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
 
@@ -24,10 +27,7 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
-DOWNLOADS_FOLDER = Path(__pyppeteer_home__) / 'local-chromium'
-
 Platforms = Literal['linux', 'mac', 'win32', 'win64']
-
 
 class RevisionInfo(TypedDict):
     folderPath: Union[Path, os.PathLike]
@@ -49,15 +49,15 @@ DOWNLOAD_HOST = os.environ.get(
 
 REVISION = os.environ.get('PYPPETEER2_CHROMIUM_REVISION', __chromium_revision__)
 
-NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')))
+NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
 
-chromiumExecutable = {
-    'linux': DOWNLOADS_FOLDER / '{revision}' / 'chrome-linux' / 'chrome',
-    'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' /
-            'Contents' / 'MacOS' / 'Chromium'),
-    'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-    'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-}
+# chromiumExecutable = {
+#     'linux': DOWNLOADS_FOLDER / '{revision}' / 'chrome-linux' / 'chrome',
+#     'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' /
+#             'Contents' / 'MacOS' / 'Chromium'),
+#     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
+#     'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
+# }
 
 
 def current_platform() -> str:
@@ -75,7 +75,7 @@ def current_platform() -> str:
     raise OSError('Unsupported platform: ' + sys.platform)
 
 
-def archive_name(platform: str, revision: str) -> str:
+def archive_name(platform: str, revision: str) -> Optional[str]:
     if platform == 'linux':
         return 'chrome-linux'
     if platform == 'mac':
@@ -108,16 +108,36 @@ def parse_folder_path(folder_path: Path) -> Optional[Sequence[str]]:
     return splits
 
 
+def download_file(url: str, zip_path: BytesIO):
+    CHUNK_SIZE = 4096
+    file_req = request.urlopen(url)
+    progress_bar = tqdm(
+        total=int(file_req.getheader('Content-Length',0)),
+        unit_scale=True,
+        file=os.devnull if NO_PROGRESS_BAR else None,
+    )
+    for chunk in iter(lambda: file_req.read(CHUNK_SIZE), b''):
+        progress_bar.update(CHUNK_SIZE)
+        zip_path.write(chunk)
+    progress_bar.close()
+
+
+def extractZip(zip_file: BytesIO, folder_path: Path):
+    with ZipFile(zip_file) as zf:
+        zf.extractall(folder_path)
+
+
 class BrowserFetcher:
-    def __init__(self, project_root: Union[Path, os.PathLike], platform: str, path: Union[Path, os.PathLike] = None,
-                 host: str = None):
-        self.downloadsFolder = path or project_root.joinpath('.local-chromium')
+    def __init__(self, project_root: Union[Path, os.PathLike] = None, platform: Platforms = None,
+                 path: Union[Path, os.PathLike] = None, host: str = None):
+        self.downloadsFolder = path or Path(__pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
-        self._platform = platform or sys.platform
+        self._platform: Platforms = platform or sys.platform
         if self._platform == 'darwin':
             self._platform = 'mac'
         elif self._platform == 'win32':
             # no really good way to detect system bittedness
+            # (other options depend on the sys bittedness == python interpreter bittedness)
             self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
         assert platform in Platforms.__args__, f'Unsupported platform: {platform}'
 
@@ -129,19 +149,15 @@ class BrowserFetcher:
         url = download_url(self._platform, self.downloadHost, revision)
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
-    def download(self, revision: str, progress) -> RevisionInfo:
+    def download(self, revision: str) -> RevisionInfo:
         url = download_url(self._platform, self.downloadHost, revision)
-        zip_path = self.downloadsFolder.joinpath(f'download-{self._platform}-{revision}.zip')
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
             return self.revision_info(revision)
         os.makedirs(self.downloadsFolder, exist_ok=True)
-        try:
-            download_file(url, zip_path)
-            extractZip(zip_path, folder_path)
-        finally:
-            if zip_path.exists():
-                os.rmdir(zip_path)
+        with BytesIO() as zip_file_obj:
+            download_file(url, zip_file_obj)
+            extractZip(zip_file_obj, folder_path)
         return self.revision_info(revision)
 
     def local_revisions(self) -> List[Path]:
