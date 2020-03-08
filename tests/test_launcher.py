@@ -18,7 +18,7 @@ from syncer import sync
 import websockets
 
 from pyppeteer import connect, launch, executablePath, defaultArgs
-from pyppeteer.chromium_downloader import chromium_executable, current_platform
+from pyppeteer.browser_fetcher import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
