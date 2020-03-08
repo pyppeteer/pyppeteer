@@ -29,7 +29,7 @@ from pyppeteer.execution_context import JSHandle
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
-from pyppeteer.network_manager import NetworkManager, Response, Request
+from pyppeteer.network_manager import Response, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
