@@ -5,7 +5,6 @@
 import asyncio
 import logging
 from subprocess import Popen
-from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
@@ -27,13 +26,6 @@ class Browser(EventEmitter):
     through :func:`~pyppeteer.launcher.launch` or
     :func:`~pyppeteer.launcher.connect`.
     """
-
-    Events = SimpleNamespace(
-        TargetCreated='targetcreated',
-        TargetDestroyed='targetdestroyed',
-        TargetChanged='targetchanged',
-        Disconnected='disconnected',
-    )
 
     def __init__(
         self,
@@ -316,11 +308,6 @@ class BrowserContext(EventEmitter):
         # Dispose context once it's no longer needed
         await context.close()
     """
-
-    Events = SimpleNamespace(
-        TargetCreated='targetcreated', TargetDestroyed='targetdestroyed', TargetChanged='targetchanged',
-    )
-
     def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
         super().__init__()
         self._browser = browser
