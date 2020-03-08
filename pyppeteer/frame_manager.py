@@ -6,7 +6,7 @@
 import asyncio
 import re
 import logging
-from typing import Any, Awaitable, Dict, List, Optional, Set, Union, Literal
+from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import EventEmitter
 
@@ -14,15 +14,14 @@ from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.events import Events
 from pyppeteer.helper import debugError
-from pyppeteer.jshandle import JSHandle, ElementHandle
+from pyppeteer.jshandle import ElementHandle
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.errors import ElementHandleError, PageError
-from pyppeteer.lifecycle_watcher import LifecycleWatcher
+from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings
-from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +67,6 @@ class FrameManager(EventEmitter):
         client.on('Runtime.executionContextsCleared', lambda event: self._onExecutionContextsCleared())
         client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
-        # aliases
-
     async def initiliaze(self):
         frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'),)
         self._handleFrameTree(frameTree)
@@ -89,12 +86,7 @@ class FrameManager(EventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-        self,
-        frame: 'Frame',
-        url: str,
-        referer: str = None,
-        timeout: int = None,
-        waitUntil: Union[str, List[str]] = None,
+        self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
     ):
         ensureNewDocumentNavigation = False
 
@@ -119,35 +111,33 @@ class FrameManager(EventEmitter):
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = await asyncio.wait(
-            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationPromise()],
+            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture()],
             return_when=asyncio.FIRST_COMPLETED,
         )
         if not error:
             if ensureNewDocumentNavigation:
-                nav_promise = watcher.newDocumentNavigationPromise()
+                nav_promise = watcher.newDocumentNavigationFuture
             else:
-                nav_promise = watcher.sameDocumentNavigationPromise()
+                nav_promise = watcher.sameDocumentNavigationFuture
             error = await asyncio.wait(
-                [watcher.timeoutOrTerminationPromise(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
+                [watcher.timeoutOrTerminationFuture(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
             )
         watcher.dispose()
         if error:
             raise error
         return watcher.navigationResponse()
 
-    async def waitForFrameNavigation(
-        self, frame: 'Frame', waitUntil: Union[str, List[str]] = None, timeout: int = None
-    ):
+    async def waitForFrameNavigation(self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: int = None):
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
-        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = asyncio.wait(
             [
-                watcher.timeoutOrTerminationPromise(),
-                watcher.sameDocumentNavigationPromise(),
-                watcher.newDocumentNavigationPromise(),
+                watcher.timeoutOrTerminationFuture(),
+                watcher.sameDocumentNavigationFuture,
+                watcher.newDocumentNavigationFuture,
             ],
             return_when=asyncio.FIRST_COMPLETED,
         )
@@ -231,7 +221,7 @@ class FrameManager(EventEmitter):
                 frame._id = _id
             else:
                 # Initial main frame navigation.
-                frame = Frame(self._client, None, _id)
+                frame = Frame(frameManager=self, client=self._client, parentFrame=None, frameId=_id)
             self._frames[_id] = frame
             self._mainFrame = frame
 
@@ -353,27 +343,36 @@ class Frame:
 
         # aliases
         self.goto = self._frameManager.navigateFrame
-        self.waitForSelector = self._frameManager.waitForFrameNavigation
-        self.click = self._secondaryWorld.click
-        self.executionContext = self._mainWorld.executionContext
-        self.evaluateHandle = self.executionContext.evaluateHandle
-        self.evaluate = self.executionContext.evaluate
-        self.querySelector = self.J = self._mainWorld.querySelector
-        self.xpath = self.Jx = self._mainWorld.xpath
-        self.querySelectorEval = self.Jeval = self._mainWorld.querySelectorEval
-        self.querySelectorAllEval = self.JJeval = self._mainWorld.querySelectorAllEval
-        self.addScriptTag = self._mainWorld.addScriptTag
-        self.addStyleTag = self._mainWorld.addStyleTag
-        self.click = self._secondaryWorld.click
-        self.focus = self._secondaryWorld.focus
-        self.hover = self._secondaryWorld.hover
-        self.select = self._secondaryWorld.select
-        self.tap = self._secondaryWorld.tap
-        self.type = self._mainWorld.type
-        self.waitForFunction = self._mainWorld.waitForFunction
-        self.title = self._secondaryWorld.title
-        self.content = self._secondaryWorld.content
-        self.setContent = self._secondaryWorld.setContent
+        self.waitForFrameNavigation = self._frameManager.waitForFrameNavigation
+
+        self.addScriptTag = self.mainWorld.addScriptTag
+        self.addStyleTag = self.mainWorld.addStyleTag
+        self.evaluate = self.mainWorld.evaluate
+        self.evaluateHandle = self.mainWorld.evaluateHandle
+        self.executionContext = self.mainWorld.executionContext
+        self.querySelector = self.J = self.mainWorld.querySelector
+        self.querySelectorAllEval = self.JJeval = self.mainWorld.querySelectorAllEval
+        self.querySelectorEval = self.Jeval = self.mainWorld.querySelectorEval
+        self.type = self.mainWorld.type
+        self.waitForFunction = self.mainWorld.waitForFunction
+        self.xpath = self.Jx = self.mainWorld.xpath
+
+        self.click = self.secondaryWorld.click
+        self.content = self.secondaryWorld.content
+        self.focus = self.secondaryWorld.focus
+        self.hover = self.secondaryWorld.hover
+        self.select = self.secondaryWorld.select
+        self.setContent = self.secondaryWorld.setContent
+        self.tap = self.secondaryWorld.tap
+        self.title = self.secondaryWorld.title
+
+    @property
+    def mainWorld(self) -> 'DOMWorld':  # ensure mainWorld not settable
+        return self._mainWorld
+
+    @property
+    def secondaryWorld(self) -> 'DOMWorld':  # ensure secondaryWorld is not settable
+        return self._secondaryWorld
 
     @property
     def name(self) -> str:
@@ -439,7 +438,7 @@ class Frame:
             await handle.dispose()
             return result
 
-    async def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
+    async def waitForXPath(self, xpath, visible=False, hidden=False, timeout: int = None) -> Optional['ElementHandle']:
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.
@@ -473,8 +472,8 @@ class Frame:
 
     def _detach(self) -> None:
         self._detached = True
-        self._mainWorld._detach()
-        self._secondaryWorld._detach()
+        self.mainWorld._detach()
+        self.secondaryWorld._detach()
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
