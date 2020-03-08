@@ -165,7 +165,7 @@ class BrowserFetcher:
         if not self.downloadsFolder.exists():
             return []
         result = []
-        for file in [x for x in self.downloadsFolder.iterdir() if x.is_file()]:
+        for file in [x for x in self.downloadsFolder.iterdir() if x.is_dir()]:
             platform, revision = parse_folder_path(file)
             if platform != self._platform:
                 continue
@@ -218,5 +218,5 @@ class BrowserFetcher:
 
         return res.status == 200
 
-b = BrowserFetcher()
+b = BrowserFetcher().local_revisions()
 pass
