@@ -139,7 +139,7 @@ class BrowserFetcher:
             # no really good way to detect system bittedness
             # (other options depend on the sys bittedness == python interpreter bittedness)
             self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
-        assert platform in Platforms.__args__, f'Unsupported platform: {platform}'
+        assert self._platform in Platforms.__args__, f'Unsupported platform: {platform}'
 
     @property
     def platform(self) -> str:
@@ -149,7 +149,8 @@ class BrowserFetcher:
         url = download_url(self._platform, self.downloadHost, revision)
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
-    def download(self, revision: str) -> RevisionInfo:
+    def download(self, revision: str = None) -> RevisionInfo:
+        revision = revision or '722234'
         url = download_url(self._platform, self.downloadHost, revision)
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
@@ -175,7 +176,7 @@ class BrowserFetcher:
         assert f_path, f'Failed to remove: revision {revision} doesn\'t exist on the disk'
         shutil.rmtree(f_path)
 
-    def revision_info(self, revision: str) -> RevisionInfo:
+    def revision_info(self, revision) -> RevisionInfo:
         folder_path = self._get_folder_path(revision)
 
         if self._platform == 'mac':
@@ -191,7 +192,7 @@ class BrowserFetcher:
         else:
             raise RuntimeError(f'Unsupported platform: {self._platform}')
 
-        url = download_url(self._platform, self.host, revision)
+        url = download_url(self._platform, self.downloadHost, revision)
         local = folder_path.exists()
 
         return {
@@ -216,3 +217,6 @@ class BrowserFetcher:
             return False
 
         return res.status == 200
+
+b = BrowserFetcher()
+pass
