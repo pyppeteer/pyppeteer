@@ -10,12 +10,10 @@ from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
-from pyppeteer.jshandle import createJSHandle, JSHandle
+from pyppeteer.jshandle import createJSHandle, JSHandle, ElementHandle
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
-    from pyppeteer.element_handle import ElementHandle  # noqa: F401
-    from pyppeteer.frame_manager import Frame  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +24,7 @@ SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MU
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: CDPSession, contextPayload: Dict, world: DOMWorld,) -> None:
+    def __init__(self, client: CDPSession, contextPayload: Dict, world: 'DOMWorld') -> None:
         self._client = client
         self._world = world
         self._contextId = contextPayload.get('id')

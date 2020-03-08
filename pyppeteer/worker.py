@@ -13,7 +13,7 @@ from pyppeteer.helper import debugError
 from pyppeteer.jshandle import JSHandle
 
 if TYPE_CHECKING:
-    from pyppeteer.connection import CDPSession  # noqa: F401
+    from pyppeteer.connection import CDPSession
 
 logger = logging.getLogger(__name__)
 

@@ -11,7 +11,7 @@ from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any
 try:
     from typing import TypedDict
 except ImportError:
-    from mypy_extensions import TypedDict
+    from typing_extensions import TypedDict
 
 from pyee import EventEmitter
 import websockets
@@ -21,7 +21,7 @@ from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport
 
 if TYPE_CHECKING:
-    from typing import Optional  # noqa: F401
+    from typing import Optional
 
 logger = logging.getLogger(__name__)
 logger_connection = logging.getLogger(__name__ + '.Connection')

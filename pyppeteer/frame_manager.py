@@ -6,7 +6,6 @@
 import asyncio
 import re
 import logging
-from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import EventEmitter
@@ -115,7 +114,7 @@ class FrameManager(EventEmitter):
         if timeout is None:
             timeout = self._timeoutSettings.navigationTimeout
 
-        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = await asyncio.wait(
             [navigate(url, referer, frame._id), watcher.timeoutOrTerminationPromise()],
             return_when=asyncio.FIRST_COMPLETED,
@@ -374,7 +373,7 @@ class Frame(object):
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
         """
-        context = await self.executionContext()
+        context = await self.executionContext
         if context is None:
             raise ElementHandleError('ExecutionContext is None.')
         return await context.evaluate(pageFunction, *args)
@@ -600,7 +599,7 @@ class Frame(object):
             await handle.dispose()
             return result
 
-    def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
+    async def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.

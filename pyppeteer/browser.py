@@ -6,18 +6,19 @@ import asyncio
 import logging
 from subprocess import Popen
 from types import SimpleNamespace
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from pyee import EventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
-from pyppeteer.page import Page
 from pyppeteer.target import Target
 
 logger = logging.getLogger(__name__)
 
+if TYPE_CHECKING:
+    from pyppeteer.page import Page
 
 class Browser(EventEmitter):
     """Browser class.
@@ -68,7 +69,7 @@ class Browser(EventEmitter):
             self._contexts[contextId] = BrowserContext(self, contextId)
 
         self._targets: Dict[str, Target] = dict()
-        self._connection.setClosedCallback(lambda: self.emit(Browser.Events.Disconnected))
+        self._connection.setClosedCallback(lambda: self.emit(Events.Browser.Disconnected))
         self._connection.on(
             'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
         )
@@ -164,16 +165,16 @@ class Browser(EventEmitter):
             raise BrowserError('target should not exist before create.')
         self._targets[targetInfo['targetId']] = target
         if await target._initializedPromise:
-            self.emit(Browser.Events.TargetCreated, target)
-            context.emit(BrowserContext.Events.TargetCreated, target)
+            self.emit(Events.Browser.TargetCreated, target)
+            context.emit(Events.BrowserContext.TargetCreated, target)
 
     async def _targetDestroyed(self, event: Dict) -> None:
         target = self._targets[event['targetId']]
         del self._targets[event['targetId']]
         target._closedCallback()
         if await target._initializedPromise:
-            self.emit(Browser.Events.TargetDestroyed, target)
-            target.browserContext.emit(BrowserContext.Events.TargetDestroyed, target)  # noqa: E501
+            self.emit(Events.Browser.TargetDestroyed, target)
+            target.browserContext.emit(Events.BrowserContext.TargetDestroyed, target)  # noqa: E501
         target._initializedCallback(False)
 
     async def _targetInfoChanged(self, event: Dict) -> None:
@@ -184,19 +185,19 @@ class Browser(EventEmitter):
         wasInitialized = target._isInitialized
         target._targetInfoChanged(event['targetInfo'])
         if wasInitialized and previousURL != target.url:
-            self.emit(Browser.Events.TargetChanged, target)
-            target.browserContext.emit(BrowserContext.Events.TargetChanged, target)  # noqa: E501
+            self.emit(Events.Browser.TargetChanged, target)
+            target.browserContext.emit(Events.BrowserContext.TargetChanged, target)  # noqa: E501
 
     @property
     def wsEndpoint(self) -> str:
         """Return websocket end point url."""
         return self._connection.url
 
-    async def newPage(self) -> Page:
+    async def newPage(self) -> 'Page':
         """Make new page on this browser and return its object."""
         return await self._defaultContext.newPage()
 
-    async def _createPageInContext(self, contextId: Optional[str]) -> Page:
+    async def _createPageInContext(self, contextId: Optional[str]) -> 'Page':
         options = {'url': 'about:blank'}
         if contextId:
             options['browserContextId'] = contextId
@@ -250,7 +251,7 @@ class Browser(EventEmitter):
         self.remove_listener(Events.Browser.TargetChanged, check)
         return result
 
-    async def pages(self) -> List[Page]:
+    async def pages(self) -> List['Page']:
         """Get all pages of this browser.
 
         Non visible pages, such as ``"background_page"``, will not be listed
@@ -333,7 +334,7 @@ class BrowserContext(EventEmitter):
                 targets.append(target)
         return targets
 
-    async def pages(self) -> List[Page]:
+    async def pages(self) -> List['Page']:
         """Return list of all open pages.
 
         Non-visible pages, such as ``"background_page"``, will not be listed
@@ -360,7 +361,7 @@ class BrowserContext(EventEmitter):
         """
         return bool(self._id)
 
-    async def newPage(self) -> Page:
+    async def newPage(self) -> 'Page':
         """Create a new page in the browser context."""
         return await self._browser._createPageInContext(self._id)
 

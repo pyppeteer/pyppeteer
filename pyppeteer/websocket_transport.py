@@ -1,8 +1,12 @@
 import asyncio
-from contextlib import asynccontextmanager
 from typing import Iterable, Union, AsyncIterable
 
 from websockets import connect, WebSocketClientProtocol, Data
+
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    from async_generator import asynccontextmanager
 
 
 class WebsocketTransport:

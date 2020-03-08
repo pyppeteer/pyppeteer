@@ -1,14 +1,15 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator, Union, Literal
+from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING, Literal
 
 from pyppeteer import helper
-from pyppeteer.element_handle import ElementHandle
 from pyppeteer.errors import BrowserError, PageError, NetworkError
-from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.frame_manager import Frame, FrameManager
-from pyppeteer.jshandle import JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.timeout_settings import TimeoutSettings
+
+if TYPE_CHECKING:
+    from pyppeteer.jshandle import JSHandle, ElementHandle
+    from pyppeteer.frame_manager import Frame, FrameManager
+    from pyppeteer.execution_context import ExecutionContext
 
 
 async def readFileAsync(path, file):
@@ -18,7 +19,7 @@ async def readFileAsync(path, file):
 
 class DOMWorld(object):
     def __init__(
-        self, frameManager: FrameManager, frame: Frame, timeoutSettings: TimeoutSettings,
+        self, frameManager: 'FrameManager', frame: 'Frame', timeoutSettings: TimeoutSettings,
     ):
         self._frameManager = frameManager
         self._frame = frame
@@ -43,7 +44,7 @@ class DOMWorld(object):
     def frame(self):
         return self._frame
 
-    def _setContext(self, context: ExecutionContext):
+    def _setContext(self, context: 'ExecutionContext'):
         pass
         # TODO Promises
 
@@ -87,7 +88,7 @@ class DOMWorld(object):
         document = await self._document()
         return await document.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
+    async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
         """Get all elements which matches `selector`.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
@@ -134,7 +135,8 @@ class DOMWorld(object):
             """,
             html,
         )
-        watcher = LifecycleWatcher(self._frameManager, self._frame, waitUntil=waitUntil, timeout=timeout)
+        watcher = LifecycleWatcher(
+            frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout)
         error = await asyncio.wait(
             [watcher.timeoutOrTerminationPromise(), watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
         )
@@ -394,7 +396,7 @@ class WaitTask(object):
     async def rerun(self) -> None:  # noqa: C901
         """Start polling."""
         runCount = self._runCount = self._runCount + 1
-        success: Optional[JSHandle] = None
+        success: Optional['JSHandle'] = None
         error = None
 
         try:
