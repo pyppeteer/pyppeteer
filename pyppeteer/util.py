@@ -7,13 +7,7 @@ import gc
 import socket
 from typing import Dict, Optional
 
-from pyppeteer.browser_fetcher import check_chromium, chromium_executable
-from pyppeteer.browser_fetcher import download_chromium
-
 __all__ = [
-    'check_chromium',
-    'chromium_executable',
-    'download_chromium',
     'get_free_port',
     'merge_dict',
 ]
