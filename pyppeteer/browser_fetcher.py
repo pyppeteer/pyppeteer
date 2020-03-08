@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Chromium download module."""
+"""
+Browser fetcher module.
+Chromium is being downloaded from:
+https://storage.googleapis.com/chromium-browser-snapshots
+see full download instructions:
+https://www.chromium.org/getting-involved/download-chromium
+"""
 
 import logging
 import os
@@ -29,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 Platforms = Literal['linux', 'mac', 'win32', 'win64']
 
+
 class RevisionInfo(TypedDict):
     folderPath: Union[Path, os.PathLike]
     executablePath: Union[Path, os.PathLike]
@@ -44,26 +51,9 @@ class BrowserOptions(TypedDict, total=False):
 
 
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
-DOWNLOAD_HOST = os.environ.get(
-    'PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
+DOWNLOAD_HOST = os.environ.get('PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 
 NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
-
-
-
-def current_platform() -> str:
-    """Get current platform name by short string."""
-    if sys.platform.startswith('linux'):
-        return 'linux'
-    elif sys.platform.startswith('darwin'):
-        return 'mac'
-    elif (sys.platform.startswith('win') or
-          sys.platform.startswith('msys') or
-          sys.platform.startswith('cyg')):
-        if sys.maxsize > 2 ** 31 - 1:
-            return 'win64'
-        return 'win32'
-    raise OSError('Unsupported platform: ' + sys.platform)
 
 
 def archive_name(platform: str, revision: str) -> Optional[str]:
@@ -77,8 +67,7 @@ def archive_name(platform: str, revision: str) -> Optional[str]:
 
 
 def download_url(platform: Platforms, host: str, revision: str) -> str:
-    windows_archive = 'chrome-win' if int(revision) > 591479 \
-        else 'chrome-win32'
+    windows_archive = 'chrome-win' if int(revision) > 591479 else 'chrome-win32'
 
     base_url = f'{host}/chromium-browser-snapshots'
     download_urls = {
@@ -103,7 +92,7 @@ def download_file(url: str, zip_path: BytesIO):
     CHUNK_SIZE = 4096
     file_req = request.urlopen(url)
     progress_bar = tqdm(
-        total=int(file_req.getheader('Content-Length',0)),
+        total=int(file_req.getheader('Content-Length', 0)),
         unit_scale=True,
         file=os.devnull if NO_PROGRESS_BAR else None,
     )
@@ -119,9 +108,10 @@ def extractZip(zip_file: BytesIO, folder_path: Path):
 
 
 class BrowserFetcher:
-    def __init__(self, project_root: Union[Path, os.PathLike] = None, platform: Platforms = None,
-                 path: Union[Path, os.PathLike] = None, host: str = None):
-        self.downloadsFolder = path or Path(__pyppeteer_home__) / 'local-chromium'
+    def __init__(
+        self, projectRoot: Union[Path, os.PathLike] = None, platform: Platforms = None, host: str = None,
+    ):
+        self.downloadsFolder = projectRoot or Path(__pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
         self._platform: Platforms = platform or sys.platform
         if self._platform == 'darwin':
@@ -172,14 +162,12 @@ class BrowserFetcher:
 
         if self._platform == 'mac':
             executable_path = folder_path.joinpath(
-                archive_name(self._platform, revision), 'Chromium.app',
-                'Contents', 'MacOS', 'Chromium')
+                archive_name(self._platform, revision), 'Chromium.app', 'Contents', 'MacOS', 'Chromium'
+            )
         elif self._platform == 'linux':
-            executable_path = folder_path.joinpath(
-                archive_name(self._platform, revision), 'chrome')
+            executable_path = folder_path.joinpath(archive_name(self._platform, revision), 'chrome')
         elif self._platform in ('win32', 'win64'):
-            executable_path = folder_path.joinpath(
-                archive_name(self._platform, revision), 'chrome.exe')
+            executable_path = folder_path.joinpath(archive_name(self._platform, revision), 'chrome.exe')
         else:
             raise RuntimeError(f'Unsupported platform: {self._platform}')
 
@@ -191,7 +179,7 @@ class BrowserFetcher:
             'executablePath': executable_path,
             'folderPath': folder_path,
             'local': local,
-            'url': url
+            'url': url,
         }
 
     def _get_folder_path(self, revision: str) -> Path:
@@ -208,6 +196,3 @@ class BrowserFetcher:
             return False
 
         return res.status == 200
-
-b = BrowserFetcher().local_revisions()
-pass
