@@ -51,13 +51,6 @@ REVISION = os.environ.get('PYPPETEER2_CHROMIUM_REVISION', __chromium_revision__)
 
 NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
 
-# chromiumExecutable = {
-#     'linux': DOWNLOADS_FOLDER / '{revision}' / 'chrome-linux' / 'chrome',
-#     'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' /
-#             'Contents' / 'MacOS' / 'Chromium'),
-#     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-#     'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
-# }
 
 
 def current_platform() -> str:
