@@ -186,13 +186,13 @@ class ElementHandle(JSHandle):
         if not result or not result.get('quads', {}).get('length'):
             raise BrowserError('Node is either not visible or not an HTMLEelement')
         clientWidth, clientHeight = layoutMetrics.layoutViewport
-        quads = [
-            self._fromProtocolQuad(quad)
-            for quad in self._intersectQuadWithViewport(quad, clientWidth, clientHeight)
-            if computedQuadArea(quad) > 1
-        ]
-        if not quads:
-            raise BrowserError('Node is either not visible or not an HTMLElement')
+        quads = []
+        for quad in result.quads:
+            quad = self._intersectQuadWithViewport(self._fromProtocolQuad(quad), clientWidth, clientHeight)
+            if computeQuadArea(quad) > 1:
+                quads.append(quad)
+
+        raise BrowserError('Node is either not visible or not an HTMLElement')
         quad = quads[0]
         x = 0
         y = 0
@@ -576,7 +576,7 @@ class ElementHandle(JSHandle):
 
 def computeQuadArea(quad: List[Dict]) -> float:
     area = 0
-    for i, _ in enumerate(quad):
+    for i in range(len(quad)):
         p1 = quad[i]
         p2 = quad[(i + 1) % len(quad)]
         area += (p1['x'] * p2['y'] - p2['x'] * p1['y']) / 2
