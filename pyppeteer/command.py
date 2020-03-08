@@ -5,7 +5,7 @@
 
 import logging
 
-from pyppeteer.browser_fetcher import check_chromium, download_chromium
+from pyppeteer.chromium_downloader import check_chromium, download_chromium
 
 
 def install() -> None:

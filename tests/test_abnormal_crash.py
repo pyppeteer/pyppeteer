@@ -8,7 +8,7 @@ import unittest
 from syncer import sync
 
 from pyppeteer import launch
-from pyppeteer.browser_fetcher import current_platform
+from pyppeteer.chromium_downloader import current_platform
 from pyppeteer.errors import NetworkError
 import pytest
 
