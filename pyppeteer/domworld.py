@@ -88,9 +88,10 @@ class DOMWorld(object):
         return context.evaluate(pageFunction=pageFunction, *args)
 
     async def querySelector(self, selector: str):
-        document = await self._document()
+        document = await self._document
         return await document.querySelector(selector)
 
+    @property
     async def _document(self) -> 'ElementHandle':
         if self._documentFuture:
             return await self._documentFuture
@@ -101,11 +102,11 @@ class DOMWorld(object):
         return await self._documentFuture
 
     async def xpath(self, expression):
-        document = await self._document()
+        document = await self._document
         return await document.xpath(expression)
 
     async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
-        document = await self._document()
+        document = await self._document
         return await document.querySelectorEval(selector, pageFunction, *args)
 
     async def querySelectorAll(self, selector: str) -> List['ElementHandle']:
@@ -113,7 +114,7 @@ class DOMWorld(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
         """
-        document = await self._document()
+        document = await self._document
         value = await document.querySelectorAll(selector)
         return value
 
@@ -122,7 +123,7 @@ class DOMWorld(object):
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
         """
-        document = await self._document()
+        document = await self._document
         value = await document.JJeval(selector, pageFunction, *args)
         return value
 
