@@ -12,6 +12,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
+from pyppeteer.models import Viewport
 from pyppeteer.target import Target
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class Browser(AsyncIOEventEmitter):
         connection: Connection,
         contextIds: List[str],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Optional[Dict],
+        defaultViewport: Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
         **kwargs: Any,
@@ -125,7 +126,7 @@ class Browser(AsyncIOEventEmitter):
         connection: Connection,
         contextIds: List[str],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Optional[Dict],
+        defaultViewport: Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
         **kwargs: Any,

@@ -19,6 +19,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import debugError
+from pyppeteer.models import LaunchOptions, Viewport, ChromeArgOptions, BrowserOptions
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 
@@ -31,39 +32,6 @@ except ImportError:
     from typing_extensions import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
-
-
-class ChromeArgOptions(TypedDict, total=False):
-    headless: bool
-    args: Sequence[str]
-    userDataDir: str
-    devtools: bool
-
-
-class LaunchOptions(TypedDict, total=False):
-    executablePath: str
-    ignoreDefaultArgs: Union[Literal[False], Sequence[str]]
-    handleSIGINT: bool
-    handleSIGTERM: bool
-    handleSIGHUP: bool
-    timeout: float
-    dumpio: bool
-    env: Dict[str, Union[str, bool]]
-
-
-class Viewport(TypedDict, total=False):
-    width: float
-    height: float
-    deviceScaleFactor: float
-    isMobile: bool
-    isLandscape: bool
-    hasTouch: bool
-
-
-class BrowserOptions(TypedDict, total=False):
-    ignoreHTTPSErrors: bool
-    defaultViewport: Viewport
-    slowMo: float
 
 
 def _restore_default_signal_handlers():
@@ -583,7 +551,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
             connection = await runner.setupConnection(
                 usePipe=pipe, timeout=timeout, slowMo=slowMo, preferredRevision=self.preferredRevision,
             )
-            browser = Browser.create(
+            browser = await Browser.create(
                 connection=connection,
                 contextIds=[],
                 ignoreHTTPSErrors=ignoreHTTPSErrors,
@@ -680,13 +648,13 @@ def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Op
     revision = os.environ.get(revision_env_var)
     if revision:
         revision_info = browser_fetcher.revision_info(revision)
-        if not revision_info['local']:
+        if not revision_info.local:
             missing_text = f'Tried to use env variables ({revision_env_var}) to launch browser, but did not find executable at {revision_info.executable_path}'
             return None, missing_text
     revision_info = browser_fetcher.revision_info(preferred_revision)
-    if not revision_info['local']:
+    if not revision_info.local:
         missing_text = 'Browser is not downloaded. Try running pyppeteer2-install'
-    return revision_info['executable_path'], missing_text
+    return revision_info.executable_path, missing_text
 
 
 def launcher(projectRoot: str = None, preferredRevision: str = None, product: str = None):

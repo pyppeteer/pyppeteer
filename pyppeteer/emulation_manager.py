@@ -5,6 +5,7 @@
 import asyncio
 
 from pyppeteer.connection import CDPSession
+from pyppeteer.models import Viewport
 
 
 class EmulationManager:
@@ -17,7 +18,7 @@ class EmulationManager:
         self._hasTouch = False
         self._emulatingMobile = False
 
-    async def emulateViewport(self, viewport: dict) -> bool:
+    async def emulateViewport(self, viewport: Viewport) -> bool:
         """
         Evaluate viewport.
         :param viewport: dictionary which supports keys: isMobile, width, height,

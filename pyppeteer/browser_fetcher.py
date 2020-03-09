@@ -44,10 +44,6 @@ class RevisionInfo(TypedDict):
     revision: str
 
 
-class BrowserOptions(TypedDict, total=False):
-    platform: Platforms
-    path: Path
-    host: str
 
 
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
