@@ -25,8 +25,8 @@ class TestContext(BaseTestCase):
         assert len(self.page.frames) == 2
         frame1 = self.page.frames[0]
         frame2 = self.page.frames[1]
-        context1 = await frame1.executionContext()
-        context2 = await frame2.executionContext()
+        context1 = await frame1.executionContext
+        context2 = await frame2.executionContext
         assert context1
         assert context2
         assert context1 != context2

@@ -518,7 +518,7 @@ class Frame:
         """
         handle = await self._secondaryWorld.waitForSelector(selector, visible=visible, hidden=hidden, timeout=timeout)
         if handle:
-            mainExecutionContext = await self._mainWorld.executionContext()
+            mainExecutionContext = await self._mainWorld.executionContext
             result = await mainExecutionContext._adoptElementHandle()
             await handle.dispose()
             return result
@@ -531,7 +531,7 @@ class Frame:
         handle = await self._secondaryWorld.waitForXpath(xpath, visible=visible, hidden=hidden, timeout=timeout)
         if not handle:
             return None
-        mainExecutionContext = await self._mainWorld.executionContext()
+        mainExecutionContext = await self._mainWorld.executionContext
         result = await mainExecutionContext._adoptElementHandle(handle)
         await handle.dispose()
         return result

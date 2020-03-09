@@ -15,7 +15,7 @@ class TestWorker(BaseTestCase):
         await self.page.waitForFunction('() => !!worker')
         worker = self.page.workers[0]
         self.assertIn('worker.js', worker.url)
-        executionContext = await worker.executionContext()
+        executionContext = await worker.executionContext
         self.assertEqual(
             await executionContext.evaluate('self.workerFunction()'), 'worker function result',
         )
@@ -57,7 +57,7 @@ class TestWorker(BaseTestCase):
         self.page.once('workercreated', lambda w: workerCreatedPromise.set_result(w))
         await self.page.evaluate('() => new Worker("data:text/javascript,console.log(1)")')
         worker = await workerCreatedPromise
-        self.assertEqual(await (await worker.executionContext()).evaluate('1+1'), 2)
+        self.assertEqual(await (await worker.executionContext).evaluate('1+1'), 2)
         self.assertEqual(await worker.evaluate('1+2'), 3)
 
     @sync

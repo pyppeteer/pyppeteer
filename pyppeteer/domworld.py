@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING
+from asyncio import Future
+from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING, Awaitable, Callable
 
 from pyppeteer import helper
 from pyppeteer.errors import BrowserError, PageError, NetworkError
@@ -29,11 +30,12 @@ class DOMWorld(object):
         self._frameManager = frameManager
         self._frame = frame
         self._timeoutSettings = timeoutSettings
+        self._loop = self._frameManager._client._loop
 
-        self._documentPromise = None
-        self._contextPromise = None
-        self._contextResolveCallback = None
-        self._setContext(None)
+        self._documentFuture: Future['ElementHandle'] = None
+        self._contextFuture: Future['ExecutionContext'] = None
+        self._contextResolveCallback: Callable = None
+        self._setContext()
 
         self._waitTasks = set()
         self._detached = False
@@ -49,9 +51,16 @@ class DOMWorld(object):
     def frame(self):
         return self._frame
 
-    def _setContext(self, context: 'ExecutionContext'):
-        pass
-        # TODO Promises
+    def _setContext(self, context: Optional['ExecutionContext'] = None):
+        if context:
+            self._contextResolveCallback(context)
+            self._contextResolveCallback = None
+            for waitTask in self._waitTasks:
+                waitTask.rerun()
+        else:
+            self._documentFuture = None
+            self._contextFuture = self._loop.create_future()
+            self._contextFuture.add_done_callback(lambda val: self._contextResolveCallback == val)
 
     def _hasContext(self):
         return not self._contextResolveCallback
@@ -61,29 +70,35 @@ class DOMWorld(object):
         for task in self._waitTasks:
             task.terminate(BrowserError('waitForFunctions failed: frame got detached.'))
 
-    def executionContext(self):
+    @property
+    def executionContext(self) -> Awaitable['ExecutionContext']:
         if self._detached:
             raise BrowserError(
                 'Execution Context is not available in detached '
                 f'frame: {self._frame.url} (are you trying to evaluate?)'
             )
-        return self._contextPromise
+        return self._contextFuture
 
     async def evaluateHandle(self, pageFunction: str, *args):
-        # TODO
-        pass
+        context = await self.executionContext
+        return context.evaluateHandle(pageFunction=pageFunction, *args)
 
     async def evaluate(self, pageFunction: str, *args):
-        # TODO
-        pass
+        context = await self.executionContext
+        return context.evaluate(pageFunction=pageFunction, *args)
 
     async def querySelector(self, selector: str):
         document = await self._document()
-        return await document.QuerySelector(selector)
+        return await document.querySelector(selector)
 
-    async def _document(self):
-        # todo
-        pass
+    async def _document(self) -> 'ElementHandle':
+        if self._documentFuture:
+            return await self._documentFuture
+
+        context = await self.executionContext
+        document = await context.evaluateHandle('document')
+        self._documentFuture.set_result(document.asElement())
+        return await self._documentFuture
 
     async def xpath(self, expression):
         document = await self._document()
@@ -111,6 +126,7 @@ class DOMWorld(object):
         value = await document.JJeval(selector, pageFunction, *args)
         return value
 
+    @property
     async def content(self):
         return await self.evaluate(
             """
@@ -144,7 +160,7 @@ class DOMWorld(object):
             frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout
         )
         error = await asyncio.wait(
-            [watcher.timeoutOrTerminationPromise(), watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
+            [watcher.timeoutOrTerminationFuture, watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
         )
         watcher.dispose()
         if error:
@@ -179,7 +195,7 @@ class DOMWorld(object):
           return script;
         }
         """
-        context = await self.executionContext()
+        context = await self.executionContext
         if url:
             try:
                 return await context.evaluateHandle(addScriptUrl)
@@ -224,7 +240,7 @@ class DOMWorld(object):
           return style;
         }
         """
-        context = await self.executionContext()
+        context = await self.executionContext
         if url:
             try:
                 return (await context.evaluateHandle(addStyleUrl, url)).asElement()
@@ -410,7 +426,7 @@ class WaitTask(object):
         error = None
 
         try:
-            context = await self._domWorld.executionContext()
+            context = await self._domWorld.executionContext
             if context is None:
                 raise PageError('No execution context.')
             success = await context.evaluateHandle(

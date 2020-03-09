@@ -224,7 +224,7 @@ class TestEvaluate(BaseTestCase):
 
     @sync
     async def test_nice_error_after_navigation(self):
-        executionContext = await self.page.mainFrame.executionContext()
+        executionContext = await self.page.mainFrame.executionContext
 
         await asyncio.wait(
             [self.page.waitForNavigation(), executionContext.evaluate('window.location.reload()'),]
@@ -1073,21 +1073,21 @@ class TestSetContent(BaseTestCase):
     @sync
     async def test_set_content(self):
         await self.page.setContent('<div>hello</div>')
-        result = await self.page.content()
+        result = await self.page.content
         assert result == self.expectedOutput
 
     @sync
     async def test_with_doctype(self):
         doctype = '<!DOCTYPE html>'
         await self.page.setContent(doctype + '<div>hello</div>')
-        result = await self.page.content()
+        result = await self.page.content
         assert result == doctype + self.expectedOutput
 
     @sync
     async def test_with_html4_doctype(self):
         doctype = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" ' '"http://www.w3.org/TR/html4/strict.dtd">'
         await self.page.setContent(doctype + '<div>hello</div>')
-        result = await self.page.content()
+        result = await self.page.content
         assert result == doctype + self.expectedOutput
 
 
@@ -1472,7 +1472,7 @@ class TestTitle(BaseTestCase):
     @sync
     async def test_title(self):
         await self.page.goto(self.url + 'static/button.html')
-        assert await self.page.title() == 'Button test'
+        assert await self.page.title == 'Button test'
 
 
 class TestSelect(BaseTestCase):
