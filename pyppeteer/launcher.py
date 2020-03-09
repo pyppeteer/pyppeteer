@@ -19,6 +19,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import debugError
+from pyppeteer.models import LaunchOptions, Viewport, ChromeArgOptions, BrowserOptions
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 
