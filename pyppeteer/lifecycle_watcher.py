@@ -10,7 +10,7 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 import asyncio
 from asyncio import FIRST_COMPLETED
 from functools import partial
-from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING
+from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING, Literal
 
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
@@ -20,7 +20,6 @@ from pyppeteer.network_manager import Request
 if TYPE_CHECKING:
     from pyppeteer.frame_manager import FrameManager, Frame
 
-
 pyppeteerToProtocolLifecycle = {
     'load': 'load',
     'domcontentloaded': 'DOMContentLoaded',
@@ -28,6 +27,8 @@ pyppeteerToProtocolLifecycle = {
     'networkidle0': 'networkIdle',
     'networkidle2': 'networkAlmostIdle',
 }
+
+WaitTargets = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
 
 
 class LifecycleWatcher:
@@ -38,11 +39,21 @@ class LifecycleWatcher:
         frameManager: 'FrameManager',
         frame: 'Frame',
         timeout: int,
-        options: Dict = None,
+        waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
+        self._expectedLifecycle: List[str] = []
+        if isinstance(waitUntil, str):
+            waitUntil = [waitUntil]
+        for value in waitUntil:
+            try:
+                protocolEvent = pyppeteerToProtocolLifecycle[value]
+            except AttributeError:
+                raise ValueError(f'Unknown value for options.waitUntil: {value}')
+            else:
+                self._expectedLifecycle.append(protocolEvent)
+
         self._futures = []
-        self._validate_options_and_set_expected_lifecycle(options)
         self._frameManager = frameManager
         self._frame = frame
         self._initialLoaderId = frame._loaderId
@@ -81,36 +92,6 @@ class LifecycleWatcher:
 
         self._checkLifecycleComplete()
 
-    def _validate_options_and_set_expected_lifecycle(self, options: Dict) -> None:
-        # noqa: C901
-        for deprecated_opt in ('networkIdleTimeout', 'networkIdleInflight'):
-            if deprecated_opt in options:
-                raise DeprecationError(f'`{deprecated_opt}` option is no longer supported.')
-
-        if options.get('waitUntil') == 'networkidle':
-            raise DeprecationError('`networkidle` option is no longer supported. ' 'Use `networkidle2` instead.')
-        if options.get('waitUntil') == 'documentloaded':
-            import logging
-
-            logging.getLogger(__name__).warning(
-                '`documentloaded` option is no longer supported. ' 'Use `domcontentloaded` instead.'
-            )
-        _waitUntil = options.get('waitUntil', 'load')
-        if isinstance(_waitUntil, list):
-            waitUntil = _waitUntil
-        elif isinstance(_waitUntil, str):
-            waitUntil = [_waitUntil]
-        else:
-            raise TypeError('`waitUntil` option should be str or List of str, ' f'but got type {type(_waitUntil)}')
-        self._expectedLifecycle: List[str] = []
-        for value in waitUntil:
-            try:
-                protocolEvent = pyppeteerToProtocolLifecycle[value]
-            except AttributeError:
-                raise ValueError(f'Unknown value for options.waitUntil: {value}')
-            else:
-                self._expectedLifecycle.append(protocolEvent)
-
     @property
     def lifecycleFuture(self) -> Awaitable[None]:
         return self._lifecycleFuture
@@ -140,7 +121,8 @@ class LifecycleWatcher:
     def navigationResponse(self) -> Optional[Request]:
         return self._navigationRequest.response if self._navigationRequest else None
 
-    def timeoutOrTerminationPromise(self) -> Awaitable:
+    @property
+    def timeoutOrTerminationFuture(self) -> Awaitable:
         return asyncio.wait([self._timeoutFuture, self._terminationFuture], return_when=FIRST_COMPLETED)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:

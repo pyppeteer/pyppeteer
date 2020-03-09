@@ -111,7 +111,7 @@ class FrameManager(AsyncIOEventEmitter):
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = await asyncio.wait(
-            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture()],
+            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture],
             return_when=asyncio.FIRST_COMPLETED,
         )
         if not error:
@@ -120,7 +120,7 @@ class FrameManager(AsyncIOEventEmitter):
             else:
                 nav_promise = watcher.sameDocumentNavigationFuture
             error = await asyncio.wait(
-                [watcher.timeoutOrTerminationFuture(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
+                [watcher.timeoutOrTerminationFuture, nav_promise], return_when=asyncio.FIRST_COMPLETED
             )
         watcher.dispose()
         if error:
@@ -135,7 +135,7 @@ class FrameManager(AsyncIOEventEmitter):
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = asyncio.wait(
             [
-                watcher.timeoutOrTerminationFuture(),
+                watcher.timeoutOrTerminationFuture,
                 watcher.sameDocumentNavigationFuture,
                 watcher.newDocumentNavigationFuture,
             ],
@@ -194,7 +194,7 @@ class FrameManager(AsyncIOEventEmitter):
         if frameId in self._frames:
             return
         parentFrame = self._frames.get(parentFrameId)
-        frame = Frame(self._client, parentFrame, frameId)
+        frame = Frame(frameManager=self, client=self._client, parentFrame=parentFrame, frameId=frameId)
         self._frames[frameId] = frame
         self.emit(Events.FrameManager.FrameAttached, frame)
 
