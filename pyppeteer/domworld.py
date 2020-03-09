@@ -141,7 +141,8 @@ class DOMWorld(object):
             html,
         )
         watcher = LifecycleWatcher(
-            frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout)
+            frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout
+        )
         error = await asyncio.wait(
             [watcher.timeoutOrTerminationPromise(), watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
         )
@@ -232,7 +233,7 @@ class DOMWorld(object):
 
         if path:
             contents = await readFileAsync(path, 'utf8')
-            contents = '/*# sourceURL=' + path.replace('\n', '') + '*/'
+            contents += '/*# sourceURL=' + path.replace('\n', '') + '*/'
             return (await context.evaluateHandle(addStyleContent, contents)).asElement()
 
         if content:
@@ -282,14 +283,18 @@ class DOMWorld(object):
         await handle.type(text, **kwargs)
         await handle.dispose()
 
-    async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None):
-        return self._waitForSelectorOrXpath(selector, isXpath=False, visible=visible, hidden=hidden, timeout=timeout)
+    async def waitForSelector(self, selector, visible=False, hidden=False, timeout: int = None):
+        return self._waitForSelectorOrXpath(selector, isXPath=False, visible=visible, hidden=hidden, timeout=timeout)
+
+    async def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
+        return self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
     async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args):
         if not timeout:
             timeout = self._timeoutSettings.timeout
         return WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise
 
+    @property
     async def title(self):
         return self.evaluate('() => document.title')
 

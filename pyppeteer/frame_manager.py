@@ -13,12 +13,13 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.events import Events
-from pyppeteer.jshandle import JSHandle, ElementHandle
+from pyppeteer.helper import debugError
+from pyppeteer.jshandle import ElementHandle
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.errors import ElementHandleError, PageError
-from pyppeteer.lifecycle_watcher import LifecycleWatcher
+from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings
 
@@ -85,12 +86,7 @@ class FrameManager(AsyncIOEventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-        self,
-        frame: 'Frame',
-        url: str,
-        referer: str = None,
-        timeout: int = None,
-        waitUntil: Union[str, List[str]] = None,
+        self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
     ):
         ensureNewDocumentNavigation = False
 
@@ -115,35 +111,33 @@ class FrameManager(AsyncIOEventEmitter):
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = await asyncio.wait(
-            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationPromise()],
+            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture()],
             return_when=asyncio.FIRST_COMPLETED,
         )
         if not error:
             if ensureNewDocumentNavigation:
-                nav_promise = watcher.newDocumentNavigationPromise()
+                nav_promise = watcher.newDocumentNavigationFuture
             else:
-                nav_promise = watcher.sameDocumentNavigationPromise()
+                nav_promise = watcher.sameDocumentNavigationFuture
             error = await asyncio.wait(
-                [watcher.timeoutOrTerminationPromise(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
+                [watcher.timeoutOrTerminationFuture(), nav_promise,], return_when=asyncio.FIRST_COMPLETED
             )
         watcher.dispose()
         if error:
             raise error
         return watcher.navigationResponse()
 
-    async def waitForFrameNavigation(
-        self, frame: 'Frame', waitUntil: Union[str, List[str]] = None, timeout: int = None
-    ):
+    async def waitForFrameNavigation(self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: int = None):
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
-        watcher = LifecycleWatcher(self, frame, waitUntil, timeout)
+        watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
         error = asyncio.wait(
             [
-                watcher.timeoutOrTerminationPromise(),
-                watcher.sameDocumentNavigationPromise(),
-                watcher.newDocumentNavigationPromise(),
+                watcher.timeoutOrTerminationFuture(),
+                watcher.sameDocumentNavigationFuture,
+                watcher.newDocumentNavigationFuture,
             ],
             return_when=asyncio.FIRST_COMPLETED,
         )
@@ -187,6 +181,7 @@ class FrameManager(AsyncIOEventEmitter):
         """Return main frame."""
         return self._mainFrame
 
+    @property
     def frames(self) -> List['Frame']:
         """Return all frames."""
         return list(self._frames.values())
@@ -226,7 +221,7 @@ class FrameManager(AsyncIOEventEmitter):
                 frame._id = _id
             else:
                 # Initial main frame navigation.
-                frame = Frame(self._client, None, _id)
+                frame = Frame(frameManager=self, client=self._client, parentFrame=None, frameId=_id)
             self._frames[_id] = frame
             self._mainFrame = frame
 
@@ -242,15 +237,18 @@ class FrameManager(AsyncIOEventEmitter):
             'Page.addScriptToEvaluateOnNewDocument',
             {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name,},
         )
-        # todo wrap in debugerror?
-        await asyncio.gather(
+        results = await asyncio.gather(
             *[
                 self._client.send(
                     'Page.createIsolatedWorld', {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name,}
                 )
-                for frame in self.frames()
-            ]
+                for frame in self.frames
+            ],
+            return_exceptions=True,
         )
+        for result in results:
+            if isinstance(result, Exception):
+                debugError(logger, result)
 
     def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
         frame = self._frames.get(frameId)
@@ -315,7 +313,7 @@ class FrameManager(AsyncIOEventEmitter):
         self.emit(Events.FrameManager.FrameDetached, frame)
 
 
-class Frame(object):
+class Frame:
     """Frame class.
 
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
@@ -333,8 +331,8 @@ class Frame(object):
 
         self._loaderId = ''
         self._lifecycleEvents: Set[str] = set()
-        self._mainWorld = DOMWorld(frameManager, self, FrameManager._timeoutSettings)
-        self._secondaryWorld = DOMWorld(frameManager, self, FrameManager._timeoutSettings)
+        self._mainWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
+        self._secondaryWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
         self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
@@ -345,109 +343,36 @@ class Frame(object):
 
         # aliases
         self.goto = self._frameManager.navigateFrame
-        self.waitForSelector = self._frameManager.waitForFrameNavigation
-        self.click = self._secondaryWorld.click
+        self.waitForFrameNavigation = self._frameManager.waitForFrameNavigation
+
+        self.addScriptTag = self.mainWorld.addScriptTag
+        self.addStyleTag = self.mainWorld.addStyleTag
+        self.evaluate = self.mainWorld.evaluate
+        self.evaluateHandle = self.mainWorld.evaluateHandle
+        self.executionContext = self.mainWorld.executionContext
+        self.querySelector = self.J = self.mainWorld.querySelector
+        self.querySelectorAllEval = self.JJeval = self.mainWorld.querySelectorAllEval
+        self.querySelectorEval = self.Jeval = self.mainWorld.querySelectorEval
+        self.type = self.mainWorld.type
+        self.waitForFunction = self.mainWorld.waitForFunction
+        self.xpath = self.Jx = self.mainWorld.xpath
+
+        self.click = self.secondaryWorld.click
+        self.content = self.secondaryWorld.content
+        self.focus = self.secondaryWorld.focus
+        self.hover = self.secondaryWorld.hover
+        self.select = self.secondaryWorld.select
+        self.setContent = self.secondaryWorld.setContent
+        self.tap = self.secondaryWorld.tap
+        self.title = self.secondaryWorld.title
 
     @property
-    async def executionContext(self) -> Optional[ExecutionContext]:
-        """Return execution context of this frame.
+    def mainWorld(self) -> 'DOMWorld':  # ensure mainWorld not settable
+        return self._mainWorld
 
-        Return :class:`~pyppeteer.execution_context.ExecutionContext`
-        associated to this frame.
-        """
-        return await self._mainWorld.executionContext()
-
-    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
-        """Execute function on this frame.
-
-        Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
-        """
-        context = await self.executionContext
-        if context is None:
-            raise PageError('this frame has no context.')
-        return await context.evaluateHandle(pageFunction, *args)
-
-    async def evaluate(self, pageFunction: str, *args: Any, force_expr: bool = False) -> Any:
-        """Evaluate pageFunction on this frame.
-
-        Details see :meth:`pyppeteer.page.Page.evaluate`.
-        """
-        context = await self.executionContext
-        if context is None:
-            raise ElementHandleError('ExecutionContext is None.')
-        return await context.evaluate(pageFunction, *args)
-
-    async def querySelector(self, selector: str) -> Optional[ElementHandle]:
-        """Get element which matches `selector` string.
-
-        Details see :meth:`pyppeteer.page.Page.querySelector`.
-        """
-        document = await self._document()
-        value = await document.querySelector(selector)
-        return value
-
-    async def _document(self) -> ElementHandle:
-        if self._documentPromise:
-            return self._documentPromise
-        context = await self.executionContext()
-        if context is None:
-            raise PageError('No context exists.')
-        document = (await context.evaluateHandle('document')).asElement()
-        self._documentPromise = document
-        if document is None:
-            raise PageError('Could not find `document`.')
-        return document
-
-    async def xpath(self, expression: str) -> List[ElementHandle]:
-        """Evaluate the XPath expression.
-
-        If there are no such elements in this frame, return an empty list.
-
-        :arg str expression: XPath string to be evaluated.
-        """
-        document = await self._document()
-        value = await document.xpath(expression)
-        return value
-
-    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
-        """Execute function on element which matches selector.
-
-        Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
-        """
-        document = await self._document()
-        return await document.querySelectorEval(selector, pageFunction, *args)
-
-    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Optional[Dict]:
-        """Execute function on all elements which matches selector.
-
-        Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
-        """
-        document = await self._document()
-        value = await document.JJeval(selector, pageFunction, *args)
-        return value
-
-    async def querySelectorAll(self, selector: str) -> List[ElementHandle]:
-        """Get all elements which matches `selector`.
-
-        Details see :meth:`pyppeteer.page.Page.querySelectorAll`.
-        """
-        document = await self._document()
-        value = await document.querySelectorAll(selector)
-        return value
-
-    # Aliases for selector methods
-    J = querySelector
-    Jx = xpath
-    Jeval = querySelectorEval
-    JJ = querySelectorAll
-    JJeval = querySelectorAllEval
-
-    async def content(self) -> str:
-        """Get the whole HTML contents of the page."""
-        return await self._secondaryWorld.content()
-
-    async def setContent(self, html, waitUntil=None, timeout=None):
-        return await self._secondaryWorld.setContent(html, waitUntil=waitUntil, timeout=timeout)
+    @property
+    def secondaryWorld(self) -> 'DOMWorld':  # ensure secondaryWorld is not settable
+        return self._secondaryWorld
 
     @property
     def name(self) -> str:
@@ -472,6 +397,7 @@ class Frame(object):
         """Get child frames."""
         return list(self._childFrames)
 
+    @property
     def isDetached(self) -> bool:
         """Return ``True`` if this frame is detached.
 
@@ -585,43 +511,30 @@ class Frame(object):
         f.set_exception(BrowserError(f'Unsupported target type:' f' {type(selectorOrFunctionOrTimeout)}'))
         return f
 
-    async def waitForSelector(self, selector: str, **kwargs: Any) -> Optional[ElementHandle]:
+    async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None) -> Optional['ElementHandle']:
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
         """
-        handle = await self._secondaryWorld.waitForSelector(selector, **kwargs)
+        handle = await self._secondaryWorld.waitForSelector(selector, visible=visible, hidden=hidden, timeout=timeout)
         if handle:
             mainExecutionContext = await self._mainWorld.executionContext()
             result = await mainExecutionContext._adoptElementHandle()
             await handle.dispose()
             return result
 
-    async def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
+    async def waitForXPath(self, xpath, visible=False, hidden=False, timeout: int = None) -> Optional['ElementHandle']:
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.
         """
-        handle = await self._secondaryWorld.waitForXpath(xpath, **kwargs)
+        handle = await self._secondaryWorld.waitForXpath(xpath, visible=visible, hidden=hidden, timeout=timeout)
         if not handle:
             return None
         mainExecutionContext = await self._mainWorld.executionContext()
         result = await mainExecutionContext._adoptElementHandle(handle)
         await handle.dispose()
         return result
-
-    def waitForFunction(self, pageFunction: str, *args, **kwargs: Any) -> 'WaitTask':
-        """Wait until the function completes.
-
-        Details see :meth:`pyppeteer.page.Page.waitForFunction`.
-        """
-        kwargs.setdefault('timeout', 30_000)
-        kwargs.setdefault('polling', 'raf')
-        return self._mainWorld.waitForFunction(pageFunction, *args, **kwargs)
-
-    async def title(self):
-        """Get title of the frame."""
-        return await self._secondaryWorld.title()
 
     def _navigated(self, framePayload: dict) -> None:
         self._name = framePayload.get('name', '')
@@ -643,9 +556,9 @@ class Frame(object):
         self._lifecycleEvents.add('load')
 
     def _detach(self) -> None:
-        for waitTask in self._waitTasks:
-            waitTask.terminate(PageError('waitForFunction failed: frame got detached.'))
         self._detached = True
+        self.mainWorld._detach()
+        self.secondaryWorld._detach()
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
