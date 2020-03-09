@@ -22,6 +22,7 @@ from pyppeteer.helper import debugError
 from pyppeteer.models import LaunchOptions, Viewport, ChromeArgOptions, BrowserOptions
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
+from pyppeteer import __chromium_revision__
 
 if not sys.platform.startswith('win'):
     from signal import SIGHUP
@@ -238,6 +239,8 @@ class ChromeLauncher(BaseBrowserLauncher):
     product = 'chrome'
 
     def __init__(self, projectRoot: str = None, preferredRevision: str = None):
+        if not preferredRevision:
+            preferredRevision = __chromium_revision__
         super().__init__(projectRoot, preferredRevision)
 
     @property
@@ -317,6 +320,8 @@ class ChromeLauncher(BaseBrowserLauncher):
     ) -> List[str]:
         if headless is None:
             headless = not devtools
+        if args is None:
+            args = []
         chrome_args = self.DEFAULT_ARGS[:]
         if isinstance(args, Sequence):
             chrome_args.extend(args)
@@ -601,8 +606,10 @@ class FirefoxLauncher(BaseBrowserLauncher):
 def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str):
     assert proc.stdout is not None, 'process STDOUT wasn\'t piped'
     start = time.perf_counter()
+    buffer = ''
     for line in iter(proc.stdout.readline, b''):
         line = line.decode()
+        buffer += '\n' + line
         if (start - time.perf_counter()) > timeout:
             raise TimeoutError(
                 f'Timed out after {timeout * 1000:.0f}ms while trying to connect to the browser! '
@@ -612,7 +619,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
         if potential_match:
             return potential_match.group(1)
     raise RuntimeError(
-        'Process ended before WebSockets endpoint could be found'
+        buffer + '\nProcess ended before WebSockets endpoint could be found'
         f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
     )
 
@@ -635,7 +642,7 @@ def getWSEndpoint(url) -> str:
         raise RuntimeError(f'webSocketDebuggerUrl not found')
 
 
-def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
+def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
     missing_text = None
     exec_path_env_var = 'PYPPETEER2_EXECUTABLE_PATH'
     revision_env_var = 'PYPPETEER2_CHROMIUM_REVISION'
@@ -648,13 +655,13 @@ def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Op
     revision = os.environ.get(revision_env_var)
     if revision:
         revision_info = browser_fetcher.revision_info(revision)
-        if not revision_info.local:
-            missing_text = f'Tried to use env variables ({revision_env_var}) to launch browser, but did not find executable at {revision_info.executable_path}'
+        if not revision_info['local']:
+            missing_text = f'Tried to use env variables ({revision_env_var}) to launch browser, but did not find executable at {revision_info["executablePath"]}'
             return None, missing_text
     revision_info = browser_fetcher.revision_info(preferred_revision)
-    if not revision_info.local:
+    if not revision_info['local']:
         missing_text = 'Browser is not downloaded. Try running pyppeteer2-install'
-    return revision_info.executable_path, missing_text
+    return revision_info['executablePath'], missing_text
 
 
 def launcher(projectRoot: str = None, preferredRevision: str = None, product: str = None):
