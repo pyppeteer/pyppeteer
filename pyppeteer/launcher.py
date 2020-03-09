@@ -14,7 +14,7 @@ from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
-from pyppeteer import BrowserFetcher
+from pyppeteer.browser_fetcher import BrowserFetcher
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
