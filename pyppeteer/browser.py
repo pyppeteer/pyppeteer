@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from pyppeteer.page import Page
 
+
 class Browser(AsyncIOEventEmitter):
     """Browser class.
 
@@ -62,7 +63,7 @@ class Browser(AsyncIOEventEmitter):
             self._contexts[contextId] = BrowserContext(self, contextId)
 
         self._targets: Dict[str, Target] = dict()
-        self._connection.setClosedCallback(lambda: self.emit(Events.Browser.Disconnected))
+        self._connection.on(Events.Connection.Disconnected, lambda: self.emit(Events.Browser.Disconnected))
         self._connection.on(
             'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
         )
@@ -244,6 +245,7 @@ class Browser(AsyncIOEventEmitter):
         self.remove_listener(Events.Browser.TargetChanged, check)
         return result
 
+    @property
     async def pages(self) -> List['Page']:
         """Get all pages of this browser.
 
@@ -309,6 +311,7 @@ class BrowserContext(AsyncIOEventEmitter):
         # Dispose context once it's no longer needed
         await context.close()
     """
+
     def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
         super().__init__()
         self._browser = browser

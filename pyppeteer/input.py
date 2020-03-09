@@ -277,7 +277,9 @@ class Mouse(object):
                 },
             )
 
-    async def click(self, x: float, y: float, button: str = 'left', clickCount: int = 1, delay: float = 0, steps: int = 1,) -> None:
+    async def click(
+        self, x: float, y: float, button: str = 'left', clickCount: int = 1, delay: float = 0, steps: int = 1,
+    ) -> None:
         """Click mouse button at (``x``, ``y``).
 
         Shortcut to :meth:`move`, :meth:`down`, and :meth:`up`.
@@ -362,9 +364,8 @@ class Touchscreen(object):
         touchPoints = [{'x': round(x), 'y': round(y)}]
         await self._client.send(
             'Input.dispatchTouchEvent',
-            {'type': 'touchStart', 'touchPoints': touchPoints, 'modifiers': self._keyboard._modifiers, },
+            {'type': 'touchStart', 'touchPoints': touchPoints, 'modifiers': self._keyboard._modifiers,},
         )
         await self._client.send(
-            'Input.dispatchTouchEvent',
-            {'type': 'touchEnd', 'touchPoints': [], 'modifiers': self._keyboard._modifiers, }
+            'Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': [], 'modifiers': self._keyboard._modifiers,}
         )

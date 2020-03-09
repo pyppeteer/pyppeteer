@@ -185,7 +185,7 @@ class TestDefaultURL(unittest.TestCase):
     @sync
     async def test_default_url(self):
         browser = await launch(DEFAULT_OPTIONS)
-        pages = await browser.pages()
+        pages = await browser.pages
         url_list = []
         for page in pages:
             url_list.append(page.url)
@@ -198,7 +198,7 @@ class TestDefaultURL(unittest.TestCase):
         options = deepcopy(DEFAULT_OPTIONS)
         options['headless'] = False
         browser = await launch(options)
-        pages = await browser.pages()
+        pages = await browser.pages
         url_list = []
         for page in pages:
             url_list.append(page.url)
@@ -211,7 +211,7 @@ class TestDefaultURL(unittest.TestCase):
         options = deepcopy(DEFAULT_OPTIONS)
         options['args'].append(customUrl)
         browser = await launch(options)
-        pages = await browser.pages()
+        pages = await browser.pages
         assert len(pages) == 1
         if pages[0].url != customUrl:
             await pages[0].waitForNavigation()

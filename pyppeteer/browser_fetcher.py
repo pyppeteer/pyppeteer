@@ -44,8 +44,6 @@ class RevisionInfo(TypedDict):
     revision: str
 
 
-
-
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get('PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 
@@ -136,7 +134,9 @@ class BrowserFetcher:
         with BytesIO() as zip_file_obj:
             download_file(url, zip_file_obj)
             extractZip(zip_file_obj, folder_path)
-        return self.revision_info(revision)
+        revision_info = self.revision_info(revision)
+        os.chmod(revision_info['executablePath'], 755)
+        return revision_info
 
     def local_revisions(self) -> List[Path]:
         if not self.downloadsFolder.exists():

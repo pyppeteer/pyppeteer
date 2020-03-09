@@ -2,15 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """Commands for Pyppeteer."""
+from pprint import pprint
 
-import logging
-
-from pyppeteer.browser_fetcher import check_chromium, download_chromium
+from pyppeteer.browser_fetcher import BrowserFetcher
 
 
 def install() -> None:
     """Download chromium if not install."""
-    if not check_chromium():
-        download_chromium()
-    else:
-        logging.getLogger(__name__).warning('chromium is already installed.')
+    dl = BrowserFetcher()
+    pprint(dl.download())

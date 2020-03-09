@@ -45,13 +45,13 @@ class TestBrowserContext(BrowserBaseTestCase):
 
     @sync
     async def test_close_all_targets_once(self):
-        assert len(await self.browser.pages()) == 1
+        assert len(await self.browser.pages) == 1
         context = await self.browser.createIncognitoBrowserContext()
         await context.newPage()
-        assert len(await self.browser.pages()) == 2
-        assert len(await context.pages()) == 1
+        assert len(await self.browser.pages) == 2
+        assert len(await context.pages) == 1
         await context.close()
-        assert len(await self.browser.pages()) == 1
+        assert len(await self.browser.pages) == 1
 
     @sync
     async def test_window_open_use_parent_tab_context(self):

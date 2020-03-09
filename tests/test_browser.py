@@ -174,9 +174,9 @@ class TestPageClose(BaseTestCase):
     @sync
     async def test_not_visible_in_browser_pages(self):
         newPage = await self.context.newPage()
-        assert newPage in await self.browser.pages()
+        assert newPage in await self.browser.pages
         await newPage.close()
-        assert newPage not in await self.browser.pages()
+        assert newPage not in await self.browser.pages
 
     @sync
     async def test_before_unload(self):

@@ -20,7 +20,7 @@ class TestTarget(BaseTestCase):
 
     @sync
     async def test_return_all_pages(self):
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertEqual(len(pages), 1)
         self.assertIn(self.page, pages)
 
@@ -32,7 +32,7 @@ class TestTarget(BaseTestCase):
 
     @sync
     async def test_default_page(self):
-        pages = await self.browser.pages()
+        pages = await self.browser.pages
         page = [page for page in pages if page != self.page][0]
         self.assertEqual(await page.evaluate('["Hello", "world"].join(" ")'), 'Hello world')
         self.assertTrue(await page.J('body'))
@@ -48,7 +48,7 @@ class TestTarget(BaseTestCase):
         self.assertEqual(await otherPage.evaluate('["Hello", "world"].join(" ")'), 'Hello world')
         self.assertTrue(await otherPage.J('body'))
 
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertIn(self.page, pages)
         self.assertIn(otherPage, pages)
 
@@ -62,7 +62,7 @@ class TestTarget(BaseTestCase):
         await otherPage.close()
         self.assertEqual(await closePagePromise, otherPage)
 
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertIn(self.page, pages)
         self.assertNotIn(otherPage, pages)
 

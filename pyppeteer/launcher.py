@@ -155,7 +155,6 @@ class BrowserRunner:
             browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
             transport = await WebsocketTransport.create(browser_ws_endpoint)
             self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
-
         return self.connection
 
 
@@ -615,7 +614,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
                 f'Timed out after {timeout * 1000:.0f}ms while trying to connect to the browser! '
                 f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
             )
-        potential_match = re.match(r'DevTools listening on (ws://.*)\r+$$', line)
+        potential_match = re.match(r'DevTools listening on (ws://.*)+$', line)
         if potential_match:
             return potential_match.group(1)
     raise RuntimeError(
