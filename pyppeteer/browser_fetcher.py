@@ -44,10 +44,10 @@ class RevisionInfo(TypedDict):
     revision: str
 
 
-class BrowserFetcherOptions(TypedDict, total=False):
-    platform: Platforms
-    path: Path
-    host: str
+# class BrowserFetcherOptions(TypedDict, total=False):
+#     platform: Platforms
+#     path: Path
+#     host: str
 
 
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
