@@ -14,6 +14,9 @@ __version__ = '0.2.2'
 __chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+
+from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions
+
 DEBUG = False
 
 # Setup root logger
@@ -26,7 +29,7 @@ _log_handler.setLevel(logging.DEBUG)
 _logger.addHandler(_log_handler)
 _logger.propagate = False
 
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
@@ -53,12 +56,12 @@ class Pyppeteer:
     def devices(self):
         return devices
 
-    async def launch(self, options: Dict[str, Any] = None) -> Browser:
+    async def launch(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
         if not self.productName and options:
             self.productName = options.get('product')
         return await self._launcher.launch(options)
 
-    def connect(self, options: Any):
+    def connect(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
         return self._launcher.connect(options)
 
     @property
