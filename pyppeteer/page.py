@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.accessibility import Accessibility
@@ -29,7 +29,7 @@ from pyppeteer.execution_context import JSHandle
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
-from pyppeteer.network_manager import NetworkManager, Response, Request
+from pyppeteer.network_manager import Response, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
@@ -37,12 +37,12 @@ from pyppeteer.worker import Worker
 if TYPE_CHECKING:
     from pyppeteer.target import Target
     from pyppeteer.frame_manager import Frame, FrameManager
-    from pyppeteer.browser import Browser, Target, BrowserContext
+    from pyppeteer.browser import Browser, BrowserContext
 
 logger = logging.getLogger(__name__)
 
 
-class Page(EventEmitter):
+class Page(AsyncIOEventEmitter):
     """Page class.
 
     This class provides methods to interact with a single tab of chrome. One
@@ -50,7 +50,7 @@ class Page(EventEmitter):
 
     The :class:`Page` class emits various :attr:`~Events.Page` which can be
     handled by using ``on`` or ``once`` method, which is inherited from
-    `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``EventEmitter`` class.
+    `pyee <https://pyee.readthedocs.io/en/latest/>`_'s ``AsyncIOEventEmitter`` class.
     """
 
     PaperFormats: Dict[str, Dict[str, float]] = {
@@ -1070,13 +1070,13 @@ class Page(EventEmitter):
 
     async def screenshot(
         self,
-        omitBackground: bool,
-        quality: int,  # 0 to 100
-        clip: Dict[str, int],  # x, y, width, height
-        encoding: str,
-        fullPage: bool,
-        path: Union[str, Path],
+        path: Union[str, Path] = None,
         type_: str = 'png',  # png or jpeg
+        quality: int = None,  # 0 to 100
+        fullPage: bool = False,
+        clip: Dict[str, int] = None,  # x, y, width, height
+        omitBackground: bool = False,
+        encoding: str = 'binary',
     ) -> Union[bytes, str]:
         """Take a screen shot.
 
@@ -1112,12 +1112,12 @@ class Page(EventEmitter):
             elif mimeType == 'image/jpeg':
                 type_ = 'jpeg'
             else:
-                raise ValueError('Unsupported screenshot ' f'mime type: {mimeType}')
+                raise ValueError(f'Unsupported screenshot mime type: {mimeType}. Specify the type manually.')
         if quality:
-            if type_ == 'jpeg':
-                raise ValueError(f'screenshot quality is unsupported ' f'for {type_} screenshot')
+            if type_ != 'jpeg':
+                raise ValueError(f'Screenshot quality is unsupported for {type_} screenshot')
             if not 0 < quality <= 100:
-                raise ValueError('Excpected screenshot quality to be ' 'between 0 and 100 (inclusive)')
+                raise ValueError('Expected screenshot quality to be between 0 and 100 (inclusive)')
         if clip:
             if fullPage:
                 raise ValueError('screenshot clip and fullPage options are exclusive')

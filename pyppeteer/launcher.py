@@ -14,6 +14,7 @@ from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
+from pyppeteer.browser_fetcher import BrowserFetcher
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -679,13 +680,13 @@ def resolveExecutablePath(projectRoot: str, preferred_revision: str) -> Tuple[Op
     revision = os.environ.get(revision_env_var)
     if revision:
         revision_info = browser_fetcher.revision_info(revision)
-        if not revision_info.local:
+        if not revision_info['local']:
             missing_text = f'Tried to use env variables ({revision_env_var}) to launch browser, but did not find executable at {revision_info.executable_path}'
             return None, missing_text
     revision_info = browser_fetcher.revision_info(preferred_revision)
-    if not revision_info.local:
+    if not revision_info['local']:
         missing_text = 'Browser is not downloaded. Try running pyppeteer2-install'
-    return revision_info.executable_path, missing_text
+    return revision_info['executable_path'], missing_text
 
 
 def launcher(projectRoot: str = None, preferredRevision: str = None, product: str = None):

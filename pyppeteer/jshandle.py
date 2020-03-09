@@ -4,13 +4,13 @@ import logging
 import math
 import os
 from idlelib.rpc import RemoteObject
-from typing import Dict, Optional, List, Any, TYPE_CHECKING
+from pathlib import Path
+from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helper import debugError
-from pyppeteer.util import merge_dict
 
 
 if TYPE_CHECKING:
@@ -186,13 +186,13 @@ class ElementHandle(JSHandle):
         if not result or not result.get('quads', {}).get('length'):
             raise BrowserError('Node is either not visible or not an HTMLEelement')
         clientWidth, clientHeight = layoutMetrics.layoutViewport
-        quads = [
-            self._fromProtocolQuad(quad)
-            for quad in self._intersectQuadWithViewport(quad, clientWidth, clientHeight)
-            if computedQuadArea(quad) > 1
-        ]
-        if not quads:
-            raise BrowserError('Node is either not visible or not an HTMLElement')
+        quads = []
+        for quad in result.quads:
+            quad = self._intersectQuadWithViewport(self._fromProtocolQuad(quad), clientWidth, clientHeight)
+            if computeQuadArea(quad) > 1:
+                quads.append(quad)
+
+        raise BrowserError('Node is either not visible or not an HTMLElement')
         quad = quads[0]
         x = 0
         y = 0
@@ -233,7 +233,7 @@ class ElementHandle(JSHandle):
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
 
-    async def click(self, options: dict = None, **kwargs: Any) -> None:
+    async def click(self, button: str = 'left', clickCount: int = 1, delay: float = 0) -> None:
         """Click the center of this element.
 
         If needed, this method scrolls element into view. If the element is
@@ -251,8 +251,7 @@ class ElementHandle(JSHandle):
         obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
-        options = merge_dict(options, kwargs)
-        await self._page.mouse.click(x, y, options)
+        await self._page.mouse.click(x, y, button=button, clickCount=clickCount, delay=delay)
 
     async def select(self, values: List[str]) -> List[str]:
         return await self.evaluate(
@@ -298,16 +297,15 @@ class ElementHandle(JSHandle):
         """Focus on this element."""
         await self.executionContext.evaluate('element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None, **kwargs) -> None:
+    async def type(self, text: str, delay: float = 0) -> None:
         """Focus the element and then type text.
 
         Details see :meth:`pyppeteer.input.Keyboard.type` method.
         """
-        options = merge_dict(options, kwargs)
         await self.focus()
-        await self._page.keyboard.type(text, options)
+        await self._page.keyboard.type(text, delay)
 
-    async def press(self, key: str, options: Dict = None, **kwargs) -> None:
+    async def press(self, key: str, text: str = None, delay: float = 0) -> None:
         """Press ``key`` onto the element.
 
         This method focuses the element, and then uses
@@ -323,9 +321,8 @@ class ElementHandle(JSHandle):
         * ``delay`` (int|float): Time to wait between ``keydown`` and
           ``keyup``. Defaults to 0.
         """
-        options = merge_dict(options, kwargs)
         await self.focus()
-        await self._page.keyboard.press(key, options)
+        await self._page.keyboard.press(key, text=text, delay=delay)
 
     async def boundingBox(self) -> Optional[Dict[str, float]]:
         """Return bounding box of this element.
@@ -382,7 +379,15 @@ class ElementHandle(JSHandle):
             'height': model.get('height'),
         }
 
-    async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
+    async def screenshot(
+        self,
+        path: Union[str, Path] = None,
+        type_: str = 'png',  # png or jpeg
+        quality: int = None,  # 0 to 100
+        fullPage: bool = False,
+        omitBackground: bool = False,
+        encoding: str = 'binary',
+    ) -> bytes:
         """Take a screenshot of this element.
 
         If the element is detached from DOM, this method raises an
@@ -390,8 +395,6 @@ class ElementHandle(JSHandle):
 
         Available options are same as :meth:`pyppeteer.page.Page.screenshot`.
         """
-        # TODO review this
-        options = merge_dict(options, kwargs)
 
         needsViewportReset = False
         boundingBox = await self.boundingBox()
@@ -423,9 +426,16 @@ class ElementHandle(JSHandle):
         clip.update(boundingBox)
         clip['x'] = clip['x'] + pageX
         clip['y'] = clip['y'] + pageY
-        opt = {'clip': clip}
-        opt.update(options)
-        imageData = await self._page.screenshot(opt)
+
+        imageData = await self._page.screenshot(
+            path=path,
+            type_=type_,
+            quality=quality,
+            fullPage=fullPage,
+            clip=clip,
+            omitBackground=omitBackground,
+            encoding=encoding,
+        )
 
         if needsViewportReset:
             await self._page.setViewport(original_viewport)
@@ -576,7 +586,7 @@ class ElementHandle(JSHandle):
 
 def computeQuadArea(quad: List[Dict]) -> float:
     area = 0
-    for i, _ in enumerate(quad):
+    for i in range(len(quad)):
         p1 = quad[i]
         p2 = quad[(i + 1) % len(quad)]
         area += (p1['x'] * p2['y'] - p2['x'] * p1['y']) / 2

@@ -5,10 +5,9 @@
 import asyncio
 import logging
 from subprocess import Popen
-from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -20,20 +19,13 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     from pyppeteer.page import Page
 
-class Browser(EventEmitter):
+class Browser(AsyncIOEventEmitter):
     """Browser class.
 
     A Browser object is created when pyppeteer connects to chrome, either
     through :func:`~pyppeteer.launcher.launch` or
     :func:`~pyppeteer.launcher.connect`.
     """
-
-    Events = SimpleNamespace(
-        TargetCreated='targetcreated',
-        TargetDestroyed='targetdestroyed',
-        TargetChanged='targetchanged',
-        Disconnected='disconnected',
-    )
 
     def __init__(
         self,
@@ -291,7 +283,7 @@ class Browser(EventEmitter):
         return self._connection.send('Browser.getVersion')
 
 
-class BrowserContext(EventEmitter):
+class BrowserContext(AsyncIOEventEmitter):
     """BrowserContext provides multiple independent browser sessions.
 
     When a browser is launched, it has a single BrowserContext used by default.
@@ -316,11 +308,6 @@ class BrowserContext(EventEmitter):
         # Dispose context once it's no longer needed
         await context.close()
     """
-
-    Events = SimpleNamespace(
-        TargetCreated='targetcreated', TargetDestroyed='targetdestroyed', TargetChanged='targetchanged',
-    )
-
     def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
         super().__init__()
         self._browser = browser

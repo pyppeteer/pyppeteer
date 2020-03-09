@@ -9,13 +9,13 @@ import copy
 import json
 import logging
 from collections import OrderedDict
-from types import SimpleNamespace
 from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
+from pyppeteer.events import Events
 from pyppeteer.helper import debugError
 
 if TYPE_CHECKING:
@@ -25,12 +25,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NetworkManager(EventEmitter):
+class NetworkManager(AsyncIOEventEmitter):
     """NetworkManager class."""
-
-    Events = SimpleNamespace(
-        Request='request', Response='response', RequestFailed='requestfailed', RequestFinished='requestfinished',
-    )
 
     def __init__(self, client: CDPSession, ignoreHttpsErrors: bool, frameManager: 'FrameManager') -> None:
         """Make new NetworkManager."""

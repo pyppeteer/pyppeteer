@@ -8,7 +8,7 @@ import re
 import logging
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
@@ -30,7 +30,7 @@ EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
-class FrameManager(EventEmitter):
+class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
@@ -404,6 +404,91 @@ class Frame:
         Otherwise return ``False``.
         """
         return self._detached
+
+    async def addScriptTag(self, url=None, path=None, content=None, type=''):
+        """Add script tag to this frame.
+
+        Details see :meth:`pyppeteer.page.Page.addScriptTag`.
+        """
+        return self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
+
+    async def addStyleTag(self, url=None, path=None, content=None):
+        return self._mainWorld.addStyleTag(url=url, path=path, content=content)
+
+    async def focus(self, selector: str) -> None:
+        """Focus element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.focus`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await self.evaluate('element => element.focus()', handle)
+        await handle.dispose()
+
+    async def hover(self, selector: str) -> None:
+        """Mouse hover the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.hover`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.hover()
+        await handle.dispose()
+
+    async def select(self, selector: str, *values: str) -> List[str]:
+        """Select options and return selected values.
+
+        Details see :meth:`pyppeteer.page.Page.select`.
+        """
+        for value in values:
+            if not isinstance(value, str):
+                raise TypeError('Values must be string. ' f'Found {value} of type {type(value)}')
+        return await self.querySelectorEval(  # type: ignore
+            selector,
+            '''
+(element, values) => {
+    if (element.nodeName.toLowerCase() !== 'select')
+        throw new Error('Element is not a <select> element.');
+
+    const options = Array.from(element.options);
+    element.value = undefined;
+    for (const option of options) {
+        option.selected = values.includes(option.value);
+        if (option.selected && !element.multiple)
+            break;
+    }
+
+    element.dispatchEvent(new Event('input', { 'bubbles': true }));
+    element.dispatchEvent(new Event('change', { 'bubbles': true }));
+    return options.filter(option => option.selected).map(options => options.value)
+}
+        ''',
+            values,
+        )  # noqa: E501
+
+    async def tap(self, selector: str) -> None:
+        """Tap the element which matches the ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.tap`.
+        """
+        handle = await self.J(selector)
+        if not handle:
+            raise PageError('No node found for selector: ' + selector)
+        await handle.tap()
+        await handle.dispose()
+
+    async def type(self, selector: str, text: str, delay: float = 0) -> None:
+        """Type ``text`` on the element which matches ``selector``.
+
+        Details see :meth:`pyppeteer.page.Page.type`.
+        """
+        handle = await self.querySelector(selector)
+        if handle is None:
+            raise PageError(f'Cannot find {selector} on this page')
+        await handle.type(text, delay)
+        await handle.dispose()
 
     def waitFor(
         self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any

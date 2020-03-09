@@ -9,7 +9,7 @@ import logging
 import math
 from typing import Any, Awaitable, Callable, Dict, List
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 import pyppeteer
 from pyppeteer.connection import CDPSession
@@ -54,7 +54,7 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     return message
 
 
-def addEventListener(emitter: EventEmitter, eventName: str, handler: Callable) -> Dict[str, Any]:
+def addEventListener(emitter: AsyncIOEventEmitter, eventName: str, handler: Callable) -> Dict[str, Any]:
     """Add handler to the emitter and return emitter/handler."""
     emitter.on(eventName, handler)
     return {'emitter': emitter, 'eventName': eventName, 'handler': handler}
@@ -109,7 +109,7 @@ def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
 
 
 def waitForEvent(
-    emitter: EventEmitter,
+    emitter: AsyncIOEventEmitter,
     eventName: str,  # noqa: C901
     predicate: Callable[[Any], bool],
     timeout: float,
