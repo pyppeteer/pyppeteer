@@ -14,6 +14,7 @@ from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
+from pyppeteer import BrowserFetcher
 from pyppeteer.browser import Browser
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -30,39 +31,6 @@ except ImportError:
     from typing_extensions import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
-
-
-class ChromeArgOptions(TypedDict, total=False):
-    headless: bool
-    args: Sequence[str]
-    userDataDir: str
-    devtools: bool
-
-
-class LaunchOptions(TypedDict, total=False):
-    executablePath: str
-    ignoreDefaultArgs: Union[Literal[False], Sequence[str]]
-    handleSIGINT: bool
-    handleSIGTERM: bool
-    handleSIGHUP: bool
-    timeout: float
-    dumpio: bool
-    env: Dict[str, Union[str, bool]]
-
-
-class Viewport(TypedDict, total=False):
-    width: float
-    height: float
-    deviceScaleFactor: float
-    isMobile: bool
-    isLandscape: bool
-    hasTouch: bool
-
-
-class BrowserOptions(TypedDict, total=False):
-    ignoreHTTPSErrors: bool
-    defaultViewport: Viewport
-    slowMo: float
 
 
 def _restore_default_signal_handlers():

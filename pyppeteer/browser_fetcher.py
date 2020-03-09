@@ -44,7 +44,7 @@ class RevisionInfo(TypedDict):
     revision: str
 
 
-class BrowserOptions(TypedDict, total=False):
+class BrowserFetcherOptions(TypedDict, total=False):
     platform: Platforms
     path: Path
     host: str
