@@ -8,6 +8,7 @@ from typing import Callable, Dict, List, Optional, Awaitable, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.events import Events
+from pyppeteer.models import Viewport
 from pyppeteer.page import Page
 from pyppeteer.worker import Worker
 
@@ -24,7 +25,7 @@ class Target:
         browserContext: 'BrowserContext',
         sessionFactory: Callable[[], Awaitable[CDPSession]],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Optional[Dict],
+        defaultViewport: Viewport,
         screenshotTaskQueue: List,
         loop: asyncio.AbstractEventLoop,
     ) -> None:

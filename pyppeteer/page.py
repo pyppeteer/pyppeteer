@@ -29,6 +29,7 @@ from pyppeteer.execution_context import JSHandle
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
+from pyppeteer.models import Viewport
 from pyppeteer.network_manager import Response, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
@@ -71,7 +72,7 @@ class Page(AsyncIOEventEmitter):
         client: CDPSession,
         target: 'Target',
         ignoreHTTPSErrors: bool,
-        defaultViewport: Optional[Dict],
+        defaultViewport: Viewport,
         screenshotTaskQueue: list = None,
     ) -> 'Page':
         """Async function which makes new page object."""
@@ -101,7 +102,7 @@ class Page(AsyncIOEventEmitter):
         self._pageBindings: Dict[str, Callable[..., Any]] = dict()
         self._coverage = Coverage(client)
         self._javascriptEnabled = True
-        self._viewport: Optional[Dict] = None
+        self._viewport: Viewport = None
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = []
@@ -937,7 +938,7 @@ class Page(AsyncIOEventEmitter):
         """Bring page to front (activate tab)."""
         await self._client.send('Page.bringToFront')
 
-    async def emulate(self, viewport: Dict[str, Union[int, str, bool]], userAgent: str,) -> None:
+    async def emulate(self, viewport: Viewport, userAgent: str,) -> None:
         """Emulate given device metrics and user agent.
 
         This method is a shortcut for calling two methods:
@@ -1012,7 +1013,7 @@ class Page(AsyncIOEventEmitter):
                 raise PageError(f'Invalid timezone ID: {timezoneId}')
             raise e
 
-    async def setViewport(self, viewport: dict) -> None:
+    async def setViewport(self, viewport: Viewport) -> None:
         """Set viewport.
 
         Available options are:

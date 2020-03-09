@@ -551,7 +551,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
             connection = await runner.setupConnection(
                 usePipe=pipe, timeout=timeout, slowMo=slowMo, preferredRevision=self.preferredRevision,
             )
-            browser = Browser.create(
+            browser = await Browser.create(
                 connection=connection,
                 contextIds=[],
                 ignoreHTTPSErrors=ignoreHTTPSErrors,
