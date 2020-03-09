@@ -4,13 +4,13 @@ import logging
 import math
 import os
 from idlelib.rpc import RemoteObject
-from typing import Dict, Optional, List, Any, TYPE_CHECKING
+from pathlib import Path
+from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helper import debugError
-from pyppeteer.util import merge_dict
 
 
 if TYPE_CHECKING:
@@ -379,7 +379,15 @@ class ElementHandle(JSHandle):
             'height': model.get('height'),
         }
 
-    async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
+    async def screenshot(
+        self,
+        path: Union[str, Path] = None,
+        type_: str = 'png',  # png or jpeg
+        quality: int = None,  # 0 to 100
+        fullPage: bool = False,
+        omitBackground: bool = False,
+        encoding: str = 'binary',
+    ) -> bytes:
         """Take a screenshot of this element.
 
         If the element is detached from DOM, this method raises an
@@ -387,8 +395,6 @@ class ElementHandle(JSHandle):
 
         Available options are same as :meth:`pyppeteer.page.Page.screenshot`.
         """
-        # TODO review this
-        options = merge_dict(options, kwargs)
 
         needsViewportReset = False
         boundingBox = await self.boundingBox()
@@ -420,9 +426,16 @@ class ElementHandle(JSHandle):
         clip.update(boundingBox)
         clip['x'] = clip['x'] + pageX
         clip['y'] = clip['y'] + pageY
-        opt = {'clip': clip}
-        opt.update(options)
-        imageData = await self._page.screenshot(**opt)
+
+        imageData = await self._page.screenshot(
+            path=path,
+            type_=type_,
+            quality=quality,
+            fullPage=fullPage,
+            clip=clip,
+            omitBackground=omitBackground,
+            encoding=encoding,
+        )
 
         if needsViewportReset:
             await self._page.setViewport(original_viewport)

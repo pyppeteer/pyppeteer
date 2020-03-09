@@ -1070,13 +1070,13 @@ class Page(AsyncIOEventEmitter):
 
     async def screenshot(
         self,
-        omitBackground: bool,
-        quality: int,  # 0 to 100
-        clip: Dict[str, int],  # x, y, width, height
-        encoding: str,
-        fullPage: bool,
-        path: Union[str, Path],
+        path: Union[str, Path] = None,
         type_: str = 'png',  # png or jpeg
+        quality: int = None,  # 0 to 100
+        fullPage: bool = False,
+        clip: Dict[str, int] = None,  # x, y, width, height
+        omitBackground: bool = False,
+        encoding: str = 'binary',
     ) -> Union[bytes, str]:
         """Take a screen shot.
 
@@ -1112,12 +1112,12 @@ class Page(AsyncIOEventEmitter):
             elif mimeType == 'image/jpeg':
                 type_ = 'jpeg'
             else:
-                raise ValueError('Unsupported screenshot ' f'mime type: {mimeType}')
+                raise ValueError(f'Unsupported screenshot mime type: {mimeType}. Specify the type manually.')
         if quality:
-            if type_ == 'jpeg':
-                raise ValueError(f'screenshot quality is unsupported ' f'for {type_} screenshot')
+            if type_ != 'jpeg':
+                raise ValueError(f'Screenshot quality is unsupported for {type_} screenshot')
             if not 0 < quality <= 100:
-                raise ValueError('Excpected screenshot quality to be ' 'between 0 and 100 (inclusive)')
+                raise ValueError('Expected screenshot quality to be between 0 and 100 (inclusive)')
         if clip:
             if fullPage:
                 raise ValueError('screenshot clip and fullPage options are exclusive')
