@@ -96,7 +96,7 @@ class BrowserRunner:
             if not sys.platform.startswith('win'):
                 signal(SIGHUP, close_proc_wrapper)
             else:
-                logger.warning(f'SIGHUP is not defined on win_32')
+                logger.warning(f'SIGHUP is not available on win32')
 
     async def _close_proc(self):
         if not self._closed:
@@ -508,7 +508,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
     def executablePath(self):
         raise NotImplementedError('executablePath method not implemented')
 
-    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
+    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
         ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
         args = kwargs.get('args', [])
         dumpio = kwargs.get('dumpio', False)
@@ -614,7 +614,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
                 f'Timed out after {timeout * 1000:.0f}ms while trying to connect to the browser! '
                 f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
             )
-        potential_match = re.match(r'DevTools listening on (ws://.*)+$', line)
+        potential_match = re.match(r'DevTools listening on (ws://[\w.:/-]*)+', line)
         if potential_match:
             return potential_match.group(1)
     raise RuntimeError(
