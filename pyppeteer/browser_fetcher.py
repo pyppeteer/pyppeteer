@@ -124,8 +124,7 @@ class BrowserFetcher:
         url = download_url(self._platform, self.downloadHost, revision)
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
-    def download(self, revision: str = None) -> RevisionInfo:
-        revision = revision or __chromium_revision__
+    def download(self, revision: str = __chromium_revision__) -> RevisionInfo:
         url = download_url(self._platform, self.downloadHost, revision)
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
