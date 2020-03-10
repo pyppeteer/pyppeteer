@@ -185,20 +185,17 @@ class BaseBrowserLauncher:
 
         if transport:
             connection = Connection('', transport, slowMo)
-        elif browserWSEndpoint:
-            connection = Connection(browserWSEndpoint, transport, delay=slowMo)
-        elif browserURL:
-            browserWSEndpoint = getWSEndpoint(browserURL)
+        else:
+            if browserURL:
+                browserWSEndpoint = getWSEndpoint(browserURL)
             transport = WebsocketTransport.create(uri=browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport=transport, delay=slowMo)
-        else:
-            raise RuntimeError('No suitable arguments to connect with found (this should never be possible')
 
         async def close_callback():
             await connection.send('Browser.close')
 
         context_ids = await connection.send('Target.getBrowserContexts')
-        return Browser.create(
+        return await Browser.create(
             connection=connection,
             contextIds=context_ids,
             ignoreHTTPSErrors=ignoreHTTPSErrors,
