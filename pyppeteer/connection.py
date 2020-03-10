@@ -6,7 +6,7 @@
 import asyncio
 import json
 import logging
-from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any, Type
+from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any
 
 try:
     from typing import TypedDict
@@ -53,11 +53,7 @@ class Connection(AsyncIOEventEmitter):
     """Connection management class."""
 
     def __init__(
-        self,
-        url: str,
-        transport: WebsocketTransport,
-        delay: float = 0,
-        loop: asyncio.AbstractEventLoop = None,
+        self, url: str, transport: WebsocketTransport, delay: float = 0, loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         """Make connection.
 
@@ -71,8 +67,6 @@ class Connection(AsyncIOEventEmitter):
         self._delay = delay / 1000
 
         self._transport = transport
-        self._transport.onmessage = lambda msg: self._onMessage(json.loads(msg))
-        self._transport.onclose = self._onClose
 
         self._loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
@@ -96,6 +90,8 @@ class Connection(AsyncIOEventEmitter):
         async with self._transport as transport_connection:
             self._connected = True
             self.connection = transport_connection
+            self.connection.onmessage = lambda msg: self._onMessage(json.loads(msg))
+            self.connection.onclose = self._onClose
             while self._connected:
                 try:
                     await self.connection.recv()
@@ -107,14 +103,14 @@ class Connection(AsyncIOEventEmitter):
         if self._connected:
             self._loop.create_task(self.dispose())
 
-    async def _async_send(self, msg: Message, callback_id: int) -> None:
+    async def _async_send(self, msg: Message) -> None:
         while not self._connected:
             await asyncio.sleep(self._delay)
         try:
             await self.connection.send(json.dumps(msg))
         except websockets.ConnectionClosed:
             logger.error('connection unexpectedly closed')
-            callback = self._callbacks.get(callback_id, None)
+            callback = self._callbacks.get(msg['id'], None)
             if callback and not callback.done():
                 callback.set_result(None)
                 await self.dispose()
@@ -136,18 +132,17 @@ class Connection(AsyncIOEventEmitter):
         id_ = self._lastId
         message['id'] = id_
         logger_connection.debug(f'SEND ► {message}')
-        self._loop.create_task(self._async_send(message, id_))
+        self._loop.create_task(self._async_send(message))
         return id_
 
     async def _onMessage(self, msg: Message) -> None:
         await asyncio.sleep(self._delay)
         logger_connection.debug(f'◀ RECV {msg}')
-
         # Handle Target attach/detach methods
         if msg.get('method') == 'Target.attachedToTarget':
             sessionId = msg['params']['sessionId']
             self._sessions[sessionId] = CDPSession(
-                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self._loop
+                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self._loop,
             )
         elif msg.get('method') == 'Target.detachedFromTarget':
             session = self._sessions.get(msg['params']['sessionId'])
@@ -163,11 +158,11 @@ class Connection(AsyncIOEventEmitter):
             # Callbacks could be all rejected if someone has called `.dispose()`
             callback = self._callbacks.get(msg['id'])
             if callback:
-                del self._callbacks[msg['id']]
                 if msg.get('error'):
                     callback.set_exception(createProtocolError(callback.error, callback.method, msg))
                 else:
                     callback.set_result(msg.get('result'))
+                del self._callbacks[msg['id']]
         else:
             self.emit(msg['method'], msg['params'])
 
@@ -175,6 +170,8 @@ class Connection(AsyncIOEventEmitter):
         if self._closed:
             return
         self._closed = True
+        self._transport.onmessage = None
+        self._transport.onclose = None
 
         for cb in self._callbacks.values():
             cb.set_exception(
@@ -199,15 +196,13 @@ class Connection(AsyncIOEventEmitter):
         """Close all connection."""
         self._connected = False
         await self._onClose()
+        await self._transport.close()
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
         resp = await self.send('Target.attachToTarget', {'targetId': targetInfo['targetId']})
         sessionId = resp.get('sessionId')
-        # TODO puppeteer code indicates that _sessions should already have session open
-        session = CDPSession(self, targetInfo['type'], sessionId, self._loop)
-        self._sessions[sessionId] = session
-        return session
+        return self._sessions[sessionId]
 
 
 class CDPSession(AsyncIOEventEmitter):
@@ -248,8 +243,7 @@ class CDPSession(AsyncIOEventEmitter):
             raise NetworkError(
                 f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
-        id_ = self._connection._rawSend({'method': method, 'params': params or {}})
-
+        id_ = self._connection._rawSend({'sessionId': self._sessionId, 'method': method, 'params': params or {}})
         callback = self._loop.create_future()
         self._callbacks[id_] = callback
         callback.error: Exception = NetworkError()  # type: ignore
@@ -259,7 +253,7 @@ class CDPSession(AsyncIOEventEmitter):
     def _onMessage(self, msg: Message) -> None:  # noqa: C901
         id_ = msg.get('id')
         callback = self._callbacks.get(id_)
-        if id_ and callback:
+        if id_ and id_ in self._callbacks:
             del self._callbacks[id_]
             if msg.get('error'):
                 callback.set_exception(
@@ -273,7 +267,7 @@ class CDPSession(AsyncIOEventEmitter):
                 callback.set_result(msg.get('result'))
         else:
             if msg.get('id'):
-                raise ConnectionError('Received unexpected message ' f'with no callback: {msg}')
+                raise ConnectionError(f'Received unexpected message with no callback: {msg}')
             self.emit(msg.get('method'), msg.get('params'))
 
     async def detach(self) -> None:
