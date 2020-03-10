@@ -98,7 +98,7 @@ class Connection(AsyncIOEventEmitter):
                 except (websockets.ConnectionClosed, ConnectionResetError) as e:
                     logger.warning(f'Transport connection closed: {e}')
                     break
-                # todo: why is this here
+                # wait 1 async loop frame, no other data will be accessible in between frames
                 await asyncio.sleep(0)
         if self._connected:
             self._loop.create_task(self.dispose())
