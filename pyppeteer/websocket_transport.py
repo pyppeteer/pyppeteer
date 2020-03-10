@@ -1,5 +1,5 @@
 import asyncio
-from typing import Iterable, Union, AsyncIterable
+from typing import Iterable, Union, AsyncIterable, Callable, Any, Optional
 
 from websockets import connect, WebSocketClientProtocol, Data
 
@@ -11,8 +11,8 @@ except ImportError:
 
 class WebsocketTransport:
     def __init__(self, ws: WebSocketClientProtocol):
-        self.onmessage = None
-        self.onclose = None
+        self.onmessage: Optional[Callable[[Data], Any]] = None
+        self.onclose: Optional[Callable[[], Any]] = None
         self.ws = ws
 
     @classmethod
