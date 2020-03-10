@@ -136,7 +136,8 @@ class Connection(AsyncIOEventEmitter):
         return id_
 
     async def _onMessage(self, msg: Message) -> None:
-        await asyncio.sleep(self._delay)
+        if self._delay:
+            await asyncio.sleep(self._delay)
         logger_connection.debug(f'◀ RECV {msg}')
         # Handle Target attach/detach methods
         if msg.get('method') == 'Target.attachedToTarget':
