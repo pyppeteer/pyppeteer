@@ -26,6 +26,7 @@ from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import JSHandle
+from pyppeteer.frame_manager import Frame, FrameManager
 from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
@@ -37,7 +38,6 @@ from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
     from pyppeteer.target import Target
-    from pyppeteer.frame_manager import Frame, FrameManager
     from pyppeteer.browser import Browser, BrowserContext
 
 logger = logging.getLogger(__name__)
@@ -247,7 +247,7 @@ class Page(AsyncIOEventEmitter):
             self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
 
     @property
-    def mainFrame(self) -> Optional['Frame']:
+    def mainFrame(self) -> Optional[Frame]:
         """Get main :class:`~pyppeteer.frame_manager.Frame` of this page."""
         return self._frameManager._mainFrame
 
@@ -568,7 +568,7 @@ class Page(AsyncIOEventEmitter):
         await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': expression})
 
-        async def _evaluate(frame: 'Frame') -> None:
+        async def _evaluate(frame: Frame) -> None:
             try:
                 await frame.evaluate(expression, force_expr=True)
             except Exception as e:
