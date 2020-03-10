@@ -21,9 +21,13 @@ class WebsocketTransport:
         try:
             instance = cls(
                 await connect(
-                    uri=uri, ping_interval=None, max_size=256 * 1024 * 1024, loop=loop, close_timeout=5,  # 256Mb
+                    uri=uri,
+                    ping_interval=None,  # chrome doesn't respond to pings
+                    max_size=256 * 1024 * 1024,  # 256Mb
+                    loop=loop,
+                    close_timeout=5,
                 )
-            )  # 256Mb
+            )
             yield instance
         finally:
             try:
