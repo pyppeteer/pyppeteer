@@ -55,7 +55,7 @@ class Connection(AsyncIOEventEmitter):
     def __init__(
         self,
         url: str,
-        transport: Type[WebsocketTransport] = WebsocketTransport,
+        transport: WebsocketTransport,
         delay: float = 0,
         loop: asyncio.AbstractEventLoop = None,
     ) -> None:
@@ -70,7 +70,9 @@ class Connection(AsyncIOEventEmitter):
         self._callbacks: Dict[int, asyncio.Future] = {}
         self._delay = delay / 1000
 
-        self.transport_cls = transport
+        self._transport = transport
+        self._transport.onmessage = lambda msg: self._onMessage(json.loads(msg))
+        self._transport.onclose = self._onClose
 
         self._loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
@@ -91,17 +93,16 @@ class Connection(AsyncIOEventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        async with WebsocketTransport.create(self.url, self._loop) as connection:
+        async with self._transport as transport_connection:
             self._connected = True
-            self.connection = connection
-            self.connection.onmessage = lambda msg: self._onMessage(json.loads(msg))
-            self.connection.onclose = self._onClose
+            self.connection = transport_connection
             while self._connected:
                 try:
-                    resp = await self.connection.recv()
-                except (websockets.ConnectionClosed, ConnectionResetError):
-                    logger.info('connection closed')
+                    await self.connection.recv()
+                except (websockets.ConnectionClosed, ConnectionResetError) as e:
+                    logger.warning(f'Transport connection closed: {e}')
                     break
+                # todo: why is this here
                 await asyncio.sleep(0)
         if self._connected:
             self._loop.create_task(self.dispose())

@@ -153,7 +153,8 @@ class BrowserRunner:
             # self.connection = Connection('', transport, delay=slowMo)
         else:
             browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-            self.connection = Connection(browser_ws_endpoint, transport=WebsocketTransport, delay=slowMo)
+            transport = WebsocketTransport.create(uri=browser_ws_endpoint)
+            self.connection = Connection(url=browser_ws_endpoint, transport=transport, delay=slowMo)
         return self.connection
 
 
@@ -170,7 +171,7 @@ class BaseBrowserLauncher:
         self,
         browserWSEndpoint: str = None,
         browserURL: str = None,
-        transport: Any = None,
+        transport: WebsocketTransport = None,
         ignoreHTTPSErrors: bool = False,
         slowMo: float = 0,
         defaultViewport: Viewport = None,
@@ -188,7 +189,8 @@ class BaseBrowserLauncher:
             connection = Connection(browserWSEndpoint, transport, delay=slowMo)
         elif browserURL:
             browserWSEndpoint = getWSEndpoint(browserURL)
-            connection = Connection(browserWSEndpoint, WebsocketTransport, delay=slowMo)
+            transport = WebsocketTransport.create(uri=browserWSEndpoint)
+            connection = Connection(browserWSEndpoint, transport=transport, delay=slowMo)
         else:
             raise RuntimeError('No suitable arguments to connect with found (this should never be possible')
 
@@ -615,7 +617,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
         if potential_match:
             return potential_match.group(1)
     raise RuntimeError(
-        buffer + '\nProcess ended before WebSockets endpoint could be found'
+        buffer + '\nProcess ended before WebSockets endpoint could be found.'
         f'Only Chrome at revision {preferredRevision} is guaranteed to work.'
     )
 

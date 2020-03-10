@@ -15,6 +15,12 @@ class WebsocketTransport:
         self.onclose: Optional[Callable[[], Any]] = None
         self.ws = ws
 
+    def __aenter__(self):
+        return self
+
+    def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     @classmethod
     @asynccontextmanager
     async def create(cls, uri: str, loop: asyncio.AbstractEventLoop = None) -> 'WebsocketTransport':
