@@ -169,7 +169,7 @@ class Page(AsyncIOEventEmitter):
 
     async def _initialize(self):
         await asyncio.gather(
-            self._frameManager.initiliaze(),
+            self._frameManager.initialize(),
             self._client.send(
                 'Target.setAutoAttach', {'autoAttach': True, 'waitForDebuggerOnStart': False, 'flatten': True,}
             ),

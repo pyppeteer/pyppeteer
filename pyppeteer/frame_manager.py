@@ -67,7 +67,7 @@ class FrameManager(AsyncIOEventEmitter):
         client.on('Runtime.executionContextsCleared', lambda event: self._onExecutionContextsCleared())
         client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
-    async def initiliaze(self):
+    async def initialize(self):
         frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'),)
         self._handleFrameTree(frameTree)
 
