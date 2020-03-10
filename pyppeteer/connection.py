@@ -131,7 +131,7 @@ class Connection(AsyncIOEventEmitter):
         self._lastId += 1
         id_ = self._lastId
         message['id'] = id_
-        logger_connection.debug(f'SEND ► {message}')
+        logger_connection.debug(f'SEND ▶ {message}')
         self._loop.create_task(self._async_send(message))
         return id_
 
