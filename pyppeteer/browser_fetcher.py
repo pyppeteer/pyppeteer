@@ -134,7 +134,8 @@ class BrowserFetcher:
             download_file(url, zip_file_obj)
             extractZip(zip_file_obj, folder_path)
         revision_info = self.revision_info(revision)
-        os.chmod(revision_info['executablePath'], 755)
+        if revision_info:
+            os.chmod(revision_info['executablePath'], 0o755)
         return revision_info
 
     def local_revisions(self) -> List[Path]:

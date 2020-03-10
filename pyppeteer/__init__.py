@@ -56,10 +56,10 @@ class Pyppeteer:
     def devices(self):
         return devices
 
-    async def launch(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
-        if not self.productName and options:
-            self.productName = options.get('product')
-        return await self._launcher.launch(options)
+    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
+        if not self.productName and kwargs:
+            self.productName = kwargs.get('product')
+        return await self._launcher.launch(kwargs)
 
     def connect(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
         return self._launcher.connect(options)

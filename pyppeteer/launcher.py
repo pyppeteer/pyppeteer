@@ -78,7 +78,7 @@ class BrowserRunner:
         assert self.proc is None, 'This process has previously been started'
 
         logger.debug(f'Calling {self.executable_path} {" ".join(self.process_args)}')
-        self.proc = subprocess.Popen([self.executable_path, *self.process_args], **process_opts)
+        self.proc = subprocess.Popen([str(self.executable_path), *self.process_args], **process_opts)
         self._closed = False
 
         # ignore args from signals
