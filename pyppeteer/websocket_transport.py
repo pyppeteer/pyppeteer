@@ -32,6 +32,7 @@ class WebsocketTransport:
                     max_size=256 * 1024 * 1024,  # 256Mb
                     loop=loop,
                     close_timeout=5,
+                    compression=None,  # todo check if screenshot speed is affected
                 )
             )
             yield instance
