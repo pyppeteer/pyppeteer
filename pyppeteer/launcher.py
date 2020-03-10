@@ -153,8 +153,7 @@ class BrowserRunner:
             # self.connection = Connection('', transport, delay=slowMo)
         else:
             browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-            transport = await WebsocketTransport.create(browser_ws_endpoint)
-            self.connection = Connection(browser_ws_endpoint, transport, delay=slowMo)
+            self.connection = Connection(browser_ws_endpoint, transport=WebsocketTransport, delay=slowMo)
         return self.connection
 
 
@@ -186,12 +185,10 @@ class BaseBrowserLauncher:
         if transport:
             connection = Connection('', transport, slowMo)
         elif browserWSEndpoint:
-            transport = await WebsocketTransport.create(browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport, delay=slowMo)
         elif browserURL:
             browserWSEndpoint = getWSEndpoint(browserURL)
-            await WebsocketTransport.create(browserWSEndpoint)
-            connection = Connection(browserWSEndpoint, transport, delay=slowMo)
+            connection = Connection(browserWSEndpoint, WebsocketTransport, delay=slowMo)
         else:
             raise RuntimeError('No suitable arguments to connect with found (this should never be possible')
 

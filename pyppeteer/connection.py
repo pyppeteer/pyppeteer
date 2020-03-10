@@ -6,7 +6,7 @@
 import asyncio
 import json
 import logging
-from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any
+from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any, Type
 
 try:
     from typing import TypedDict
@@ -53,7 +53,11 @@ class Connection(AsyncIOEventEmitter):
     """Connection management class."""
 
     def __init__(
-        self, url: str, transport: WebsocketTransport, delay: float = 0, loop: asyncio.AbstractEventLoop = None,
+        self,
+        url: str,
+        transport: Type[WebsocketTransport] = WebsocketTransport,
+        delay: float = 0,
+        loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         """Make connection.
 
@@ -66,14 +70,13 @@ class Connection(AsyncIOEventEmitter):
         self._callbacks: Dict[int, asyncio.Future] = {}
         self._delay = delay / 1000
 
-        self._transport = transport
-        self._transport.onmessage = self._onMessage
-        self._transport.onclose = self._onClose
+        self.transport_cls = transport
 
         self._loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
         self._connected = False
         self._closed = False
+        self._loop.create_task(self._recv_loop())
 
     @staticmethod
     def fromSession(session: 'CDPSession'):
@@ -87,24 +90,52 @@ class Connection(AsyncIOEventEmitter):
         """Get connected WebSocket url."""
         return self._url
 
-    async def send(self, method: str, params: dict = None) -> Awaitable:
+    async def _recv_loop(self) -> None:
+        async with WebsocketTransport.create(self.url, self._loop) as connection:
+            self._connected = True
+            self.connection = connection
+            self.connection.onmessage = lambda msg: self._onMessage(json.loads(msg))
+            self.connection.onclose = self._onClose
+            while self._connected:
+                try:
+                    resp = await self.connection.recv()
+                except (websockets.ConnectionClosed, ConnectionResetError):
+                    logger.info('connection closed')
+                    break
+                await asyncio.sleep(0)
+        if self._connected:
+            self._loop.create_task(self.dispose())
+
+    async def _async_send(self, msg: Message, callback_id: int) -> None:
+        while not self._connected:
+            await asyncio.sleep(self._delay)
+        try:
+            await self.connection.send(json.dumps(msg))
+        except websockets.ConnectionClosed:
+            logger.error('connection unexpectedly closed')
+            callback = self._callbacks.get(callback_id, None)
+            if callback and not callback.done():
+                callback.set_result(None)
+                await self.dispose()
+
+    def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message via the connection."""
         # Detect connection availability from the second transmission
         if self._lastId and not self._connected:
             raise ConnectionError('Connection is closed')
-        id_ = await self._rawSend({'method': method, 'params': params or {}})
+        id_ = self._rawSend({'method': method, 'params': params or {}})
         callback = self._loop.create_future()
         self._callbacks[id_] = callback
         callback.error: Exception = NetworkError()  # type: ignore
         callback.method: str = method  # type: ignore
         return callback
 
-    async def _rawSend(self, message: Message):
+    def _rawSend(self, message: Message):
         self._lastId += 1
         id_ = self._lastId
         message['id'] = id_
         logger_connection.debug(f'SEND ► {message}')
-        await self._transport.send(message)
+        self._loop.create_task(self._async_send(message, id_))
         return id_
 
     async def _onMessage(self, msg: Message) -> None:
@@ -143,8 +174,6 @@ class Connection(AsyncIOEventEmitter):
         if self._closed:
             return
         self._closed = True
-        self._transport.onmessage = None
-        self._transport.onclose = None
 
         for cb in self._callbacks.values():
             cb.set_exception(
@@ -168,7 +197,7 @@ class Connection(AsyncIOEventEmitter):
     async def dispose(self) -> None:
         """Close all connection."""
         self._connected = False
-        await self._transport.close()
+        await self._onClose()
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""

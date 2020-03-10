@@ -16,18 +16,20 @@ class WebsocketTransport:
         self.ws = ws
 
     @classmethod
+    @asynccontextmanager
     async def create(cls, uri: str, loop: asyncio.AbstractEventLoop = None) -> 'WebsocketTransport':
-        instance = cls(
-            await connect(
-                uri=uri,
-                ping_interval=None,
-                ping_timeout=None,
-                max_size=256 * 1024 * 1024,  # 256Mb
-                loop=loop,
-                close_timeout=5,
-            )
-        )  # 256Mb
-        return instance
+        try:
+            instance = cls(
+                await connect(
+                    uri=uri, ping_interval=None, max_size=256 * 1024 * 1024, loop=loop, close_timeout=5,  # 256Mb
+                )
+            )  # 256Mb
+            yield instance
+        finally:
+            try:
+                await instance.close()
+            except NameError:
+                pass
 
     async def send(self, message: Union[Data, Iterable[Data], AsyncIterable[Data]]) -> None:
         await self.ws.send(message)
