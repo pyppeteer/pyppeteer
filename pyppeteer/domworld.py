@@ -60,7 +60,7 @@ class DOMWorld(object):
         else:
             self._documentFuture = None
             self._contextFuture = self._loop.create_future()
-            self._contextFuture.add_done_callback(lambda val: self._contextResolveCallback == val)
+            self._contextResolveCallback = lambda _: self._contextFuture.set_result(None)
 
     def _hasContext(self):
         return not self._contextResolveCallback

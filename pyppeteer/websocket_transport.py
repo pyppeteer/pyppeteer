@@ -36,6 +36,9 @@ class WebsocketTransport:
                 )
             )
             yield instance
+        except Exception as e:
+            # todo: is this the correct context which we should be logging the error in?
+            raise e
         finally:
             try:
                 await instance.close()
