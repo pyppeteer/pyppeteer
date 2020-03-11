@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from typing import Optional
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 logger_connection = logging.getLogger(__name__ + '.Connection')
 
 
@@ -139,6 +140,16 @@ class Connection(AsyncIOEventEmitter):
         if self._delay:
             await asyncio.sleep(self._delay)
         logger_connection.debug(f'◀ RECV {msg}')
+        # TODO error messages here are _unexpected_ in puppeteer, but they are raised
+        if 'error' in msg:
+            callback = self._callbacks.get(msg['id'])
+            callback.set_exception(
+                createProtocolError(
+                    callback.error,  # type: ignore
+                    callback.method,  # type: ignore
+                    msg,
+                )
+            )
         # Handle Target attach/detach methods
         if msg.get('method') == 'Target.attachedToTarget':
             sessionId = msg['params']['sessionId']
@@ -244,7 +255,9 @@ class CDPSession(AsyncIOEventEmitter):
             raise NetworkError(
                 f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
-        id_ = self._connection._rawSend({'sessionId': self._sessionId, 'method': method, 'params': params or {}})
+        params = params or {}
+        params['sessionId'] = self._sessionId
+        id_ = self._connection._rawSend({'method': method, 'params': params or {}})
         callback = self._loop.create_future()
         self._callbacks[id_] = callback
         callback.error: Exception = NetworkError()  # type: ignore
@@ -255,7 +268,6 @@ class CDPSession(AsyncIOEventEmitter):
         id_ = msg.get('id')
         callback = self._callbacks.get(id_)
         if id_ and id_ in self._callbacks:
-            del self._callbacks[id_]
             if msg.get('error'):
                 callback.set_exception(
                     createProtocolError(
@@ -266,6 +278,7 @@ class CDPSession(AsyncIOEventEmitter):
                 )
             else:
                 callback.set_result(msg.get('result'))
+            del self._callbacks[id_]
         else:
             if msg.get('id'):
                 raise ConnectionError(f'Received unexpected message with no callback: {msg}')
