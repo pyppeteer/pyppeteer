@@ -68,7 +68,8 @@ class FrameManager(AsyncIOEventEmitter):
         client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
     async def initialize(self):
-        frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'),)
+        frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'))
+        frameTree = frameTree[1]
         self._handleFrameTree(frameTree)
 
         async def runtime_enabled():
@@ -167,9 +168,7 @@ class FrameManager(AsyncIOEventEmitter):
                 frame['id'], frame['parentId'],
             )
         self._onFrameNavigated(frame)
-        if 'childFrames' not in frameTree:
-            return
-        for child in frameTree['childFrames']:
+        for child in frameTree.get('childFrames', []):
             self._handleFrameTree(child)
 
     @property
