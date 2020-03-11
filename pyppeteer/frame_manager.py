@@ -42,6 +42,7 @@ class FrameManager(AsyncIOEventEmitter):
         self._page = page
         self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
         self._timeoutSettings = timeoutSettings
+        self._mainFrame = None
         self._frames = {}
         self._contextIdToContext: Dict[int, ExecutionContext] = {}
         self._isolatedWorlds: Set[str] = set()
@@ -69,7 +70,7 @@ class FrameManager(AsyncIOEventEmitter):
 
     async def initialize(self):
         frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'))
-        frameTree = frameTree[1]
+        frameTree = frameTree[1]['frameTree']
         self._handleFrameTree(frameTree)
 
         async def runtime_enabled():
@@ -78,7 +79,7 @@ class FrameManager(AsyncIOEventEmitter):
 
         await asyncio.gather(
             self._client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
-            runtime_enabled(),
+            await runtime_enabled(),
             await self._networkManager.initialize(),
         )
 
@@ -268,7 +269,7 @@ class FrameManager(AsyncIOEventEmitter):
         frame = self._frames.get(frameId)
         world = None
         if frame:
-            if auxData and not auxData['isDefault']:
+            if auxData and auxData['isDefault']:
                 world = frame._mainWorld
             elif contextPayload.get('name') == UTILITY_WORLD_NAME and not frame._secondaryWorld._hasContext():
                 # In case of multiple sessions to the same target, there's a race between
