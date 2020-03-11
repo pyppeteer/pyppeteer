@@ -49,7 +49,6 @@ class Target:
     def _initializedCallback(self, success: bool) -> None:
         if not success:
             return self._initializedPromise.set_result(False)
-        # TODO below seems to always return True - why is even here?
         opener = self.opener
         if not opener or not opener._page or self.type != 'page':
             return self._initializedPromise.set_result(True)
@@ -77,7 +76,7 @@ class Target:
         if self._targetInfo['type'] in ['page', 'background_page']:
             session = await self._sessionFactory()
             self._page = await Page.create(
-                session, self, self._ignoreHTTPSErrors, self._defaultViewport, self._screenshotTaskQueue,
+                client=session, target=self, ignoreHTTPSErrors=self._ignoreHTTPSErrors, defaultViewport=self._defaultViewport, screenshotTaskQueue=self._screenshotTaskQueue,
             )
         return self._page
 
@@ -87,7 +86,7 @@ class Target:
             return
         if not self._workerPromise:
             session = await self._sessionFactory()
-            self._workerPromise = Worker(session, self._targetInfo['url'])
+            self._workerPromise = Worker(session, self._targetInfo['url'], lambda : None, lambda : None)
         return self._workerPromise
 
     @property
