@@ -776,7 +776,7 @@ class Page(AsyncIOEventEmitter):
         .. note::
             Headless mode doesn't support navigation to a PDF document.
         """
-        return await self.mainFrame.goto(url, referer=referer, timeout=timeout, waitUntil=waitUntil,)
+        return await self.mainFrame.goto(url=url, referer=referer, timeout=timeout, waitUntil=waitUntil,)
 
     async def reload(
         self, timeout: float = None, waitUntil: Union[str, List[str]] = None,

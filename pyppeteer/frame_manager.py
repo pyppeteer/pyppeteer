@@ -6,6 +6,7 @@
 import asyncio
 import re
 import logging
+from functools import partial
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import AsyncIOEventEmitter
@@ -79,12 +80,12 @@ class FrameManager(AsyncIOEventEmitter):
 
         await asyncio.gather(
             self._client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
-            await runtime_enabled(),
-            await self._networkManager.initialize(),
+            runtime_enabled(),
+            self._networkManager.initialize(),
         )
 
     @property
-    def networkManager(self):
+    def networkManager(self) -> NetworkManager:
         return self._networkManager
 
     async def navigateFrame(
@@ -342,8 +343,8 @@ class Frame:
             self._parentFrame._childFrames.add(self)
 
         # aliases
-        self.goto = self._frameManager.navigateFrame
-        self.waitForFrameNavigation = self._frameManager.waitForFrameNavigation
+        self.goto = partial(self._frameManager.navigateFrame, self)
+        self.waitForFrameNavigation = partial(self._frameManager.waitForFrameNavigation, self)
 
         self.addScriptTag = self.mainWorld.addScriptTag
         self.addStyleTag = self.mainWorld.addStyleTag

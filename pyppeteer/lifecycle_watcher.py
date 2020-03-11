@@ -74,7 +74,7 @@ class LifecycleWatcher:
             ),
             helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(
-                self._frameManager.networkManager(), Events.NetworkManager.Request, self._onRequest,
+                self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,
             ),
         ]
         self._loop = self._frameManager._client._loop
