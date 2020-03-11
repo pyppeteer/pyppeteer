@@ -7,6 +7,8 @@ Chromium is being downloaded from:
 https://storage.googleapis.com/chromium-browser-snapshots
 see full download instructions:
 https://www.chromium.org/getting-involved/download-chromium
+for latest version see:
+https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2FLAST_CHANGE?alt=media
 """
 
 import logging
