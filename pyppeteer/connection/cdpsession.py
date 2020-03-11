@@ -37,11 +37,11 @@ class CDPSession(AsyncIOEventEmitter):
     """
 
     def __init__(
-            self,
-            connection: Union[Connection, 'CDPSession'],
-            targetType: str,
-            sessionId: str,
-            loop: asyncio.AbstractEventLoop,
+        self,
+        connection: Union[Connection, 'CDPSession'],
+        targetType: str,
+        sessionId: str,
+        loop: asyncio.AbstractEventLoop,
     ) -> None:
         """Make new session."""
         super().__init__()
@@ -50,7 +50,6 @@ class CDPSession(AsyncIOEventEmitter):
         self._targetType = targetType
         self._sessionId = sessionId
         self._loop = loop
-        self._lastId = 0
 
     def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message to the connected session.
@@ -62,19 +61,14 @@ class CDPSession(AsyncIOEventEmitter):
             raise NetworkError(
                 f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
-        self._lastId += 1
-        id_ = self._lastId
-        msg = {
-            'id': id_,
-            'method': method,
-            'params': params or {},
-        }
-        return self._connection.send('Target.sendMessageToTarget', {
-            'message': json.dumps(msg),
-            'sessionId': self._sessionId,
-        })
+        id_ = self._connection._rawSend({'sessionId': self._sessionId, 'method': method, 'params': params or {},})
+        callback = self._loop.create_future()
+        callback.method = method
+        callback.error = NetworkError()
+        self._callbacks[id_] = callback
+        return callback
 
-    def _onMessage(self, msg: Message) -> None:  # noqa: C901
+    def _onMessage(self, msg: Message) -> None:
         id_ = msg.get('id')
         callback = self._callbacks.get(id_)
         if id_ and id_ in self._callbacks:
@@ -92,7 +86,6 @@ class CDPSession(AsyncIOEventEmitter):
         else:
             if msg.get('id'):
                 raise ConnectionError(f'Received unexpected message with no callback: {msg}')
-            import ipdb;ipdb.set_trace()
             self.emit(msg.get('method'), msg.get('params'))
 
     async def detach(self) -> None:

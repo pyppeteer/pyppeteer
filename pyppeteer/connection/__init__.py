@@ -104,6 +104,7 @@ class Connection(AsyncIOEventEmitter):
             await asyncio.sleep(self._delay)
         try:
             await self.connection.send(json.dumps(msg))
+            logger_connection.debug(f'SEND ▶ {msg}')
         except websockets.ConnectionClosed:
             logger.error('connection unexpectedly closed')
             callback = self._callbacks.get(msg['id'], None)
@@ -118,16 +119,15 @@ class Connection(AsyncIOEventEmitter):
             raise ConnectionError('Connection is closed')
         id_ = self._rawSend({'method': method, 'params': params or {}})
         callback = self._loop.create_future()
-        self._callbacks[id_] = callback
         callback.error: Exception = NetworkError()  # type: ignore
         callback.method: str = method  # type: ignore
+        self._callbacks[id_] = callback
         return callback
 
     def _rawSend(self, message: Message):
         self._lastId += 1
         id_ = self._lastId
         message['id'] = id_
-        logger_connection.debug(f'SEND ▶ {message}')
         self._loop.create_task(self._async_send(message))
         return id_
 
@@ -135,18 +135,7 @@ class Connection(AsyncIOEventEmitter):
         if self._delay:
             await asyncio.sleep(self._delay)
         logger_connection.debug(f'◀ RECV {msg}')
-        # TODO error messages here are _unexpected_ in puppeteer, but they are raised
-        if msg.get('params', {}).get('m')
-        msg_id = msg.get('id')
-        callback = self._callbacks.get(msg_id)
-        if 'error' in msg and callback:
-            callback.set_exception(
-                createProtocolError(
-                    callback.error,  # type: ignore
-                    callback.method,  # type: ignore
-                    msg,
-                )
-            )
+
         # Handle Target attach/detach methods
         if msg.get('method') == 'Target.attachedToTarget':
             sessionId = msg['params']['sessionId']
@@ -209,9 +198,10 @@ class Connection(AsyncIOEventEmitter):
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
-        resp = await self.send('Target.attachToTarget', {'targetId': targetInfo['targetId']})
+        resp = await self.send('Target.attachToTarget', {'targetId': targetInfo['targetId'], 'flatten': True})
         sessionId = resp.get('sessionId')
         return self._sessions[sessionId]
+
 
 def createProtocolError(error: Exception, method: str, obj: Dict) -> Exception:
     message = f'Protocol error ({method}): {obj["error"]["message"]}'
@@ -223,5 +213,6 @@ def createProtocolError(error: Exception, method: str, obj: Dict) -> Exception:
 def rewriteError(error: Exception, message: str) -> Exception:
     error.args = (message,)
     return error
+
 
 from pyppeteer.connection.cdpsession import CDPSession
