@@ -8,7 +8,6 @@ import base64
 import copy
 import json
 import logging
-from collections import OrderedDict
 from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
@@ -34,16 +33,16 @@ class NetworkManager(AsyncIOEventEmitter):
         self._client = client
         self._ignoreHTTPSErrors = ignoreHttpsErrors
         self._frameManager = frameManager
-        self._requestIdToRequest: Dict[Optional[str], Request] = dict()
-        self._requestIdToRequestWillBeSent: Dict[Optional[str], Dict] = dict()
-        self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
+        self._requestIdToRequest: Dict[Optional[str], Request] = {}
+        self._requestIdToRequestWillBeSent: Dict[Optional[str], Dict] = {}
+        self._extraHTTPHeaders: Dict[str, str] = {}
         self._offline: bool = False
         self._credentials: Optional[Dict[str, str]] = None
         self._attemptedAuthentications: Set[Optional[str]] = set()
         self._userRequestInterceptionEnabled = False
         self._protocolRequestInterceptionEnabled = False
         self._userCacheDisabled = False
-        self._requestIdToInterceptionId: Dict[str, str] = dict()
+        self._requestIdToInterceptionId: Dict[str, str] = {}
 
         self._client.on('Fetch.requestPaused', self._onRequestPaused)
         self._client.on('Fetch.authRequired', self._onAuthRequired)
@@ -65,7 +64,7 @@ class NetworkManager(AsyncIOEventEmitter):
 
     async def setExtraHTTPHeaders(self, extraHTTPHeaders: Dict[str, str]) -> None:
         """Set extra http headers."""
-        self._extraHTTPHeaders = OrderedDict()
+        self._extraHTTPHeaders = {}
         for k, v in extraHTTPHeaders.items():
             if not isinstance(v, str):
                 raise TypeError(f'Expected value of header "{k}" to be string, ' f'but {type(v)} is found.')
@@ -161,7 +160,7 @@ class NetworkManager(AsyncIOEventEmitter):
             self._requestIdToInterceptionId[requestId] = interceptionId
 
     def _onRequest(self, event: Dict, interceptionId: Optional[str]) -> None:
-        redirectChain: List[Request] = list()
+        redirectChain: List[Request] = []
         if event.get('redirectResponse'):
             request = self._requestIdToRequest.get(event['requestId'])
             if request:
@@ -252,7 +251,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self.emit(Events.NetworkManager.RequestFailed, request)
 
 
-class Request(object):
+class Request:
     """Request class.
 
     Whenever the page sends a request, such as for a network resource, the
@@ -294,7 +293,7 @@ class Request(object):
         self._url = req['url']
         self._resourceType = event['type'].lower()
         self._method = req['method']
-        self._postData = req['postData']
+        self._postData = req.get('postData')
         self._frame = frame
         self._redirectChain = redirectChain
         self._headers = {k.lower(): v for k, v in req.get('headers', {}).items()}
@@ -547,7 +546,7 @@ class Response(object):
         fromDiskCache: bool,
         fromServiceWorker: bool,
         securityDetails: Dict = None,
-        remoteIpAdress: str = '',
+        remoteIpAddress: str = '',
         remotePort: str = '',
         statusText: str = '',
     ) -> None:
@@ -556,7 +555,7 @@ class Response(object):
         self._contentPromise = self._client._loop.create_future()
         self._bodyLoadedPromise = self._client._loop.create_future()
         self._remoteAddress = {
-            'ip': remoteIpAdress,
+            'ip': remoteIpAddress,
             'port': remotePort,
         }
         self._status = status
@@ -670,7 +669,7 @@ class Response(object):
         self._bodyLoadedPromise.set_result(value)
 
 
-class SecurityDetails(object):
+class SecurityDetails:
     """Class represents responses which are received by page."""
 
     def __init__(self, subjectName: str, issuer: str, validFrom: int, validTo: int, protocol: str) -> None:
