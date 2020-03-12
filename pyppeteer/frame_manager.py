@@ -13,7 +13,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer import helper
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.events import Events
-from pyppeteer.helper import debugError
+from pyppeteer.helper import debugError, future_race
 from pyppeteer.jshandle import ElementHandle
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError
@@ -95,7 +95,7 @@ class FrameManager(AsyncIOEventEmitter):
         async def navigate(url: str, referer: str, frameId: str):
             try:
                 response = await self._client.send(
-                    'Page.navigate', {'url': url, 'referer': referer, 'frameId': frameId,}
+                    'Page.navigate', {'url': url, 'referer': referer, 'frameId': frameId}
                 )
                 # todo local functions in python cannot modify outer namespaces
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
@@ -112,18 +112,13 @@ class FrameManager(AsyncIOEventEmitter):
             timeout = self._timeoutSettings.navigationTimeout
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = await asyncio.wait(
-            [navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture],
-            return_when=asyncio.FIRST_COMPLETED,
-        )
+        error = await future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
         if not error:
             if ensureNewDocumentNavigation:
                 nav_promise = watcher.newDocumentNavigationFuture
             else:
                 nav_promise = watcher.sameDocumentNavigationFuture
-            error = await asyncio.wait(
-                [watcher.timeoutOrTerminationFuture, nav_promise], return_when=asyncio.FIRST_COMPLETED
-            )
+            error = await future_race(watcher.timeoutOrTerminationFuture, nav_promise)
         watcher.dispose()
         if error:
             raise error
@@ -135,13 +130,10 @@ class FrameManager(AsyncIOEventEmitter):
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = asyncio.wait(
-            [
-                watcher.timeoutOrTerminationFuture,
-                watcher.sameDocumentNavigationFuture,
-                watcher.newDocumentNavigationFuture,
-            ],
-            return_when=asyncio.FIRST_COMPLETED,
+        error = helper.future_race(
+            watcher.timeoutOrTerminationFuture,
+            watcher.sameDocumentNavigationFuture,
+            watcher.newDocumentNavigationFuture,
         )
         watcher.dispose()
         if error:

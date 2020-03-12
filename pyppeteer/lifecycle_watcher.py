@@ -8,7 +8,7 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 """
 
 import asyncio
-from asyncio import FIRST_COMPLETED
+from asyncio import FIRST_COMPLETED, Future
 from functools import partial
 from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING, Literal
 
@@ -73,9 +73,7 @@ class LifecycleWatcher:
                 self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
             helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
-            helper.addEventListener(
-                self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,
-            ),
+            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,),
         ]
         self._loop = self._frameManager._client._loop
 
@@ -123,7 +121,7 @@ class LifecycleWatcher:
 
     @property
     def timeoutOrTerminationFuture(self) -> Awaitable:
-        return asyncio.wait([self._timeoutFuture, self._terminationFuture], return_when=FIRST_COMPLETED)
+        return helper.future_race(self._timeoutFuture, self._terminationFuture)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
         self._maximumTimerFuture = self._loop.create_future()
@@ -170,4 +168,7 @@ class LifecycleWatcher:
     def dispose(self) -> None:
         helper.removeEventListeners(self._eventListeners)
         for fut in self._futures:
-            fut.cancel()
+            try:
+                fut.cancel()
+            except AttributeError:
+                continue

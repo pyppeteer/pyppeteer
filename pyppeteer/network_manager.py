@@ -82,7 +82,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._offline = value
         await self._client.send(
             'Network.emulateNetworkConditions',
-            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1, },
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
         )
 
     async def setUserAgent(self, userAgent: str) -> None:
@@ -144,7 +144,7 @@ class NetworkManager(AsyncIOEventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {"response": response, "username": username, "password": password, },
+                'authChallengeResponse': {"response": response, "username": username, "password": password,},
             },
         )
 
@@ -186,13 +186,13 @@ class NetworkManager(AsyncIOEventEmitter):
             request._fromMemoryCache = True
 
     def _handleRequestRedirect(
-            self,
-            request: 'Request',
-            status: int,
-            headers: Dict,
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None,
+        self,
+        request: 'Request',
+        status: int,
+        headers: Dict,
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
     ) -> None:
         response = Response(
             client=self._client,
@@ -272,13 +272,13 @@ class Request:
     """
 
     def __init__(
-            self,
-            client: CDPSession,
-            frame: 'Frame',
-            interceptionId: Optional[str],
-            allowInterception: bool,
-            event: dict,
-            redirectChain: List['Request'],
+        self,
+        client: CDPSession,
+        frame: 'Frame',
+        interceptionId: Optional[str],
+        allowInterception: bool,
+        event: dict,
+        redirectChain: List['Request'],
     ) -> None:
         self._client = client
         self._requestId = event['requestId']
@@ -538,17 +538,17 @@ class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
     def __init__(
-            self,
-            client: CDPSession,
-            request: Request,
-            status: int,
-            headers: Dict[str, str],
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None,
-            remoteIpAddress: str = '',
-            remotePort: str = '',
-            statusText: str = '',
+        self,
+        client: CDPSession,
+        request: Request,
+        status: int,
+        headers: Dict[str, str],
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
+        remoteIpAddress: str = '',
+        remotePort: str = '',
+        statusText: str = '',
     ) -> None:
         self._client = client
         self._request = request

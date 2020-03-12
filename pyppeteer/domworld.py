@@ -160,9 +160,7 @@ class DOMWorld(object):
         watcher = LifecycleWatcher(
             frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout
         )
-        error = await asyncio.wait(
-            [watcher.timeoutOrTerminationFuture, watcher.lifecycleFuture], return_when=asyncio.FIRST_COMPLETED
-        )
+        error = await helper.future_race(watcher.timeoutOrTerminationFuture, watcher.lifecycleFuture)
         watcher.dispose()
         if error:
             raise error
