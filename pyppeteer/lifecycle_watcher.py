@@ -145,7 +145,7 @@ class LifecycleWatcher:
             self._hasSameDocumentNavigation = True
             self._checkLifecycleComplete()
 
-    def _checkLifecycleComplete(self) -> None:
+    def _checkLifecycleComplete(self, _=None) -> None:
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return
         self._lifecycleFuture.set_result(None)
