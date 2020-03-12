@@ -27,9 +27,13 @@ def debugError(_logger: logging.Logger, msg: Any) -> None:
 
 
 async def future_race(*fs):
-    done, pending = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED,)
-    for fut in done:
-        return fut.result()
+    """
+    Analogous to JS's Promise.race(). Returns the results of the first completed future
+    :param fs: Future to be waited upon
+    :return: result of first completed Future
+    """
+    done, _ = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED, )
+    return done.pop().result()
 
 
 def evaluationString(fun: str, *args: Any) -> str:
@@ -49,11 +53,11 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     if stackTrace:
         for callframe in stackTrace.get('callFrames'):
             location = (
-                str(callframe.get('url', ''))
-                + ':'
-                + str(callframe.get('lineNumber', ''))
-                + ':'
-                + str(callframe.get('columnNumber'))
+                    str(callframe.get('url', ''))
+                    + ':'
+                    + str(callframe.get('lineNumber', ''))
+                    + ':'
+                    + str(callframe.get('columnNumber'))
             )
             functionName = callframe.get('functionName', '<anonymous>')
             message = message + f'\n    at {functionName} ({location})'
@@ -115,11 +119,11 @@ def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
 
 
 def waitForEvent(
-    emitter: AsyncIOEventEmitter,
-    eventName: str,  # noqa: C901
-    predicate: Callable[[Any], bool],
-    timeout: float,
-    loop: asyncio.AbstractEventLoop,
+        emitter: AsyncIOEventEmitter,
+        eventName: str,  # noqa: C901
+        predicate: Callable[[Any], bool],
+        timeout: float,
+        loop: asyncio.AbstractEventLoop,
 ) -> Awaitable:
     """Wait for an event emitted from the emitter."""
     promise = loop.create_future()
