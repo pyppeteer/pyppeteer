@@ -398,7 +398,7 @@ class TestTargetEvents(unittest.TestCase):
     @sync
     async def test_target_events(self):
         browser = await launch(DEFAULT_OPTIONS)
-        events = list()
+        events = []
         browser.on('targetcreated', lambda _: events.append('CREATED'))
         browser.on('targetchanged', lambda _: events.append('CHANGED'))
         browser.on('targetdestroyed', lambda _: events.append('DESTROYED'))

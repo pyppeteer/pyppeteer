@@ -39,7 +39,7 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     if exception:
         return exception.get('description') or exception.get('value')
     message = exceptionDetails.get('text', '')
-    stackTrace = exceptionDetails.get('stackTrace', dict())
+    stackTrace = exceptionDetails.get('stackTrace', {})
     if stackTrace:
         for callframe in stackTrace.get('callFrames'):
             location = (

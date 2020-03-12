@@ -252,7 +252,7 @@ class AXNode(object):
         :param payloads: List of dictionaries of AXNode kwargs
         :return:
         """
-        nodeById = dict()
+        nodeById = {}
         for payload in payloads:
             nodeById[payload['nodeId']] = AXNode(payload)
         for node in nodeById.values():

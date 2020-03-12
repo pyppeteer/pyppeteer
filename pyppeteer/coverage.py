@@ -123,9 +123,9 @@ class JSCoverage:
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._scriptURLs: Dict = dict()
-        self._scriptSources: Dict = dict()
-        self._eventListeners: List = list()
+        self._scriptURLs: Dict = {}
+        self._scriptSources: Dict = {}
+        self._eventListeners: List = []
         self._resetOnNavigation = False
 
     async def start(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
@@ -210,8 +210,8 @@ class CSSCoverage:
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._stylesheetURLs: Dict = dict()
-        self._stylesheetSources: Dict = dict()
+        self._stylesheetURLs: Dict = {}
+        self._stylesheetSources: Dict = {}
         self._eventListeners: List = []
         self._resetOnNavigation = False
 

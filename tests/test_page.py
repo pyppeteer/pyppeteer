@@ -839,7 +839,7 @@ class TestExposeFunction(BaseTestCase):
     @sync
     async def test_call_from_evaluate_on_document(self):
         await self.page.goto(self.url + 'empty')
-        called = list()
+        called = []
 
         def woof():
             called.append(True)

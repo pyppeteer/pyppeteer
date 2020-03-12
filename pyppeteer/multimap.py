@@ -23,14 +23,14 @@ class Multimap(object):
         """Set value."""
         _set = self._map.get(key)
         if not _set:
-            _set = list()
+            _set = []
             self._map[key] = _set
         if value not in _set:
             _set.append(value)
 
     def get(self, key: Optional[str]) -> List[Any]:
         """Get values."""
-        return self._map.get(key, list())
+        return self._map.get(key, [])
 
     def has(self, key: Optional[str]) -> bool:
         """Check key is in this map."""
@@ -38,7 +38,7 @@ class Multimap(object):
 
     def hasValue(self, key: Optional[str], value: Any) -> bool:
         """Check value is in this map."""
-        _set = self._map.get(key, list())
+        _set = self._map.get(key, [])
         return value in _set
 
     def size(self) -> int:
@@ -72,7 +72,7 @@ class Multimap(object):
 
     def valuesArray(self) -> List[Any]:
         """Get all values as list."""
-        result: List[Any] = list()
+        result: List[Any] = []
         for values in self._map.values():
             result.extend(values)
         return result

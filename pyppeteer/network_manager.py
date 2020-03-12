@@ -216,6 +216,7 @@ class NetworkManager(AsyncIOEventEmitter):
         # FileUpload sends a response without a matching request.
         if not request:
             return
+        resp = Response(self._session)
         event_response = event.get('response', {})
         event_response['client'] = self._client
         event_response['request'] = request

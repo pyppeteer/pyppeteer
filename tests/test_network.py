@@ -264,7 +264,7 @@ class TestRequestInterception(BaseTestCase):
     @sync
     async def test_referer_header(self):
         await self.page.setRequestInterception(True)
-        requests = list()
+        requests = []
 
         async def set_request(req):
             requests.append(req)
@@ -391,7 +391,7 @@ class TestRequestInterception(BaseTestCase):
     @sync
     async def test_redirect_for_subresource(self):
         await self.page.setRequestInterception(True)
-        requests = list()
+        requests = []
 
         async def check(req):
             await req.continue_()
@@ -555,7 +555,7 @@ class TestRequestInterception(BaseTestCase):
 class TestNavigationRequest(BaseTestCase):
     @sync
     async def test_navigation_request(self):
-        requests = dict()
+        requests = {}
 
         def set_request(req):
             requests[req.url.split('/').pop()] = req
@@ -570,7 +570,7 @@ class TestNavigationRequest(BaseTestCase):
 
     @sync
     async def test_interception(self):
-        requests = dict()
+        requests = {}
 
         async def on_request(req):
             requests[req.url.split('/').pop()] = req

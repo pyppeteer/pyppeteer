@@ -99,7 +99,7 @@ class Page(AsyncIOEventEmitter):
         self._frameManager = FrameManager(client, self, ignoreHTTPSErrors, self._timeoutSettings)
         self._emulationManager = EmulationManager(client)
         self._tracing = Tracing(client)
-        self._pageBindings: Dict[str, Callable[..., Any]] = dict()
+        self._pageBindings: Dict[str, Callable[..., Any]] = {}
         self._coverage = Coverage(client)
         self._javascriptEnabled = True
         self._viewport: Viewport = None

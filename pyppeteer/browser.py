@@ -58,11 +58,11 @@ class Browser(AsyncIOEventEmitter):
             self._closeCallback = _dummy_callback
 
         self._defaultContext = BrowserContext(self, None)
-        self._contexts: Dict[str, BrowserContext] = dict()
+        self._contexts: Dict[str, BrowserContext] = {}
         for contextId in contextIds:
             self._contexts[contextId] = BrowserContext(self, contextId)
 
-        self._targets: Dict[str, Target] = dict()
+        self._targets: Dict[str, Target] = {}
         self._connection.on(Events.Connection.Disconnected, lambda: self.emit(Events.Browser.Disconnected))
         self._connection.on(
             'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
