@@ -76,7 +76,11 @@ class Target:
         if self._targetInfo['type'] in ['page', 'background_page']:
             session = await self._sessionFactory()
             self._page = await Page.create(
-                client=session, target=self, ignoreHTTPSErrors=self._ignoreHTTPSErrors, defaultViewport=self._defaultViewport, screenshotTaskQueue=self._screenshotTaskQueue,
+                client=session,
+                target=self,
+                ignoreHTTPSErrors=self._ignoreHTTPSErrors,
+                defaultViewport=self._defaultViewport,
+                screenshotTaskQueue=self._screenshotTaskQueue,
             )
         return self._page
 
@@ -86,7 +90,7 @@ class Target:
             return
         if not self._workerPromise:
             session = await self._sessionFactory()
-            self._workerPromise = Worker(session, self._targetInfo['url'], lambda : None, lambda : None)
+            self._workerPromise = Worker(session, self._targetInfo['url'], lambda: None, lambda: None)
         return self._workerPromise
 
     @property

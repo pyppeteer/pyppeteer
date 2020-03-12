@@ -26,6 +26,12 @@ def debugError(_logger: logging.Logger, msg: Any) -> None:
         _logger.debug(msg)
 
 
+async def future_race(*fs):
+    done, pending = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED,)
+    for fut in done:
+        return fut.result()
+
+
 def evaluationString(fun: str, *args: Any) -> str:
     """Convert function and arguments to str."""
     _args = ', '.join([json.dumps('undefined' if arg is None else arg) for arg in args])
