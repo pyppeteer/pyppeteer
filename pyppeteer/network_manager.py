@@ -552,8 +552,8 @@ class Response(object):
     ) -> None:
         self._client = client
         self._request = request
-        self._contentPromise = self._client._loop.create_future()
-        self._bodyLoadedPromise = self._client._loop.create_future()
+        self._contentPromise = self._client.loop.create_future()
+        self._bodyLoadedPromise = self._client.loop.create_future()
         self._remoteAddress = {
             'ip': remoteIpAddress,
             'port': remotePort,
@@ -627,7 +627,7 @@ class Response(object):
     def buffer(self) -> Awaitable[bytes]:
         """Return awaitable which resolves to bytes with response body."""
         if not self._contentPromise.done():
-            return self._client._loop.create_task(self._bufread())
+            return self._client.loop.create_task(self._bufread())
         return self._contentPromise
 
     async def text(self) -> str:

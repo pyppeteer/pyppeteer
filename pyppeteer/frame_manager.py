@@ -499,10 +499,10 @@ class Frame:
                 return self.waitForXPath(string, **kwargs)
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            return self._client._loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
+            return self._client.loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
         if helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
-        f = self._client._loop.create_future()
+        f = self._client.loop.create_future()
         f.set_exception(BrowserError(f'Unsupported target type:' f' {type(selectorOrFunctionOrTimeout)}'))
         return f
 

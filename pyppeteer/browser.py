@@ -45,7 +45,7 @@ class Browser(AsyncIOEventEmitter):
         self._process = process
         self._screenshotTaskQueue: List = []
         self._connection = connection
-        loop = self._connection._loop
+        loop = self._connection.loop
 
         def _dummy_callback() -> Awaitable[None]:
             fut = loop.create_future()
@@ -153,7 +153,7 @@ class Browser(AsyncIOEventEmitter):
             ignoreHTTPSErrors=self._ignoreHTTPSErrors,
             defaultViewport=self._defaultViewport,
             screenshotTaskQueue=self._screenshotTaskQueue,
-            loop=self._connection._loop,
+            loop=self._connection.loop,
         )
         if targetInfo['targetId'] in self._targets:
             raise BrowserError('target should not exist before create.')

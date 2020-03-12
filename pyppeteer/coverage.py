@@ -139,7 +139,7 @@ class JSCoverage:
         self._scriptSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'Debugger.scriptParsed', lambda e: self._client._loop.create_task(self._onScriptParsed(e))
+                self._client, 'Debugger.scriptParsed', lambda e: self._client.loop.create_task(self._onScriptParsed(e))
             ),
             helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
@@ -225,7 +225,7 @@ class CSSCoverage:
         self._stylesheetSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'CSS.styleSheetAdded', lambda e: self._client._loop.create_task(self._onStyleSheet(e))
+                self._client, 'CSS.styleSheetAdded', lambda e: self._client.loop.create_task(self._onStyleSheet(e))
             ),
             helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]

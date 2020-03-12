@@ -71,10 +71,10 @@ class Tracing(object):
 
         :return: trace data as string.
         """
-        contentFuture = self._client._loop.create_future()
+        contentFuture = self._client.loop.create_future()
         self._client.once(
             'Tracing.tracingComplete',
-            lambda event: self._client._loop.create_task(
+            lambda event: self._client.loop.create_task(
                 self._readStream(event.get('stream'), self._path)
             ).add_done_callback(lambda fut: contentFuture.set_result(fut.result())),
         )

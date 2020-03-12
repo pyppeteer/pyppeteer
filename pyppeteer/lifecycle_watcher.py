@@ -75,12 +75,12 @@ class LifecycleWatcher:
             helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
             helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,),
         ]
-        self._loop = self._frameManager._client._loop
+        self.loop = self._frameManager._client.loop
 
-        self._lifecycleFuture = self._loop.create_future()
-        self._sameDocumentNavigationFuture = self._loop.create_future()
-        self._newDocumentNavigationFuture = self._loop.create_future()
-        self._terminationFuture = self._loop.create_future()
+        self._lifecycleFuture = self.loop.create_future()
+        self._sameDocumentNavigationFuture = self.loop.create_future()
+        self._newDocumentNavigationFuture = self.loop.create_future()
+        self._terminationFuture = self.loop.create_future()
 
         self._timeoutFuture = self._createTimeoutPromise()
 
@@ -124,7 +124,7 @@ class LifecycleWatcher:
         return helper.future_race(self._timeoutFuture, self._terminationFuture)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
-        self._maximumTimerFuture = self._loop.create_future()
+        self._maximumTimerFuture = self.loop.create_future()
         if self._timeout:
             errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'  # noqa: E501
 
@@ -132,11 +132,11 @@ class LifecycleWatcher:
                 await asyncio.sleep(self._timeout / 1000)
                 self._maximumTimerFuture.set_exception(TimeoutError(errorMessage))
 
-            self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self._loop.create_task(
+            self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self.loop.create_task(
                 _timeout_func()
             )  # noqa: E501
         else:
-            self._timeoutTimerFuture = self._loop.create_future()
+            self._timeoutTimerFuture = self.loop.create_future()
         return self._maximumTimerFuture
 
     def _navigatedWithinDocument(self, frame: 'Frame' = None) -> None:

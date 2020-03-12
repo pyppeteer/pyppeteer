@@ -38,10 +38,10 @@ class Target:
         self._screenshotTaskQueue = screenshotTaskQueue
         self._page = None
         self._workerPromise = None
-        self._loop = loop
+        self.loop = loop
 
-        self._initializedPromise = self._loop.create_future()
-        self._isClosedPromise = self._loop.create_future()
+        self._initializedPromise = self.loop.create_future()
+        self._isClosedPromise = self.loop.create_future()
         self._isInitialized = self._targetInfo['type'] != 'page' or self._targetInfo['url'] != ''
         if self._isInitialized:
             self._initializedCallback(True)

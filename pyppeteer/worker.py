@@ -39,8 +39,8 @@ class Worker(AsyncIOEventEmitter):
         super().__init__()
         self._client = client
         self._url = url
-        self._loop = client._loop
-        self._executionContextPromise = self._loop.create_future()
+        self.loop = client.loop
+        self._executionContextPromise = self.loop.create_future()
 
         def jsHandleFactory(remoteObject: Dict) -> JSHandle:
             return None  # type: ignore

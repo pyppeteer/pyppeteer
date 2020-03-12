@@ -64,11 +64,11 @@ class Connection(AsyncIOEventEmitter):
 
         self._transport = transport
 
-        self._loop = loop or asyncio.get_event_loop()
+        self.loop = loop or asyncio.get_event_loop()
         self._sessions: Dict[str, CDPSession] = {}
         self._connected = False
         self._closed = False
-        self._loop.create_task(self._recv_loop())
+        self.loop.create_task(self._recv_loop())
 
     @staticmethod
     def fromSession(session: 'CDPSession'):
@@ -97,7 +97,7 @@ class Connection(AsyncIOEventEmitter):
                 # wait 1 async loop frame, no other data will be accessible in between frames
                 await asyncio.sleep(0)
         if self._connected:
-            self._loop.create_task(self.dispose())
+            self.loop.create_task(self.dispose())
 
     async def _async_send(self, msg: Message) -> None:
         while not self._connected:
@@ -118,7 +118,7 @@ class Connection(AsyncIOEventEmitter):
         if self._lastId and not self._connected:
             raise ConnectionError('Connection is closed')
         id_ = self._rawSend({'method': method, 'params': params or {}})
-        callback = self._loop.create_future()
+        callback = self.loop.create_future()
         callback.error: Exception = NetworkError()  # type: ignore
         callback.method: str = method  # type: ignore
         self._callbacks[id_] = callback
@@ -128,7 +128,7 @@ class Connection(AsyncIOEventEmitter):
         self._lastId += 1
         id_ = self._lastId
         message['id'] = id_
-        self._loop.create_task(self._async_send(message))
+        self.loop.create_task(self._async_send(message))
         return id_
 
     async def _onMessage(self, msg: Message) -> None:
@@ -140,7 +140,7 @@ class Connection(AsyncIOEventEmitter):
         if msg.get('method') == 'Target.attachedToTarget':
             sessionId = msg['params']['sessionId']
             self._sessions[sessionId] = CDPSession(
-                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self._loop,
+                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self.loop,
             )
         elif msg.get('method') == 'Target.detachedFromTarget':
             session = self._sessions.get(msg['params']['sessionId'])

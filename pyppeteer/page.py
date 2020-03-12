@@ -195,7 +195,7 @@ class Page(AsyncIOEventEmitter):
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
-        promise = self._loop.create_future()
+        promise = self.loop.create_future()
         callback = promise.result
         self._fileChooserInterceptors.add(callback())
         try:
@@ -688,7 +688,7 @@ class Page(AsyncIOEventEmitter):
         # in python it's not necessary?
         if not self.listeners(Events.Page.Console):
             for arg in args:
-                self._client._loop.create_task(arg.dispose())
+                self._client.loop.create_task(arg.dispose())
             return
 
         textTokens = []
@@ -826,7 +826,7 @@ class Page(AsyncIOEventEmitter):
 
     def _sessionClosePromise(self):
         if not self._disconnectPromise:
-            self._disconnectPromise = self._loop.create_future()
+            self._disconnectPromise = self.loop.create_future()
             self._client.once(
                 Events.CDPSession.Disconnected,
                 lambda: self._disconnectPromise.set_exception(PageError('Target Closed')),
@@ -864,7 +864,7 @@ class Page(AsyncIOEventEmitter):
             return False
 
         return await helper.waitForEvent(
-            self._frameManager.networkManager, Events.NetworkManager.Request, predicate, timeout, self._client._loop,
+            self._frameManager.networkManager, Events.NetworkManager.Request, predicate, timeout, self._client.loop,
         )
 
     async def waitForResponse(
@@ -898,7 +898,7 @@ class Page(AsyncIOEventEmitter):
             return False
 
         return await helper.waitForEvent(
-            self._frameManager.networkManager, Events.NetworkManager.Response, predicate, timeout, self._client._loop,
+            self._frameManager.networkManager, Events.NetworkManager.Response, predicate, timeout, self._client.loop,
         )
 
     async def goBack(self, timeout: float = None, waitUntil: Union[str, List[str]] = None,) -> Optional[Response]:

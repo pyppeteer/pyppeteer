@@ -30,7 +30,7 @@ class DOMWorld(object):
         self._frameManager = frameManager
         self._frame = frame
         self._timeoutSettings = timeoutSettings
-        self._loop = self._frameManager._client._loop
+        self.loop = self._frameManager._client.loop
 
         self._documentFuture: Future['ElementHandle'] = None
         self._contextFuture: Future['ExecutionContext'] = None
@@ -59,7 +59,7 @@ class DOMWorld(object):
                 waitTask.rerun()
         else:
             self._documentFuture = None
-            self._contextFuture = self._loop.create_future()
+            self._contextFuture = self.loop.create_future()
             self._contextResolveCallback = lambda _: self._contextFuture.set_result(None)
 
     def _hasContext(self):
@@ -382,7 +382,7 @@ class WaitTask(object):
         self._domWorld = domWorld
         self._polling = polling
         self._timeout = timeout
-        self._loop = loop
+        self.loop = loop
         if args or helper.is_jsfunc(predicateBody):
             self._predicateBody = f'return ({predicateBody})(...args)'
         else:
@@ -393,7 +393,7 @@ class WaitTask(object):
         self._timeoutError = False
         domWorld._waitTasks.add(self)
 
-        self.promise = self._loop.create_future()
+        self.promise = self.loop.create_future()
 
         async def timer(timeout: float) -> None:
             await asyncio.sleep(timeout / 1000)
@@ -401,8 +401,8 @@ class WaitTask(object):
             self.terminate(TimeoutError(f'Waiting for {title} failed: timeout {timeout}ms exceeds.'))
 
         if timeout:
-            self._timeoutTimer = self._loop.create_task(timer(self._timeout))
-        self._runningTask = self._loop.create_task(self.rerun())
+            self._timeoutTimer = self.loop.create_task(timer(self._timeout))
+        self._runningTask = self.loop.create_task(self.rerun())
 
     def __await__(self) -> Generator:
         """Make this class **awaitable**."""

@@ -49,7 +49,7 @@ class CDPSession(AsyncIOEventEmitter):
         self._connection: Optional[Connection] = connection
         self._targetType = targetType
         self._sessionId = sessionId
-        self._loop = loop
+        self.loop = loop
 
     def send(self, method: str, params: dict = None) -> Awaitable:
         """Send message to the connected session.
@@ -62,7 +62,7 @@ class CDPSession(AsyncIOEventEmitter):
                 f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
             )
         id_ = self._connection._rawSend({'sessionId': self._sessionId, 'method': method, 'params': params or {},})
-        callback = self._loop.create_future()
+        callback = self.loop.create_future()
         callback.method = method
         callback.error = NetworkError()
         self._callbacks[id_] = callback
@@ -112,6 +112,6 @@ class CDPSession(AsyncIOEventEmitter):
 
     def _createSession(self, targetType: str, sessionId: str) -> 'CDPSession':
         # TODO this is only used internally and is confusing with createSession
-        session = CDPSession(self, targetType, sessionId, self._loop)
+        session = CDPSession(self, targetType, sessionId, self.loop)
         self._sessions[sessionId] = session
         return session

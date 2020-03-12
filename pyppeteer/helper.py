@@ -105,7 +105,7 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
 def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
     """Release remote object."""
     objectId = remoteObject.get('objectId')
-    fut_none = client._loop.create_future()
+    fut_none = client.loop.create_future()
     fut_none.set_result(None)
     if not objectId:
         return fut_none
