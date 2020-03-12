@@ -168,6 +168,7 @@ class LifecycleWatcher:
     def dispose(self) -> None:
         helper.removeEventListeners(self._eventListeners)
         for fut in self._futures:
+            # todo: remove try except (probably not needed)
             try:
                 fut.cancel()
             except AttributeError:
