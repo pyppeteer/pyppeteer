@@ -4,10 +4,9 @@
 """Browser module."""
 import asyncio
 import logging
+from pyee import AsyncIOEventEmitter
 from subprocess import Popen
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
-
-from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError

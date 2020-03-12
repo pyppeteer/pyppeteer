@@ -12,10 +12,9 @@ import mimetypes
 import re
 from copy import copy
 from pathlib import Path
+from pyee import AsyncIOEventEmitter
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
-
-from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.accessibility import Accessibility

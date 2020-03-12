@@ -4,9 +4,8 @@
 """Worker module."""
 
 import logging
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
-
 from pyee import AsyncIOEventEmitter
+from typing import Any, Callable, Dict, List, TYPE_CHECKING
 
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helper import debugError

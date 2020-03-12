@@ -3,8 +3,8 @@
 
 """Coverage module."""
 import asyncio
-from functools import cmp_to_key
 import logging
+from functools import cmp_to_key
 from typing import Any, Dict, List
 
 from pyppeteer import helper

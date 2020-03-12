@@ -9,9 +9,8 @@ import copy
 import json
 import logging
 from http import HTTPStatus
-from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
-
 from pyee import AsyncIOEventEmitter
+from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError

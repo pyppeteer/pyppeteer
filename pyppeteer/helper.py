@@ -7,9 +7,8 @@ import asyncio
 import json
 import logging
 import math
-from typing import Any, Awaitable, Callable, Dict, List
-
 from pyee import AsyncIOEventEmitter
+from typing import Any, Awaitable, Callable, Dict, List
 
 import pyppeteer
 from pyppeteer.connection import CDPSession

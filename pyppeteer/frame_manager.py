@@ -4,21 +4,20 @@
 """Frame Manager module."""
 
 import asyncio
-import re
 import logging
+import re
+from pyee import AsyncIOEventEmitter
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
-from pyee import AsyncIOEventEmitter
-
 from pyppeteer import helper
+from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
+from pyppeteer.errors import BrowserError
+from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.events import Events
+from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helper import debugError, future_race
 from pyppeteer.jshandle import ElementHandle
-from pyppeteer.connection import CDPSession
-from pyppeteer.errors import BrowserError
-from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings

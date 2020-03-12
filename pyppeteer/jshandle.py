@@ -12,7 +12,6 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helper import debugError
 
-
 if TYPE_CHECKING:
     from pyppeteer.page import Page
     from pyppeteer.frame_manager import FrameManager
