@@ -7,7 +7,7 @@ import asyncio
 import logging
 import re
 from pyee import AsyncIOEventEmitter
-from typing import Any, Awaitable, Dict, List, Optional, Set, Union
+from typing import Any, Awaitable, Dict, List, Optional, Set, Union, TYPE_CHECKING
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -22,6 +22,9 @@ from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings
 
+if TYPE_CHECKING:
+    from pyppeteer.page import Page
+
 logger = logging.getLogger(__name__)
 
 UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
@@ -33,7 +36,7 @@ class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
-        self, client: CDPSession, page: Any, ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
+        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
     ) -> None:
         """Make new frame manager."""
         super().__init__()
