@@ -12,50 +12,50 @@ from aenum import Enum
 class Events(Enum):
     class Page(Enum):
         Close = 'close'
-        Console = ('console',)
+        Console = 'console'
         Dialog = 'dialog'
-        DOMContentLoaded = ('domcontentloaded',)
+        DOMContentLoaded = 'domcontentloaded'
         Error = 'error'
         # Can't use just 'error' due to node.js special treatment of error events.
         # @see https://nodejs.org/api/events.html#events_error_events
         PageError = 'pageerror'
-        Request = ('request',)
+        Request = 'request'
         Response = 'response'
-        RequestFailed = ('requestfailed',)
+        RequestFailed = 'requestfailed'
         RequestFinished = 'requestfinished'
-        FrameAttached = ('frameattached',)
+        FrameAttached = 'frameattached'
         FrameDetached = 'framedetached'
-        FrameNavigated = ('framenavigated',)
+        FrameNavigated = 'framenavigated'
         Load = 'load'
-        Metrics = ('metrics',)
+        Metrics = 'metrics'
         Popup = 'popup'
-        WorkerCreated = ('workercreated',)
+        WorkerCreated = 'workercreated'
         WorkerDestroyed = 'workerdestroyed'
 
     class Browser(Enum):
         TargetCreated = 'targetcreated'
-        TargetDestroyed = ('targetdestroyed',)
+        TargetDestroyed = 'targetdestroyed'
         TargetChanged = 'targetchanged'
         Disconnected = 'disconnected'
 
     class BrowserContext(Enum):
         TargetCreated = 'targetcreated'
-        TargetDestroyed = ('targetdestroyed',)
+        TargetDestroyed = 'targetdestroyed'
         TargetChanged = 'targetchanged'
 
     class NetworkManager(Enum):
         Request = 'Events.NetworkManager.Request'
-        Response = ('Events.NetworkManager.Response',)
+        Response = 'Events.NetworkManager.Response'
         RequestFailed = 'Events.NetworkManager.RequestFailed'
-        RequestFinished = ('Events.NetworkManager.RequestFinished',)
+        RequestFinished = 'Events.NetworkManager.RequestFinished'
 
     class FrameManager(Enum):
         FrameAttached = 'Events.FrameManager.FrameAttached'
-        FrameNavigated = ('Events.FrameManager.FrameNavigated',)
+        FrameNavigated = 'Events.FrameManager.FrameNavigated'
         FrameDetached = 'Events.FrameManager.FrameDetached'
-        LifecycleEvent = ('Events.FrameManager.LifecycleEvent',)
+        LifecycleEvent = 'Events.FrameManager.LifecycleEvent'
         FrameNavigatedWithinDocument = 'Events.FrameManager.FrameNavigatedWithinDocument'
-        ExecutionContextCreated = ('Events.FrameManager.ExecutionContextCreated',)
+        ExecutionContextCreated = 'Events.FrameManager.ExecutionContextCreated'
         ExecutionContextDestroyed = 'Events.FrameManager.ExecutionContextDestroyed'
 
     class Connection(Enum):
