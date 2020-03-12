@@ -85,7 +85,7 @@ class LifecycleWatcher:
         self._timeoutFuture = self._createTimeoutPromise()
 
         for class_attr in dir(self):
-            if class_attr.endswith('Future'):
+            if class_attr.endswith('Future') and isinstance(self.__getattribute__(class_attr), Future):
                 self._futures.append(self.__getattribute__(class_attr))
 
         self._checkLifecycleComplete()
