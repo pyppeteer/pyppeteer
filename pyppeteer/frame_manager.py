@@ -6,7 +6,6 @@
 import asyncio
 import re
 import logging
-from functools import partial
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import AsyncIOEventEmitter
@@ -342,9 +341,6 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-        # aliases
-        self.goto = partial(self._frameManager.navigateFrame, self)
-        self.waitForFrameNavigation = partial(self._frameManager.waitForFrameNavigation, self)
 
         self.addScriptTag = self.mainWorld.addScriptTag
         self.addStyleTag = self.mainWorld.addStyleTag
@@ -366,6 +362,12 @@ class Frame:
         self.setContent = self.secondaryWorld.setContent
         self.tap = self.secondaryWorld.tap
         self.title = self.secondaryWorld.title
+
+    def goto(self, url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None):
+        return self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
+
+    def waitForFrameNavigation(self, waitUntil: WaitTargets = None, timeout: int = None):
+        return self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
 
     @property
     def mainWorld(self) -> 'DOMWorld':  # ensure mainWorld not settable
