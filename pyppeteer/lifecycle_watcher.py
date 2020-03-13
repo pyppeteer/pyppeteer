@@ -85,7 +85,7 @@ class LifecycleWatcher:
         self._timeoutFuture = self._createTimeoutPromise()
 
         for class_attr in dir(self):
-            if class_attr.endswith('Future') and isinstance(self.__getattribute__(class_attr), Future):
+            if class_attr.endswith('Future'):
                 self._futures.append(self.__getattribute__(class_attr))
 
         self._checkLifecycleComplete()
@@ -148,7 +148,9 @@ class LifecycleWatcher:
     def _checkLifecycleComplete(self, _=None) -> None:
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return
-        self._lifecycleFuture.set_result(None)
+        # python can set future only once but this might be called multiple times
+        if not self._lifecycleFuture.done():
+            self._lifecycleFuture.set_result(None)
         if self._frame._loaderId == self._initialLoaderId and not self._hasSameDocumentNavigation:
             return
         if self._hasSameDocumentNavigation:
@@ -168,7 +170,6 @@ class LifecycleWatcher:
     def dispose(self) -> None:
         helper.removeEventListeners(self._eventListeners)
         for fut in self._futures:
-            # todo: remove try except (probably not needed)
             try:
                 fut.cancel()
             except AttributeError:
