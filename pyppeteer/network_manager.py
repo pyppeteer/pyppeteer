@@ -51,7 +51,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._client.on('Network.loadingFinished', self._onLoadingFinished)
         self._client.on('Network.loadingFailed', self._onLoadingFailed)
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         await self._client.send('Network.enable')
         if self._ignoreHTTPSErrors:
             await self._client.send('Security.setIgnoreCertificateErrors', {'ignore': True})
@@ -110,7 +110,7 @@ class NetworkManager(AsyncIOEventEmitter):
         else:
             await asyncio.gather(self._updateProtocolCacheDisabled(), self._client.send('Fetch.disable'))
 
-    async def _updateProtocolCacheDisabled(self):
+    async def _updateProtocolCacheDisabled(self) -> None:
         await self._client.send(
             'Network.setCacheDisabled',
             {'cacheDisabled': self._userCacheDisabled or self._protocolRequestInterceptionEnabled},
@@ -129,7 +129,7 @@ class NetworkManager(AsyncIOEventEmitter):
             return
         self._onRequest(event, None)
 
-    async def _onAuthRequired(self, event: Dict):
+    async def _onAuthRequired(self, event: Dict) -> None:
         response = 'Default'
         requestId = event.get('requestId')
         if requestId in self._attemptedAuthentications:
@@ -147,7 +147,7 @@ class NetworkManager(AsyncIOEventEmitter):
             },
         )
 
-    async def _onRequestPaused(self, event: Dict):
+    async def _onRequestPaused(self, event: Dict) -> None:
         if self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
             await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
         requestId = event.get('networkId')
@@ -455,7 +455,7 @@ class Request:
             # or the page was closed. We should tolerate these errors.
             debugError(logger, str(e))
 
-    async def abort(self, errorCode: str = 'failed'):
+    async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
 
         To use this, request interception should be enabled by
@@ -548,7 +548,7 @@ class Response:
             self._securityDetails = None
 
     @property
-    def remoteAddress(self):
+    def remoteAddress(self) -> Dict[str, str]:
         return self._remoteAddress
 
     @property
@@ -568,7 +568,7 @@ class Response:
         return self._statusText
 
     @property
-    def headers(self) -> Dict:
+    def headers(self) -> Dict[str,str]:
         """
         Return dictionary of HTTP headers of this response.
         All header names are lower-case.
@@ -576,7 +576,7 @@ class Response:
         return self._headers
 
     @property
-    def securityDetails(self):
+    def securityDetails(self) -> Optional[SecurityDetails]:
         """Return security details associated with this response.
 
         Security details if the response was received over the secure
@@ -601,22 +601,22 @@ class Response:
             return self._contentFuture
 
     @property
-    async def text(self):
+    async def text(self) -> str:
         """Text representation of response body."""
         return (await self.buffer()).decode('utf-8')
 
     @property
-    async def json(self):
+    async def json(self) -> Dict[str, Any]:
         """JSON representation of response body."""
         return json.loads(await self.text)
 
     @property
-    def request(self):
+    def request(self) -> 'Request':
         """matching :class:`Request` object."""
         return self._request
 
     @property
-    def fromCache(self):
+    def fromCache(self) -> bool:
         """
         Return ``True`` if the response was served from cache.
         Here `cache` is either the browser's disk cache or memory cache.
@@ -624,13 +624,13 @@ class Response:
         return self._fromDiskCache or self._request._fromMemoryCache
 
     @property
-    def fromServiceWorker(self):
+    def fromServiceWorker(self) -> bool:
         """Return ``True`` if the response was served by a service worker."""
         return self._fromServiceWorker
 
     @property
-    def frame(self):
-        return self._request.frame()
+    def frame(self) -> Optional['Frame']:
+        return self._request.frame
 
 
 class SecurityDetails:
