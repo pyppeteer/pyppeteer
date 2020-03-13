@@ -85,7 +85,7 @@ class LifecycleWatcher:
         self._timeoutFuture = self._createTimeoutPromise()
 
         for class_attr in dir(self):
-            if class_attr.endswith('Future') and isinstance(self.__getattribute__(class_attr), Future):
+            if class_attr.endswith('Future'):
                 self._futures.append(self.__getattribute__(class_attr))
 
         self._checkLifecycleComplete()
@@ -168,7 +168,6 @@ class LifecycleWatcher:
     def dispose(self) -> None:
         helper.removeEventListeners(self._eventListeners)
         for fut in self._futures:
-            # todo: remove try except (probably not needed)
             try:
                 fut.cancel()
             except AttributeError:
