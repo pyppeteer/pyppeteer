@@ -9,8 +9,9 @@ import copy
 import json
 import logging
 from http import HTTPStatus
+from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING, Any
+
 from pyee import AsyncIOEventEmitter
-from typing import Awaitable, Dict, List, Optional, Union, Set, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
@@ -81,7 +82,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._offline = value
         await self._client.send(
             'Network.emulateNetworkConditions',
-            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1, },
         )
 
     async def setUserAgent(self, userAgent: str) -> None:
@@ -143,7 +144,7 @@ class NetworkManager(AsyncIOEventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {"response": response, "username": username, "password": password,},
+                'authChallengeResponse': {"response": response, "username": username, "password": password, },
             },
         )
 
@@ -164,7 +165,7 @@ class NetworkManager(AsyncIOEventEmitter):
             request = self._requestIdToRequest.get(event['requestId'])
             if request:
                 redirectResponse = event['redirectResponse']
-                self._handleRequestRedirect(request, redirectResponse)
+                self._handleRequestRedirect(request, **redirectResponse)
                 redirectChain = request._redirectChain
 
         frame = self._frameManager.frame(event.get('frameId'))
@@ -184,16 +185,19 @@ class NetworkManager(AsyncIOEventEmitter):
         if request:
             request._fromMemoryCache = True
 
+    def _handleRequestRedirect2(self, request: 'Request', responsePayload: Dict):
+        resp = Response(self._client, request, **responsePayload)
+
     def _handleRequestRedirect(
-        self,
-        request: 'Request',
-        status: int,
-        headers: Dict,
-        fromDiskCache: bool,
-        fromServiceWorker: bool,
-        securityDetails: Dict = None,
+            self,
+            request: 'Request',
+            status: int,
+            headers: Dict,
+            fromDiskCache: bool,
+            fromServiceWorker: bool,
+            securityDetails: Dict = None,
     ) -> None:
-        response = Response(
+        response = Response2(
             client=self._client,
             request=request,
             status=status,
@@ -271,13 +275,13 @@ class Request:
     """
 
     def __init__(
-        self,
-        client: CDPSession,
-        frame: 'Frame',
-        interceptionId: Optional[str],
-        allowInterception: bool,
-        event: dict,
-        redirectChain: List['Request'],
+            self,
+            client: CDPSession,
+            frame: 'Frame',
+            interceptionId: Optional[str],
+            allowInterception: bool,
+            event: dict,
+            redirectChain: List['Request'],
     ) -> None:
         self._client = client
         self._requestId = event['requestId']
@@ -449,7 +453,7 @@ class Request:
             responseHeaders['content-length'] = len(responseBody)
 
         status_code = response.get('status', 200)
-        status_phrase = statusTexts.get(status_code, '')
+        status_phrase = STATUS_TEXTS.get(status_code, '')
         try:
             await self._client.send(
                 'Fetch.fulfillRequest',
@@ -515,39 +519,23 @@ class Request:
             debugError(logger, e)
 
 
-errorReasons = {
-    'aborted': 'Aborted',
-    'accessdenied': 'AccessDenied',
-    'addressunreachable': 'AddressUnreachable',
-    'blockedbyclient': 'BlockedByClient',
-    'blockedbyresponse': 'BlockedByResponse',
-    'connectionaborted': 'ConnectionAborted',
-    'connectionclosed': 'ConnectionClosed',
-    'connectionfailed': 'ConnectionFailed',
-    'connectionrefused': 'ConnectionRefused',
-    'connectionreset': 'ConnectionReset',
-    'internetdisconnected': 'InternetDisconnected',
-    'namenotresolved': 'NameNotResolved',
-    'timedout': 'TimedOut',
-    'failed': 'Failed',
-}
 
 
 class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
     def __init__(
-        self,
-        client: CDPSession,
-        request: Request,
-        status: int,
-        headers: Dict[str, str],
-        fromDiskCache: bool,
-        fromServiceWorker: bool,
-        securityDetails: Dict = None,
-        remoteIpAddress: str = '',
-        remotePort: str = '',
-        statusText: str = '',
+            self,
+            client: CDPSession,
+            request: Request,
+            status: int,
+            headers: Dict[str, str],
+            fromDiskCache: bool,
+            fromServiceWorker: bool,
+            securityDetails: Dict = None,
+            remoteIpAddress: str = '',
+            remotePort: str = '',
+            statusText: str = '',
     ) -> None:
         self._client = client
         self._request = request
@@ -704,4 +692,266 @@ class SecurityDetails:
         return self._protocol
 
 
-statusTexts = {num.value: code for code, num in vars(HTTPStatus).items() if isinstance(num, HTTPStatus)}
+class Response2:
+    def __init__(self, client: CDPSession, request, responsePayload):
+        self._client = client
+        self._request = request
+        self._contentFuture = None
+
+        self._bodyLoadedFuture = client.loop.create_future()
+        self._bodyLoadedFutureFulFill = lambda: self._bodyLoadedFuture.set_result(None)
+
+        self._remoteAddress = {
+            'ip': responsePayload.get('remoteIPAddress'),
+            'port': responsePayload.get('remotePort'),
+        }
+        self._status = responsePayload.get('status')
+        self._statusText = responsePayload.get('statusText')
+        self._url = request.get('url')
+        self._fromDiskCache = bool(responsePayload.get('fromDiskCache'))
+        self._fromServiceWorker = bool(responsePayload.get('fromServiceWorker'))
+        self._headers = {k.lower(): v for k, v in responsePayload.get('headers', {}).items()}
+        if responsePayload.get('securityDetails'):
+            self._securityDetails = SecurityDetails(**responsePayload.get('securityDetails'))
+        else:
+            self._securityDetails = None
+
+    @property
+    def remoteAddress(self):
+        return self._remoteAddress
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def ok(self):
+        return self._status == 0 or (200 <= self._status < 300)
+
+    @property
+    def status(self):
+        return self._status
+
+    @property
+    def statusText(self):
+        return self._statusText
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @property
+    def securityDetails(self):
+        return self._securityDetails
+
+    async def buffer(self):
+        # todo: verify
+        if self._contentFuture is None:
+            async def buffer_read():
+                self._contentFuture = await self._bodyLoadedFuture
+                response = await self._client.send(
+                    'Network.getResponseBody',
+                    {'requestId': self._request._requestId}
+                )
+                body = await response.get('body', b'')
+                if response.get('base64Encoded'):
+                    return base64.b64decode(body)
+                return body
+
+            return self._client.loop.create_task(buffer_read())
+
+    @property
+    async def text(self):
+        # todo is this a UTF-8 str or not
+        return await self.buffer()
+
+    @property
+    async def json(self):
+        return json.loads(await self.text)
+
+    @property
+    def request(self):
+        return self._request
+
+    @property
+    def fromCache(self):
+        return self._fromDiskCache or self._request._fromMemoryCache
+
+    @property
+    def fromServiceWorker(self):
+        return self._fromServiceWorker
+
+    @property
+    def frame(self):
+        return self._request.frame()
+
+
+class Request2:
+    _errorReasons = {
+        'aborted': 'Aborted',
+        'accessdenied': 'AccessDenied',
+        'addressunreachable': 'AddressUnreachable',
+        'blockedbyclient': 'BlockedByClient',
+        'blockedbyresponse': 'BlockedByResponse',
+        'connectionaborted': 'ConnectionAborted',
+        'connectionclosed': 'ConnectionClosed',
+        'connectionfailed': 'ConnectionFailed',
+        'connectionrefused': 'ConnectionRefused',
+        'connectionreset': 'ConnectionReset',
+        'internetdisconnected': 'InternetDisconnected',
+        'namenotresolved': 'NameNotResolved',
+        'timedout': 'TimedOut',
+        'failed': 'Failed',
+    }
+
+    def __init__(self, client: CDPSession, frame: Frame, interceptionId: str, allowInterception: bool,
+                 event: Dict[str, Any],
+                 redirectChain: List['Request2']):
+        self._client = client
+        self._requestId = event.get('requestId')
+        self._isNavigationRequest = self._requestId == event.get('loaderId') and event['type'] == 'Document'
+        self._interceptionId = interceptionId
+        self._allowInterception = allowInterception
+        self._interceptionHandled = False
+        self._response = None
+        self._failureText = None
+
+        request_event = event['request']
+        self._url = request_event['url']
+        self._resourceType = request_event['type'].lower()
+        self._method = request_event['method']
+        self._postData = request_event.get('postData')
+        self._frame = frame;
+        self._redirectChain = redirectChain;
+        self._headers = {k.lower(): v for k, v in request_event.get('headers', {}).items()}
+
+        self._fromMemoryCache = False
+
+    @property
+    def url(self):
+        return self._url
+
+    @property
+    def resourceType(self):
+        return self._resourceType
+
+    @property
+    def method(self):
+        return self._method
+
+    @property
+    def postData(self):
+        return self._postData
+
+    @property
+    def headers(self):
+        return self._headers
+
+    @property
+    def response(self):
+        return self._response
+
+    @property
+    def frame(self):
+        return self._frame
+
+    @property
+    def isNavigationRequest(self):
+        return self._isNavigationRequest
+
+    @property
+    def redirectChain(self):
+        return self._redirectChain
+
+    @property
+    def failure(self):
+        return None if not self._failureText else {'errorText': self._failureText}
+
+    async def continue_(self, overrides: Dict[str, Any]) -> None:
+        if not self._actionable_request:
+            return
+
+        available_overrides = {'url', 'method', 'postData', 'headers'}
+        overrides = {k: v for k, v in overrides.items() if k in available_overrides}
+        if overrides.get('headers'):
+            overrides['headers'] = headersArray(overrides['headers'])
+
+        self._interceptionHandled = True
+        # todo: verify whether undefined == not specifying at all
+        try:
+            await self._client.send('Fetch.continueRequest', {'requestId': self._interceptionId, **overrides})
+        except Exception as e:
+            # In certain cases, protocol will return error if the request was already canceled
+            # or the page was closed. We should tolerate these errors.
+            debugError(logger, str(e))
+
+    async def respond(self, response: Dict[str, Any]) -> None:
+        if not self._actionable_request:
+            return
+        self._interceptionHandled = True
+
+        if isinstance(response.get('body'), str):
+            # todo: buffer stuff here
+            responseBody = None
+        else:
+            responseBody = response.get('body')
+
+        responseHeaders = {k.lower(): v for k, v in response.get('headers', {}).items()}
+        if response.get('content-type'):
+            responseHeaders['content-type'] = response['content-type']
+        if responseBody and 'content-length' not in responseHeaders:
+            responseHeaders['content-length'] = str(len(responseBody))
+        try:
+            await self._client.send('Fetch.fulfillRequest',
+                                    {
+                                        'requestId': self._interceptionId,
+                                        'responseCode': response.get('status', 200),
+                                        'responsePhrase': STATUS_TEXTS[int(response.get('status', 200))],
+                                        'responseHeaders': headersArray(responseHeaders),
+                                        'body': base64.b64encode(responseBody) if responseBody else None,
+                                    })
+        except Exception as e:
+            # todo: find out what error is raised from here
+            # In certain cases, protocol will return error if the request was already canceled
+            # or the page was closed. We should tolerate these errors.
+            debugError(logger, str(e))
+
+    async def abort(self, errorCode: str = 'failed'):
+        if not self._actionable_request:
+            return
+
+        errorReason = self._errorReasons.get(errorCode)
+        if not errorReason:
+            raise NetworkError(f'Unknown error code: {errorCode}')
+
+        self._interceptionHandled = True
+        try:
+            await self._client.send(
+                'Fetch.failRequest', {'requestId': self._interceptionId, 'errorReason': errorReason}
+            )
+        except Exception as e:
+            # In certain cases, protocol will return error if the request was already canceled
+            # or the page was closed. We should tolerate these errors.
+            debugError(logger, e)
+
+    @property
+    def _actionable_request(self) -> bool:
+        """
+        Checks if we can abort/continue/respond to request.
+        :return: True if we can, False if we can't
+        """
+        # Mocking responses for dataURL requests is not currently supported.
+        if self._url.startswith('data:'):
+            return False
+        if not self._allowInterception:
+            raise ValueError('Request Interception is not enabled!')
+        if self._interceptionHandled:
+            raise ValueError('Request is already handled')
+        return True
+
+
+def headersArray(headers: Dict[str, str]) -> List[Dict[str, str]]:
+    return [{'name': k, 'value': v} for k, v in headers.items() if v is not None]
+
+
+STATUS_TEXTS = {num.value: code for code, num in vars(HTTPStatus).items() if isinstance(num, HTTPStatus)}
