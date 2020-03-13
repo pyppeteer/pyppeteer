@@ -30,7 +30,7 @@ from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
 from pyppeteer.models import Viewport
-from pyppeteer.network_manager import Response, Request, Response2
+from pyppeteer.network_manager import Response, Request, Response
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
@@ -736,7 +736,7 @@ class Page(AsyncIOEventEmitter):
 
     async def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: Union[str, List[str]] = None,
-    ) -> Optional[Response2]:
+    ) -> Optional[Response]:
         """Go to the ``url``.
 
         :arg string url: URL to navigate page to. The url should include
