@@ -576,7 +576,7 @@ class Response:
         return self._headers
 
     @property
-    def securityDetails(self) -> Optional[SecurityDetails]:
+    def securityDetails(self) -> Optional['SecurityDetails']:
         """Return security details associated with this response.
 
         Security details if the response was received over the secure
