@@ -5,7 +5,6 @@
 
 import asyncio
 import base64
-import copy
 import json
 import logging
 from http import HTTPStatus
@@ -82,7 +81,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._offline = value
         await self._client.send(
             'Network.emulateNetworkConditions',
-            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1, },
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
         )
 
     async def setUserAgent(self, userAgent: str) -> None:
@@ -144,7 +143,7 @@ class NetworkManager(AsyncIOEventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {"response": response, "username": username, "password": password, },
+                'authChallengeResponse': {"response": response, "username": username, "password": password,},
             },
         )
 
@@ -230,151 +229,6 @@ class NetworkManager(AsyncIOEventEmitter):
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(Events.NetworkManager.RequestFailed, request)
 
-class SecurityDetails:
-    """Class represents responses which are received by page."""
-    _recorded_attributes = {'subjectName', 'issuer', 'validFrom', 'validTo', 'protocol'}
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            if k in self._recorded_attributes:
-                self.__setattr__(f'_{k}', v)
-
-    @property
-    def subjectName(self) -> str:
-        """Return the subject to which the certificate was issued to."""
-        return self._subjectName
-
-    @property
-    def issuer(self) -> str:
-        """Return a string with the name of issuer of the certificate."""
-        return self._issuer
-
-    @property
-    def validFrom(self) -> int:
-        """Return UnixTime of the start of validity of the certificate."""
-        return self._validFrom
-
-    @property
-    def validTo(self) -> int:
-        """Return UnixTime of the end of validity of the certificate."""
-        return self._validTo
-
-    @property
-    def protocol(self) -> str:
-        """Return string of with the security protocol, e.g. "TLS1.2"."""
-        return self._protocol
-
-
-class Response:
-    """Response class represents responses which are received by ``Page``."""
-
-    def __init__(self, client: CDPSession, request: 'Request', responsePayload):
-        self._client = client
-        self._request = request
-        self._contentFuture = None
-
-        self._bodyLoadedFuture = client.loop.create_future()
-        self._bodyLoadedFutureFulFill = lambda x: self._bodyLoadedFuture.set_result(x)
-
-        self._remoteAddress = {
-            'ip': responsePayload.get('remoteIPAddress'),
-            'port': responsePayload.get('remotePort'),
-        }
-        self._status = responsePayload.get('status')
-        self._statusText = responsePayload.get('statusText')
-        self._url = request.url
-        self._fromDiskCache = bool(responsePayload.get('fromDiskCache'))
-        self._fromServiceWorker = bool(responsePayload.get('fromServiceWorker'))
-        self._headers = {k.lower(): v for k, v in responsePayload.get('headers', {}).items()}
-        if responsePayload.get('securityDetails'):
-            self._securityDetails = SecurityDetails(**responsePayload.get('securityDetails'))
-        else:
-            self._securityDetails = None
-
-    @property
-    def remoteAddress(self):
-        return self._remoteAddress
-
-    @property
-    def url(self) -> str:
-        return self._url
-
-    @property
-    def ok(self) -> bool:
-        return self._status == 0 or (200 <= self._status < 300)
-
-    @property
-    def status(self) -> int:
-        return self._status
-
-    @property
-    def statusText(self) -> str:
-        return self._statusText
-
-    @property
-    def headers(self) -> Dict:
-        """
-        Return dictionary of HTTP headers of this response.
-        All header names are lower-case.
-        """
-        return self._headers
-
-    @property
-    def securityDetails(self):
-        """Return security details associated with this response.
-
-        Security details if the response was received over the secure
-        connection, or `None` otherwise.
-        """
-        return self._securityDetails
-
-    def buffer(self) -> Awaitable[bytes]:
-        """Return awaitable which resolves to bytes with response body."""
-        if self._contentFuture is None:
-            async def buffer_read():
-                await self._bodyLoadedFuture
-                response = await self._client.send('Network.getResponseBody', {'requestId': self._request._requestId})
-                body = response.get('body', '')
-                if response.get('base64Encoded'):
-                    return base64.b64decode(body)
-                # b64decode returns bytes, and body is str. We encode body so that this fn always returns bytes
-                return body.encode('utf-8')
-
-            self._contentFuture = self._client.loop.create_task(buffer_read())
-            return self._contentFuture
-
-    @property
-    async def text(self):
-        """Text representation of response body."""
-        return (await self.buffer()).decode('utf-8')
-
-    @property
-    async def json(self):
-        """JSON representation of response body."""
-        return json.loads(await self.text)
-
-    @property
-    def request(self):
-        """matching :class:`Request` object."""
-        return self._request
-
-    @property
-    def fromCache(self):
-        """
-        Return ``True`` if the response was served from cache.
-        Here `cache` is either the browser's disk cache or memory cache.
-        """
-        return self._fromDiskCache or self._request._fromMemoryCache
-
-    @property
-    def fromServiceWorker(self):
-        """Return ``True`` if the response was served by a service worker."""
-        return self._fromServiceWorker
-
-    @property
-    def frame(self):
-        return self._request.frame()
-
 
 class Request:
     """Request class.
@@ -414,13 +268,13 @@ class Request:
     }
 
     def __init__(
-            self,
-            client: CDPSession,
-            frame: 'Frame',
-            interceptionId: str,
-            allowInterception: bool,
-            event: Dict[str, Any],
-            redirectChain: List['Request'],
+        self,
+        client: CDPSession,
+        frame: 'Frame',
+        interceptionId: str,
+        allowInterception: bool,
+        event: Dict[str, Any],
+        redirectChain: List['Request'],
     ):
         self._client = client
         self._requestId = event.get('requestId')
@@ -665,6 +519,154 @@ class Request:
         if self._interceptionHandled:
             raise ValueError('Request is already handled')
         return True
+
+
+class Response:
+    """Response class represents responses which are received by ``Page``."""
+
+    def __init__(self, client: CDPSession, request: 'Request', responsePayload):
+        self._client = client
+        self._request = request
+        self._contentFuture = None
+
+        self._bodyLoadedFuture = client.loop.create_future()
+        self._bodyLoadedFutureFulFill = lambda x: self._bodyLoadedFuture.set_result(x)
+
+        self._remoteAddress = {
+            'ip': responsePayload.get('remoteIPAddress'),
+            'port': responsePayload.get('remotePort'),
+        }
+        self._status = responsePayload.get('status')
+        self._statusText = responsePayload.get('statusText')
+        self._url = request.url
+        self._fromDiskCache = bool(responsePayload.get('fromDiskCache'))
+        self._fromServiceWorker = bool(responsePayload.get('fromServiceWorker'))
+        self._headers = {k.lower(): v for k, v in responsePayload.get('headers', {}).items()}
+        if responsePayload.get('securityDetails'):
+            self._securityDetails = SecurityDetails(**responsePayload.get('securityDetails'))
+        else:
+            self._securityDetails = None
+
+    @property
+    def remoteAddress(self):
+        return self._remoteAddress
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    @property
+    def ok(self) -> bool:
+        return self._status == 0 or (200 <= self._status < 300)
+
+    @property
+    def status(self) -> int:
+        return self._status
+
+    @property
+    def statusText(self) -> str:
+        return self._statusText
+
+    @property
+    def headers(self) -> Dict:
+        """
+        Return dictionary of HTTP headers of this response.
+        All header names are lower-case.
+        """
+        return self._headers
+
+    @property
+    def securityDetails(self):
+        """Return security details associated with this response.
+
+        Security details if the response was received over the secure
+        connection, or `None` otherwise.
+        """
+        return self._securityDetails
+
+    def buffer(self) -> Awaitable[bytes]:
+        """Return awaitable which resolves to bytes with response body."""
+        if self._contentFuture is None:
+
+            async def buffer_read():
+                await self._bodyLoadedFuture
+                response = await self._client.send('Network.getResponseBody', {'requestId': self._request._requestId})
+                body = response.get('body', '')
+                if response.get('base64Encoded'):
+                    return base64.b64decode(body)
+                # b64decode returns bytes, and body is str. We encode body so that this fn always returns bytes
+                return body.encode('utf-8')
+
+            self._contentFuture = self._client.loop.create_task(buffer_read())
+            return self._contentFuture
+
+    @property
+    async def text(self):
+        """Text representation of response body."""
+        return (await self.buffer()).decode('utf-8')
+
+    @property
+    async def json(self):
+        """JSON representation of response body."""
+        return json.loads(await self.text)
+
+    @property
+    def request(self):
+        """matching :class:`Request` object."""
+        return self._request
+
+    @property
+    def fromCache(self):
+        """
+        Return ``True`` if the response was served from cache.
+        Here `cache` is either the browser's disk cache or memory cache.
+        """
+        return self._fromDiskCache or self._request._fromMemoryCache
+
+    @property
+    def fromServiceWorker(self):
+        """Return ``True`` if the response was served by a service worker."""
+        return self._fromServiceWorker
+
+    @property
+    def frame(self):
+        return self._request.frame()
+
+
+class SecurityDetails:
+    """Class represents responses which are received by page."""
+
+    _recorded_attributes = {'subjectName', 'issuer', 'validFrom', 'validTo', 'protocol'}
+
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            if k in self._recorded_attributes:
+                self.__setattr__(f'_{k}', v)
+
+    @property
+    def subjectName(self) -> str:
+        """Return the subject to which the certificate was issued to."""
+        return self._subjectName
+
+    @property
+    def issuer(self) -> str:
+        """Return a string with the name of issuer of the certificate."""
+        return self._issuer
+
+    @property
+    def validFrom(self) -> int:
+        """Return UnixTime of the start of validity of the certificate."""
+        return self._validFrom
+
+    @property
+    def validTo(self) -> int:
+        """Return UnixTime of the end of validity of the certificate."""
+        return self._validTo
+
+    @property
+    def protocol(self) -> str:
+        """Return string of with the security protocol, e.g. "TLS1.2"."""
+        return self._protocol
 
 
 def headersArray(headers: Dict[str, str]) -> List[Dict[str, str]]:
