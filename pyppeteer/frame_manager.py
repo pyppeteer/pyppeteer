@@ -94,10 +94,10 @@ class FrameManager(AsyncIOEventEmitter):
     ):
         ensureNewDocumentNavigation = False
 
-        async def navigate(url: str, referer: str, frameId: str):
+        async def navigate(url_: str, referer_: str, frameId: str):
             try:
                 response = await self._client.send(
-                    'Page.navigate', {'url': url, 'referer': referer, 'frameId': frameId}
+                    'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
                 )
                 # todo local functions in python cannot modify outer namespaces
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
