@@ -804,7 +804,7 @@ class Request2:
         'failed': 'Failed',
     }
 
-    def __init__(self, client: CDPSession, frame: Frame, interceptionId: str, allowInterception: bool,
+    def __init__(self, client: CDPSession, frame: 'Frame', interceptionId: str, allowInterception: bool,
                  event: Dict[str, Any],
                  redirectChain: List['Request2']):
         self._client = client
