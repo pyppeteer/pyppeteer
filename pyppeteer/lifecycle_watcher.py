@@ -148,7 +148,9 @@ class LifecycleWatcher:
     def _checkLifecycleComplete(self, _=None) -> None:
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return
-        self._lifecycleFuture.set_result(None)
+        # python can set future only once but this might be called multiple times
+        if not self._lifecycleFuture.done():
+            self._lifecycleFuture.set_result(None)
         if self._frame._loaderId == self._initialLoaderId and not self._hasSameDocumentNavigation:
             return
         if self._hasSameDocumentNavigation:
