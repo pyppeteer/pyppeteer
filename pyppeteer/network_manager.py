@@ -33,7 +33,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._client = client
         self._ignoreHTTPSErrors = ignoreHttpsErrors
         self._frameManager = frameManager
-        self._requestIdToRequest: Dict[Optional[str], Request] = {}
+        self._requestIdToRequest: Dict[Optional[str], Request2] = {}
         self._requestIdToRequestWillBeSent: Dict[Optional[str], Dict] = {}
         self._extraHTTPHeaders: Dict[str, str] = {}
         self._offline: bool = False
@@ -82,7 +82,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._offline = value
         await self._client.send(
             'Network.emulateNetworkConditions',
-            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1, },
         )
 
     async def setUserAgent(self, userAgent: str) -> None:
@@ -144,7 +144,7 @@ class NetworkManager(AsyncIOEventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {"response": response, "username": username, "password": password,},
+                'authChallengeResponse': {"response": response, "username": username, "password": password, },
             },
         )
 
@@ -160,16 +160,15 @@ class NetworkManager(AsyncIOEventEmitter):
             self._requestIdToInterceptionId[requestId] = interceptionId
 
     def _onRequest(self, event: Dict, interceptionId: Optional[str]) -> None:
-        redirectChain: List[Request] = []
+        redirectChain: List[Request2] = []
         if event.get('redirectResponse'):
             request = self._requestIdToRequest.get(event['requestId'])
             if request:
-                redirectResponse = event['redirectResponse']
-                self._handleRequestRedirect(request, **redirectResponse)
+                self._handleRequestRedirect(request, event['redirectResponse'])
                 redirectChain = request._redirectChain
 
-        frame = self._frameManager.frame(event.get('frameId'))
-        request = Request(
+        frame = self._frameManager.frame(event.get('frameId')) if event.get('frameId') else None
+        request = Request2(
             client=self._client,
             frame=frame,
             interceptionId=interceptionId,
@@ -185,30 +184,11 @@ class NetworkManager(AsyncIOEventEmitter):
         if request:
             request._fromMemoryCache = True
 
-    def _handleRequestRedirect2(self, request: 'Request', responsePayload: Dict):
-        resp = Response(self._client, request, **responsePayload)
-
-    def _handleRequestRedirect(
-        self,
-        request: 'Request',
-        status: int,
-        headers: Dict,
-        fromDiskCache: bool,
-        fromServiceWorker: bool,
-        securityDetails: Dict = None,
-    ) -> None:
-        response = Response2(
-            client=self._client,
-            request=request,
-            status=status,
-            headers=headers,
-            fromDiskCache=fromDiskCache,
-            fromServiceWorker=fromServiceWorker,
-            securityDetails=securityDetails,
-        )
+    def _handleRequestRedirect(self, request: 'Request2', responsePayload: Dict[str, Any]) -> None:
+        response = Response2(client=self._client, request=request, responsePayload=responsePayload)
         request._response = response
         request._redirectChain.append(request)
-        response._bodyLoadedPromiseFulfill(NetworkError('Response body is unavailable for redirect response'))
+        response._bodyLoadedFutureFulFill(NetworkError('Response body is unavailable for redirect response'))
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(Events.NetworkManager.Response, response)
@@ -219,10 +199,7 @@ class NetworkManager(AsyncIOEventEmitter):
         # FileUpload sends a response without a matching request.
         if not request:
             return
-        event_response = event.get('response', {})
-        event_response['client'] = self._client
-        event_response['request'] = request
-        response = Response(**event_response)
+        response = Response2(self._client, request, event['response'])
         request._response = response
         self.emit(Events.NetworkManager.Response, response)
 
@@ -234,7 +211,7 @@ class NetworkManager(AsyncIOEventEmitter):
             return
         response = request.response
         if response:
-            response._bodyLoadedPromiseFulfill(None)
+            response._bodyLoadedFutureFulFill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(Events.NetworkManager.RequestFinished, request)
@@ -256,13 +233,13 @@ class NetworkManager(AsyncIOEventEmitter):
 
 class Request:
     def __init__(
-        self,
-        client: CDPSession,
-        frame: 'Frame',
-        interceptionId: Optional[str],
-        allowInterception: bool,
-        event: dict,
-        redirectChain: List['Request'],
+            self,
+            client: CDPSession,
+            frame: 'Frame',
+            interceptionId: Optional[str],
+            allowInterception: bool,
+            event: dict,
+            redirectChain: List['Request'],
     ) -> None:
         self._client = client
         self._requestId = event['requestId']
@@ -450,38 +427,7 @@ class Request:
             debugError(logger, e)
 
     async def abort(self, errorCode: str = 'failed') -> None:
-        """Abort request.
 
-        To use this, request interception should be enabled by
-        :meth:`pyppeteer.page.Page.setRequestInterception`.
-        If request interception is not enabled, raise ``NetworkError``.
-
-        ``errorCode`` is an optional error code string. Defaults to ``failed``,
-        could be one of the following:
-
-        - ``aborted``: An operation was aborted (due to user action).
-        - ``accessdenied``: Permission to access a resource, other than the
-          network, was denied.
-        - ``addressunreachable``: The IP address is unreachable. This usually
-          means that there is no route to the specified host or network.
-        - ``blockedbyclient``: The client chose to block the request.
-        - ``blockedbyresponse``: The request failed because the request was
-          delivered along with requirements which are not met
-          ('X-Frame-Options' and 'Content-Security-Policy' ancestor check,
-          for instance).
-        - ``connectionaborted``: A connection timeout as a result of not
-          receiving an ACK for data sent.
-        - ``connectionclosed``: A connection was closed (corresponding to a TCP
-          FIN).
-        - ``connectionfailed``: A connection attempt failed.
-        - ``connectionrefused``: A connection attempt was refused.
-        - ``connectionreset``: A connection was reset (corresponding to a TCP
-          RST).
-        - ``internetdisconnected``: The Internet connection has been lost.
-        - ``namenotresolved``: The host name could not be resolved.
-        - ``timedout``: An operation timed out.
-        - ``failed``: A generic failure occurred.
-        """
         if self._url.startswith('data:'):
             return
         # errorReason = errorReasons[errorCode]
@@ -504,17 +450,17 @@ class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
     def __init__(
-        self,
-        client: CDPSession,
-        request: Request,
-        status: int,
-        headers: Dict[str, str],
-        fromDiskCache: bool,
-        fromServiceWorker: bool,
-        securityDetails: Dict = None,
-        remoteIpAddress: str = '',
-        remotePort: str = '',
-        statusText: str = '',
+            self,
+            client: CDPSession,
+            request: Request,
+            status: int,
+            headers: Dict[str, str],
+            fromDiskCache: bool,
+            fromServiceWorker: bool,
+            securityDetails: Dict = None,
+            remoteIpAddress: str = '',
+            remotePort: str = '',
+            statusText: str = '',
     ) -> None:
         self._client = client
         self._request = request
@@ -637,13 +583,12 @@ class Response(object):
 
 class SecurityDetails:
     """Class represents responses which are received by page."""
+    _recorded_attributes = {'subjectName', 'issuer', 'validFrom', 'validTo', 'protocol'}
 
-    def __init__(self, subjectName: str, issuer: str, validFrom: int, validTo: int, protocol: str) -> None:
-        self._subjectName = subjectName
-        self._issuer = issuer
-        self._validFrom = validFrom
-        self._validTo = validTo
-        self._protocol = protocol
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            if k in self._recorded_attributes:
+                self.__setattr__(f'_{k}', v)
 
     @property
     def subjectName(self) -> str:
@@ -672,13 +617,13 @@ class SecurityDetails:
 
 
 class Response2:
-    def __init__(self, client: CDPSession, request, responsePayload):
+    def __init__(self, client: CDPSession, request: 'Request2', responsePayload):
         self._client = client
         self._request = request
         self._contentFuture = None
 
         self._bodyLoadedFuture = client.loop.create_future()
-        self._bodyLoadedFutureFulFill = lambda: self._bodyLoadedFuture.set_result(None)
+        self._bodyLoadedFutureFulFill = lambda x: self._bodyLoadedFuture.set_result(x)
 
         self._remoteAddress = {
             'ip': responsePayload.get('remoteIPAddress'),
@@ -686,7 +631,7 @@ class Response2:
         }
         self._status = responsePayload.get('status')
         self._statusText = responsePayload.get('statusText')
-        self._url = request.get('url')
+        self._url = request.url
         self._fromDiskCache = bool(responsePayload.get('fromDiskCache'))
         self._fromServiceWorker = bool(responsePayload.get('fromServiceWorker'))
         self._headers = {k.lower(): v for k, v in responsePayload.get('headers', {}).items()}
@@ -729,18 +674,18 @@ class Response2:
             async def buffer_read():
                 await self._bodyLoadedFuture
                 response = await self._client.send('Network.getResponseBody', {'requestId': self._request._requestId})
-                body = await response.get('body', b'')
+                body = response.get('body', '')
                 if response.get('base64Encoded'):
                     return base64.b64decode(body)
-                return body
+                # b64decode returns bytes, and body is str. We encode body so that this fn always returns bytes
+                return body.encode('utf-8')
 
             self._contentFuture = self._client.loop.create_task(buffer_read())
             return self._contentFuture
 
     @property
     async def text(self):
-        # todo is this a UTF-8 str or not
-        return await self.buffer()
+        return (await self.buffer()).decode('utf-8')
 
     @property
     async def json(self):
@@ -801,13 +746,13 @@ class Request2:
     }
 
     def __init__(
-        self,
-        client: CDPSession,
-        frame: 'Frame',
-        interceptionId: str,
-        allowInterception: bool,
-        event: Dict[str, Any],
-        redirectChain: List['Request2'],
+            self,
+            client: CDPSession,
+            frame: 'Frame',
+            interceptionId: str,
+            allowInterception: bool,
+            event: Dict[str, Any],
+            redirectChain: List['Request2'],
     ):
         self._client = client
         self._requestId = event.get('requestId')
@@ -820,7 +765,9 @@ class Request2:
 
         request_event = event['request']
         self._url = request_event['url']
-        self._resourceType = request_event['type'].lower()
+        self._resourceType = request_event.get('type')
+        if isinstance(self._resourceType, str):
+            self._resourceType = self._resourceType.lower()
         self._method = request_event['method']
         self._postData = request_event.get('postData')
         self._frame = frame

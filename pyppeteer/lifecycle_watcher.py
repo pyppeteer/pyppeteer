@@ -8,12 +8,12 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 """
 
 import asyncio
-from asyncio import FIRST_COMPLETED, Future
+from asyncio import Future
 from functools import partial
-from typing import Awaitable, Dict, List, Union, Optional, TYPE_CHECKING, Literal
+from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Literal, Any
 
 from pyppeteer import helper
-from pyppeteer.errors import TimeoutError, BrowserError, PageError, DeprecationError
+from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
 from pyppeteer.network_manager import Request
 
@@ -35,11 +35,11 @@ class LifecycleWatcher:
     """LifecycleWatcher class."""
 
     def __init__(
-        self,
-        frameManager: 'FrameManager',
-        frame: 'Frame',
-        timeout: int,
-        waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
+            self,
+            frameManager: 'FrameManager',
+            frame: 'Frame',
+            timeout: int,
+            waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
         self._expectedLifecycle: List[str] = []
@@ -72,8 +72,9 @@ class LifecycleWatcher:
             helper.addEventListener(
                 self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
-            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,),
+            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached, ),
+            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request,
+                                    self._onRequest, ),
         ]
         self.loop = self._frameManager._client.loop
 
@@ -103,7 +104,7 @@ class LifecycleWatcher:
         return self._newDocumentNavigationFuture
 
     def _onRequest(self, request: Request) -> None:
-        if request.frame == self._frame and request.isNavigationRequest():
+        if request.frame == self._frame and request.isNavigationRequest:
             self._navigationRequest = request
 
     def _onFrameDetached(self, frame: 'Frame' = None) -> None:
@@ -149,14 +150,13 @@ class LifecycleWatcher:
         if not self._checkLifecycle(self._frame, self._expectedLifecycle):
             return
         # python can set future only once but this might be called multiple times
-        if not self._lifecycleFuture.done():
-            self._lifecycleFuture.set_result(None)
+        safe_future_set_result(self._lifecycleFuture, None)
         if self._frame._loaderId == self._initialLoaderId and not self._hasSameDocumentNavigation:
             return
         if self._hasSameDocumentNavigation:
-            self._sameDocumentNavigationFuture.set_result(None)
+            safe_future_set_result(self._sameDocumentNavigationFuture, None)
         if self._frame._loaderId != self._initialLoaderId:
-            self._newDocumentNavigationFuture.set_result(None)
+            safe_future_set_result(self._newDocumentNavigationFuture, None)
 
     def _checkLifecycle(self, frame: 'Frame', expectedLifecycle: List[str]) -> bool:
         for event in expectedLifecycle:
@@ -174,3 +174,8 @@ class LifecycleWatcher:
                 fut.cancel()
             except AttributeError:
                 continue
+
+
+def safe_future_set_result(fut: Future, res: Any):
+    if not fut.done():
+        fut.set_result(res)
