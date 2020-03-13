@@ -82,7 +82,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._offline = value
         await self._client.send(
             'Network.emulateNetworkConditions',
-            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1, },
+            {'offline': self._offline, 'latency': 0, 'downloadThroughput': -1, 'uploadThroughput': -1,},
         )
 
     async def setUserAgent(self, userAgent: str) -> None:
@@ -144,7 +144,7 @@ class NetworkManager(AsyncIOEventEmitter):
             'Fetch.continueWithAuth',
             {
                 'requestId': requestId,
-                'authChallengeResponse': {"response": response, "username": username, "password": password, },
+                'authChallengeResponse': {"response": response, "username": username, "password": password,},
             },
         )
 
@@ -189,13 +189,13 @@ class NetworkManager(AsyncIOEventEmitter):
         resp = Response(self._client, request, **responsePayload)
 
     def _handleRequestRedirect(
-            self,
-            request: 'Request',
-            status: int,
-            headers: Dict,
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None,
+        self,
+        request: 'Request',
+        status: int,
+        headers: Dict,
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
     ) -> None:
         response = Response2(
             client=self._client,
@@ -255,33 +255,14 @@ class NetworkManager(AsyncIOEventEmitter):
 
 
 class Request:
-    """Request class.
-
-    Whenever the page sends a request, such as for a network resource, the
-    following events are emitted by pyppeteer's page:
-
-    - ``'request'``: emitted when the request is issued by the page.
-    - ``'response'``: emitted when/if the response is received for the request.
-    - ``'requestfinished'``: emitted when the response body is downloaded and
-      the request is complete.
-
-    If request fails at some point, then instead of ``'requestfinished'`` event
-    (and possibly instead of ``'response'`` event), the ``'requestfailed'``
-    event is emitted.
-
-    If request gets a ``'redirect'`` response, the request is successfully
-    finished with the ``'requestfinished'`` event, and a new request is issued
-    to a redirect url.
-    """
-
     def __init__(
-            self,
-            client: CDPSession,
-            frame: 'Frame',
-            interceptionId: Optional[str],
-            allowInterception: bool,
-            event: dict,
-            redirectChain: List['Request'],
+        self,
+        client: CDPSession,
+        frame: 'Frame',
+        interceptionId: Optional[str],
+        allowInterception: bool,
+        event: dict,
+        redirectChain: List['Request'],
     ) -> None:
         self._client = client
         self._requestId = event['requestId']
@@ -503,9 +484,9 @@ class Request:
         """
         if self._url.startswith('data:'):
             return
-        errorReason = errorReasons[errorCode]
-        if not errorReason:
-            raise NetworkError('Unknown error code: {}'.format(errorCode))
+        # errorReason = errorReasons[errorCode]
+        # if not errorReason:
+        #     raise NetworkError('Unknown error code: {}'.format(errorCode))
         if not self._allowInterception:
             raise NetworkError('Request interception is not enabled.')
         if self._interceptionHandled:
@@ -519,23 +500,21 @@ class Request:
             debugError(logger, e)
 
 
-
-
 class Response(object):
     """Response class represents responses which are received by ``Page``."""
 
     def __init__(
-            self,
-            client: CDPSession,
-            request: Request,
-            status: int,
-            headers: Dict[str, str],
-            fromDiskCache: bool,
-            fromServiceWorker: bool,
-            securityDetails: Dict = None,
-            remoteIpAddress: str = '',
-            remotePort: str = '',
-            statusText: str = '',
+        self,
+        client: CDPSession,
+        request: Request,
+        status: int,
+        headers: Dict[str, str],
+        fromDiskCache: bool,
+        fromServiceWorker: bool,
+        securityDetails: Dict = None,
+        remoteIpAddress: str = '',
+        remotePort: str = '',
+        statusText: str = '',
     ) -> None:
         self._client = client
         self._request = request
@@ -744,21 +723,19 @@ class Response2:
     def securityDetails(self):
         return self._securityDetails
 
-    async def buffer(self):
+    def buffer(self) -> Awaitable[bytes]:
         # todo: verify
         if self._contentFuture is None:
             async def buffer_read():
-                self._contentFuture = await self._bodyLoadedFuture
-                response = await self._client.send(
-                    'Network.getResponseBody',
-                    {'requestId': self._request._requestId}
-                )
+                await self._bodyLoadedFuture
+                response = await self._client.send('Network.getResponseBody', {'requestId': self._request._requestId})
                 body = await response.get('body', b'')
                 if response.get('base64Encoded'):
                     return base64.b64decode(body)
                 return body
 
-            return self._client.loop.create_task(buffer_read())
+            self._contentFuture = self._client.loop.create_task(buffer_read())
+            return self._contentFuture
 
     @property
     async def text(self):
@@ -787,6 +764,25 @@ class Response2:
 
 
 class Request2:
+    """Request class.
+
+    Whenever the page sends a request, such as for a network resource, the
+    following events are emitted by pyppeteer's page:
+
+    - ``'request'``: emitted when the request is issued by the page.
+    - ``'response'``: emitted when/if the response is received for the request.
+    - ``'requestfinished'``: emitted when the response body is downloaded and
+      the request is complete.
+
+    If request fails at some point, then instead of ``'requestfinished'`` event
+    (and possibly instead of ``'response'`` event), the ``'requestfailed'``
+    event is emitted.
+
+    If request gets a ``'redirect'`` response, the request is successfully
+    finished with the ``'requestfinished'`` event, and a new request is issued
+    to a redirect url.
+    """
+
     _errorReasons = {
         'aborted': 'Aborted',
         'accessdenied': 'AccessDenied',
@@ -804,9 +800,15 @@ class Request2:
         'failed': 'Failed',
     }
 
-    def __init__(self, client: CDPSession, frame: 'Frame', interceptionId: str, allowInterception: bool,
-                 event: Dict[str, Any],
-                 redirectChain: List['Request2']):
+    def __init__(
+        self,
+        client: CDPSession,
+        frame: 'Frame',
+        interceptionId: str,
+        allowInterception: bool,
+        event: Dict[str, Any],
+        redirectChain: List['Request2'],
+    ):
         self._client = client
         self._requestId = event.get('requestId')
         self._isNavigationRequest = self._requestId == event.get('loaderId') and event['type'] == 'Document'
@@ -821,8 +823,8 @@ class Request2:
         self._resourceType = request_event['type'].lower()
         self._method = request_event['method']
         self._postData = request_event.get('postData')
-        self._frame = frame;
-        self._redirectChain = redirectChain;
+        self._frame = frame
+        self._redirectChain = redirectChain
         self._headers = {k.lower(): v for k, v in request_event.get('headers', {}).items()}
 
         self._fromMemoryCache = False
@@ -891,8 +893,7 @@ class Request2:
         self._interceptionHandled = True
 
         if isinstance(response.get('body'), str):
-            # todo: buffer stuff here
-            responseBody = None
+            responseBody: bytes = response['body'].encode('utf-9')
         else:
             responseBody = response.get('body')
 
@@ -902,14 +903,16 @@ class Request2:
         if responseBody and 'content-length' not in responseHeaders:
             responseHeaders['content-length'] = str(len(responseBody))
         try:
-            await self._client.send('Fetch.fulfillRequest',
-                                    {
-                                        'requestId': self._interceptionId,
-                                        'responseCode': response.get('status', 200),
-                                        'responsePhrase': STATUS_TEXTS[int(response.get('status', 200))],
-                                        'responseHeaders': headersArray(responseHeaders),
-                                        'body': base64.b64encode(responseBody) if responseBody else None,
-                                    })
+            await self._client.send(
+                'Fetch.fulfillRequest',
+                {
+                    'requestId': self._interceptionId,
+                    'responseCode': response.get('status', 200),
+                    'responsePhrase': STATUS_TEXTS[int(response.get('status', 200))],
+                    'responseHeaders': headersArray(responseHeaders),
+                    'body': base64.b64encode(responseBody).decode('ascii') if responseBody else None,
+                },
+            )
         except Exception as e:
             # todo: find out what error is raised from here
             # In certain cases, protocol will return error if the request was already canceled
