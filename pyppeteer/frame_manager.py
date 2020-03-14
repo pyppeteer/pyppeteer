@@ -132,7 +132,7 @@ class FrameManager(AsyncIOEventEmitter):
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = helper.future_race(
+        error = await helper.future_race(
             watcher.timeoutOrTerminationFuture,
             watcher.sameDocumentNavigationFuture,
             watcher.newDocumentNavigationFuture,
