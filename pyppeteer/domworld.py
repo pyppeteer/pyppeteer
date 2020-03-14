@@ -25,7 +25,7 @@ async def readFileAsync(path, file):
 
 class DOMWorld(object):
     def __init__(
-            self, frameManager: 'FrameManager', frame: 'Frame', timeoutSettings: TimeoutSettings,
+        self, frameManager: 'FrameManager', frame: 'Frame', timeoutSettings: TimeoutSettings,
     ):
         self._frameManager = frameManager
         self._frame = frame
@@ -361,14 +361,14 @@ class WaitTask(object):
     """
 
     def __init__(
-            self,
-            domWorld: DOMWorld,
-            predicateBody: str,
-            title: str,
-            polling: Union[str, int],
-            timeout: float,
-            loop: asyncio.AbstractEventLoop,
-            *args: Any,
+        self,
+        domWorld: DOMWorld,
+        predicateBody: str,
+        title: str,
+        polling: Union[str, int],
+        timeout: float,
+        loop: asyncio.AbstractEventLoop,
+        *args: Any,
     ) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:

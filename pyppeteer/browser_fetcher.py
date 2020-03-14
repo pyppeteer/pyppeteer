@@ -16,14 +16,15 @@ import os
 import shutil
 import struct
 import sys
-import urllib3
 from distutils.util import strtobool
 from io import BytesIO
 from pathlib import Path
-from tqdm import tqdm
 from typing import Union, List, Optional, Sequence
 from urllib import request
 from zipfile import ZipFile
+
+import urllib3
+from tqdm import tqdm
 
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
 

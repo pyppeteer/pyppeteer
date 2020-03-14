@@ -12,7 +12,6 @@ from asyncio import Future
 from functools import partial
 from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Literal, Any
 
-
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
@@ -36,11 +35,11 @@ class LifecycleWatcher:
     """LifecycleWatcher class."""
 
     def __init__(
-            self,
-            frameManager: 'FrameManager',
-            frame: 'Frame',
-            timeout: int,
-            waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
+        self,
+        frameManager: 'FrameManager',
+        frame: 'Frame',
+        timeout: int,
+        waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
         self._expectedLifecycle: List[str] = []
@@ -73,9 +72,8 @@ class LifecycleWatcher:
             helper.addEventListener(
                 self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached, ),
-            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request,
-                                    self._onRequest, ),
+            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
+            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,),
         ]
         self.loop = self._frameManager._client.loop
 
@@ -134,9 +132,7 @@ class LifecycleWatcher:
                 await asyncio.sleep(self._timeout / 1000)
                 self._maximumTimerFuture.set_exception(TimeoutError(errorMessage))
 
-            self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self.loop.create_task(
-                _timeout_func()
-            )
+            self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self.loop.create_task(_timeout_func())
         else:
             self._timeoutTimerFuture = self.loop.create_future()
         return self._maximumTimerFuture

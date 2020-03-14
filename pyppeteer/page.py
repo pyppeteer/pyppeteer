@@ -12,9 +12,10 @@ import mimetypes
 import re
 from copy import copy
 from pathlib import Path
-from pyee import AsyncIOEventEmitter
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
 from typing import TYPE_CHECKING
+
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.accessibility import Accessibility
@@ -30,7 +31,7 @@ from pyppeteer.helper import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
 from pyppeteer.models import Viewport
-from pyppeteer.network_manager import Response, Request, Response
+from pyppeteer.network_manager import Request, Response
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
@@ -1127,7 +1128,13 @@ class Page(AsyncIOEventEmitter):
                 raise ValueError('screenshot clip height cannot be 0')
 
         return await self._screenshotTask(
-            format=type_, omitBackground=omitBackground, quality=quality, clip=clip, encoding=encoding, fullPage=fullPage, path=path
+            format=type_,
+            omitBackground=omitBackground,
+            quality=quality,
+            clip=clip,
+            encoding=encoding,
+            fullPage=fullPage,
+            path=path,
         )
 
     async def _screenshotTask(

@@ -6,8 +6,9 @@
 import asyncio
 import logging
 import re
-from pyee import AsyncIOEventEmitter
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union, TYPE_CHECKING
+
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -29,14 +30,14 @@ logger = logging.getLogger(__name__)
 
 UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
 EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE, )
+SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
 class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
-            self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
+        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
     ) -> None:
         """Make new frame manager."""
         super().__init__()
@@ -90,7 +91,7 @@ class FrameManager(AsyncIOEventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-            self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
+        self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
     ):
         ensureNewDocumentNavigation = False
 
@@ -229,13 +230,12 @@ class FrameManager(AsyncIOEventEmitter):
         self._isolatedWorlds.add(name)
         await self._client.send(
             'Page.addScriptToEvaluateOnNewDocument',
-            {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name, },
+            {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name,},
         )
         results = await asyncio.gather(
             *[
                 self._client.send(
-                    'Page.createIsolatedWorld',
-                    {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name, }
+                    'Page.createIsolatedWorld', {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name,}
                 )
                 for frame in self.frames
             ],
@@ -315,7 +315,7 @@ class Frame:
     """
 
     def __init__(
-            self, frameManager: FrameManager, client: CDPSession, parentFrame: Optional['Frame'], frameId: str
+        self, frameManager: FrameManager, client: CDPSession, parentFrame: Optional['Frame'], frameId: str
     ) -> None:
         self._frameManager = frameManager
         self._client = client
@@ -488,7 +488,7 @@ class Frame:
         await handle.dispose()
 
     def waitFor(
-            self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
+        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
     ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 

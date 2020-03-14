@@ -5,7 +5,6 @@
 
 import gc
 import socket
-from typing import Dict, Optional
 
 __all__ = [
     'get_free_port',

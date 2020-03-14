@@ -568,7 +568,7 @@ class Response:
         return self._statusText
 
     @property
-    def headers(self) -> Dict[str,str]:
+    def headers(self) -> Dict[str, str]:
         """
         Return dictionary of HTTP headers of this response.
         All header names are lower-case.

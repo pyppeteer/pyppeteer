@@ -7,8 +7,9 @@ import asyncio
 import json
 import logging
 import math
-from pyee import AsyncIOEventEmitter
 from typing import Any, Awaitable, Callable, Dict, List
+
+from pyee import AsyncIOEventEmitter
 
 import pyppeteer
 from pyppeteer.connection import CDPSession
@@ -33,7 +34,7 @@ async def future_race(*fs):
 
     :raises Exception: any exception raised by asyncio.wait call. Any exception raised from the first future is returned
     """
-    done, _ = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED, )
+    done, _ = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED,)
     try:
         return done.pop().result()
     except Exception as e:
@@ -57,11 +58,11 @@ def getExceptionMessage(exceptionDetails: dict) -> str:
     if stackTrace:
         for callframe in stackTrace.get('callFrames'):
             location = (
-                    str(callframe.get('url', ''))
-                    + ':'
-                    + str(callframe.get('lineNumber', ''))
-                    + ':'
-                    + str(callframe.get('columnNumber'))
+                str(callframe.get('url', ''))
+                + ':'
+                + str(callframe.get('lineNumber', ''))
+                + ':'
+                + str(callframe.get('columnNumber'))
             )
             functionName = callframe.get('functionName', '<anonymous>')
             message = message + f'\n    at {functionName} ({location})'
@@ -123,11 +124,11 @@ def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
 
 
 def waitForEvent(
-        emitter: AsyncIOEventEmitter,
-        eventName: str,  # noqa: C901
-        predicate: Callable[[Any], bool],
-        timeout: float,
-        loop: asyncio.AbstractEventLoop,
+    emitter: AsyncIOEventEmitter,
+    eventName: str,  # noqa: C901
+    predicate: Callable[[Any], bool],
+    timeout: float,
+    loop: asyncio.AbstractEventLoop,
 ) -> Awaitable:
     """Wait for an event emitted from the emitter."""
     promise = loop.create_future()

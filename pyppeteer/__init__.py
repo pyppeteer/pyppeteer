@@ -29,7 +29,7 @@ _log_handler.setLevel(logging.DEBUG)
 _logger.addHandler(_log_handler)
 _logger.propagate = False
 
-from typing import Dict, Any, Union
+from typing import Any, Union
 
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
