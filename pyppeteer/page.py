@@ -464,7 +464,7 @@ class Page(AsyncIOEventEmitter):
         """
         pageURL = self.url
         for cookie in cookies:
-            item = dict(**cookie)
+            item = cookie.copy()
             if not cookie.get('url') and pageURL.startswith('http'):
                 item['url'] = pageURL
             await self._client.send('Network.deleteCookies', item)
@@ -488,7 +488,7 @@ class Page(AsyncIOEventEmitter):
         startsWithHTTP = pageURL.startswith('http')
         items = []
         for cookie in cookies:
-            item = dict(**cookie)
+            item = cookie.copy()
             if 'url' not in item and startsWithHTTP:
                 item['url'] = pageURL
             if item.get('url') == 'about:blank':
@@ -1164,7 +1164,7 @@ class Page(AsyncIOEventEmitter):
             height = math.ceil(metrics['contentSize']['height'])
 
             # Overwrite clip for full page at all times.
-            clip = dict(x=0, y=0, width=width, height=height, scale=1)
+            clip = {'x': 0, 'y': 0, 'width': width, 'height': height, 'scale': 1}
             if self._viewport is not None:
                 mobile = self._viewport.get('isMobile', False)
                 deviceScaleFactor = self._viewport.get('deviceScaleFactor', 1)
@@ -1175,9 +1175,9 @@ class Page(AsyncIOEventEmitter):
                 landscape = False
 
             if landscape:
-                screenOrientation = dict(angle=90, type='landscapePrimary')
+                screenOrientation = {'angle': 90, 'type': 'landscapePrimary'}
             else:
-                screenOrientation = dict(angle=0, type='portraitPrimary')
+                screenOrientation = {'angle': 0, 'type': 'portraitPrimary'}
             await self._client.send(
                 'Emulation.setDeviceMetricsOverride',
                 {
@@ -1341,23 +1341,23 @@ class Page(AsyncIOEventEmitter):
 
         result = await self._client.send(
             'Page.printToPDF',
-            dict(
-                transferMode='ReturnAsStream',
-                landscape=landscape,
-                displayHeaderFooter=displayHeaderFooter,
-                headerTemplate=headerTemplate,
-                footerTemplate=footerTemplate,
-                printBackground=printBackground,
-                scale=scale,
-                paperWidth=paperWidth,
-                paperHeight=paperHeight,
-                marginTop=marginTop,
-                marginBottom=marginBottom,
-                marginLeft=marginLeft,
-                marginRight=marginRight,
-                pageRanges=pageRanges,
-                preferCSSPageSize=preferCSSPageSize,
-            ),
+            {
+                'transferMode': 'ReturnAsStream',
+                'landscape': landscape,
+                'displayHeaderFooter': displayHeaderFooter,
+                'headerTemplate': headerTemplate,
+                'footerTemplate': footerTemplate,
+                'printBackground': printBackground,
+                'scale': scale,
+                'paperWidth': paperWidth,
+                'paperHeight': paperHeight,
+                'marginTop': marginTop,
+                'marginBottom': marginBottom,
+                'marginLeft': marginLeft,
+                'marginRight': marginRight,
+                'pageRanges': pageRanges,
+                'preferCSSPageSize': preferCSSPageSize,
+            },
         )
         buffer = base64.b64decode(result.get('data', b''))
         if path:
