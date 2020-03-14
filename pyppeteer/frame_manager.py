@@ -16,7 +16,7 @@ from pyppeteer.errors import BrowserError
 from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.helper import debugError, future_race
+from pyppeteer.helper import debugError
 from pyppeteer.jshandle import ElementHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
@@ -29,14 +29,14 @@ logger = logging.getLogger(__name__)
 
 UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
 EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
+SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE, )
 
 
 class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
-        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
+            self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
     ) -> None:
         """Make new frame manager."""
         super().__init__()
@@ -90,7 +90,7 @@ class FrameManager(AsyncIOEventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-        self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
+            self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
     ):
         ensureNewDocumentNavigation = False
 
@@ -114,13 +114,13 @@ class FrameManager(AsyncIOEventEmitter):
             timeout = self._timeoutSettings.navigationTimeout
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = await future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
+        error = await helper.future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
         if not error:
             if ensureNewDocumentNavigation:
                 nav_promise = watcher.newDocumentNavigationFuture
             else:
                 nav_promise = watcher.sameDocumentNavigationFuture
-            error = await future_race(watcher.timeoutOrTerminationFuture, nav_promise)
+            error = await helper.future_race(watcher.timeoutOrTerminationFuture, nav_promise)
         watcher.dispose()
         if error:
             raise error
@@ -229,12 +229,13 @@ class FrameManager(AsyncIOEventEmitter):
         self._isolatedWorlds.add(name)
         await self._client.send(
             'Page.addScriptToEvaluateOnNewDocument',
-            {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name,},
+            {'source': f'//# sourceURL={EVALUATION_SCRIPT_URL}', 'worldName': name, },
         )
         results = await asyncio.gather(
             *[
                 self._client.send(
-                    'Page.createIsolatedWorld', {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name,}
+                    'Page.createIsolatedWorld',
+                    {'frameId': frame._id, 'grantUniversalAccess': True, 'worldName': name, }
                 )
                 for frame in self.frames
             ],
@@ -314,7 +315,7 @@ class Frame:
     """
 
     def __init__(
-        self, frameManager: FrameManager, client: CDPSession, parentFrame: Optional['Frame'], frameId: str
+            self, frameManager: FrameManager, client: CDPSession, parentFrame: Optional['Frame'], frameId: str
     ) -> None:
         self._frameManager = frameManager
         self._client = client
@@ -334,7 +335,6 @@ class Frame:
         self._waitTasks: Set[WaitTask] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
-
 
         self.addScriptTag = self.mainWorld.addScriptTag
         self.addStyleTag = self.mainWorld.addStyleTag
@@ -488,7 +488,7 @@ class Frame:
         await handle.dispose()
 
     def waitFor(
-        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
+            self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
     ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 

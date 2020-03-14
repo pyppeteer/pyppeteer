@@ -29,10 +29,15 @@ async def future_race(*fs):
     """
     Analogous to JS's Promise.race(). Returns the results of the first completed future
     :param fs: Future to be waited upon
-    :return: result of first completed Future
+    :return: result of first completed Future, whether that be an exception or result
+
+    :raises Exception: any exception raised by asyncio.wait call. Any exception raised from the first future is returned
     """
     done, _ = await asyncio.wait(fs, return_when=asyncio.FIRST_COMPLETED, )
-    return done.pop().result()
+    try:
+        return done.pop().result()
+    except Exception as e:
+        return e
 
 
 def evaluationString(fun: str, *args: Any) -> str:

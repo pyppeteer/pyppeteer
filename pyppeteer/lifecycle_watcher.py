@@ -12,6 +12,7 @@ from asyncio import Future
 from functools import partial
 from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Literal, Any
 
+
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
@@ -121,7 +122,7 @@ class LifecycleWatcher:
         return self._navigationRequest.response if self._navigationRequest else None
 
     @property
-    def timeoutOrTerminationFuture(self) -> Awaitable:
+    async def timeoutOrTerminationFuture(self) -> Awaitable:
         return helper.future_race(self._timeoutFuture, self._terminationFuture)
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
