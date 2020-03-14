@@ -8,6 +8,7 @@ from subprocess import Popen
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
+from pyppeteer.task_queue import TaskQueue
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -37,13 +38,12 @@ class Browser(AsyncIOEventEmitter):
         defaultViewport: Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
-        **kwargs: Any,
     ) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultViewport = defaultViewport
         self._process = process
-        self._screenshotTaskQueue: List = []
+        self._screenshotTaskQueue = TaskQueue()
         self._connection = connection
         loop = self._connection.loop
 

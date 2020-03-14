@@ -16,6 +16,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequen
 from typing import TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
+from pyppeteer.task_queue import TaskQueue
 
 from pyppeteer import helper
 from pyppeteer.accessibility import Accessibility
@@ -73,7 +74,7 @@ class Page(AsyncIOEventEmitter):
         target: 'Target',
         ignoreHTTPSErrors: bool,
         defaultViewport: Viewport,
-        screenshotTaskQueue: list = None,
+        screenshotTaskQueue: TaskQueue = None,
     ) -> 'Page':
         """Async function which makes new page object."""
         page = Page(
@@ -85,7 +86,7 @@ class Page(AsyncIOEventEmitter):
         return page
 
     def __init__(
-        self, client: CDPSession, target: 'Target', ignoreHTTPSErrors: bool, screenshotTaskQueue: list = None
+        self, client: CDPSession, target: 'Target', ignoreHTTPSErrors: bool, screenshotTaskQueue: TaskQueue = None
     ) -> None:
         super().__init__()
         self._closed = False
@@ -105,7 +106,7 @@ class Page(AsyncIOEventEmitter):
         self._viewport: Viewport = None
 
         if screenshotTaskQueue is None:
-            screenshotTaskQueue = []
+            screenshotTaskQueue = TaskQueue()
         self._screenshotTaskQueue = screenshotTaskQueue
 
         self._workers: Dict[str, Worker] = {}
@@ -1127,14 +1128,16 @@ class Page(AsyncIOEventEmitter):
             if clip['height'] == 0:
                 raise ValueError('screenshot clip height cannot be 0')
 
-        return await self._screenshotTask(
-            format=type_,
-            omitBackground=omitBackground,
-            quality=quality,
-            clip=clip,
-            encoding=encoding,
-            fullPage=fullPage,
-            path=path,
+        return await self._screenshotTaskQueue.post_task(
+            self._screenshotTask(
+                format=type_,
+                omitBackground=omitBackground,
+                quality=quality,
+                clip=clip,
+                encoding=encoding,
+                fullPage=fullPage,
+                path=path,
+            )
         )
 
     async def _screenshotTask(
@@ -1142,7 +1145,7 @@ class Page(AsyncIOEventEmitter):
         format: str,  # png or jpeg
         omitBackground: bool,
         quality: int,  # 0 to 100
-        clip: Dict[str, int],  # x, y, width, height
+        clip: Dict[str, int],  # x, y, width, height, scale
         encoding: str,
         fullPage: bool,
         path: Union[str, Path],
@@ -1156,6 +1159,7 @@ class Page(AsyncIOEventEmitter):
                 'y': round(y),
                 'width': round(clip['width'] + clip['x'] - x),
                 'height': round(clip['height'] + clip['y'] - y),
+                'scale': clip.get('scale', 1)
             }
 
         if fullPage:
