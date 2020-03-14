@@ -12,12 +12,11 @@ class TaskQueue:
         fut.set_result(None)
         self._task_chain = fut
 
-    def post_task(self, task: Awaitable[Any]) -> Awaitable[None]:
+    def post_task(self, task: Awaitable[Any]) -> Awaitable[Any]:
         async def run_awaitable(prev):
             try:
                 await prev
                 await task
-                pass  # consider at least logging here
             except Exception as e:
                 logger.error(f'Exception while evaluating task queue: {e}')
 
