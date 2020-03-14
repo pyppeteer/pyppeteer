@@ -83,7 +83,7 @@ class Connection(AsyncIOEventEmitter):
         async with self._transport as transport_connection:
             self._connected = True
             self.connection = transport_connection
-            self.connection.onmessage = lambda msg: self._onMessage(json.loads(msg))
+            self.connection.onmessage = lambda msg: self._onMessage(msg)
             self.connection.onclose = self._onClose
             while self._connected:
                 try:
@@ -101,8 +101,9 @@ class Connection(AsyncIOEventEmitter):
             await asyncio.sleep(self._delay)
         try:
             remove_none_items_inplace(msg)
-            await self.connection.send(json.dumps(msg))
-            logger_connection.debug(f'SEND ▶ {msg}')
+            msg_to_send = json.dumps(msg)
+            await self.connection.send(msg_to_send)
+            logger_connection.debug(f'SEND ▶ {msg_to_send}')
         except websockets.ConnectionClosed:
             logger.error('connection unexpectedly closed')
             callback = self._callbacks.get(msg['id'], None)
@@ -129,7 +130,8 @@ class Connection(AsyncIOEventEmitter):
         self.loop.create_task(self._async_send(message))
         return id_
 
-    async def _onMessage(self, msg: Message) -> None:
+    async def _onMessage(self, msg: str) -> None:
+        msg: Message = json.loads(msg)
         if self._delay:
             await asyncio.sleep(self._delay)
         logger_connection.debug(f'◀ RECV {msg}')
