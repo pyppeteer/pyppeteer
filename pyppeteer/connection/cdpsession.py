@@ -4,23 +4,20 @@
 """Connection/Session management module."""
 
 import asyncio
-import json
-from typing import Awaitable, Dict, Union, TYPE_CHECKING
+from typing import Awaitable, Dict, Union, Optional
 
 from pyppeteer.connection import Connection, createProtocolError, Message, rewriteError
 
-try:
-    from typing import TypedDict, TYPE_CHECKING
-except ImportError:
-    from typing_extensions import TypedDict
 
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 
-if TYPE_CHECKING:
-    from typing import Optional
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 
 class CDPSession(AsyncIOEventEmitter):

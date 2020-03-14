@@ -2,10 +2,6 @@ import asyncio
 import json
 import logging
 
-try:
-    from typing import TypedDict, TYPE_CHECKING
-except ImportError:
-    from typing_extensions import TypedDict
 
 from pyee import AsyncIOEventEmitter
 import websockets
@@ -13,10 +9,13 @@ import websockets
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport
-from typing import Awaitable, Dict, Union, TYPE_CHECKING, Any
 
-if TYPE_CHECKING:
-    from typing import Optional
+from typing import Awaitable, Dict, Any
+
+try:
+    from typing import TypedDict
+except ImportError:
+    from typing_extensions import TypedDict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -49,7 +48,7 @@ class Connection(AsyncIOEventEmitter):
     """Connection management class."""
 
     def __init__(
-        self, url: str, transport: WebsocketTransport, delay: float = 0, loop: asyncio.AbstractEventLoop = None,
+            self, url: str, transport: WebsocketTransport, delay: float = 0, loop: asyncio.AbstractEventLoop = None,
     ) -> None:
         """Make connection.
 
@@ -103,6 +102,7 @@ class Connection(AsyncIOEventEmitter):
         while not self._connected:
             await asyncio.sleep(self._delay)
         try:
+            remove_none_items_inplace(msg)
             await self.connection.send(json.dumps(msg))
             logger_connection.debug(f'SEND ▶ {msg}')
         except websockets.ConnectionClosed:
@@ -213,6 +213,25 @@ def createProtocolError(error: Exception, method: str, obj: Dict) -> Exception:
 def rewriteError(error: Exception, message: str) -> Exception:
     error.args = (message,)
     return error
+
+
+def remove_none_items_inplace(o: Dict[str, Any]):
+    """
+    Removes items that have a value of None. There are instances in puppeteer where a object (dict) is sent which has
+    undefined values, which are then omitted from the resulting json. This function emulates such behaviour, removing
+    all k:v pairs where v = None
+    :param o:
+    :return Dict[str, Any]: dict without any None values
+    """
+    none_keys = []
+    for key, value in o.items():
+        if isinstance(value, dict):
+            remove_none_items_inplace(value)
+        if value is None:
+            none_keys.append(key)
+    for key in none_keys:
+        del o[key]
+
 
 
 from pyppeteer.connection.cdpsession import CDPSession

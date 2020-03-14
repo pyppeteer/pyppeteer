@@ -1127,7 +1127,7 @@ class Page(AsyncIOEventEmitter):
                 raise ValueError('screenshot clip height cannot be 0')
 
         return await self._screenshotTask(
-            type_, omitBackground=omitBackground, quality=quality, clip=clip, encoding=encoding, fullPage=fullPage,
+            format=type_, omitBackground=omitBackground, quality=quality, clip=clip, encoding=encoding, fullPage=fullPage, path=path
         )
 
     async def _screenshotTask(
