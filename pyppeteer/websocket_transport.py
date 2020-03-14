@@ -33,7 +33,7 @@ class WebsocketTransport:
                     loop=loop,
                     close_timeout=5,
                     # todo check if speed is affected
-                    # note: seems to work w/ compressionK
+                    # note: seems to work w/ compression
                     compression=None,
                 )
             )
