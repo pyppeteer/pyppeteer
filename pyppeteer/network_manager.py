@@ -363,7 +363,7 @@ class Request:
 
         ``redirectChain`` is shared between all the requests of the same chain.
         """
-        return self._redirectChain
+        return self._redirectChain.copy()
 
     @property
     def failure(self) -> Optional[Dict[str, str]]:
