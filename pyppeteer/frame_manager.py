@@ -99,7 +99,7 @@ class FrameManager(AsyncIOEventEmitter):
                 response = await self._client.send(
                     'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
                 )
-                # todo local functions in python cannot modify outer namespaces
+                nonlocal ensureNewDocumentNavigation
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
                 if response.get('errorText'):
                     raise BrowserError(f'{response["errorText"]} at {url}')
