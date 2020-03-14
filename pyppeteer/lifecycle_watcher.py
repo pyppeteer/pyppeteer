@@ -122,8 +122,8 @@ class LifecycleWatcher:
         return self._navigationRequest.response if self._navigationRequest else None
 
     @property
-    async def timeoutOrTerminationFuture(self) -> Awaitable:
-        return helper.future_race(self._timeoutFuture, self._terminationFuture)
+    def timeoutOrTerminationFuture(self) -> Awaitable:
+        return self._frame._client.loop.create_task(helper.future_race(self._timeoutFuture, self._terminationFuture))
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
         self._maximumTimerFuture = self.loop.create_future()
@@ -136,7 +136,7 @@ class LifecycleWatcher:
 
             self._timeoutTimerFuture: Union[asyncio.Task, asyncio.Future] = self.loop.create_task(
                 _timeout_func()
-            )  # noqa: E501
+            )
         else:
             self._timeoutTimerFuture = self.loop.create_future()
         return self._maximumTimerFuture
