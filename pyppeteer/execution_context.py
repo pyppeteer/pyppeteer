@@ -4,6 +4,7 @@
 """Execution Context Module."""
 
 import logging
+import math
 import re
 from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
+SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
 
 
 class ExecutionContext(object):
@@ -51,28 +52,68 @@ class ExecutionContext(object):
     async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args):
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
-        try:
-            if SOURCE_URL_REGEX.match(pageFunction):
-                expressionWithSourceUrl = pageFunction
-            else:
-                expressionWithSourceUrl = f'{pageFunction}\n{suffix}'
-            remoteObject = await self._client.send(
-                'Runtime.evaluate',
-                {
-                    'expression': expressionWithSourceUrl,
-                    'contextId': self._contextId,
+        if not helper.is_jsfunc(pageFunction):
+            try:
+                if SOURCE_URL_REGEX.match(pageFunction):
+                    expressionWithSourceUrl = pageFunction
+                else:
+                    expressionWithSourceUrl = f'{pageFunction}\n{suffix}'
+                remoteObject = await self._client.send(
+                    'Runtime.evaluate',
+                    {
+                        'expression': expressionWithSourceUrl,
+                        'contextId': self._contextId,
+                        'returnByValue': returnByValue,
+                        'awaitPromise': True,
+                        'userGesture': True,
+                    },
+                )
+            except Exception as e:
+                exceptionDetails = rewriteError(e)
+                raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
+        else:
+            try:
+                remoteObject = await self._client.send('Runtime.callFunctionOn', {
+                    'functionDeclaration': f'{pageFunction}\n{suffix}\n',
+                    'executionContextId': self._contextId,
+                    'arguments': [self._convertArgument(arg) for arg in args],
                     'returnByValue': returnByValue,
                     'awaitPromise': True,
                     'userGesture': True,
-                },
-            )
-        except Exception as e:
-            exceptionDetails = rewriteError(e)
-            raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
+                })
+            except Exception as e:
+                exceptionDetails = rewriteError(e)
+                raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
+
+        exceptionDetails = remoteObject.get('exceptionDetails')
+        if exceptionDetails:
+            raise ElementHandleError('Evaluation failed: {}'.format(
+                helper.getExceptionMessage(exceptionDetails)))
+
+        remoteObject = remoteObject['result']
         if returnByValue:
             return helper.valueFromRemoteObject(remoteObject)
         else:
             return createJSHandle(self, remoteObject)
+
+    def _convertArgument(self, arg: Any) -> Dict:  # noqa: C901
+        if arg == math.inf:
+            return {'unserializableValue': 'Infinity'}
+        if arg == -math.inf:
+            return {'unserializableValue': '-Infinity'}
+        objectHandle = arg if isinstance(arg, JSHandle) else None
+        if objectHandle:
+            if objectHandle._context != self:
+                raise ElementHandleError(
+                    'JSHandles can be evaluated only in the context they were created!')  # noqa: E501
+            if objectHandle._disposed:
+                raise ElementHandleError('JSHandle is disposed!')
+            if objectHandle._remoteObject.get('unserializableValue'):
+                return {'unserializableValue': objectHandle._remoteObject.get('unserializableValue')}  # noqa: E501
+            if not objectHandle._remoteObject.get('objectId'):
+                return {'value': objectHandle._remoteObject.get('value')}
+            return {'objectId': objectHandle._remoteObject.get('objectId')}
+        return {'value': arg}
 
     async def queryObjects(self, prototypeHandle: 'JSHandle'):
         if prototypeHandle._disposed:
@@ -86,7 +127,7 @@ class ExecutionContext(object):
 
     async def _adoptBackendNodeId(self, backendNodeId: int):
         obj = await self._client.send(
-            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId,}
+            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId}
         )
         return createJSHandle(context=self, remoteObject=obj)
 
