@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def createJSHandle(context, remoteObject):
-    frame = context.frame()
+    frame = context.frame
     if remoteObject.get('subtype') == 'node' and frame:
         frameManager = frame._frameManager
         return ElementHandle(context, context._client, remoteObject, frameManager.page(), frameManager)

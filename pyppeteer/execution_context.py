@@ -33,7 +33,7 @@ class ExecutionContext(object):
     def frame(self) -> Optional['Frame']:
         """Return frame associated with this execution context."""
         if self._world:
-            return self._world.frame()
+            return self._world.frame
 
     async def evaluate(self, pageFunction: str, *args: Any) -> Any:
         """Execute ``pageFunction`` on this context.
