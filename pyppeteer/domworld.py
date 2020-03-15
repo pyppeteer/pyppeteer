@@ -60,7 +60,7 @@ class DOMWorld(object):
         else:
             self._documentFuture = None
             self._contextFuture = self.loop.create_future()
-            self._contextResolveCallback = lambda _: self._contextFuture.set_result(None)
+            self._contextResolveCallback = lambda _: self._contextFuture.set_result(_)
 
     def _hasContext(self):
         return not self._contextResolveCallback
@@ -85,7 +85,7 @@ class DOMWorld(object):
 
     async def evaluate(self, pageFunction: str, *args):
         context = await self.executionContext
-        return context.evaluate(pageFunction=pageFunction, *args)
+        return await context.evaluate(pageFunction=pageFunction, *args)
 
     async def querySelector(self, selector: str):
         document = await self._document

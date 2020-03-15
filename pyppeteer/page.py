@@ -722,12 +722,13 @@ class Page(AsyncIOEventEmitter):
         """Get URL of this page."""
         return self.mainFrame.url
 
-    async def content(self) -> str:
+    @property
+    def content(self) -> str:
         """Get the full HTML contents of the page.
 
         Returns HTML including the doctype.
         """
-        return await self.mainFrame.content()
+        return self.mainFrame.content
 
     async def setContent(self, html: str, timeout: float = None, waitUntil: Union[str, List[str]] = None) -> None:
         """Set content to this page.
