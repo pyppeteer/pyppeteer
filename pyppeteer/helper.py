@@ -187,8 +187,7 @@ def is_jsfunc(func: str) -> bool:
     order of magnitude faster for large strs (tested with a 50kb str) than chained str.replace.
     Then, the larger regex is used. The regex uses a regex found here: https://stackoverflow.com/a/9337047
     and here: http://mothereff.in/js-variables to identify valid JS identifiers. (Unicode surrogates have been removed
-    from the regex as they aren't supported in strs in Python) The large regex isn't precompiled, as precompilation adds
-    an additional 500ms of time upon import, and it's likely it will never be used.
+    from the regex as they aren't supported in strs in Python)
     """
     func = func.strip()
     if func.startswith('function ') or func.startswith('async '):
