@@ -66,7 +66,7 @@ class NetworkManager(AsyncIOEventEmitter):
         self._extraHTTPHeaders = {}
         for k, v in extraHTTPHeaders.items():
             if not isinstance(v, str):
-                raise TypeError(f'Expected value of header "{k}" to be string, ' f'but {type(v)} is found.')
+                raise TypeError(f'Expected value of header "{k}" to be string, but {type(v)} is found.')
             self._extraHTTPHeaders[k.lower()] = v
         await self._client.send('Network.setExtraHTTPHeaders', {'headers': self._extraHTTPHeaders})
 

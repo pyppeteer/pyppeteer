@@ -339,7 +339,7 @@ class BrowserContext(AsyncIOEventEmitter):
 
         Use :meth:`isIncognito` method instead.
         """
-        logger.warning('isIncognite is deprecated. ' 'Use isIncognito instead.')
+        logger.warning('isIncognite is deprecated. Use isIncognito instead.')
         return self.isIncognito()
 
     def isIncognito(self) -> bool:

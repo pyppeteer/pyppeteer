@@ -200,7 +200,7 @@ class FrameManager(AsyncIOEventEmitter):
         else:
             frame = self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise PageError('We either navigate top level or have old version ' 'of the navigated frame')
+            raise PageError('We either navigate top level or have old version of the navigated frame')
 
         # Detach all child frames first.
         if frame:
@@ -441,7 +441,7 @@ class Frame:
         """
         for value in values:
             if not isinstance(value, str):
-                raise TypeError('Values must be string. ' f'Found {value} of type {type(value)}')
+                raise TypeError('Values must be string. Found {value} of type {type(value)}')
         return await self.querySelectorEval(  # type: ignore
             selector,
             '''
@@ -505,7 +505,7 @@ class Frame:
         if helper.is_jsfunc(selectorOrFunctionOrTimeout):
             return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client.loop.create_future()
-        f.set_exception(BrowserError(f'Unsupported target type:' f' {type(selectorOrFunctionOrTimeout)}'))
+        f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))
         return f
 
     async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None) -> Optional['ElementHandle']:

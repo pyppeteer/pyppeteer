@@ -70,7 +70,7 @@ class ExecutionContext(object):
                 )
             except Exception as e:
                 exceptionDetails = rewriteError(e)
-                raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
+                raise type(e)(f'Evaluation failed: {helper.getExceptionMessage(exceptionDetails)}')
         else:
             try:
                 remoteObject = await self._client.send('Runtime.callFunctionOn', {
@@ -83,7 +83,7 @@ class ExecutionContext(object):
                 })
             except Exception as e:
                 exceptionDetails = rewriteError(e)
-                raise type(e)(f'Evaluation failed:' f' {helper.getExceptionMessage(exceptionDetails)}')
+                raise type(e)(f'Evaluation failed: {helper.getExceptionMessage(exceptionDetails)}')
 
         exceptionDetails = remoteObject.get('exceptionDetails')
         if exceptionDetails:
@@ -119,7 +119,7 @@ class ExecutionContext(object):
         if prototypeHandle._disposed:
             raise ElementHandleError('Prototype JSHandle is disposed')
         if not prototypeHandle._remoteObject.get('objectId'):
-            raise ElementHandleError('Prototype JSHandle must not be referencing ' 'primitive value')
+            raise ElementHandleError('Prototype JSHandle must not be referencing primitive value')
         response = await self._client.send(
             'Runtime.queryObjects', {'prototypeObjectId': prototypeHandle._remoteObject['objectId']}
         )
@@ -133,7 +133,7 @@ class ExecutionContext(object):
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
         if elementHandle.executionContext() == self:
-            raise ElementHandleError('Cannot adopt handle that already ' 'belongs to this execution context')
+            raise ElementHandleError('Cannot adopt handle that already belongs to this execution context')
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
         nodeInfo = await self._client.send('DOM.describeNode', {'objectId': elementHandle._remoteObject['objectId']})

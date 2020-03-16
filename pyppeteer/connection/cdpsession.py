@@ -54,7 +54,7 @@ class CDPSession(AsyncIOEventEmitter):
         """
         if not self._connection:
             raise NetworkError(
-                f'Protocol Error ({method}): Session closed. Most likely the ' f'{self._targetType} has been closed.'
+                f'Protocol Error ({method}): Session closed. Most likely the {self._targetType} has been closed.'
             )
         id_ = self._connection._rawSend({'sessionId': self._sessionId, 'method': method, 'params': params or {},})
         callback = self.loop.create_future()
@@ -90,7 +90,7 @@ class CDPSession(AsyncIOEventEmitter):
         messages.
         """
         if not self._connection:
-            raise NetworkError('Session already detached. Most likely' f'the {self._targetType} has been closed')
+            raise NetworkError('Session already detached. Most likelythe {self._targetType} has been closed')
         await self._connection.send('Target.detachFromTarget', {'sessionId': self._sessionId})
 
     def _onClosed(self) -> None:

@@ -511,7 +511,7 @@ window.addEventListener('keydown', event => {
         await self.page.goto(self.url + 'static/textarea.html')
         await self.page.focus('textarea')
         await self.page.evaluate(
-            'document.querySelector("textarea").addEventListener("keydown",' '    e => window.lastEvent = e, true)',
+            'document.querySelector("textarea").addEventListener("keydown",    e => window.lastEvent = e, true)',
             force_expr=True,
         )
         await self.page.keyboard.down('a')

@@ -83,7 +83,7 @@ class RedirectHandler3(BaseHandler):
 class ResourceRedirectHandler(BaseHandler):
     def get(self) -> None:
         super().get()
-        self.write('<link rel="stylesheet" href="/one-style.css">' '<div>hello, world!</div>')
+        self.write('<link rel="stylesheet" href="/one-style.css"><div>hello, world!</div>')
 
 
 class CSSRedirectHandler1(BaseHandler):

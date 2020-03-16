@@ -355,7 +355,7 @@ class TestWaitForSelector(BaseTestCase):
         div = []
         fut = asyncio.ensure_future(self.page.waitForSelector('div#inner', visible=True))
         fut.add_done_callback(lambda _: div.append(True))
-        await self.page.setContent('<div style="display: none; visibility: hidden;">' '<div id="inner">hi</div></div>')
+        await self.page.setContent('<div style="display: none; visibility: hidden;"><div id="inner">hi</div></div>')
         await asyncio.sleep(0.1)
         assert not div
         await self.page.evaluate('() => document.querySelector("div").style.removeProperty("display")')  # noqa: E501

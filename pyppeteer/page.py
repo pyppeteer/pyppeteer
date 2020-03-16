@@ -207,11 +207,11 @@ class Page(AsyncIOEventEmitter):
 
     async def setGeolocation(self, longitude: float, latitude: float, accuracy: Optional[float]) -> None:
         if -180 >= longitude >= 180:
-            raise PageError(f'Invalid longitude {longitude}: ' f'precondition -180 <= LONGITUDE <= 180 failed')
+            raise PageError(f'Invalid longitude {longitude}: precondition -180 <= LONGITUDE <= 180 failed')
         if -90 >= latitude >= 90:
-            raise PageError(f'Invalid latitude {latitude}: ' f'precondition -90 <= LATITUDE <= 90 failed')
+            raise PageError(f'Invalid latitude {latitude}: precondition -90 <= LATITUDE <= 90 failed')
         if accuracy < 0:
-            raise PageError(f'Invalid accuracy {accuracy}: ' f'precondition ACCURACY >= 0')
+            raise PageError(f'Invalid accuracy {accuracy}: precondition ACCURACY >= 0')
         await self._client.send(
             'Emulation.setGeolocationOverride', {'longitude': longitude, 'latitude': latitude, 'accuracy': accuracy,}
         )
@@ -544,7 +544,7 @@ class Page(AsyncIOEventEmitter):
                                          not be asynchronous function.
         """
         if self._pageBindings.get(name):
-            raise PageError(f'Failed to add page binding with name {name}: ' f'window["{name}"] already exists!')
+            raise PageError(f'Failed to add page binding with name {name}: window["{name}"] already exists!')
         self._pageBindings[name] = pyppeteerFunction
 
         addPageBinding = '''
@@ -699,7 +699,7 @@ class Page(AsyncIOEventEmitter):
                 textTokens.append(arg.toString())
             else:
                 textTokens.append(str(helper.valueFromRemoteObject(remoteObject)))
-        message = ConsoleMessage(type, ' '.join(textTokens), args)
+        message = ConsoleMessage(type, .join(textTokens), args)
         self.emit(Events.Page.Console, message)
 
     def _onDialog(self, event: Any) -> None:
@@ -1392,7 +1392,7 @@ class Page(AsyncIOEventEmitter):
         """  # noqa: E501
         conn = self._client._connection
         if conn is None:
-            raise PageError('Protocol Error: Connection Closed. ' 'Most likely the page has been closed.')
+            raise PageError('Protocol Error: Connection Closed. Most likely the page has been closed.')
         if runBeforeUnload:
             await self._client.send('Page.close')
         else:
