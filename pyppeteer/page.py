@@ -699,7 +699,7 @@ class Page(AsyncIOEventEmitter):
                 textTokens.append(arg.toString())
             else:
                 textTokens.append(str(helper.valueFromRemoteObject(remoteObject)))
-        message = ConsoleMessage(type, .join(textTokens), args)
+        message = ConsoleMessage(type, '  '.join(textTokens), args)
         self.emit(Events.Page.Console, message)
 
     def _onDialog(self, event: Any) -> None:
