@@ -383,7 +383,7 @@ class WaitTask(object):
         self._polling = polling
         self._timeout = timeout
         self.loop = loop
-        if args or helper.is_jsfunc(predicateBody):
+        if args or helper.is_js_func(predicateBody):
             self._predicateBody = f'return ({predicateBody})(...args)'
         else:
             self._predicateBody = f'return {predicateBody}'
