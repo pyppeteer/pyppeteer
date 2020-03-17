@@ -15,6 +15,12 @@ import pyppeteer
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
+try:
+    from contextlib import asynccontextmanager
+except ImportError:
+    from async_generator import asynccontextmanager
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -159,6 +165,14 @@ def waitForEvent(
             eventTimeout.cancel()
 
     return promise
+
+
+@asynccontextmanager
+async def async_closing(thing_to_close):
+    try:
+        yield thing_to_close
+    finally:
+        await thing_to_close.close()
 
 
 def get_positive_int(obj: dict, name: str) -> int:

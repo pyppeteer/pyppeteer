@@ -8,6 +8,7 @@ from pyee import AsyncIOEventEmitter
 
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
+from pyppeteer.helper import async_closing
 from pyppeteer.websocket_transport import WebsocketTransport
 
 try:
@@ -80,7 +81,7 @@ class Connection(AsyncIOEventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        async with self._transport as transport_connection:
+        async with async_closing(self._transport) as transport_connection:
             self._connected = True
             self.connection = transport_connection
             self.connection.onmessage = lambda msg: self._onMessage(msg)
