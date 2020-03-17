@@ -44,7 +44,7 @@ class Browser(AsyncIOEventEmitter):
         self._defaultViewport = defaultViewport
         self._process = process
         self._screenshotTaskQueue = TaskQueue()
-        self._connection = connection
+        self._connection: Connection = connection
         loop = self._connection.loop
 
         def _dummy_callback() -> Awaitable[None]:

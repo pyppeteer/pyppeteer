@@ -178,7 +178,7 @@ class BaseBrowserLauncher:
         ignoreHTTPSErrors: bool = False,
         slowMo: float = 0,
         defaultViewport: Viewport = None,
-    ):
+    ) -> Browser:
         if defaultViewport is None:
             defaultViewport = {'width': 800, 'height': 600}
 

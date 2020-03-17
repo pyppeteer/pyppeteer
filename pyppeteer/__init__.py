@@ -15,7 +15,9 @@ __chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
-from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions
+from pyppeteer.websocket_transport import WebsocketTransport
+
+from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport
 
 DEBUG = False
 
@@ -61,8 +63,23 @@ class Pyppeteer:
             self.productName = kwargs.get('product')
         return await self._launcher.launch(**kwargs)
 
-    def connect(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
-        return self._launcher.connect(options)
+    def connect(
+        self,
+        browserWSEndpoint: str = None,
+        browserURL: str = None,
+        transport: WebsocketTransport = None,
+        ignoreHTTPSErrors: bool = False,
+        slowMo: float = 0,
+        defaultViewport: Viewport = None,
+    ) -> Browser:
+        return self._launcher.connect(
+            browserWSEndpoint=browserWSEndpoint,
+            browserURL=browserURL,
+            ignoreHTTPSErrors=ignoreHTTPSErrors,
+            transport=transport,
+            slowMo=slowMo,
+            defaultViewport=defaultViewport,
+        )
 
     @property
     def _launcher(self):
