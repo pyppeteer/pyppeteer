@@ -282,6 +282,10 @@ class Browser(AsyncIOEventEmitter):
         """Disconnect browser."""
         await self._connection.dispose()
 
+    @property
+    def isConnected(self):
+        return not self._connection._closed
+
     def _getVersion(self) -> Awaitable:
         return self._connection.send('Browser.getVersion')
 
