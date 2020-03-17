@@ -197,12 +197,14 @@ def is_js_func(func: str) -> bool:
     return bool(
         re.match(
             r"""
-        # js functions can start with async, function, <name>, or any permutation of all three 
-        ^(?:async)?(?:function)?(?:%(js)s)?
+        # js functions can start with async, function, <name>, or any permutation of all three
+        # the only way a function may be named is if the function is declared with the function keyword
+        (?:async)?(?P<named>function)?(?(named)(?:\w+)?|)
         # js func args, including *args, and **kwargs
-        \((?:[*,**]?%(js)s,?)*?\)
-        # function bodies open with =>, {, both, or none. match closing bracket if opening one is matched
-        (?:=>)?(?P<fnopen>{)?.*(?(fnopen)}|) 
+        \((?:\*?\*?\w+,?)*\)
+        # function bodies open with =>, {, both, or none. Match closing bracket if opening one is matched
+        # if the function is declared with the function keyword, it's gurenteed that it's body will open with {
+        (?:=>)?(?(named)(?P<fnopen>{)).*(?(fnopen)}|) 
         """
             % {'js': _js_identifier_re},
             func,
