@@ -44,7 +44,7 @@ class Browser(AsyncIOEventEmitter):
         self._defaultViewport = defaultViewport
         self._process = process
         self._screenshotTaskQueue = TaskQueue()
-        self._connection = connection
+        self._connection: Connection = connection
         loop = self._connection.loop
 
         def _dummy_callback() -> Awaitable[None]:
@@ -281,6 +281,10 @@ class Browser(AsyncIOEventEmitter):
     async def disconnect(self) -> None:
         """Disconnect browser."""
         await self._connection.dispose()
+
+    @property
+    def isConnected(self):
+        return not self._connection._closed
 
     def _getVersion(self) -> Awaitable:
         return self._connection.send('Browser.getVersion')
