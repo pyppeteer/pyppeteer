@@ -38,7 +38,7 @@ from pyppeteer.browser_fetcher import BrowserFetcher
 
 
 class Pyppeteer:
-    def __init__(self, projectRoot: str, preferredRevision: str):
+    def __init__(self, projectRoot: str = None, preferredRevision: str = None):
         self._projectRoot = projectRoot
         self._preferredRevision = preferredRevision
         self._lazyLauncher = None
@@ -59,7 +59,7 @@ class Pyppeteer:
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
         if not self.productName and kwargs:
             self.productName = kwargs.get('product')
-        return await self._launcher.launch(kwargs)
+        return await self._launcher.launch(**kwargs)
 
     def connect(self, options: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
         return self._launcher.connect(options)
