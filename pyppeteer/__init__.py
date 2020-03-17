@@ -63,7 +63,7 @@ class Pyppeteer:
             self.productName = kwargs.get('product')
         return await self._launcher.launch(**kwargs)
 
-    def connect(
+    async def connect(
         self,
         browserWSEndpoint: str = None,
         browserURL: str = None,
@@ -72,7 +72,7 @@ class Pyppeteer:
         slowMo: float = 0,
         defaultViewport: Viewport = None,
     ) -> Browser:
-        return self._launcher.connect(
+        return await self._launcher.connect(
             browserWSEndpoint=browserWSEndpoint,
             browserURL=browserURL,
             ignoreHTTPSErrors=ignoreHTTPSErrors,
