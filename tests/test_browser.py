@@ -18,7 +18,7 @@ async def test_browser_ua():
 
 @sync
 async def test_browser_target():
-    target = browser.target()
+    target = browser.target
     assert target.type == 'browser'
 
 
@@ -31,15 +31,15 @@ async def test_browser_process():
 @sync
 async def test_browser_remote_process():
     browser_ws_endpoint = browser.wsEndpoint
-    remote_browser = Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
-    assert remote_browser.process.pid is None
+    remote_browser = await Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
+    assert remote_browser.process is None
     await remote_browser.disconnect()
 
 
 @sync
 async def test_browser_connected():
     browser_ws_endpoint = browser.wsEndpoint
-    remote_browser = Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
+    remote_browser = await Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.isConnected
     await remote_browser.disconnect()
     assert not remote_browser.isConnected
