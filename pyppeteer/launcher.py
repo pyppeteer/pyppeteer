@@ -50,7 +50,7 @@ class BrowserRunner:
         self.process_args = process_args or []
         self.temp_dir = temp_dir
 
-        self.proc = None
+        self.proc: subprocess.Popen = None
         self.connection = None
 
         self._closed = True
@@ -110,10 +110,10 @@ class BrowserRunner:
     def _wait_for_proc_to_close(self):
         if self.proc.poll() is None and not self._closed:
             try:
-                self.proc.terminator()
+                self.proc.terminate()
                 self.proc.wait()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f'error occurred on proc close: {e}')
 
     async def close(self) -> Awaitable[None]:
         if not self._closed:
@@ -133,6 +133,9 @@ class BrowserRunner:
             _restore_default_signal_handlers()
             try:
                 self.proc.kill()
+                if sys.platform.startswith('win'):
+                    subprocess.Popen(['taskkill', '/PID', str(self.proc.pid), '/F'], shell=True).communicate()
+
             except Exception:
                 pass
         try:
