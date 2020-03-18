@@ -52,7 +52,7 @@ class ExecutionContext(object):
     async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args):
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
-        if not helper.is_jsfunc(pageFunction):
+        if not helper.is_js_func(pageFunction):
             try:
                 if SOURCE_URL_REGEX.match(pageFunction):
                     expressionWithSourceUrl = pageFunction
