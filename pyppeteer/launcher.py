@@ -304,14 +304,13 @@ class ChromeLauncher(BaseBrowserLauncher):
             )
             await browser.waitForTarget(lambda x: x.type == 'page')
             return browser
-        except Exception as e:
+        except Exception as original_exception:
+            logger.error(f'error occurred while trying to launch browser: {original_exception}')
             try:
-                logger.error(e)
                 runner.kill()
             except Exception:
                 pass
-            finally:
-                raise e
+            raise original_exception
 
     def default_args(
         self, args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_,
@@ -564,14 +563,13 @@ class FirefoxLauncher(BaseBrowserLauncher):
             )
             await browser.waitForTarget(lambda t: t.type == 'page')
             return browser
-        except Exception as e:
+        except Exception as original_exception:
+            logger.error(f'error occurred while trying to launch browser: {original_exception}')
             try:
-                logger.error(e)
                 runner.kill()
             except Exception:
                 pass
-            finally:
-                raise e
+            raise original_exception
 
     def default_args(
         self, args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_
