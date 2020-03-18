@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import suppress
 from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIG_DFL
 from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
@@ -306,10 +307,8 @@ class ChromeLauncher(BaseBrowserLauncher):
             return browser
         except Exception as original_exception:
             logger.error(f'error occurred while trying to launch browser: {original_exception}')
-            try:
+            with suppress(Exception):
                 runner.kill()
-            except Exception:
-                pass
             raise original_exception
 
     def default_args(
@@ -565,11 +564,10 @@ class FirefoxLauncher(BaseBrowserLauncher):
             return browser
         except Exception as original_exception:
             logger.error(f'error occurred while trying to launch browser: {original_exception}')
-            try:
+            with suppress(Exception):
                 runner.kill()
-            except Exception:
-                pass
             raise original_exception
+
 
     def default_args(
         self, args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_
