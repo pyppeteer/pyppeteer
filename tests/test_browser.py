@@ -1,6 +1,6 @@
 from syncer import sync
 
-from pyppeteer import Pyppeteer
+from pyppeteer import connect
 from .base import browser
 
 
@@ -31,7 +31,7 @@ async def test_browser_process():
 @sync
 async def test_browser_remote_process():
     browser_ws_endpoint = browser.wsEndpoint
-    remote_browser = await Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
+    remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.process is None
     await remote_browser.disconnect()
 
@@ -39,7 +39,7 @@ async def test_browser_remote_process():
 @sync
 async def test_browser_connected():
     browser_ws_endpoint = browser.wsEndpoint
-    remote_browser = await Pyppeteer().connect(browserWSEndpoint=browser_ws_endpoint)
+    remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.isConnected
     await remote_browser.disconnect()
     assert not remote_browser.isConnected
