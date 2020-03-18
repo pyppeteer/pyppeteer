@@ -10,6 +10,7 @@ class WebsocketTransport:
         self.onclose: Optional[Callable[[], Any]] = None
         self.ws = ws
 
+    @classmethod
     async def create(cls, uri: str, loop: asyncio.AbstractEventLoop = None) -> 'WebsocketTransport':
         return cls(
             await connect(
