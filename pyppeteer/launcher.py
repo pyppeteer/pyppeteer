@@ -156,7 +156,7 @@ class BrowserRunner:
             # self.connection = Connection('', transport, delay=slowMo)
         else:
             browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-            transport = WebsocketTransport.create(uri=browser_ws_endpoint)
+            transport = await WebsocketTransport.create(uri=browser_ws_endpoint)
             self.connection = Connection(url=browser_ws_endpoint, transport=transport, delay=slowMo)
         return self.connection
 
@@ -191,7 +191,7 @@ class BaseBrowserLauncher:
         else:
             if browserURL:
                 browserWSEndpoint = getWSEndpoint(browserURL)
-            transport = WebsocketTransport.create(uri=browserWSEndpoint)
+            transport = await WebsocketTransport.create(uri=browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport=transport, delay=slowMo)
 
         async def close_callback():
