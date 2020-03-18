@@ -80,21 +80,25 @@ class Connection(AsyncIOEventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        async with self._transport as transport_connection:
+        exception = ''
+        try:
             self._connected = True
-            self.connection = transport_connection
+            self.connection = self._transport
             self.connection.onmessage = lambda msg: self._onMessage(msg)
             self.connection.onclose = self._onClose
             while self._connected:
                 try:
                     await self.connection.recv()
-                except (websockets.ConnectionClosed, ConnectionResetError) as e:
-                    logger.warning(f'Transport connection closed: {e}')
+                except (websockets.ConnectionClosed, ConnectionResetError) as excpt:
+                    logger.warning(f'Transport connection closed: {excpt}')
                     break
                 # wait 1 async loop frame, no other data will be accessible in between frames
                 await asyncio.sleep(0)
-        if self._connected:
-            self.loop.create_task(self.dispose())
+        except Exception as excpt:
+            exception = str(excpt)
+        finally:
+            if self._connected:
+                self.loop.create_task(self.dispose(reason=exception))
 
     async def _async_send(self, msg: Message) -> None:
         while not self._connected:
@@ -190,11 +194,11 @@ class Connection(AsyncIOEventEmitter):
         self._sessions.clear()
         self.emit(Events.Connection.Disconnected)
 
-    async def dispose(self) -> None:
+    async def dispose(self, code: int = 1000, reason: str = '') -> None:
         """Close all connection."""
         self._connected = False
         await self._onClose()
-        await self._transport.close()
+        await self._transport.close(code=code, reason=reason)
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
