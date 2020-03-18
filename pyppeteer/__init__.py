@@ -96,6 +96,29 @@ class Pyppeteer:
         return BrowserFetcher(projectRoot=self._projectRoot, options=options)
 
 
+# shortcut methods
+async def launch(**kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
+    return await Pyppeteer().launch(**kwargs)
+
+
+async def connect(
+    browserWSEndpoint: str = None,
+    browserURL: str = None,
+    transport: WebsocketTransport = None,
+    ignoreHTTPSErrors: bool = False,
+    slowMo: float = 0,
+    defaultViewport: Viewport = None,
+) -> Browser:
+    return await Pyppeteer().connect(
+        browserWSEndpoint=browserWSEndpoint,
+        browserURL=browserURL,
+        transport=transport,
+        ignoreHTTPSErrors=ignoreHTTPSErrors,
+        slowMo=slowMo,
+        defaultViewport=defaultViewport,
+    )
+
+
 version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
