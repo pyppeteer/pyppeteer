@@ -195,6 +195,7 @@ class Connection(AsyncIOEventEmitter):
 
     async def dispose(self, code: int = 1000, reason: str = '') -> None:
         """Close all connection."""
+        logger.debug('disposing connection')
         self._connected = False
         await self._onClose()
         await self._transport.close(code=code, reason=reason)
