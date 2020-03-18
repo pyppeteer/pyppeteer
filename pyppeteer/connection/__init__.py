@@ -97,8 +97,7 @@ class Connection(AsyncIOEventEmitter):
         except Exception as excpt:
             exception = str(excpt)
         finally:
-            if self._connected:
-                self.loop.create_task(self.dispose(reason=exception))
+            self.loop.create_task(self.dispose(reason=exception))
 
     async def _async_send(self, msg: Message) -> None:
         while not self._connected:
