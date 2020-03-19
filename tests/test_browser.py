@@ -1,35 +1,40 @@
+import pytest
 from syncer import sync
 
-from pyppeteer import connect
-from .base import browser
+from pyppeteer import connect, Browser
 
 
 @sync
-async def test_browser_version():
+@pytest.mark.usefixtures('browser')
+async def test_browser_version(browser: Browser):
     version = await browser.version()
     assert version.startswith('Headless')
 
 
 @sync
-async def test_browser_ua():
+@pytest.mark.usefixtures('browser')
+async def test_browser_ua(browser: Browser):
     ua = await browser.userAgent()
     assert 'WebKit' in ua or 'Gecko' in ua
 
 
 @sync
-async def test_browser_target():
+@pytest.mark.usefixtures('browser')
+async def test_browser_target(browser: Browser):
     target = browser.target
     assert target.type == 'browser'
 
 
 @sync
-async def test_browser_process():
+@pytest.mark.usefixtures('browser')
+async def test_browser_process(browser: Browser):
     proc = browser.process
     assert proc.pid
 
 
 @sync
-async def test_browser_remote_process():
+@pytest.mark.usefixtures('browser')
+async def test_browser_remote_process(browser: Browser):
     browser_ws_endpoint = browser.wsEndpoint
     remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.process is None
@@ -37,7 +42,8 @@ async def test_browser_remote_process():
 
 
 @sync
-async def test_browser_connected():
+@pytest.mark.usefixtures('browser')
+async def test_browser_connected(browser: Browser):
     browser_ws_endpoint = browser.wsEndpoint
     remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.isConnected
