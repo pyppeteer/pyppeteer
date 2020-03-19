@@ -214,8 +214,8 @@ def is_js_func(func: str) -> bool:
         # open the body. The opposite is also true. If the function has a name, it will not open with =>.
         (?(named)(?P<fnopen>{)|(?:=>))
         # asserts that there are at least 4 characters behind us (the minimum to be able create a function declaration 
-        # and begin declaring the function body, ie ()=>).
-        (?<=.{4})
+        # and begin declaring the function body, ie f=>).
+        (?<=.{3})
         # matches the function body
         .+
         # matches the closing } if the opening one was found
