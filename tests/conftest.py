@@ -26,3 +26,7 @@ def isolated_page(shared_browser) -> Generator[Page, None, None]:
     page = sync(shared_browser.newPage())
     yield page
     sync(page.close())
+
+
+chrome_only = pytest.mark.skipif(firefox)
+
