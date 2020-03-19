@@ -85,7 +85,7 @@ class DOMWorld(object):
 
     async def evaluate(self, pageFunction: str, *args):
         context = await self.executionContext
-        return await context.evaluate(pageFunction=pageFunction, *args)
+        return await context.evaluate(pageFunction, *args)
 
     async def querySelector(self, selector: str):
         document = await self._document
