@@ -22,14 +22,8 @@ from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Vi
 DEBUG = False
 
 # Setup root logger
-_logger = logging.getLogger('pyppeteer')
-_log_handler = logging.StreamHandler()
-_fmt = '[{levelname[0]}:{name}] {msg}'
-_formatter = logging.Formatter(fmt=_fmt, style='{')
-_log_handler.setFormatter(_formatter)
-_log_handler.setLevel(logging.DEBUG)
-_logger.addHandler(_log_handler)
-_logger.propagate = False
+_logger = logging.getLogger(__name__)
+_logger.setLevel(logging.DEBUG)
 
 from typing import Any, Union
 

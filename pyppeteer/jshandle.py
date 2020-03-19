@@ -7,10 +7,10 @@ from idlelib.rpc import RemoteObject
 from pathlib import Path
 from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
-from pyppeteer.helper import debugError
+from pyppeteer.helpers import debugError
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
@@ -94,8 +94,8 @@ class JSHandle(object):
                     'awaitPromise': True,
                 },
             )
-            return helper.valueFromRemoteObject(response['result'])
-        return helper.valueFromRemoteObject(self._remoteObject)
+            return helpers.valueFromRemoteObject(response['result'])
+        return helpers.valueFromRemoteObject(self._remoteObject)
 
     def asElement(self) -> Optional['ElementHandle']:
         """Return either null or the object handle itself."""
@@ -107,14 +107,14 @@ class JSHandle(object):
         if self._disposed:
             return
         self._disposed = True
-        await helper.releaseObject(self._client, self._remoteObject)
+        await helpers.releaseObject(self._client, self._remoteObject)
 
     def toString(self) -> str:
         """Get string representation."""
         if self._remoteObject.get('objectId'):
             _type = self._remoteObject.get('subtype') or self._remoteObject.get('type')
             return f'JSHandle@{_type}'
-        return 'JSHandle:{}'.format(helper.valueFromRemoteObject(self._remoteObject))
+        return 'JSHandle:{}'.format(helpers.valueFromRemoteObject(self._remoteObject))
 
 
 class ElementHandle(JSHandle):

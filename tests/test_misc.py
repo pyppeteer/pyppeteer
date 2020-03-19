@@ -4,10 +4,11 @@
 import logging
 import unittest
 
-import pyppeteer
-from pyppeteer.helper import debugError, get_positive_int
-from pyppeteer.page import convertPrintParameterToInches
 import pytest
+
+import pyppeteer
+from pyppeteer.helpers import debugError, get_positive_int
+from pyppeteer.page import convertPrintParameterToInches
 
 
 class TestVersion(unittest.TestCase):

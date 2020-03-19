@@ -1,6 +1,6 @@
 import pytest
 
-from pyppeteer.helper import is_js_func
+from pyppeteer.helpers import is_js_func
 
 valid_js_functions = [
     # multiline func

@@ -10,14 +10,14 @@ from typing import Any, Awaitable, Dict, List, Optional, Set, Union, TYPE_CHECKI
 
 from pyee import AsyncIOEventEmitter
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.errors import BrowserError
 from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.helper import debugError
+from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import ElementHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
@@ -115,13 +115,13 @@ class FrameManager(AsyncIOEventEmitter):
             timeout = self._timeoutSettings.navigationTimeout
 
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = await helper.future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
+        error = await helpers.future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
         if not error:
             if ensureNewDocumentNavigation:
                 nav_promise = watcher.newDocumentNavigationFuture
             else:
                 nav_promise = watcher.sameDocumentNavigationFuture
-            error = await helper.future_race(watcher.timeoutOrTerminationFuture, nav_promise)
+            error = await helpers.future_race(watcher.timeoutOrTerminationFuture, nav_promise)
         watcher.dispose()
         if error:
             raise error
@@ -133,7 +133,7 @@ class FrameManager(AsyncIOEventEmitter):
         if not timeout:
             timeout = self._timeoutSettings.navigationTimeout
         watcher = LifecycleWatcher(self, frame=frame, timeout=timeout, waitUntil=waitUntil)
-        error = await helper.future_race(
+        error = await helpers.future_race(
             watcher.timeoutOrTerminationFuture,
             watcher.sameDocumentNavigationFuture,
             watcher.newDocumentNavigationFuture,
@@ -502,7 +502,7 @@ class Frame:
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             return self._client.loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
-        if helper.is_js_func(selectorOrFunctionOrTimeout):
+        if helpers.is_js_func(selectorOrFunctionOrTimeout):
             return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client.loop.create_future()
         f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))

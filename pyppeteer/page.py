@@ -16,9 +16,8 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequen
 from typing import TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
-from pyppeteer.task_queue import TaskQueue
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.accessibility import Accessibility
 from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
@@ -28,11 +27,12 @@ from pyppeteer.errors import PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import JSHandle
 from pyppeteer.frame_manager import Frame, FrameManager
-from pyppeteer.helper import debugError
+from pyppeteer.helpers import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
 from pyppeteer.models import Viewport
 from pyppeteer.network_manager import Request, Response
+from pyppeteer.task_queue import TaskQueue
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
@@ -242,7 +242,7 @@ class Page(AsyncIOEventEmitter):
         url = entry.get('url', '')
         lineNumber = entry.get('lineNumber', '')
         for arg in args:
-            helper.releaseObject(self._client, arg)
+            helpers.releaseObject(self._client, arg)
 
         if source != 'worker':
             self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
@@ -565,7 +565,7 @@ class Page(AsyncIOEventEmitter):
               };
             }
         '''  # noqa: E501
-        expression = helper.evaluationString(addPageBinding, name)
+        expression = helpers.evaluationString(addPageBinding, name)
         await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': expression})
 
@@ -648,7 +648,7 @@ class Page(AsyncIOEventEmitter):
         return result
 
     def _handleException(self, exceptionDetails: Dict) -> None:
-        message = helper.getExceptionMessage(exceptionDetails)
+        message = helpers.getExceptionMessage(exceptionDetails)
         self.emit(Events.Page.PageError, PageError(message))
 
     def _onConsoleAPI(self, event: dict) -> None:
@@ -676,13 +676,13 @@ class Page(AsyncIOEventEmitter):
             }
         '''
 
-        expression = helper.evaluationString(deliverResult, name, seq, result)
+        expression = helpers.evaluationString(deliverResult, name, seq, result)
         try:
             self._client.send(
                 'Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId']},
             )
         except Exception as e:
-            helper.debugError(logger, e)
+            helpers.debugError(logger, e)
 
     def _addConsoleMessage(self, type: str, args: List[JSHandle],) -> None:
         # TODO puppetter also takes stacktrace argument but it seems that
@@ -698,7 +698,7 @@ class Page(AsyncIOEventEmitter):
             if remoteObject.get('objectId'):
                 textTokens.append(arg.toString())
             else:
-                textTokens.append(str(helper.valueFromRemoteObject(remoteObject)))
+                textTokens.append(str(helpers.valueFromRemoteObject(remoteObject)))
         message = ConsoleMessage(type, '  '.join(textTokens), args)
         self.emit(Events.Page.Console, message)
 
@@ -865,7 +865,7 @@ class Page(AsyncIOEventEmitter):
                 return bool(urlOrPredicate(request))
             return False
 
-        return await helper.waitForEvent(
+        return await helpers.waitForEvent(
             self._frameManager.networkManager, Events.NetworkManager.Request, predicate, timeout, self._client.loop,
         )
 
@@ -899,7 +899,7 @@ class Page(AsyncIOEventEmitter):
                 return bool(urlOrPredicate(response))
             return False
 
-        return await helper.waitForEvent(
+        return await helpers.waitForEvent(
             self._frameManager.networkManager, Events.NetworkManager.Response, predicate, timeout, self._client.loop,
         )
 
@@ -1061,7 +1061,7 @@ class Page(AsyncIOEventEmitter):
         * whenever the child frame is attached or navigated. In this case, the
           function is invoked in the context of the newly attached frame.
         """
-        source = helper.evaluationString(pageFunction, *args)
+        source = helpers.evaluationString(pageFunction, *args)
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': source,})
 
     async def setCacheEnabled(self, enabled: bool = True) -> None:

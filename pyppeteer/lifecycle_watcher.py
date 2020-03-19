@@ -12,7 +12,7 @@ from asyncio import Future
 from functools import partial
 from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Literal, Any
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
 from pyppeteer.network_manager import Request
@@ -61,19 +61,19 @@ class LifecycleWatcher:
         self._navigationRequest: Request = None
         self._hasSameDocumentNavigation = False
         self._eventListeners = [
-            helper.addEventListener(
+            helpers.addEventListener(
                 self._frameManager._client,
                 Events.CDPSession.Disconnected,
                 partial(self._terminate, BrowserError('Navigation failed because browser has disconnected')),
             ),
-            helper.addEventListener(
+            helpers.addEventListener(
                 self._frameManager, Events.FrameManager.LifecycleEvent, self._checkLifecycleComplete,
             ),
-            helper.addEventListener(
+            helpers.addEventListener(
                 self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helper.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
-            helper.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,),
+            helpers.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached, ),
+            helpers.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest, ),
         ]
         self.loop = self._frameManager._client.loop
 
@@ -121,7 +121,7 @@ class LifecycleWatcher:
 
     @property
     def timeoutOrTerminationFuture(self) -> Awaitable:
-        return self._frame._client.loop.create_task(helper.future_race(self._timeoutFuture, self._terminationFuture))
+        return self._frame._client.loop.create_task(helpers.future_race(self._timeoutFuture, self._terminationFuture))
 
     def _createTimeoutPromise(self) -> Awaitable[None]:
         self._maximumTimerFuture = self.loop.create_future()
@@ -165,7 +165,7 @@ class LifecycleWatcher:
         return True
 
     def dispose(self) -> None:
-        helper.removeEventListeners(self._eventListeners)
+        helpers.removeEventListeners(self._eventListeners)
         for fut in self._futures:
             try:
                 fut.cancel()

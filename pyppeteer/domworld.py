@@ -2,7 +2,7 @@ import asyncio
 from asyncio import Future
 from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING, Awaitable, Callable
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.errors import BrowserError, PageError, NetworkError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.timeout_settings import TimeoutSettings
@@ -160,7 +160,7 @@ class DOMWorld(object):
         watcher = LifecycleWatcher(
             frameManager=self._frameManager, frame=self._frame, waitUntil=waitUntil, timeout=timeout
         )
-        error = await helper.future_race(watcher.timeoutOrTerminationFuture, watcher.lifecycleFuture)
+        error = await helpers.future_race(watcher.timeoutOrTerminationFuture, watcher.lifecycleFuture)
         watcher.dispose()
         if error:
             raise error
@@ -383,7 +383,7 @@ class WaitTask(object):
         self._polling = polling
         self._timeout = timeout
         self.loop = loop
-        if args or helper.is_js_func(predicateBody):
+        if args or helpers.is_js_func(predicateBody):
             self._predicateBody = f'return ({predicateBody})(...args)'
         else:
             self._predicateBody = f'return {predicateBody}'

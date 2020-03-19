@@ -7,11 +7,11 @@ import logging
 from functools import cmp_to_key
 from typing import Any, Dict, List
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.helper import debugError
+from pyppeteer.helpers import debugError
 
 logger = logging.getLogger(__name__)
 
@@ -138,10 +138,10 @@ class JSCoverage:
         self._scriptURLs.clear()
         self._scriptSources.clear()
         self._eventListeners = [
-            helper.addEventListener(
+            helpers.addEventListener(
                 self._client, 'Debugger.scriptParsed', lambda e: self._client.loop.create_task(self._onScriptParsed(e))
             ),
-            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
+            helpers.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await asyncio.gather(
             self._client.send('Profiler.enable'),
@@ -187,7 +187,7 @@ class JSCoverage:
             self._client.send('Profiler.disable'),
             self._client.send('Debugger.disable'),
         )
-        helper.removeEventListeners(self._eventListeners)
+        helpers.removeEventListeners(self._eventListeners)
 
         coverage = []
         for entry in result.get('result', []):
@@ -224,10 +224,10 @@ class CSSCoverage:
         self._stylesheetURLs.clear()
         self._stylesheetSources.clear()
         self._eventListeners = [
-            helper.addEventListener(
+            helpers.addEventListener(
                 self._client, 'CSS.styleSheetAdded', lambda e: self._client.loop.create_task(self._onStyleSheet(e))
             ),
-            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
+            helpers.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await asyncio.gather(
             self._client.send('DOM.enable'),
@@ -261,7 +261,7 @@ class CSSCoverage:
         self._enabled = False
         ruleTrackingResponse = await self._client.send('CSS.stopRuleUsageTracking')
         await asyncio.gather(self._client.send('CSS.disable'), self._client.send('DOM.disable'))
-        helper.removeEventListeners(self._eventListeners)
+        helpers.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
         styleSheetIdToCoverage = {}

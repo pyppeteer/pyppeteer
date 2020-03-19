@@ -1,7 +1,7 @@
 from typing import Callable
 
-from pyppeteer import helper
-from pyppeteer.helper import debugError
+from pyppeteer import helpers
+from pyppeteer.helpers import debugError
 
 
 class PipeTransport:
@@ -19,10 +19,10 @@ class PipeTransport:
                 self.onclose()
 
         self._eventListeners = [
-            helper.addEventListener(pipeRead, 'data', lambda buffer: self._dispatch(buffer)),
-            helper.addEventListener(pipeRead, 'close', _onclose),
-            helper.addEventListener(pipeRead, 'error', debugError),
-            helper.addEventListener(pipeWrite, 'error', debugError),
+            helpers.addEventListener(pipeRead, 'data', lambda buffer: self._dispatch(buffer)),
+            helpers.addEventListener(pipeRead, 'close', _onclose),
+            helpers.addEventListener(pipeRead, 'error', debugError),
+            helpers.addEventListener(pipeWrite, 'error', debugError),
         ]
 
     def send(self, message: str) -> None:
@@ -51,4 +51,4 @@ class PipeTransport:
 
     def close(self) -> None:
         self._pipeWrite = None
-        helper.removeEventListeners(self._eventListeners)
+        helpers.removeEventListeners(self._eventListeners)

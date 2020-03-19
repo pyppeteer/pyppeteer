@@ -8,7 +8,7 @@ import math
 import re
 from typing import Any, Dict, Optional, TYPE_CHECKING, Union
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 from pyppeteer.jshandle import createJSHandle, JSHandle, ElementHandle
@@ -52,7 +52,7 @@ class ExecutionContext(object):
     async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args):
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
-        if not helper.is_js_func(pageFunction):
+        if not helpers.is_js_func(pageFunction):
             try:
                 if SOURCE_URL_REGEX.match(pageFunction):
                     expressionWithSourceUrl = pageFunction
@@ -70,7 +70,7 @@ class ExecutionContext(object):
                 )
             except Exception as e:
                 exceptionDetails = rewriteError(e)
-                raise type(e)(f'Evaluation failed: {helper.getExceptionMessage(exceptionDetails)}')
+                raise type(e)(f'Evaluation failed: {helpers.getExceptionMessage(exceptionDetails)}')
         else:
             try:
                 remoteObject = await self._client.send('Runtime.callFunctionOn', {
@@ -83,16 +83,16 @@ class ExecutionContext(object):
                 })
             except Exception as e:
                 exceptionDetails = rewriteError(e)
-                raise type(e)(f'Evaluation failed: {helper.getExceptionMessage(exceptionDetails)}')
+                raise type(e)(f'Evaluation failed: {helpers.getExceptionMessage(exceptionDetails)}')
 
         exceptionDetails = remoteObject.get('exceptionDetails')
         if exceptionDetails:
             raise ElementHandleError('Evaluation failed: {}'.format(
-                helper.getExceptionMessage(exceptionDetails)))
+                helpers.getExceptionMessage(exceptionDetails)))
 
         remoteObject = remoteObject['result']
         if returnByValue:
-            return helper.valueFromRemoteObject(remoteObject)
+            return helpers.valueFromRemoteObject(remoteObject)
         else:
             return createJSHandle(self, remoteObject)
 
