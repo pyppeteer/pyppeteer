@@ -277,6 +277,7 @@ class Browser(AsyncIOEventEmitter):
     async def close(self) -> None:
         """Close connections and terminate browser process."""
         await self._closeCallback()  # Launcher.killChrome()
+        await self.disconnect()
 
     async def disconnect(self) -> None:
         """Disconnect browser."""
