@@ -1370,9 +1370,10 @@ class Page(AsyncIOEventEmitter):
                 f.write(buffer)
         return buffer
 
+    @property
     async def title(self) -> str:
         """Get page's title."""
-        return await self.mainFrame.title()
+        return await self.mainFrame.title
 
     async def close(self, runBeforeUnload: bool = False) -> None:
         """Close this page.

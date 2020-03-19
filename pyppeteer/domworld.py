@@ -311,7 +311,7 @@ class DOMWorld(object):
 
     @property
     async def title(self):
-        return self.evaluate('() => document.title')
+        return await self.evaluate('() => document.title')
 
     async def _waitForSelectorOrXpath(self, selectorOrXpath, isXPath, visible=False, hidden=False, timeout=None):
         if not timeout:
