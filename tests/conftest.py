@@ -14,6 +14,7 @@ if firefox:
 
 _browser: Browser = sync(launch(**launch_options))
 
+
 @pytest.fixture(scope='session')
 def shared_browser() -> Browser:
     yield _browser
