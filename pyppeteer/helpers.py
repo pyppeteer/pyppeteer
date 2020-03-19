@@ -197,7 +197,7 @@ def is_js_func(func: str) -> bool:
     return bool(
         re.match(
             r"""
-        # js functions can start with async, function, <name>, or any permutation of all three
+        # js functions can start with async, function, <name>, or any permutation of all three (in that order)
         # the only way a function may be named is if the function is declared with the function keyword
         (?:async)?(?P<named>function)?(?(named)(?:%(js)s)?)
         # js func args
