@@ -207,7 +207,7 @@ def is_js_func(func: str) -> bool:
         (?P<args>(?(argopen)(?:\.\.\.)?)%(js)s,?)?
         # if the function opens with ( and the first arg was matched, we match more arguments, 
         # otherwise, don't match any thing.  if function args are opening with (, we optionally match the rest parameter
-        (?(argopen) (?(args)(?:(?(argopen)(?:\.\.\.)?)%(js)s,?)*) )k
+        (?(argopen) (?(args)(?:(?(argopen)(?:\.\.\.)?)%(js)s,?)*) )
         # if we matched the opening (, match the closing ) 
         (?(argopen)\))
         # function bodies open with =>, {, both, or none. If the function is declared with a name, it must have a { to
