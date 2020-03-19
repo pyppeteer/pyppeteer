@@ -1,44 +1,43 @@
 from syncer import sync
 
 from pyppeteer import connect
-from .base import browser
 
 
 @sync
-async def test_browser_version():
-    version = await browser.version()
+async def test_browser_version(shared_browser):
+    version = await shared_browser.version()
     assert version.startswith('Headless')
 
 
 @sync
-async def test_browser_ua():
-    ua = await browser.userAgent()
+async def test_browser_ua(shared_browser):
+    ua = await shared_browser.userAgent()
     assert 'WebKit' in ua or 'Gecko' in ua
 
 
 @sync
-async def test_browser_target():
-    target = browser.target
+async def test_browser_target(shared_browser):
+    target = shared_browser.target
     assert target.type == 'browser'
 
 
 @sync
-async def test_browser_process():
-    proc = browser.process
+async def test_browser_process(shared_browser):
+    proc = shared_browser.process
     assert proc.pid
 
 
 @sync
-async def test_browser_remote_process():
-    browser_ws_endpoint = browser.wsEndpoint
+async def test_browser_remote_process(shared_browser):
+    browser_ws_endpoint = shared_browser.wsEndpoint
     remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.process is None
     await remote_browser.disconnect()
 
 
 @sync
-async def test_browser_connected():
-    browser_ws_endpoint = browser.wsEndpoint
+async def test_browser_connected(shared_browser):
+    browser_ws_endpoint = shared_browser.wsEndpoint
     remote_browser = await connect(browserWSEndpoint=browser_ws_endpoint)
     assert remote_browser.isConnected
     await remote_browser.disconnect()
