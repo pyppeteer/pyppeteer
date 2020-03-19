@@ -11,7 +11,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 from signal import signal, SIGTERM, SIGINT, SIG_DFL
-from typing import Dict, Sequence, Union, List, Optional, Awaitable, Any, Tuple
+from typing import Dict, Sequence, Union, List, Optional, Any, Tuple
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -36,7 +36,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def _restore_default_signal_handlers():
+def _restore_default_signal_handlers() -> None:
     signal(SIGTERM, SIG_DFL)
     signal(SIGINT, SIG_DFL)
     if not sys.platform.startswith('win'):
@@ -57,7 +57,7 @@ class BrowserRunner:
         self._closed = True
         self._listeners = []
 
-    def start(self, **kwargs: LaunchOptions):
+    def start(self, **kwargs: LaunchOptions) -> None:
         process_opts = {}
         if kwargs.get('pipe'):
             raise NotImplementedError('Communication via pipe not supported')
@@ -99,7 +99,7 @@ class BrowserRunner:
             else:
                 logger.warning(f'SIGHUP is not available on win32')
 
-    async def _close_proc(self):
+    async def _close_proc(self) -> None:
         if not self._closed:
             if self.connection and self.connection._connected:
                 await self.connection.send('Browser.close')
@@ -108,7 +108,7 @@ class BrowserRunner:
                 self._wait_for_proc_to_close()
                 self.temp_dir.cleanup()
 
-    def _wait_for_proc_to_close(self):
+    def _wait_for_proc_to_close(self) -> None:
         if self.proc.poll() is None and not self._closed:
             try:
                 self.proc.terminate()
@@ -116,7 +116,7 @@ class BrowserRunner:
             except Exception as e:
                 logger.warning(f'error occurred on proc close: {e}')
 
-    async def close(self) -> Awaitable[None]:
+    async def close(self) -> None:
         if not self._closed:
             _restore_default_signal_handlers()
             if self.temp_dir:
@@ -127,7 +127,7 @@ class BrowserRunner:
                 except Exception as e:
                     debugError(logger, e)
                     self.kill()
-        return self._close_proc()
+        return await self._close_proc()
 
     def kill(self) -> None:
         if self.proc and not self._closed and self.proc.returncode is not None:
@@ -195,7 +195,7 @@ class BaseBrowserLauncher:
             transport = await WebsocketTransport.create(uri=browserWSEndpoint)
             connection = Connection(browserWSEndpoint, transport=transport, delay=slowMo)
 
-        async def close_callback():
+        async def close_callback() -> None:
             await connection.send('Browser.close')
 
         context_ids = await connection.send('Target.getBrowserContexts')
@@ -246,9 +246,9 @@ class ChromeLauncher(BaseBrowserLauncher):
     def executable_path(self) -> Optional[str]:
         return resolveExecutablePath(self.projectRoot, self.preferredRevision)[0]
 
-    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]):
+    async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
         ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
-        args = kwargs.get('args', [])
+        args: Sequence[str] = kwargs.get('args', [])
         dumpio = kwargs.get('dumpio', False)
         executablePath = kwargs.get('executablePath', None)
         env = kwargs.get('env', os.environ)
@@ -312,7 +312,12 @@ class ChromeLauncher(BaseBrowserLauncher):
             raise original_exception
 
     def default_args(
-        self, args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_,
+        self,
+        args: Sequence[str] = None,
+        devtools: bool = False,
+        headless: bool = None,
+        userDataDir: str = None,
+        **_: Any,
     ) -> List[str]:
         if headless is None:
             headless = not devtools
@@ -498,16 +503,16 @@ class FirefoxLauncher(BaseBrowserLauncher):
     }
     product = 'firefox'
 
-    def __init__(self, projectRoot: str, preferredRevision: str):
+    def __init__(self, projectRoot: str = None, preferredRevision: str = None):
         super().__init__(projectRoot, preferredRevision)
 
     @property
-    def executablePath(self):
+    def executablePath(self) -> None:
         raise NotImplementedError('executablePath method not implemented')
 
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
         ignoreDefaultArgs = kwargs.get('ignoreDefaultArgs', False)
-        args = kwargs.get('args', [])
+        args: Sequence[str] = kwargs.get('args', [])
         dumpio = kwargs.get('dumpio', False)
         executablePath = kwargs.get('executablePath', None)
         pipe = kwargs.get('pipe', False)
@@ -568,10 +573,14 @@ class FirefoxLauncher(BaseBrowserLauncher):
                 runner.kill()
             raise original_exception
 
-
     def default_args(
-        self, args: Sequence[str] = None, devtools: bool = False, headless: bool = None, userDataDir: str = None, **_
-    ):
+        self,
+        args: Sequence[str] = None,
+        devtools: bool = False,
+        headless: bool = None,
+        userDataDir: str = None,
+        **_: Any,
+    ) -> List[str]:
         if headless is None:
             headless = not devtools
         proc_args = self.DEFAULT_ARGS[:]
@@ -583,7 +592,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
             proc_args.append('--headless')
         if devtools:
             proc_args.append('--devtools')
-        if all(x.startswith('-') for x in args):
+        if all(x.startswith('-') for x in proc_args):
             proc_args.append('about:blank')
 
         return proc_args
@@ -597,7 +606,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
         return profile_path
 
 
-def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str):
+def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str) -> str:
     assert proc.stdout is not None, 'process STDOUT wasn\'t piped'
     start = time.perf_counter()
     buffer = ''
@@ -618,7 +627,7 @@ def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision:
     )
 
 
-def getWSEndpoint(url) -> str:
+def getWSEndpoint(url: str) -> str:
     url += '/json/version'
     timeout = time.perf_counter() + 30
     while True:
@@ -658,7 +667,9 @@ def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[O
     return revision_info['executablePath'], missing_text
 
 
-def launcher(projectRoot: str = None, preferredRevision: str = None, product: str = None):
+def launcher(
+    projectRoot: str = None, preferredRevision: str = None, product: str = None
+) -> Union[FirefoxLauncher, ChromeLauncher]:
     """Returns the appropriate browser launcher class instance"""
     product = product or os.environ.get('PYPPETEER2_PRODUCT')
     if product == 'firefox':

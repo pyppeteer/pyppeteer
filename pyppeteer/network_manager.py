@@ -137,8 +137,11 @@ class NetworkManager(AsyncIOEventEmitter):
         elif self._credentials:
             response = 'ProvideCredentials'
             self._attemptedAuthentications.add(requestId)
-        username = self._credentials.get('username')
-        password = self._credentials.get('password')
+        if self._credentials:
+            username = self._credentials.get('username')
+            password = self._credentials.get('password')
+        else:
+            username, password = None, None
         await self._client.send(
             'Fetch.continueWithAuth',
             {
@@ -150,8 +153,8 @@ class NetworkManager(AsyncIOEventEmitter):
     async def _onRequestPaused(self, event: Dict) -> None:
         if self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
             await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
-        requestId = event.get('networkId')
-        interceptionId = event.get('requestId')
+        requestId = event['networkId']
+        interceptionId = event['requestId']
         if requestId in self._requestIdToRequestWillBeSent:
             requestWillBeSentEvent = self._requestIdToRequestWillBeSent.pop(requestId)
             self._onRequest(requestWillBeSentEvent, interceptionId)
@@ -166,7 +169,7 @@ class NetworkManager(AsyncIOEventEmitter):
                 self._handleRequestRedirect(request, event['redirectResponse'])
                 redirectChain = request._redirectChain
 
-        frame = self._frameManager.frame(event.get('frameId')) if event.get('frameId') else None
+        frame = self._frameManager.frame(event.get('frameId'))
         request = Request(
             client=self._client,
             frame=frame,
@@ -270,8 +273,8 @@ class Request:
     def __init__(
         self,
         client: CDPSession,
-        frame: 'Frame',
-        interceptionId: str,
+        frame: Optional['Frame'],
+        interceptionId: Optional[str],
         allowInterception: bool,
         event: Dict[str, Any],
         redirectChain: List['Request'],

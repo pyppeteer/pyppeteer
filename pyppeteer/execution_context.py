@@ -73,22 +73,24 @@ class ExecutionContext(object):
                 raise type(e)(f'Evaluation failed: {helpers.getExceptionMessage(exceptionDetails)}')
         else:
             try:
-                remoteObject = await self._client.send('Runtime.callFunctionOn', {
-                    'functionDeclaration': f'{pageFunction}\n{suffix}\n',
-                    'executionContextId': self._contextId,
-                    'arguments': [self._convertArgument(arg) for arg in args],
-                    'returnByValue': returnByValue,
-                    'awaitPromise': True,
-                    'userGesture': True,
-                })
+                remoteObject = await self._client.send(
+                    'Runtime.callFunctionOn',
+                    {
+                        'functionDeclaration': f'{pageFunction}\n{suffix}\n',
+                        'executionContextId': self._contextId,
+                        'arguments': [self._convertArgument(arg) for arg in args],
+                        'returnByValue': returnByValue,
+                        'awaitPromise': True,
+                        'userGesture': True,
+                    },
+                )
             except Exception as e:
                 exceptionDetails = rewriteError(e)
                 raise type(e)(f'Evaluation failed: {helpers.getExceptionMessage(exceptionDetails)}')
 
         exceptionDetails = remoteObject.get('exceptionDetails')
         if exceptionDetails:
-            raise ElementHandleError('Evaluation failed: {}'.format(
-                helpers.getExceptionMessage(exceptionDetails)))
+            raise ElementHandleError('Evaluation failed: {}'.format(helpers.getExceptionMessage(exceptionDetails)))
 
         remoteObject = remoteObject['result']
         if returnByValue:
@@ -105,7 +107,8 @@ class ExecutionContext(object):
         if objectHandle:
             if objectHandle._context != self:
                 raise ElementHandleError(
-                    'JSHandles can be evaluated only in the context they were created!')  # noqa: E501
+                    'JSHandles can be evaluated only in the context they were created!'
+                )  # noqa: E501
             if objectHandle._disposed:
                 raise ElementHandleError('JSHandle is disposed!')
             if objectHandle._remoteObject.get('unserializableValue'):

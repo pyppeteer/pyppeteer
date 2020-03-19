@@ -72,8 +72,10 @@ class LifecycleWatcher:
             helpers.addEventListener(
                 self._frameManager, Events.FrameManager.FrameNavigatedWithinDocument, self._navigatedWithinDocument,
             ),
-            helpers.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached, ),
-            helpers.addEventListener(self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest, ),
+            helpers.addEventListener(self._frameManager, Events.FrameManager.FrameDetached, self._onFrameDetached,),
+            helpers.addEventListener(
+                self._frameManager.networkManager, Events.NetworkManager.Request, self._onRequest,
+            ),
         ]
         self.loop = self._frameManager._client.loop
 

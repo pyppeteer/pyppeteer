@@ -12,11 +12,6 @@ from pyppeteer.connection import Connection, createProtocolError, Message, rewri
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 
-try:
-    from typing import TypedDict
-except ImportError:
-    from typing_extensions import TypedDict
-
 
 class CDPSession(AsyncIOEventEmitter):
     """Chrome Devtools Protocol Session.

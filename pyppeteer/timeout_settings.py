@@ -15,10 +15,10 @@ class TimeoutSettings(object):
         self._defaultTimeout = None
         self._defaultNavigationTimeout = None
 
-    def setDefaultTimeout(self, timeout: float):
+    def setDefaultTimeout(self, timeout: float) -> None:
         self._defaultTimeout = timeout
 
-    def setDefaultNavigationTimeout(self, timeout: float):
+    def setDefaultNavigationTimeout(self, timeout: float) -> None:
         self._defaultNavigationTimeout = timeout
 
     @property

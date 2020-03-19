@@ -181,7 +181,7 @@ class FrameManager(AsyncIOEventEmitter):
         """Return all frames."""
         return list(self._frames.values())
 
-    def frame(self, frameId: str) -> Optional['Frame']:
+    def frame(self, frameId: Optional[str]) -> Optional['Frame']:
         """Return :class:`Frame` of ``frameId``."""
         return self._frames.get(frameId)
 

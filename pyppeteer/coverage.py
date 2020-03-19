@@ -141,7 +141,9 @@ class JSCoverage:
             helpers.addEventListener(
                 self._client, 'Debugger.scriptParsed', lambda e: self._client.loop.create_task(self._onScriptParsed(e))
             ),
-            helpers.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
+            helpers.addEventListener(
+                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+            ),
         ]
         await asyncio.gather(
             self._client.send('Profiler.enable'),
@@ -227,7 +229,9 @@ class CSSCoverage:
             helpers.addEventListener(
                 self._client, 'CSS.styleSheetAdded', lambda e: self._client.loop.create_task(self._onStyleSheet(e))
             ),
-            helpers.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
+            helpers.addEventListener(
+                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+            ),
         ]
         await asyncio.gather(
             self._client.send('DOM.enable'),

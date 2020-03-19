@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Awaitable, Dict, Any
+from typing import Awaitable, Dict, Any, Optional
 
 import websockets
 from pyee import AsyncIOEventEmitter
@@ -34,7 +34,7 @@ class MessageError(TypedDict, total=False):
     data: Any
 
 
-class Message(TypedDict):
+class Message(TypedDict, total=False):
     method: str
     id: int
     params: MessageParams
@@ -68,10 +68,10 @@ class Connection(AsyncIOEventEmitter):
         self.loop.create_task(self._recv_loop())
 
     @staticmethod
-    def fromSession(session: 'CDPSession'):
+    def fromSession(session: 'CDPSession') -> Optional['Connection']:
         return session._connection
 
-    def session(self, sessionId):
+    def session(self, sessionId) -> 'CDPSession':
         return self._sessions.get(sessionId)
 
     @property
@@ -126,7 +126,7 @@ class Connection(AsyncIOEventEmitter):
         self._callbacks[id_] = callback
         return callback
 
-    def _rawSend(self, message: Message):
+    def _rawSend(self, message: Message) -> int:
         self._lastId += 1
         id_ = self._lastId
         message['id'] = id_
@@ -134,38 +134,41 @@ class Connection(AsyncIOEventEmitter):
         return id_
 
     async def _onMessage(self, msg: str) -> None:
-        msg: Message = json.loads(msg)
+        loaded_msg: Message = json.loads(msg)
         if self._delay:
             await asyncio.sleep(self._delay)
-        logger_connection.debug(f'◀ RECV {msg}')
+        logger_connection.debug(f'◀ RECV {loaded_msg}')
 
         # Handle Target attach/detach methods
-        if msg.get('method') == 'Target.attachedToTarget':
-            sessionId = msg['params']['sessionId']
+        if loaded_msg.get('method') == 'Target.attachedToTarget':
+            sessionId = loaded_msg['params']['sessionId']
             self._sessions[sessionId] = CDPSession(
-                connection=self, targetType=msg['params']['targetInfo']['type'], sessionId=sessionId, loop=self.loop,
+                connection=self,
+                targetType=loaded_msg['params']['targetInfo']['type'],
+                sessionId=sessionId,
+                loop=self.loop,
             )
-        elif msg.get('method') == 'Target.detachedFromTarget':
-            session = self._sessions.get(msg['params']['sessionId'])
+        elif loaded_msg.get('method') == 'Target.detachedFromTarget':
+            session = self._sessions.get(loaded_msg['params']['sessionId'])
             if session:
                 session._onClosed()
-                del self._sessions[msg['params']['sessionId']]
+                del self._sessions[loaded_msg['params']['sessionId']]
 
-        if msg.get('sessionId'):
-            session = self._sessions.get(msg['sessionId'])
+        if loaded_msg.get('sessionId'):
+            session = self._sessions.get(loaded_msg['sessionId'])
             if session:
-                session._onMessage(msg)
-        elif msg.get('id'):
+                session._onMessage(loaded_msg)
+        elif loaded_msg.get('id'):
             # Callbacks could be all rejected if someone has called `.dispose()`
-            callback = self._callbacks.get(msg['id'])
+            callback = self._callbacks.get(loaded_msg['id'])
             if callback:
-                if msg.get('error'):
-                    callback.set_exception(createProtocolError(callback.error, callback.method, msg))
+                if loaded_msg.get('error'):
+                    callback.set_exception(createProtocolError(callback.error, callback.method, loaded_msg))
                 else:
-                    callback.set_result(msg.get('result'))
-                del self._callbacks[msg['id']]
+                    callback.set_result(loaded_msg.get('result'))
+                del self._callbacks[loaded_msg['id']]
         else:
-            self.emit(msg['method'], msg['params'])
+            self.emit(loaded_msg['method'], loaded_msg['params'])
 
     async def _onClose(self) -> None:
         if self._closed:
@@ -219,7 +222,7 @@ def rewriteError(error: Exception, message: str) -> Exception:
     return error
 
 
-def remove_none_items_inplace(o: Dict[str, Any]):
+def remove_none_items_inplace(o: Dict[str, Any]) -> None:
     """
     Removes items that have a value of None. There are instances in puppeteer where a object (dict) is sent which has
     undefined values, which are then omitted from the resulting json. This function emulates such behaviour, removing

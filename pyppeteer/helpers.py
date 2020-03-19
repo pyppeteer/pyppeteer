@@ -8,7 +8,7 @@ import json
 import logging
 import math
 import re
-from typing import Any, Awaitable, Callable, Dict, List
+from typing import Any, Awaitable, Callable, Dict, List, Union
 
 from pyee import AsyncIOEventEmitter
 
@@ -27,7 +27,7 @@ def debugError(_logger: logging.Logger, msg: Any) -> None:
         _logger.debug(msg)
 
 
-async def future_race(*fs):
+async def future_race(*fs) -> Union[None, Exception]:
     """
     Analogous to JS's Promise.race(). Returns the results of the first completed future
     :param fs: Future to be waited upon
@@ -132,13 +132,13 @@ def waitForEvent(
     loop: asyncio.AbstractEventLoop,
 ) -> Awaitable:
     """Wait for an event emitted from the emitter."""
-    promise = loop.create_future()
+    future = loop.create_future()
 
     def resolveCallback(target: Any) -> None:
-        promise.set_result(target)
+        future.set_result(target)
 
     def rejectCallback(exception: Exception) -> None:
-        promise.set_exception(exception)
+        future.set_exception(exception)
 
     async def timeoutTimer() -> None:
         await asyncio.sleep(timeout / 1000)
@@ -159,7 +159,7 @@ def waitForEvent(
         if timeout:
             eventTimeout.cancel()
 
-    return promise
+    return future
 
 
 def get_positive_int(obj: dict, name: str) -> int:

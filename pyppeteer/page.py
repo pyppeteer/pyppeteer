@@ -1160,7 +1160,7 @@ class Page(AsyncIOEventEmitter):
                 'y': round(y),
                 'width': round(clip['width'] + clip['x'] - x),
                 'height': round(clip['height'] + clip['y'] - y),
-                'scale': clip.get('scale', 1)
+                'scale': clip.get('scale', 1),
             }
 
         if fullPage:

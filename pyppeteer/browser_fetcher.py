@@ -19,7 +19,7 @@ import sys
 from distutils.util import strtobool
 from io import BytesIO
 from pathlib import Path
-from typing import Union, List, Optional, Sequence
+from typing import Union, List, Optional, Tuple
 from urllib import request
 from zipfile import ZipFile
 
@@ -76,7 +76,7 @@ def download_url(platform: Platforms, host: str, revision: str) -> str:
     return download_urls[platform]
 
 
-def parse_folder_path(folder_path: Path) -> Optional[Sequence[str]]:
+def parse_folder_path(folder_path: Path) -> Tuple[Optional[str], Optional[str]]:
     name = folder_path.name
     splits = name.split('-')
     if len(splits) != 2 or splits[0] not in Platforms.__args__:
@@ -84,7 +84,7 @@ def parse_folder_path(folder_path: Path) -> Optional[Sequence[str]]:
     return splits
 
 
-def download_file(url: str, zip_path: BytesIO):
+def download_file(url: str, zip_path: BytesIO) -> None:
     CHUNK_SIZE = 4096
     file_req = request.urlopen(url)
     progress_bar = tqdm(
@@ -107,6 +107,7 @@ class BrowserFetcher:
     def __init__(
         self, projectRoot: Union[Path, os.PathLike] = None, platform: Platforms = None, host: str = None,
     ):
+        self.host = host
         self.downloadsFolder = projectRoot or Path(__pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
         self._platform: Platforms = platform or sys.platform
@@ -155,7 +156,7 @@ class BrowserFetcher:
         assert f_path, f'Failed to remove: revision {revision} doesn\'t exist on the disk'
         shutil.rmtree(f_path)
 
-    def revision_info(self, revision) -> RevisionInfo:
+    def revision_info(self, revision: str) -> RevisionInfo:
         folder_path = self._get_folder_path(revision)
 
         if self._platform == 'mac':

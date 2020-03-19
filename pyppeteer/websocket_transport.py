@@ -6,7 +6,7 @@ from websockets import connect, WebSocketClientProtocol, Data
 
 class WebsocketTransport:
     def __init__(self, ws: WebSocketClientProtocol):
-        self.onmessage: Optional[Callable[[Data], Any]] = None
+        self.onmessage: Optional[Callable[[str], Any]] = None
         self.onclose: Optional[Callable[[], Any]] = None
         self.ws = ws
 
@@ -15,7 +15,9 @@ class WebsocketTransport:
         return cls(
             await connect(
                 uri=uri,
-                ping_interval=None,  # chrome doesn't respond to pings
+                # chrome doesn't respond to pings
+                # waiting on websockets to release new version where ping_interval is typed correctly
+                ping_interval=None,  # type: ignore
                 max_size=256 * 1024 * 1024,  # 256Mb
                 loop=loop,
                 close_timeout=5,

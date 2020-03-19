@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 from pyppeteer import helpers
 from pyppeteer.helpers import debugError
@@ -10,9 +10,8 @@ class PipeTransport:
     ):
         self._pipeWrite = pipeWrite
         self._pendingMessage = ''
-        # TODO maybe it would make sense to have these default to empty lambdas?
-        self.onmessage: Callable[[str, str], None] = None
-        self.onclose: Callable[[], None] = None
+        self.onmessage: Optional[Callable[[Optional[str], str], None]] = None
+        self.onclose: Optional[Callable[[], None]] = None
 
         def _onclose():
             if self.onclose:
@@ -36,7 +35,7 @@ class PipeTransport:
             return
 
         message = self._pendingMessage + buffer
-        if self.onmessage:
+        if message:
             self.onmessage(None, message)
 
         start = end + 1

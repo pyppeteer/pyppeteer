@@ -55,7 +55,11 @@ class Tracing(object):
             'disabled-by-default-v8.cpu_profiler.hires',
         ]
 
-        categories = categories or defaultCategories
+        if not isinstance(categories, list):
+            try:
+                categories = list(categories)
+            except TypeError:
+                categories = defaultCategories
 
         if screenshots:
             categories.append('disabled-by-default-devtools.screenshot')
