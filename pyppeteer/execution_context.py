@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
+SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
 
 
 class ExecutionContext(object):

@@ -38,7 +38,7 @@ class LifecycleWatcher:
         self,
         frameManager: 'FrameManager',
         frame: 'Frame',
-        timeout: int,
+        timeout: Optional[float],
         waitUntil: WaitTargets = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
@@ -58,7 +58,7 @@ class LifecycleWatcher:
         self._frame = frame
         self._initialLoaderId = frame._loaderId
         self._timeout = timeout
-        self._navigationRequest: Request = None
+        self._navigationRequest: Optional[Request] = None
         self._hasSameDocumentNavigation = False
         self._eventListeners = [
             helpers.addEventListener(

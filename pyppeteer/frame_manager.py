@@ -22,7 +22,7 @@ from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import JSFunctionArg, WaitTargets
-from pyppeteer.network_manager import NetworkManager, Request, Response
+from pyppeteer.network_manager import NetworkManager, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class FrameManager(AsyncIOEventEmitter):
         self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
         self._timeoutSettings = timeoutSettings
         self._mainFrame = None
-        self._frames = {}
+        self._frames: Dict[Any, Frame] = {}
         self._contextIdToContext: Dict[int, ExecutionContext] = {}
         self._isolatedWorlds: Set[str] = set()
 
@@ -73,12 +73,12 @@ class FrameManager(AsyncIOEventEmitter):
         client.on('Runtime.executionContextsCleared', lambda event: self._onExecutionContextsCleared())
         client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'))
         frameTree = frameTree[1]['frameTree']
         self._handleFrameTree(frameTree)
 
-        async def runtime_enabled():
+        async def runtime_enabled() -> None:
             await self._client.send('Runtime.enable', {})
             await self._ensureIsolatedWorld(UTILITY_WORLD_NAME)
 
@@ -93,11 +93,12 @@ class FrameManager(AsyncIOEventEmitter):
         return self._networkManager
 
     async def navigateFrame(
-        self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
+        self, frame: 'Frame', url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None,
     ) -> Optional[Request]:
         ensureNewDocumentNavigation = False
 
-        async def navigate(url_: str, referer_: str, frameId: str):
+        async def navigate(url_: str, referer_: str, frameId: str) -> Exception:
+            # todo (Mattwmaster58): probaly don't need try except, it's caught in helpers.future_race
             try:
                 response = await self._client.send(
                     'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
@@ -129,7 +130,9 @@ class FrameManager(AsyncIOEventEmitter):
             raise error
         return watcher.navigationResponse()
 
-    async def waitForFrameNavigation(self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: int = None) -> Optional[Request]:
+    async def waitForFrameNavigation(
+        self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: float = None
+    ) -> Optional[Request]:
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
@@ -170,7 +173,7 @@ class FrameManager(AsyncIOEventEmitter):
             self._handleFrameTree(child)
 
     @property
-    def page(self):
+    def page(self) -> 'Page':
         return self._page
 
     @property
@@ -226,7 +229,7 @@ class FrameManager(AsyncIOEventEmitter):
         frame._navigated(framePayload)  # type: ignore
         self.emit(Events.FrameManager.FrameNavigated, frame)
 
-    async def _ensureIsolatedWorld(self, name: str):
+    async def _ensureIsolatedWorld(self, name: str) -> None:
         if name in self._isolatedWorlds:
             return
         self._isolatedWorlds.add(name)
@@ -260,6 +263,7 @@ class FrameManager(AsyncIOEventEmitter):
         if frame:
             self._removeFramesRecursively(frame)
 
+    # todo (mattwmaster58): type contextPayload w/ TypedDict
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         auxData = contextPayload.get('auxData')
         frameId = auxData.get('frameId')
@@ -281,7 +285,7 @@ class FrameManager(AsyncIOEventEmitter):
             world._setContext(context)
         self._contextIdToContext[contextPayload['id']] = context
 
-    def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
+    def _onExecutionContextDestroyed(self, executionContextId: int) -> None:
         context = self._contextIdToContext.get(executionContextId)
         if not context:
             return
@@ -295,7 +299,7 @@ class FrameManager(AsyncIOEventEmitter):
                 context._world._setContext(None)
         self._contextIdToContext.clear()
 
-    def executionContextById(self, contextId: str) -> ExecutionContext:
+    def executionContextById(self, contextId: int) -> ExecutionContext:
         """Get stored ``ExecutionContext`` by ``id``."""
         context = self._contextIdToContext.get(contextId)
         if not context:
@@ -363,10 +367,12 @@ class Frame:
 
     def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None
-    ) -> Awaitable[Optional[Response]]:
+    ) -> Awaitable[Optional[Request]]:
         return self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
 
-    def waitForNavigation(self, timeout: Optional[float] = None, waitUntil: Optional[WaitTargets] = None) -> Awaitable[Optional[Request]]:
+    def waitForNavigation(
+        self, timeout: Optional[float] = None, waitUntil: Optional[WaitTargets] = None
+    ) -> Awaitable[Optional[Request]]:
         return self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
 
     @property
@@ -408,12 +414,12 @@ class Frame:
         """
         return self._detached
 
-    async def addScriptTag(self, url=None, path=None, content=None, type=''):
+    async def addScriptTag(self, url=None, path=None, content=None, type='') -> ElementHandle:
         """Add script tag to this frame.
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        return self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
+        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
 
     async def addStyleTag(self, url=None, path=None, content=None) -> Awaitable[Optional['ElementHandle']]:
         return self._mainWorld.addStyleTag(url=url, path=path, content=content)
@@ -515,7 +521,9 @@ class Frame:
         f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))
         return f
 
-    async def waitForSelector(self, selector, visible=False, hidden=False, timeout=None) -> Optional['ElementHandle']:
+    async def waitForSelector(
+        self, selector: str, visible: bool = False, hidden: bool = False, timeout: float = None
+    ) -> Optional['ElementHandle']:
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
@@ -568,4 +576,3 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
-

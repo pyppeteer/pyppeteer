@@ -166,7 +166,7 @@ class DOMWorld(object):
         if error:
             raise error
 
-    async def addScriptTag(self, url=None, path=None, content=None, type=''):
+    async def addScriptTag(self, url=None, path=None, content=None, type='') -> 'ElementHandle':
         addScriptUrl = """
         async function addScriptUrl(url, type) {
           const script = document.createElement('script');
@@ -299,10 +299,10 @@ class DOMWorld(object):
         await handle.type(text, **kwargs)
         await handle.dispose()
 
-    def waitForSelector(self, selector, visible=False, hidden=False, timeout: int = None):
+    def waitForSelector(self, selector: str, visible: bool = False, hidden: bool = False, timeout: float = None):
         return self._waitForSelectorOrXpath(selector, isXPath=False, visible=visible, hidden=hidden, timeout=timeout)
 
-    def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
+    def waitForXpath(self, xpath: str, visible: bool = False, hidden: bool = False, timeout: float = None):
         return self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
     def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args) -> Awaitable['JSHandle']:
