@@ -5,6 +5,7 @@ from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, C
 from pyppeteer import helpers
 from pyppeteer.errors import BrowserError, PageError, NetworkError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
+from pyppeteer.models import MouseButton, JSFunctionArg
 from pyppeteer.timeout_settings import TimeoutSettings
 
 try:
@@ -79,11 +80,11 @@ class DOMWorld(object):
             )
         return self._contextFuture
 
-    async def evaluateHandle(self, pageFunction: str, *args):
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg):
         context = await self.executionContext
         return context.evaluateHandle(pageFunction=pageFunction, *args)
 
-    async def evaluate(self, pageFunction: str, *args):
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg):
         context = await self.executionContext
         return await context.evaluate(pageFunction, *args)
 
@@ -105,7 +106,7 @@ class DOMWorld(object):
         document = await self._document
         return await document.xpath(expression)
 
-    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
         document = await self._document
         return await document.querySelectorEval(selector, pageFunction, *args)
 
@@ -118,7 +119,7 @@ class DOMWorld(object):
         value = await document.querySelectorAll(selector)
         return value
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Optional[Dict]:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Optional[Dict]:
         """Execute function on all elements which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
@@ -260,7 +261,7 @@ class DOMWorld(object):
         if not handle:
             raise BrowserError(f'No node found for selector: {selector}')
 
-    async def click(self, selector: str, button: Literal['left', 'right', 'middle'] = None, clickCount: int = None):
+    async def click(self, selector: str, button: MouseButton = 'left', clickCount: int = 1, delay: float = 0):
         """
         :param selector:
         :param kwargs:
@@ -269,7 +270,7 @@ class DOMWorld(object):
         :return:
         """
         handle = await self._select_handle(selector)
-        await handle.click(button=button, clickCount=clickCount)
+        await handle.click(button=button, clickCount=clickCount, delay=delay)
         await handle.dispose()
 
     async def focus(self, selector: str):
@@ -304,7 +305,7 @@ class DOMWorld(object):
     async def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
         return self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
-    async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args):
+    async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args) -> Awaitable[JSHandle]:
         if not timeout:
             timeout = self._timeoutSettings.timeout
         return WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise

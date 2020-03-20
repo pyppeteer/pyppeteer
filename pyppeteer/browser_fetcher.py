@@ -27,6 +27,7 @@ import urllib3
 from tqdm import tqdm
 
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
+from pyppeteer.models import Platforms
 
 try:
     from typing import TypedDict, Literal
@@ -34,8 +35,6 @@ except ImportError:
     from typing_extensions import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
-
-Platforms = Literal['linux', 'mac', 'win32', 'win64']
 
 
 class RevisionInfo(TypedDict):

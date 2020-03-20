@@ -5,6 +5,7 @@
 
 import logging
 import os
+from pathlib import Path
 
 from appdirs import AppDirs
 
@@ -13,24 +14,23 @@ __email__ = 'pyppeteer@protonmail.com'
 __version__ = '0.2.2'
 __chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v1.6.0'
-__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+__pyppeteer_home__ = os.environ.get('PYPPETEER2_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 from pyppeteer.websocket_transport import WebsocketTransport
 
-from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport
+from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport, Devices
 
-DEBUG = False
 
 # Setup root logger
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
 
-from typing import Any, Union
+from typing import Any, Union, List, Sequence
 
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
-from pyppeteer.launcher import launcher
-from pyppeteer.browser_fetcher import BrowserFetcher
+from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
+from pyppeteer.browser_fetcher import BrowserFetcher, Platforms
 
 
 class Pyppeteer:
@@ -41,15 +41,15 @@ class Pyppeteer:
         self.productName = None
 
     @property
-    def executablePath(self):
+    def executablePath(self) -> Union[str, Path]:
         return self._launcher.executablePath
 
     @property
-    def product(self):
+    def product(self) -> str:
         return self._launcher.product
 
     @property
-    def devices(self):
+    def devices(self) -> Devices:
         return devices
 
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
@@ -76,18 +76,25 @@ class Pyppeteer:
         )
 
     @property
-    def _launcher(self):
+    def _launcher(self) -> Union[FirefoxLauncher, ChromeLauncher]:
         if not self._lazyLauncher:
             self._lazyLauncher = launcher(
                 projectRoot=self._projectRoot, preferredRevision=self._preferredRevision, product=self.productName
             )
         return self._lazyLauncher
 
-    async def defaultArgs(self, options: Any):
-        return self._launcher.defaultArgs(options)
+    async def defaultArgs(
+        self,
+        args: Sequence[str] = None,
+        devtools: bool = False,
+        headless: bool = None,
+        userDataDir: str = None,
+        **_: Any,
+    ) -> List[str]:
+        return self._launcher.default_args(args=args, devtools=devtools, headless=headless, userDataDir=userDataDir)
 
-    def createBrowserFetcher(self, options: Any):
-        return BrowserFetcher(projectRoot=self._projectRoot, options=options)
+    def createBrowserFetcher(self, platform: Platforms = None, host: str = None,) -> BrowserFetcher:
+        return BrowserFetcher(projectRoot=self._projectRoot, platform=platform, host=host)
 
 
 # shortcut methods
@@ -117,6 +124,8 @@ version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
 __all__ = [
+    '__chromium_revision__',
+    '__pyppeteer_home__',
     'version',
     'version_info',
 ]

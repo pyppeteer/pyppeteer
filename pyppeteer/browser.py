@@ -44,11 +44,11 @@ class Browser(AsyncIOEventEmitter):
         self._defaultViewport = defaultViewport
         self._process = process
         self._screenshotTaskQueue = TaskQueue()
-        self._connection: Connection = connection
-        loop = self._connection.loop
+        self._connection = connection
+        self.loop = self._connection.loop
 
         def _dummy_callback() -> Awaitable[None]:
-            fut = loop.create_future()
+            fut = self.loop.create_future()
             fut.set_result(None)
             return fut
 
@@ -65,13 +65,13 @@ class Browser(AsyncIOEventEmitter):
         self._targets: Dict[str, Target] = {}
         self._connection.on(Events.Connection.Disconnected, lambda: self.emit(Events.Browser.Disconnected))
         self._connection.on(
-            'Target.targetCreated', lambda event: loop.create_task(self._targetCreated(event)),
+            'Target.targetCreated', lambda event: self.loop.create_task(self._targetCreated(event)),
         )
         self._connection.on(
-            'Target.targetDestroyed', lambda event: loop.create_task(self._targetDestroyed(event)),
+            'Target.targetDestroyed', lambda event: self.loop.create_task(self._targetDestroyed(event)),
         )
         self._connection.on(
-            'Target.targetInfoChanged', lambda event: loop.create_task(self._targetInfoChanged(event)),
+            'Target.targetInfoChanged', lambda event: self.loop.create_task(self._targetInfoChanged(event)),
         )
 
     @property
@@ -231,7 +231,7 @@ class Browser(AsyncIOEventEmitter):
         if existing_target:
             return existing_target[0]
 
-        result = asyncio.Future()
+        result = self.loop.create_future()
 
         def check(target: Target) -> None:
             if predicate(target):

@@ -18,7 +18,7 @@ from pyppeteer.errors import ElementHandleError, PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helpers import debugError
-from pyppeteer.jshandle import ElementHandle
+from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
 from pyppeteer.network_manager import NetworkManager
 from pyppeteer.timeout_settings import TimeoutSettings
@@ -489,7 +489,7 @@ class Frame:
 
     def waitFor(
         self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
-    ) -> Union[Awaitable, 'WaitTask']:
+    ) -> Awaitable[Optional[JSHandle]]:
         """Wait until `selectorOrFunctionOrTimeout`.
 
         Details see :meth:`pyppeteer.page.Page.waitFor`.

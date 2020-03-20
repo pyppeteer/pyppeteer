@@ -1,6 +1,9 @@
 """Type definitions for widely used types"""
+
+from pyppeteer.jshandle import JSHandle
+
 try:
-    from typing import TypedDict, Sequence, Union, Literal, Dict
+    from typing import TypedDict, Sequence, Union, Literal, Dict, List, Any, Type
 except ImportError:
     from typing import TypedDict
 
@@ -36,3 +39,22 @@ class LaunchOptions(TypedDict, total=False):
     timeout: float
     dumpio: bool
     env: Dict[str, Union[str, bool]]
+
+
+class DeviceDetails(TypedDict):
+    userAgent: str
+    viewport: Viewport
+
+
+class ScreenshotClip(TypedDict, total=False):
+    x: float
+    y: float
+    width: float
+    height: float
+    scale: float
+
+
+JSFunctionArg = Union[JSHandle, str, int, float, bool, None, Dict[str, Any], List[Any]]
+Devices = Dict[str, DeviceDetails]
+Platforms = Literal['linux', 'mac', 'win32', 'win64']
+MouseButton = Literal['left', 'right', 'middle']

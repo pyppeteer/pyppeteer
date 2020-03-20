@@ -1,10 +1,8 @@
-from typing import Dict, Union
-
 # noqa
 # pragma: no cover
-from pyppeteer.models import Viewport
+from pyppeteer.models import Devices
 
-devices: Dict[str, Dict[str, Union[str, Viewport]]] = {
+devices: Devices = {
     "Blackberry PlayBook": {
         "userAgent": "Mozilla/5.0 (PlayBook; U; RIM Tablet OS 2.1.0; en-US) AppleWebKit/536.2+ (KHTML like Gecko) Version/7.2.1.0 Safari/536.2+",
         "viewport": {

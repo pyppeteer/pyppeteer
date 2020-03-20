@@ -30,7 +30,7 @@ from pyppeteer.frame_manager import Frame, FrameManager
 from pyppeteer.helpers import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
-from pyppeteer.models import Viewport
+from pyppeteer.models import Viewport, MouseButton, ScreenshotClip, JSFunctionArg
 from pyppeteer.network_manager import Request, Response
 from pyppeteer.task_queue import TaskQueue
 from pyppeteer.timeout_settings import TimeoutSettings
@@ -103,7 +103,7 @@ class Page(AsyncIOEventEmitter):
         self._pageBindings: Dict[str, Callable[..., Any]] = {}
         self._coverage = Coverage(client)
         self._javascriptEnabled = True
-        self._viewport: Viewport = None
+        self._viewport: Optional[Viewport] = None
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = TaskQueue()
@@ -162,7 +162,7 @@ class Page(AsyncIOEventEmitter):
         client.on('Log.entryAdded', lambda event: self._onLogEntryAdded(event))
         client.on('Page.fileChooserOpened', lambda event: self._onFileChooser(event))
 
-        def closed(_) -> None:
+        def closed(*_: Any) -> None:
             self.emit(Events.Page.Close)
             self._closed = True
 
@@ -196,7 +196,7 @@ class Page(AsyncIOEventEmitter):
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
-        promise = self.loop.create_future()
+        promise = self._loop.create_future()
         callback = promise.result
         self._fileChooserInterceptors.add(callback())
         try:
@@ -248,9 +248,11 @@ class Page(AsyncIOEventEmitter):
             self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
 
     @property
-    def mainFrame(self) -> Optional[Frame]:
+    def mainFrame(self) -> Frame:
         """Get main :class:`~pyppeteer.frame_manager.Frame` of this page."""
-        return self._frameManager._mainFrame
+        if self._frameManager._mainFrame is not None:
+            return self._frameManager._mainFrame
+        raise RuntimeError(f'No mainFrame attribute exists for class instance {self}')
 
     @property
     def keyboard(self) -> Keyboard:
@@ -363,8 +365,6 @@ class Page(AsyncIOEventEmitter):
 
         :arg str pageFunction: JavaScript function to be executed.
         """
-        if not self.mainFrame:
-            raise PageError('no main frame.')
         context = await self.mainFrame.executionContext()
         return await context.evaluateHandle(pageFunction, *args)
 
@@ -373,12 +373,10 @@ class Page(AsyncIOEventEmitter):
 
         :arg JSHandle prototypeHandle: JSHandle of prototype object.
         """
-        if not self.mainFrame:
-            raise PageError('No main frame.')
         context = await self.mainFrame.executionContext()
         return await context.queryObjects(prototypeHandle)
 
-    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Execute function with an element which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -391,7 +389,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Execute function with all elements which matches ``selector``.
 
         :arg str selector: A selector to query page for.
@@ -1039,7 +1037,7 @@ class Page(AsyncIOEventEmitter):
         """
         return self._viewport
 
-    async def evaluate(self, pageFunction: str, *args) -> Any:
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Execute js-function or js-expression on browser and get result.
 
         :arg str pageFunction: String of js-function/expression to be executed
@@ -1073,11 +1071,11 @@ class Page(AsyncIOEventEmitter):
 
     async def screenshot(
         self,
-        path: Union[str, Path] = None,
+        path: Optional[Union[str, Path]] = None,
         type_: str = 'png',  # png or jpeg
         quality: int = None,  # 0 to 100
         fullPage: bool = False,
-        clip: Dict[str, int] = None,  # x, y, width, height
+        clip: Optional[ScreenshotClip] = None,  # x, y, width, height
         omitBackground: bool = False,
         encoding: str = 'binary',
     ) -> Union[bytes, str]:
@@ -1109,7 +1107,7 @@ class Page(AsyncIOEventEmitter):
         if type_ not in ['png', 'jpeg']:
             raise ValueError(f'Unknown type value: {type_}')
         if path:
-            mimeType, _ = mimetypes.guess_type(path)
+            mimeType, _ = mimetypes.guess_type(str(path))
             if mimeType == 'image/png':
                 type_ = 'png'
             elif mimeType == 'image/jpeg':
@@ -1145,11 +1143,11 @@ class Page(AsyncIOEventEmitter):
         self,
         format: str,  # png or jpeg
         omitBackground: bool,
-        quality: int,  # 0 to 100
-        clip: Dict[str, int],  # x, y, width, height, scale
+        quality: Optional[int],  # 0 to 100
+        clip: Optional[ScreenshotClip],
         encoding: str,
         fullPage: bool,
-        path: Union[str, Path],
+        path: Optional[Union[str, Path]],
     ) -> Union[bytes, str]:
         await self._client.send('Target.activateTarget', {'targetId': self._target._targetId,})
         if clip:
@@ -1339,6 +1337,7 @@ class Page(AsyncIOEventEmitter):
             paperWidth = convertPrintParameterToInches(width or paperWidth)
             paperHeight = convertPrintParameterToInches(height or paperHeight)
 
+        margin = margin or {}
         marginTop = convertPrintParameterToInches(margin.get('top')) or 0
         marginLeft = convertPrintParameterToInches(margin.get('left')) or 0
         marginBottom = convertPrintParameterToInches(margin.get('bottom')) or 0
@@ -1411,7 +1410,7 @@ class Page(AsyncIOEventEmitter):
         return self._mouse
 
     async def click(
-        self, selector: str, delay: float = None, button: str = None, clickCount: int = None,  # left, right, middle
+        self, selector: str, delay: float = 0, button: MouseButton = 'left', clickCount: int = 1,
     ) -> None:
         """Click element which matches ``selector``.
 
@@ -1479,7 +1478,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    async def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args, **kwargs) -> Awaitable:
+    async def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
 
         This method behaves differently with respect to the first argument:
@@ -1534,7 +1533,9 @@ class Page(AsyncIOEventEmitter):
         """
         return self.mainFrame.waitForSelector(selector, **kwargs)
 
-    def waitForXPath(self, xpath: str, **kwargs) -> Awaitable:
+    def waitForXPath(
+        self, xpath: str, visible: bool = False, hidden: bool = False, timeout: Optional[int] = None
+    ) -> Awaitable:
         """Wait until element which matches ``xpath`` appears on page.
 
         Wait for the ``xpath`` to appear in page. If the moment of calling the
@@ -1558,12 +1559,10 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        if self.mainFrame:
-            return self.mainFrame.waitForXPath(xpath, **kwargs)
-        raise RuntimeError(f'mainFrame not defined for class {self}')
+        return self.mainFrame.waitForXPath(xpath, visible=visible, hidden=hidden, timeout=timeout)
 
     def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args
+        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: Sequence[Any]
     ) -> Awaitable[bool]:
         """Wait until the function completes and returns a truthy value.
 
@@ -1589,7 +1588,10 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        return self.mainFrame.waitForFunction(pageFunction=pageFunction, polling=polling, timeout=timeout, *args)
+        return self.mainFrame.waitForFunction(
+            pageFunction=pageFunction, polling=polling, timeout=timeout, *args
+        )
+
 
 
 supportedMetrics = (

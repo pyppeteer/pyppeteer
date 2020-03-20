@@ -11,6 +11,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import JSHandle
+from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.connection import CDPSession
@@ -85,14 +86,14 @@ class Worker(AsyncIOEventEmitter):
         """Return ExecutionContext."""
         return await self._executionContextPromise
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Evaluate ``pageFunction`` with ``args``.
 
         Shortcut for ``(await worker.executionContext).evaluate(pageFunction, *args)``.
         """  # noqa: E501
         return await (await self._executionContextPromise).evaluate(pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
         """Evaluate ``pageFunction`` with ``args`` and return :class:`~pyppeteer.execution_context.JSHandle`.
 
         Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.

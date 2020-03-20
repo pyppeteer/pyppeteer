@@ -12,6 +12,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 from pyppeteer.jshandle import createJSHandle, JSHandle, ElementHandle
+from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
@@ -36,20 +37,20 @@ class ExecutionContext(object):
         if self._world:
             return self._world.frame
 
-    async def evaluate(self, pageFunction: str, *args: Any) -> Any:
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Execute ``pageFunction`` on this context.
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
         """Execute ``pageFunction`` on this context.
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args):
+    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args: JSFunctionArg):
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
         if not helpers.is_js_func(pageFunction):

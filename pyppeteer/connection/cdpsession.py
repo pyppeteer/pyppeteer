@@ -4,7 +4,7 @@
 """Connection/Session management module."""
 
 import asyncio
-from typing import Awaitable, Dict, Union, Optional
+from typing import Awaitable, Dict, Union
 
 from pyee import AsyncIOEventEmitter
 
@@ -36,7 +36,7 @@ class CDPSession(AsyncIOEventEmitter):
         """Make new session."""
         super().__init__()
         self._callbacks: Dict[int, asyncio.Future] = {}
-        self._connection: Optional[Connection] = connection
+        self._connection = connection
         self._targetType = targetType
         self._sessionId = sessionId
         self.loop = loop

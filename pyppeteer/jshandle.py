@@ -5,12 +5,13 @@ import math
 import os
 from idlelib.rpc import RemoteObject
 from pathlib import Path
-from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union, Sequence
+from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helpers import debugError
+from pyppeteer.models import MouseButton, JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
@@ -47,10 +48,10 @@ class JSHandle(object):
         """Get execution context of this handle."""
         return self._context
 
-    async def evaluate(self, pageFunction: str, *args):
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg):
         return await self.executionContext.evaluate(pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args):
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg):
         return await self.executionContext.evaluateHandle(pageFunction, *args)
 
     async def getProperty(self, propertyName: str) -> 'JSHandle':
@@ -232,7 +233,7 @@ class ElementHandle(JSHandle):
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
 
-    async def click(self, button: str = 'left', clickCount: int = 1, delay: float = 0) -> None:
+    async def click(self, button: MouseButton = 'left', clickCount: int = 1, delay: float = 0) -> None:
         """Click the center of this element.
 
         If needed, this method scrolls element into view. If the element is
@@ -273,7 +274,7 @@ class ElementHandle(JSHandle):
             values,
         )
 
-    async def uploadFile(self, *filePaths: Sequence[str]) -> dict:
+    async def uploadFile(self, *filePaths: Union[Path, str]) -> dict:
         """Upload files."""
         # TODO port this
         files = [os.path.abspath(p) for p in filePaths]
@@ -472,7 +473,7 @@ class ElementHandle(JSHandle):
                 result.append(elementHandle)
         return result  # type: ignore
 
-    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Run ``Page.querySelectorEval`` within the element.
 
         This method runs ``document.querySelector`` within the element and
@@ -500,7 +501,7 @@ class ElementHandle(JSHandle):
         await elementHandle.dispose()
         return result
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
         """Run ``Page.querySelectorAllEval`` within the element.
 
         This method runs ``Array.from(document.querySelectorAll)`` within the

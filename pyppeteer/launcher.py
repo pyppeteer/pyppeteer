@@ -52,7 +52,7 @@ class BrowserRunner:
         self.temp_dir = temp_dir
 
         self.proc: Optional[subprocess.Popen] = None
-        self.connection = None
+        self.connection: Optional[Connection] = None
 
         self._closed = True
 
@@ -61,7 +61,7 @@ class BrowserRunner:
         if kwargs.get('pipe'):
             raise NotImplementedError('Communication via pipe not supported')
         if kwargs.get('env'):
-            process_opts['env'] = kwargs.get('env')
+            process_opts['env'] = kwargs['env']
 
         if not kwargs.get('dumpio'):
             # we read stdout to check it for the ws endpoint
@@ -77,12 +77,12 @@ class BrowserRunner:
 
         assert self.proc is None, 'This process has previously been started'
 
-        logger.debug(f'Calling {self.executable_path} {" ".join(self.process_args)}')
+        logger.debug(f'Calling process: {self.executable_path} {" ".join(self.process_args)}')
         self.proc = subprocess.Popen([str(self.executable_path), *self.process_args], **process_opts)
         self._closed = False
 
         # ignore args from signals
-        def close_proc_wrapper(_, __):
+        def close_proc_wrapper(*_: Any) -> None:
             asyncio.get_event_loop().run_until_complete(self._close_proc())
 
         if kwargs.get('autoClose'):
@@ -108,7 +108,7 @@ class BrowserRunner:
                 self.temp_dir.cleanup()
 
     def _wait_for_proc_to_close(self) -> None:
-        if self.proc.poll() is None and not self._closed:
+        if self.proc is not None and self.proc.poll() is None and not self._closed:
             try:
                 self.proc.terminate()
                 self.proc.wait()
@@ -155,6 +155,8 @@ class BrowserRunner:
             # may need to transition to asyncio.subprocess
             # transport = PipeTransport(write_stream, read_stream)
             # self.connection = Connection('', transport, delay=slowMo)
+        if self.proc is None:
+            raise RuntimeError('class process not initialized (self.proc = None)')
         browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
         transport = await WebsocketTransport.create(uri=browser_ws_endpoint)
         self.connection = Connection(url=browser_ws_endpoint, transport=transport, delay=slowMo)

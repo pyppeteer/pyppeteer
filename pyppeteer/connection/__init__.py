@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from typing import Awaitable, Dict, Any, Optional
+from typing import Awaitable, Dict, Any
 
 import websockets
 from pyee import AsyncIOEventEmitter
@@ -68,7 +68,7 @@ class Connection(AsyncIOEventEmitter):
         self.loop.create_task(self._recv_loop())
 
     @staticmethod
-    def fromSession(session: 'CDPSession') -> Optional['Connection']:
+    def fromSession(session: 'CDPSession') -> 'Connection':
         return session._connection
 
     def session(self, sessionId) -> 'CDPSession':
