@@ -299,13 +299,13 @@ class DOMWorld(object):
         await handle.type(text, **kwargs)
         await handle.dispose()
 
-    async def waitForSelector(self, selector, visible=False, hidden=False, timeout: int = None):
+    def waitForSelector(self, selector, visible=False, hidden=False, timeout: int = None):
         return self._waitForSelectorOrXpath(selector, isXPath=False, visible=visible, hidden=hidden, timeout=timeout)
 
-    async def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
+    def waitForXpath(self, xpath, visible=False, hidden=False, timeout: int = None):
         return self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
-    async def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args) -> Awaitable[JSHandle]:
+    def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args) -> Awaitable['JSHandle']:
         if not timeout:
             timeout = self._timeoutSettings.timeout
         return WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise
@@ -407,7 +407,7 @@ class WaitTask(object):
 
     def __await__(self) -> Awaitable:
         """Make this class **awaitable**."""
-        result = await self.promise
+        result = yield from self.promise
         if isinstance(result, Exception):
             raise result
         return result

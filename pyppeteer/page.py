@@ -1563,7 +1563,7 @@ class Page(AsyncIOEventEmitter):
 
     def waitForFunction(
         self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: Sequence[Any]
-    ) -> Awaitable[bool]:
+    ) -> Awaitable[JSHandle]:
         """Wait until the function completes and returns a truthy value.
 
         :arg Any args: Arguments to pass to ``pageFunction``.

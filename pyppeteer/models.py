@@ -1,11 +1,13 @@
 """Type definitions for widely used types"""
 
-from pyppeteer.jshandle import JSHandle
 
 try:
-    from typing import TypedDict, Sequence, Union, Literal, Dict, List, Any, Type
+    from typing import TypedDict, Sequence, Union, Literal, Dict, List, Any, TYPE_CHECKING
 except ImportError:
     from typing import TypedDict
+
+if TYPE_CHECKING:
+    pass
 
 
 class Viewport(TypedDict, total=False):
@@ -46,7 +48,7 @@ class DeviceDetails(TypedDict):
     viewport: Viewport
 
 
-class ScreenshotClip(TypedDict, total=False):
+class ScreenshotClip(TypedDict):
     x: float
     y: float
     width: float
@@ -54,7 +56,11 @@ class ScreenshotClip(TypedDict, total=False):
     scale: float
 
 
-JSFunctionArg = Union[JSHandle, str, int, float, bool, None, Dict[str, Any], List[Any]]
+class ScreenshotClipPartial(ScreenshotClip, total=False):
+    pass
+
+
+JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
 Platforms = Literal['linux', 'mac', 'win32', 'win64']
 MouseButton = Literal['left', 'right', 'middle']

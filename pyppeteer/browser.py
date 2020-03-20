@@ -4,6 +4,7 @@
 """Browser module."""
 import asyncio
 import logging
+from asyncio import Future
 from subprocess import Popen
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
@@ -231,15 +232,15 @@ class Browser(AsyncIOEventEmitter):
         if existing_target:
             return existing_target[0]
 
-        result = self.loop.create_future()
+        result_fut: Future[Target] = self.loop.create_future()
 
         def check(target: Target) -> None:
             if predicate(target):
-                result.set_result(target)
+                result_fut.set_result(target)
 
         self.on(Events.Browser.TargetCreated, check)
         self.on(Events.Browser.TargetChanged, check)
-        result = await asyncio.wait_for(result, timeout=timeout)
+        result = await asyncio.wait_for(result_fut, timeout=timeout)
         self.remove_listener(Events.Browser.TargetCreated, check)
         self.remove_listener(Events.Browser.TargetChanged, check)
         return result
@@ -254,8 +255,7 @@ class Browser(AsyncIOEventEmitter):
         In case of multiple browser contexts, this method will return a list
         with all the pages in all browser contexts.
         """
-        pages = [await context.pages() for context in self.browserContexts]
-        pages = await asyncio.gather(*pages)
+        pages = asyncio.gather(*[context.pages() for context in self.browserContexts])
         return [p for ps in pages for p in ps]
 
     async def version(self) -> str:

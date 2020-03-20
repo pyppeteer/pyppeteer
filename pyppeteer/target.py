@@ -88,7 +88,7 @@ class Target:
     def worker(self) -> Optional[Awaitable[Worker]]:
         _type = self._targetInfo['type']
         if _type not in ['service_worker', 'shared_worker']:
-            return
+            return None
         if not self._workerFuture:
             async def worker_fut_task() -> Worker:
                 nonlocal self
