@@ -16,11 +16,12 @@ from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
+    from pyppeteer.frame_manager import Frame
 
 logger = logging.getLogger(__name__)
 
 EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^[\040\t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
+SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
 
 
 class ExecutionContext(object):
