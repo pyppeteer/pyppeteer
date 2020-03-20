@@ -1558,9 +1558,13 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        return self.mainFrame.waitForXPath(xpath, **kwargs)
+        if self.mainFrame:
+            return self.mainFrame.waitForXPath(xpath, **kwargs)
+        raise RuntimeError(f'mainFrame not defined for class {self}')
 
-    def waitForFunction(self, pageFunction: str, *args, **kwargs) -> Awaitable:
+    def waitForFunction(
+        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args
+    ) -> Awaitable[bool]:
         """Wait until the function completes and returns a truthy value.
 
         :arg Any args: Arguments to pass to ``pageFunction``.
@@ -1585,7 +1589,7 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        return self.mainFrame.waitForFunction(pageFunction, *args, **kwargs)
+        return self.mainFrame.waitForFunction(pageFunction=pageFunction, polling=polling, timeout=timeout, *args)
 
 
 supportedMetrics = (
@@ -1671,16 +1675,16 @@ class FileChooser:
         self._handled = False
 
     @property
-    def isMultiple(self):
+    def isMultiple(self) -> bool:
         return self._multiple
 
-    async def accept(self, filePaths: List[Union[Path, str]]):
+    async def accept(self, filePaths: Sequence[Union[Path, str]]) -> None:
         if self._handled:
             raise ValueError('Cannot accept FileChooser which is already handled!')
         self._handled = True
         await self._element.uploadFile(*filePaths)
 
-    async def cancel(self):
+    async def cancel(self) -> None:
         if self._handled:
             raise ValueError('Cannot cancel Filechooser which is already handled!')
         self._handled = True

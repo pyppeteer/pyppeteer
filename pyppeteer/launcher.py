@@ -51,11 +51,10 @@ class BrowserRunner:
         self.process_args = process_args or []
         self.temp_dir = temp_dir
 
-        self.proc: subprocess.Popen = None
+        self.proc: Optional[subprocess.Popen] = None
         self.connection = None
 
         self._closed = True
-        self._listeners = []
 
     def start(self, **kwargs: LaunchOptions) -> None:
         process_opts = {}
@@ -140,9 +139,10 @@ class BrowserRunner:
             except Exception:
                 pass
         try:
-            self.temp_dir.cleanup()
-        except Exception:
-            pass
+            if self.temp_dir:
+                self.temp_dir.cleanup()
+        except Exception as e:
+            logger.warning(f'failed to cleanup {self.temp_dir}: {e}')
 
     async def setupConnection(
         self, usePipe: bool = None, timeout: float = None, slowMo: float = 0, preferredRevision: str = None,
@@ -155,10 +155,9 @@ class BrowserRunner:
             # may need to transition to asyncio.subprocess
             # transport = PipeTransport(write_stream, read_stream)
             # self.connection = Connection('', transport, delay=slowMo)
-        else:
-            browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
-            transport = await WebsocketTransport.create(uri=browser_ws_endpoint)
-            self.connection = Connection(url=browser_ws_endpoint, transport=transport, delay=slowMo)
+        browser_ws_endpoint = waitForWSEndpoint(self.proc, timeout, preferredRevision)
+        transport = await WebsocketTransport.create(uri=browser_ws_endpoint)
+        self.connection = Connection(url=browser_ws_endpoint, transport=transport, delay=slowMo)
         return self.connection
 
 
@@ -606,14 +605,14 @@ class FirefoxLauncher(BaseBrowserLauncher):
         return profile_path
 
 
-def waitForWSEndpoint(proc: subprocess.Popen, timeout: float, preferredRevision: str) -> str:
+def waitForWSEndpoint(proc: subprocess.Popen, timeout: Optional[float], preferredRevision: Optional[str]) -> str:
     assert proc.stdout is not None, 'process STDOUT wasn\'t piped'
     start = time.perf_counter()
     buffer = ''
     for line in iter(proc.stdout.readline, b''):
         line = line.decode()
         buffer += '\n' + line
-        if (start - time.perf_counter()) > timeout:
+        if timeout and (start - time.perf_counter()) > timeout:
             raise TimeoutError(
                 f'Timed out after {timeout * 1000:.0f}ms while trying to connect to the browser! '
                 f'Only Chrome at revision {preferredRevision} is guaranteed to work.'

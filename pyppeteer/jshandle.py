@@ -5,7 +5,7 @@ import math
 import os
 from idlelib.rpc import RemoteObject
 from pathlib import Path
-from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
+from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union, Sequence
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
@@ -273,7 +273,7 @@ class ElementHandle(JSHandle):
             values,
         )
 
-    async def uploadFile(self, *filePaths: str) -> dict:
+    async def uploadFile(self, *filePaths: Sequence[str]) -> dict:
         """Upload files."""
         # TODO port this
         files = [os.path.abspath(p) for p in filePaths]

@@ -8,13 +8,13 @@ from subprocess import Popen
 from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
-from pyppeteer.task_queue import TaskQueue
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
 from pyppeteer.models import Viewport
 from pyppeteer.target import Target
+from pyppeteer.task_queue import TaskQueue
 
 logger = logging.getLogger(__name__)
 
@@ -218,7 +218,7 @@ class Browser(AsyncIOEventEmitter):
         """get active browser target"""
         return next((target for target in self.targets() if target.type == 'browser'))
 
-    async def waitForTarget(self, predicate, timeout=30_000) -> Target:
+    async def waitForTarget(self, predicate: Callable[[Target], bool], timeout: float =30_000) -> Target:
         """
         Wait for target that matches predicate function.
         :param predicate: function that takes 1 argument of Target object
@@ -233,10 +233,9 @@ class Browser(AsyncIOEventEmitter):
 
         result = asyncio.Future()
 
-        def check(target):
+        def check(target: Target) -> None:
             if predicate(target):
                 result.set_result(target)
-                result.done()
 
         self.on(Events.Browser.TargetCreated, check)
         self.on(Events.Browser.TargetChanged, check)
@@ -255,7 +254,7 @@ class Browser(AsyncIOEventEmitter):
         In case of multiple browser contexts, this method will return a list
         with all the pages in all browser contexts.
         """
-        pages = [context.pages() for context in self.browserContexts]
+        pages = [await context.pages() for context in self.browserContexts]
         pages = await asyncio.gather(*pages)
         return [p for ps in pages for p in ps]
 
@@ -284,7 +283,7 @@ class Browser(AsyncIOEventEmitter):
         await self._connection.dispose()
 
     @property
-    def isConnected(self):
+    def isConnected(self) -> bool:
         return not self._connection._closed
 
     def _getVersion(self) -> Awaitable:

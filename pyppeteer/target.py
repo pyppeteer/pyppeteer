@@ -4,12 +4,13 @@
 """Target module."""
 
 import asyncio
-from typing import Callable, Dict, List, Optional, Awaitable, TYPE_CHECKING
+from typing import Callable, Dict, Optional, Awaitable, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.events import Events
 from pyppeteer.models import Viewport
 from pyppeteer.page import Page
+from pyppeteer.task_queue import TaskQueue
 from pyppeteer.worker import Worker
 
 if TYPE_CHECKING:
@@ -26,7 +27,7 @@ class Target:
         sessionFactory: Callable[[], Awaitable[CDPSession]],
         ignoreHTTPSErrors: bool,
         defaultViewport: Viewport,
-        screenshotTaskQueue: List,
+        screenshotTaskQueue: TaskQueue,
         loop: asyncio.AbstractEventLoop,
     ) -> None:
         self._targetInfo = targetInfo
@@ -37,7 +38,7 @@ class Target:
         self._defaultViewport = defaultViewport
         self._screenshotTaskQueue = screenshotTaskQueue
         self._page = None
-        self._workerPromise = None
+        self._workerFuture = None
         self.loop = loop
 
         self._initializedPromise = self.loop.create_future()
@@ -84,14 +85,17 @@ class Target:
             )
         return self._page
 
-    async def worker(self):
+    async def worker(self) -> Optional[Worker]:
         _type = self._targetInfo['type']
         if _type not in ['service_worker', 'shared_worker']:
             return
-        if not self._workerPromise:
-            session = await self._sessionFactory()
-            self._workerPromise = Worker(session, self._targetInfo['url'], lambda: None, lambda: None)
-        return self._workerPromise
+        if not self._workerFuture:
+            async def worker_fut_task() -> Worker:
+                nonlocal self
+                session = await self._sessionFactory()
+                return Worker(session, self._targetInfo['url'], lambda *_: None, lambda *_: None)
+            self._workerFuture = self.loop.create_task(worker_fut_task())
+        return await self._workerFuture
 
     @property
     def url(self) -> str:

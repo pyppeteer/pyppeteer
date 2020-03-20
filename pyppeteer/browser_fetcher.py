@@ -147,9 +147,10 @@ class BrowserFetcher:
         result = []
         for file in [x for x in self.downloadsFolder.iterdir() if x.is_dir()]:
             platform, revision = parse_folder_path(file)
-            if platform != self._platform:
+            if platform != self._platform or not revision:
                 continue
-            result.append(revision)
+            result.append(Path(revision))
+        return result
 
     def remove(self, revision: str) -> None:
         f_path = self._get_folder_path(revision)

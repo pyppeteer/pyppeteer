@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import Future
-from typing import Any, List, Optional, Dict, Generator, Union, TYPE_CHECKING, Awaitable, Callable
+from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, Callable
 
 from pyppeteer import helpers
 from pyppeteer.errors import BrowserError, PageError, NetworkError
@@ -404,9 +404,9 @@ class WaitTask(object):
             self._timeoutTimer = self.loop.create_task(timer(self._timeout))
         self._runningTask = self.loop.create_task(self.rerun())
 
-    def __await__(self) -> Generator:
+    def __await__(self) -> Awaitable:
         """Make this class **awaitable**."""
-        result = yield from self.promise
+        result = await self.promise
         if isinstance(result, Exception):
             raise result
         return result

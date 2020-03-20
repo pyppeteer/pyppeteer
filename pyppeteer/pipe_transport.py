@@ -13,7 +13,7 @@ class PipeTransport:
         self.onmessage: Optional[Callable[[Optional[str], str], None]] = None
         self.onclose: Optional[Callable[[], None]] = None
 
-        def _onclose():
+        def _onclose() -> None:
             if self.onclose:
                 self.onclose()
 
@@ -35,7 +35,7 @@ class PipeTransport:
             return
 
         message = self._pendingMessage + buffer
-        if message:
+        if message and self.onmessage:
             self.onmessage(None, message)
 
         start = end + 1
