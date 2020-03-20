@@ -10,11 +10,12 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 import asyncio
 from asyncio import Future
 from functools import partial
-from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Literal, Any
+from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Any
 
 from pyppeteer import helpers
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
+from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request
 
 if TYPE_CHECKING:
@@ -28,7 +29,6 @@ pyppeteerToProtocolLifecycle = {
     'networkidle2': 'networkAlmostIdle',
 }
 
-WaitTargets = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
 
 
 class LifecycleWatcher:
@@ -39,7 +39,7 @@ class LifecycleWatcher:
         frameManager: 'FrameManager',
         frame: 'Frame',
         timeout: int,
-        waitUntil: Union[WaitTargets, List[WaitTargets]] = 'load',
+        waitUntil: WaitTargets = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
         self._expectedLifecycle: List[str] = []

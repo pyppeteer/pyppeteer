@@ -1,11 +1,12 @@
 from typing import List, Dict, Union, Set, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from pyppeteer.connection.cdpsession import CDPSession
     from pyppeteer.jshandle import ElementHandle
 
 
-class Accessibility(object):
-    def __init__(self, client):
+class Accessibility:
+    def __init__(self, client: 'CDPSession'):
         self._client = client
 
     async def snapshot(self, interestingOnly: bool = False, root: 'ElementHandle' = None):

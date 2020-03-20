@@ -33,8 +33,8 @@ class DOMWorld(object):
         self._timeoutSettings = timeoutSettings
         self.loop = self._frameManager._client.loop
 
-        self._documentFuture: Future['ElementHandle'] = None
-        self._contextFuture: Future['ExecutionContext'] = None
+        self._documentFuture: Optional[Future['ElementHandle']] = None
+        self._contextFuture: Optional[Future['ExecutionContext']] = None
         self._contextResolveCallback: Callable = None
         self._setContext()
 
@@ -102,7 +102,7 @@ class DOMWorld(object):
         self._documentFuture.set_result(document.asElement())
         return await self._documentFuture
 
-    async def xpath(self, expression):
+    async def xpath(self, expression) -> List['ElementHandle']:
         document = await self._document
         return await document.xpath(expression)
 
@@ -143,7 +143,7 @@ class DOMWorld(object):
             """
         )
 
-    async def setContent(self, html, waitUntil=None, timeout=None):
+    async def setContent(self, html, waitUntil=None, timeout=None) -> None:
         if timeout is None:
             timeout = self._timeoutSettings.navigationTimeout
         if waitUntil is None:

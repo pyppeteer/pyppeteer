@@ -6,6 +6,7 @@
 import asyncio
 import logging
 import re
+from functools import partial
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
@@ -19,9 +20,9 @@ from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import ElementHandle, JSHandle
-from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
-from pyppeteer.models import JSFunctionArg
-from pyppeteer.network_manager import NetworkManager, Request
+from pyppeteer.lifecycle_watcher import LifecycleWatcher
+from pyppeteer.models import JSFunctionArg, WaitTargets
+from pyppeteer.network_manager import NetworkManager, Request, Response
 from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
@@ -343,10 +344,12 @@ class Frame:
         self.evaluateHandle = self.mainWorld.evaluateHandle
         self.executionContext = self.mainWorld.executionContext
         self.querySelector = self.J = self.mainWorld.querySelector
+        self.querySelectorAll = self.JJ = self.mainWorld.querySelectorAll
         self.querySelectorAllEval = self.JJeval = self.mainWorld.querySelectorAllEval
         self.querySelectorEval = self.Jeval = self.mainWorld.querySelectorEval
         self.type = self.mainWorld.type
-        self.waitForFunction = self.mainWorld.waitForFunction
+        # todo: proper signature
+        self.waitForFunction = partial(self.mainWorld.waitForFunction, self)
         self.xpath = self.Jx = self.mainWorld.xpath
 
         self.click = self.secondaryWorld.click
@@ -359,11 +362,11 @@ class Frame:
         self.title = self.secondaryWorld.title
 
     def goto(
-        self, url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None
-    ) -> Awaitable[Optional[Request]]:
+        self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None
+    ) -> Awaitable[Optional[Response]]:
         return self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
 
-    def waitForFrameNavigation(self, waitUntil: WaitTargets = None, timeout: int = None) -> Awaitable[Optional[Request]]:
+    def waitForNavigation(self, timeout: Optional[float] = None, waitUntil: Optional[WaitTargets] = None) -> Awaitable[Optional[Request]]:
         return self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
 
     @property
@@ -565,3 +568,4 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
+

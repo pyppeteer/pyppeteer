@@ -48,7 +48,7 @@ class DeviceDetails(TypedDict):
     viewport: Viewport
 
 
-class ScreenshotClip(TypedDict):
+class ScreenshotClip(TypedDict, total=False):
     x: float
     y: float
     width: float
@@ -56,11 +56,9 @@ class ScreenshotClip(TypedDict):
     scale: float
 
 
-class ScreenshotClipPartial(ScreenshotClip, total=False):
-    pass
-
-
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
 Platforms = Literal['linux', 'mac', 'win32', 'win64']
 MouseButton = Literal['left', 'right', 'middle']
+WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
+WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]

@@ -8,7 +8,7 @@ import json
 import logging
 import math
 import re
-from typing import Any, Awaitable, Callable, Dict, List, Union
+from typing import Any, Awaitable, Callable, Dict, List, Union, Optional
 
 from pyee import AsyncIOEventEmitter
 
@@ -128,7 +128,7 @@ def waitForEvent(
     emitter: AsyncIOEventEmitter,
     eventName: str,  # noqa: C901
     predicate: Callable[[Any], bool],
-    timeout: float,
+    timeout: Optional[float],
     loop: asyncio.AbstractEventLoop,
 ) -> Awaitable:
     """Wait for an event emitted from the emitter."""
@@ -141,7 +141,10 @@ def waitForEvent(
         future.set_exception(exception)
 
     async def timeoutTimer() -> None:
-        await asyncio.sleep(timeout / 1000)
+        if timeout:
+            await asyncio.sleep(timeout / 1000)
+        else:
+            await asyncio.get_event_loop().create_future()
         rejectCallback(TimeoutError('Timeout exceeded while waiting for event'))
 
     def _listener(target: Any) -> None:

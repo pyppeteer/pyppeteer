@@ -31,11 +31,18 @@ from pyppeteer.helpers import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle
 from pyppeteer.models import Viewport, MouseButton, ScreenshotClip, JSFunctionArg
+from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request, Response
 from pyppeteer.task_queue import TaskQueue
 from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
+
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
+
 
 if TYPE_CHECKING:
     from pyppeteer.target import Target
@@ -168,7 +175,7 @@ class Page(AsyncIOEventEmitter):
 
         self._target._isClosedPromise.add_done_callback(closed)
 
-    async def _initialize(self):
+    async def _initialize(self) -> None:
         await asyncio.gather(
             self._frameManager.initialize(),
             self._client.send(
@@ -178,11 +185,11 @@ class Page(AsyncIOEventEmitter):
             self._client.send('Log.enable'),
         )
 
-    async def _onFileChooser(self, event: Dict):
+    async def _onFileChooser(self, event: Dict) -> None:
         if not self._fileChooserInterceptors:
             return
         frame = self._frameManager.frame(event['frameId'])
-        context = await frame.executionContext()
+        context = await frame.executionContext
         element = await context._adoptBackednNodeId(event['backendNodeId'])
         interceptors = copy(self._fileChooserInterceptors)
         self._fileChooserInterceptors.clear()
@@ -206,6 +213,7 @@ class Page(AsyncIOEventEmitter):
             raise e
 
     async def setGeolocation(self, longitude: float, latitude: float, accuracy: Optional[float]) -> None:
+        accuracy = accuracy or 0
         if -180 >= longitude >= 180:
             raise PageError(f'Invalid longitude {longitude}: precondition -180 <= LONGITUDE <= 180 failed')
         if -90 >= latitude >= 90:
@@ -278,7 +286,7 @@ class Page(AsyncIOEventEmitter):
         return self._accessibility
 
     @property
-    def frames(self):
+    def frames(self) -> List['Frame']:
         return self._frameManager.frames()
 
     @property
@@ -365,7 +373,7 @@ class Page(AsyncIOEventEmitter):
 
         :arg str pageFunction: JavaScript function to be executed.
         """
-        context = await self.mainFrame.executionContext()
+        context = await self.mainFrame.executionContext
         return await context.evaluateHandle(pageFunction, *args)
 
     async def queryObjects(self, prototypeHandle: JSHandle) -> JSHandle:
@@ -373,7 +381,7 @@ class Page(AsyncIOEventEmitter):
 
         :arg JSHandle prototypeHandle: JSHandle of prototype object.
         """
-        context = await self.mainFrame.executionContext()
+        context = await self.mainFrame.executionContext
         return await context.queryObjects(prototypeHandle)
 
     async def querySelectorEval(self, selector: str, pageFunction: str, *args: JSFunctionArg) -> Any:
@@ -569,7 +577,7 @@ class Page(AsyncIOEventEmitter):
 
         async def _evaluate(frame: Frame) -> None:
             try:
-                await frame.evaluate(expression, force_expr=True)
+                await frame.evaluate(expression)
             except Exception as e:
                 debugError(logger, e)
 
@@ -736,7 +744,7 @@ class Page(AsyncIOEventEmitter):
         await self.mainFrame.setContent(html=html, timeout=timeout, waitUntil=waitUntil)
 
     async def goto(
-        self, url: str, referer: str = None, timeout: float = None, waitUntil: Union[str, List[str]] = None,
+        self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None,
     ) -> Optional[Response]:
         """Go to the ``url``.
 
@@ -780,7 +788,7 @@ class Page(AsyncIOEventEmitter):
 
     async def reload(
         self, timeout: float = None, waitUntil: Union[str, List[str]] = None,
-    ):
+    ) -> Optional[Response]:
         return (
             await asyncio.gather(
                 self.waitForNavigation(timeout=timeout, waitUntil=waitUntil), self._client.send('Page.reload')
@@ -824,7 +832,7 @@ class Page(AsyncIOEventEmitter):
         """  # noqa: E501
         return await self.mainFrame.waitForNavigation(timeout=timeout, waitUntil=waitUntil)
 
-    def _sessionClosePromise(self):
+    def _sessionClosePromise(self) -> Awaitable[None]:
         if not self._disconnectPromise:
             self._disconnectPromise = self.loop.create_future()
             self._client.once(
@@ -995,7 +1003,7 @@ class Page(AsyncIOEventEmitter):
             raise ValueError(f'Unsupported media type: {mediaType}')
         await self._client.send('Emulation.setEmulatedMedia', {'media': mediaType or '',})
 
-    async def emulateMediaFeatures(self, features: List[Dict] = None):
+    async def emulateMediaFeatures(self, features: List[Dict] = None) -> Optional[bool]:
         if not features:
             await self._client.send('Emulation.setEmulatedMedia', {'features': None})
         if isinstance(features, list):
@@ -1004,7 +1012,7 @@ class Page(AsyncIOEventEmitter):
                     return True
         await self._client.send('Emulation.setEmulatedMedia', {'features': features})
 
-    async def emulateTimezone(self, timezoneId: str):
+    async def emulateTimezone(self, timezoneId: str) -> None:
         try:
             await self._client.send('Emulation.setTimezoneOverride', {'timezoneId': timezoneId})
         except Exception as e:
@@ -1030,7 +1038,7 @@ class Page(AsyncIOEventEmitter):
             await self.reload()
 
     @property
-    def viewport(self) -> Optional[Dict]:
+    def viewport(self) -> Optional[Viewport]:
         """Get viewport as a dictionary or None.
 
         Fields of returned dictionary is same as :meth:`setViewport`.
@@ -1640,13 +1648,14 @@ class ConsoleMessage:
     ConsoleMessage objects are dispatched by page via the ``console`` event.
     """
 
-    def __init__(self, type: str, text: str, args: List[JSHandle] = None) -> None:
+    def __init__(self, type: str, text: str, args: List[JSHandle] = None, location: Dict[str, Any] = None) -> None:
         #: (str) type of console message
         self._type = type
         #: (str) console message string
         self._text = text
         #: list of JSHandle
         self._args = args if args is not None else []
+        self._location = location or {}
 
     @property
     def type(self) -> str:
@@ -1662,6 +1671,10 @@ class ConsoleMessage:
     def args(self) -> List[JSHandle]:
         """Return list of args (JSHandle) of this message."""
         return self._args
+
+    @property
+    def location(self) -> Dict[str, Any]:
+        return self._location
 
 
 class FileChooser:

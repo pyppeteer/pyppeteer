@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def createJSHandle(context, remoteObject):
+def createJSHandle(context, remoteObject) -> Union['JSHandle', 'ElementHandle']:
     frame = context.frame
     if remoteObject.get('subtype') == 'node' and frame:
         frameManager = frame._frameManager
