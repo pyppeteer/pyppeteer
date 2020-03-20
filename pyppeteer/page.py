@@ -1409,9 +1409,7 @@ class Page(AsyncIOEventEmitter):
         """Get :class:`~pyppeteer.input.Mouse` object."""
         return self._mouse
 
-    async def click(
-        self, selector: str, delay: float = 0, button: MouseButton = 'left', clickCount: int = 1,
-    ) -> None:
+    async def click(self, selector: str, delay: float = 0, button: MouseButton = 'left', clickCount: int = 1,) -> None:
         """Click element which matches ``selector``.
 
         This method fetches an element with ``selector``, scrolls it into view
@@ -1478,7 +1476,9 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    async def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs) -> Awaitable:
+    async def waitFor(
+        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs
+    ) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
 
         This method behaves differently with respect to the first argument:
@@ -1588,10 +1588,7 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        return self.mainFrame.waitForFunction(
-            pageFunction=pageFunction, polling=polling, timeout=timeout, *args
-        )
-
+        return self.mainFrame.waitForFunction(pageFunction=pageFunction, polling=polling, timeout=timeout, *args)
 
 
 supportedMetrics = (

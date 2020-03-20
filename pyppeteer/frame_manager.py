@@ -20,7 +20,8 @@ from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher, WaitTargets
-from pyppeteer.network_manager import NetworkManager
+from pyppeteer.models import JSFunctionArg
+from pyppeteer.network_manager import NetworkManager, Request
 from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
@@ -92,7 +93,7 @@ class FrameManager(AsyncIOEventEmitter):
 
     async def navigateFrame(
         self, frame: 'Frame', url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None,
-    ):
+    ) -> Optional[Request]:
         ensureNewDocumentNavigation = False
 
         async def navigate(url_: str, referer_: str, frameId: str):
@@ -127,7 +128,7 @@ class FrameManager(AsyncIOEventEmitter):
             raise error
         return watcher.navigationResponse()
 
-    async def waitForFrameNavigation(self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: int = None):
+    async def waitForFrameNavigation(self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: int = None) -> Optional[Request]:
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
@@ -357,10 +358,12 @@ class Frame:
         self.tap = self.secondaryWorld.tap
         self.title = self.secondaryWorld.title
 
-    def goto(self, url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None):
+    def goto(
+        self, url: str, referer: str = None, timeout: int = None, waitUntil: WaitTargets = None
+    ) -> Awaitable[Optional[Request]]:
         return self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
 
-    def waitForFrameNavigation(self, waitUntil: WaitTargets = None, timeout: int = None):
+    def waitForFrameNavigation(self, waitUntil: WaitTargets = None, timeout: int = None) -> Awaitable[Optional[Request]]:
         return self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
 
     @property
@@ -409,7 +412,7 @@ class Frame:
         """
         return self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
 
-    async def addStyleTag(self, url=None, path=None, content=None):
+    async def addStyleTag(self, url=None, path=None, content=None) -> Awaitable[Optional['ElementHandle']]:
         return self._mainWorld.addStyleTag(url=url, path=path, content=content)
 
     async def focus(self, selector: str) -> None:
@@ -439,9 +442,9 @@ class Frame:
 
         Details see :meth:`pyppeteer.page.Page.select`.
         """
-        for value in values:
+        for index, value in values:
             if not isinstance(value, str):
-                raise TypeError('Values must be string. Found {value} of type {type(value)}')
+                raise TypeError(f'Values must be string. Found {value} of type {type(value)} at index {index}')
         return await self.querySelectorEval(  # type: ignore
             selector,
             '''
@@ -462,7 +465,8 @@ class Frame:
     return options.filter(option => option.selected).map(options => options.value)
 }
         ''',
-            values,
+            # todo (mattwmaster58): investigate *args vs args usage here
+            *values,
         )  # noqa: E501
 
     async def tap(self, selector: str) -> None:
@@ -488,7 +492,7 @@ class Frame:
         await handle.dispose()
 
     def waitFor(
-        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: Any, **kwargs: Any
+        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs: Any
     ) -> Awaitable[Optional[JSHandle]]:
         """Wait until `selectorOrFunctionOrTimeout`.
 
@@ -516,11 +520,13 @@ class Frame:
         handle = await self._secondaryWorld.waitForSelector(selector, visible=visible, hidden=hidden, timeout=timeout)
         if handle:
             mainExecutionContext = await self._mainWorld.executionContext
-            result = await mainExecutionContext._adoptElementHandle()
+            result = await mainExecutionContext._adoptElementHandle(handle)
             await handle.dispose()
             return result
 
-    async def waitForXPath(self, xpath, visible=False, hidden=False, timeout: int = None) -> Optional['ElementHandle']:
+    async def waitForXPath(
+        self, xpath: str, visible: bool = False, hidden: bool = False, timeout: int = None
+    ) -> Optional['ElementHandle']:
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.

@@ -219,7 +219,7 @@ class Browser(AsyncIOEventEmitter):
         """get active browser target"""
         return next((target for target in self.targets() if target.type == 'browser'))
 
-    async def waitForTarget(self, predicate: Callable[[Target], bool], timeout: float =30_000) -> Target:
+    async def waitForTarget(self, predicate: Callable[[Target], bool], timeout: float = 30_000) -> Target:
         """
         Wait for target that matches predicate function.
         :param predicate: function that takes 1 argument of Target object

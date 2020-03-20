@@ -30,7 +30,7 @@ def createJSHandle(context, remoteObject):
     return JSHandle(context, context._client, remoteObject,)
 
 
-class JSHandle(object):
+class JSHandle:
     """JSHandle class.
 
     JSHandle represents an in-page JavaScript object. JSHandle can be created
@@ -98,10 +98,8 @@ class JSHandle(object):
             return helpers.valueFromRemoteObject(response['result'])
         return helpers.valueFromRemoteObject(self._remoteObject)
 
-    def asElement(self) -> Optional['ElementHandle']:
-        """Return either null or the object handle itself."""
-        # todo: implement
-        return None
+    def asElement(self):
+        ...
 
     async def dispose(self) -> None:
         """Stop referencing the handle."""

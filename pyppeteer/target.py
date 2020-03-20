@@ -90,10 +90,12 @@ class Target:
         if _type not in ['service_worker', 'shared_worker']:
             return None
         if not self._workerFuture:
+
             async def worker_fut_task() -> Worker:
                 nonlocal self
                 session = await self._sessionFactory()
                 return Worker(session, self._targetInfo['url'], lambda *_: None, lambda *_: None)
+
             self._workerFuture = self.loop.create_task(worker_fut_task())
             return self._workerFuture
 

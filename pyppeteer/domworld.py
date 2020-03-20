@@ -66,7 +66,7 @@ class DOMWorld(object):
     def _hasContext(self):
         return not self._contextResolveCallback
 
-    def _detach(self):
+    def _detach(self) -> None:
         self._detached = True
         for task in self._waitTasks:
             task.terminate(BrowserError('waitForFunctions failed: frame got detached.'))
@@ -211,7 +211,7 @@ class DOMWorld(object):
             return (await f).asElement()
         raise BrowserError('provide an object with url, path or content property')
 
-    async def addStyleTag(self, url=None, path=None, content=None):
+    async def addStyleTag(self, url=None, path=None, content=None) -> Optional['ElementHandle']:
         addStyleUrl = """
         async function addStyleUrl(url) {
           const link = document.createElement('link');
