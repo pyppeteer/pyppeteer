@@ -1,2 +1,3 @@
-import num from '/static/es6/es6module.js';
+import num from './es6/es6module.js';
+
 window.__es6injected = num;
