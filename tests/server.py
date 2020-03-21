@@ -10,7 +10,6 @@ from typing import Any, Callable
 from tornado import web
 from tornado.log import access_log
 
-
 BASE_HTML = '''
 <html>
 <head><title>main</title></head>
@@ -39,6 +38,7 @@ class MainHandler(BaseHandler):
 class EmptyHandler(BaseHandler):
     def get(self) -> None:
         super().get()
+        self.set_status(204)
         self.write('')
 
 
