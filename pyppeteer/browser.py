@@ -255,7 +255,7 @@ class Browser(AsyncIOEventEmitter):
         In case of multiple browser contexts, this method will return a list
         with all the pages in all browser contexts.
         """
-        pages = asyncio.gather(*[context.pages() for context in self.browserContexts])
+        pages = await asyncio.gather(*[context.pages() for context in self.browserContexts])
         return [p for ps in pages for p in ps]
 
     async def version(self) -> str:
