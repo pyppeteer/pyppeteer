@@ -7,6 +7,7 @@ import asyncio
 import logging
 import re
 from functools import partial
+from pathlib import Path
 from typing import Any, Awaitable, Dict, List, Optional, Set, Union, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
@@ -22,7 +23,7 @@ from pyppeteer.helpers import debugError
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import JSFunctionArg, WaitTargets
-from pyppeteer.network_manager import NetworkManager, Request
+from pyppeteer.network_manager import NetworkManager, Response
 from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ class FrameManager(AsyncIOEventEmitter):
         self._page = page
         self._networkManager = NetworkManager(client, ignoreHTTPSErrors, self)
         self._timeoutSettings = timeoutSettings
-        self._mainFrame = None
+        self._mainFrame: Optional[Frame] = None
         self._frames: Dict[Any, Frame] = {}
         self._contextIdToContext: Dict[int, ExecutionContext] = {}
         self._isolatedWorlds: Set[str] = set()
@@ -74,8 +75,8 @@ class FrameManager(AsyncIOEventEmitter):
         client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
     async def initialize(self) -> None:
-        frameTree = await asyncio.gather(self._client.send('Page.enable'), self._client.send('Page.getFrameTree'))
-        frameTree = frameTree[1]['frameTree']
+        await self._client.send('Page.enable')
+        frameTree = (await self._client.send('Page.getFrameTree'))['frameTree']
         self._handleFrameTree(frameTree)
 
         async def runtime_enabled() -> None:
@@ -94,11 +95,10 @@ class FrameManager(AsyncIOEventEmitter):
 
     async def navigateFrame(
         self, frame: 'Frame', url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None,
-    ) -> Optional[Request]:
+    ) -> Optional[Response]:
         ensureNewDocumentNavigation = False
 
-        async def navigate(url_: str, referer_: str, frameId: str) -> Exception:
-            # todo (Mattwmaster58): probaly don't need try except, it's caught in helpers.future_race
+        async def navigate(url_: str, referer_: Optional[str], frameId: str) -> Optional[Exception]:
             try:
                 response = await self._client.send(
                     'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
@@ -121,10 +121,10 @@ class FrameManager(AsyncIOEventEmitter):
         error = await helpers.future_race(navigate(url, referer, frame._id), watcher.timeoutOrTerminationFuture)
         if not error:
             if ensureNewDocumentNavigation:
-                nav_promise = watcher.newDocumentNavigationFuture
+                nav_fut = watcher.newDocumentNavigationFuture
             else:
-                nav_promise = watcher.sameDocumentNavigationFuture
-            error = await helpers.future_race(watcher.timeoutOrTerminationFuture, nav_promise)
+                nav_fut = watcher.sameDocumentNavigationFuture
+            error = await helpers.future_race(watcher.timeoutOrTerminationFuture, nav_fut)
         watcher.dispose()
         if error:
             raise error
@@ -132,7 +132,7 @@ class FrameManager(AsyncIOEventEmitter):
 
     async def waitForFrameNavigation(
         self, frame: 'Frame', waitUntil: WaitTargets = None, timeout: float = None
-    ) -> Optional[Request]:
+    ) -> Optional[Response]:
         if not waitUntil:
             waitUntil = ['load']
         if not timeout:
@@ -365,15 +365,15 @@ class Frame:
         self.tap = self.secondaryWorld.tap
         self.title = self.secondaryWorld.title
 
-    def goto(
+    async def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None
-    ) -> Awaitable[Optional[Request]]:
-        return self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
+    ) -> Optional[Response]:
+        return await self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
 
-    def waitForNavigation(
+    async def waitForNavigation(
         self, timeout: Optional[float] = None, waitUntil: Optional[WaitTargets] = None
-    ) -> Awaitable[Optional[Request]]:
-        return self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
+    ) -> Optional[Response]:
+        return await self._frameManager.waitForFrameNavigation(self, waitUntil=waitUntil, timeout=timeout)
 
     @property
     def mainWorld(self) -> 'DOMWorld':  # ensure mainWorld not settable
@@ -421,8 +421,10 @@ class Frame:
         """
         return await self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
 
-    async def addStyleTag(self, url=None, path=None, content=None) -> Awaitable[Optional['ElementHandle']]:
-        return self._mainWorld.addStyleTag(url=url, path=path, content=content)
+    async def addStyleTag(
+        self, url: Optional[str] = None, path: Optional[Union[str, Path]] = None, content: Optional[str] = None
+    ) -> Optional['ElementHandle']:
+        return await self._mainWorld.addStyleTag(url=url, path=path, content=content)
 
     async def focus(self, selector: str) -> None:
         """Focus element which matches ``selector``.

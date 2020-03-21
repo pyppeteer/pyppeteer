@@ -12,6 +12,7 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
 from pyppeteer.helpers import debugError
+from pyppeteer.models import CoverageResult
 
 logger = logging.getLogger(__name__)
 
@@ -258,7 +259,7 @@ class CSSCoverage:
             # This might happen if the page has already navigated away.
             debugError(logger, e)
 
-    async def stop(self) -> List:
+    async def stop(self) -> List[CoverageResult]:
         """Stop coverage measurement and return results."""
         if not self._enabled:
             raise PageError('CSSCoverage is not enabled.')
@@ -268,7 +269,7 @@ class CSSCoverage:
         helpers.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
-        styleSheetIdToCoverage = {}
+        styleSheetIdToCoverage: Dict[str, List[Dict[str, str]]] = {}
         for entry in ruleTrackingResponse['ruleUsage']:
             ranges = styleSheetIdToCoverage.get(entry['styleSheetId'])
             if not ranges:
@@ -293,7 +294,7 @@ class CSSCoverage:
 
 
 def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
-    # todo: typeddict for this
+    # todo (mattwmaster58): typeddict for this
     """
     Convert ranges.
     NestedRange members support keys:

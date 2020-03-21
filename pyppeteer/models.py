@@ -56,6 +56,12 @@ class ScreenshotClip(TypedDict, total=False):
     scale: float
 
 
+class CoverageResult(TypedDict):
+    url: str
+    ranges: Any
+    text: str
+
+
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
 Platforms = Literal['linux', 'mac', 'win32', 'win64']

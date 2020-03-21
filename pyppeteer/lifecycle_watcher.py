@@ -16,7 +16,7 @@ from pyppeteer import helpers
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
 from pyppeteer.models import WaitTargets
-from pyppeteer.network_manager import Request
+from pyppeteer.network_manager import Request, Response
 
 if TYPE_CHECKING:
     from pyppeteer.frame_manager import FrameManager, Frame
@@ -118,7 +118,7 @@ class LifecycleWatcher:
     def _terminate(self, error: Exception) -> None:
         self._terminationFuture.set_result(error)
 
-    def navigationResponse(self) -> Optional[Request]:
+    def navigationResponse(self) -> Optional[Response]:
         return self._navigationRequest.response if self._navigationRequest else None
 
     @property

@@ -1,6 +1,7 @@
 import asyncio
-from asyncio import Future
-from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, Callable
+from asyncio import Future, Task
+from pathlib import Path
+from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, Callable, Generator, Set
 
 from pyppeteer import helpers
 from pyppeteer.errors import BrowserError, PageError, NetworkError
@@ -33,12 +34,12 @@ class DOMWorld(object):
         self._timeoutSettings = timeoutSettings
         self.loop = self._frameManager._client.loop
 
-        self._documentFuture: Optional[Future['ElementHandle']] = None
+        self._documentTask: Optional[Task['ElementHandle']] = None
         self._contextFuture: Optional[Future['ExecutionContext']] = None
-        self._contextResolveCallback: Callable = None
+        self._contextResolveCallback: Optional[Callable] = None
         self._setContext()
 
-        self._waitTasks = set()
+        self._waitTasks: Set[WaitTask] = set()
         self._detached = False
 
         # Aliases for query methods:
@@ -49,21 +50,21 @@ class DOMWorld(object):
         self.JJeval = self.querySelectorAllEval
 
     @property
-    def frame(self):
+    def frame(self) -> 'Frame':
         return self._frame
 
-    def _setContext(self, context: Optional['ExecutionContext'] = None):
+    def _setContext(self, context: Optional['ExecutionContext'] = None) -> None:
         if context:
             self._contextResolveCallback(context)
             self._contextResolveCallback = None
             for waitTask in self._waitTasks:
                 waitTask.rerun()
         else:
-            self._documentFuture = None
+            self._documentTask = None
             self._contextFuture = self.loop.create_future()
             self._contextResolveCallback = lambda _: self._contextFuture.set_result(_)
 
-    def _hasContext(self):
+    def _hasContext(self) -> bool:
         return not self._contextResolveCallback
 
     def _detach(self) -> None:
@@ -72,7 +73,7 @@ class DOMWorld(object):
             task.terminate(BrowserError('waitForFunctions failed: frame got detached.'))
 
     @property
-    def executionContext(self) -> Awaitable['ExecutionContext']:
+    def executionContext(self) -> Optional[Awaitable['ExecutionContext']]:
         if self._detached:
             raise BrowserError(
                 'Execution Context is not available in detached '
@@ -80,7 +81,7 @@ class DOMWorld(object):
             )
         return self._contextFuture
 
-    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg):
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> 'ElementHandle':
         context = await self.executionContext
         return context.evaluateHandle(pageFunction=pageFunction, *args)
 
@@ -88,21 +89,25 @@ class DOMWorld(object):
         context = await self.executionContext
         return await context.evaluate(pageFunction, *args)
 
-    async def querySelector(self, selector: str):
+    async def querySelector(self, selector: str) -> Optional['ElementHandle']:
         document = await self._document
         return await document.querySelector(selector)
 
     @property
-    async def _document(self) -> 'ElementHandle':
-        if self._documentFuture:
-            return await self._documentFuture
+    def _document(self) -> Awaitable['ElementHandle']:
+        if self._documentTask:
+            return self._documentTask
 
-        context = await self.executionContext
-        document = await context.evaluateHandle('document')
-        self._documentFuture.set_result(document.asElement())
-        return await self._documentFuture
+        async def create_document_fut() -> 'ElementHandle':
+            nonlocal self
+            context = await self.executionContext
+            document = await context.evaluateHandle('document')
+            return document.asElement()
 
-    async def xpath(self, expression) -> List['ElementHandle']:
+        self._documentTask = self.loop.create_task(create_document_fut())
+        return self._documentTask
+
+    async def xpath(self, expression: str) -> List['ElementHandle']:
         document = await self._document
         return await document.xpath(expression)
 
@@ -143,7 +148,7 @@ class DOMWorld(object):
             """
         )
 
-    async def setContent(self, html, waitUntil=None, timeout=None) -> None:
+    async def setContent(self, html: str, waitUntil=None, timeout=None) -> None:
         if timeout is None:
             timeout = self._timeoutSettings.navigationTimeout
         if waitUntil is None:
@@ -166,7 +171,13 @@ class DOMWorld(object):
         if error:
             raise error
 
-    async def addScriptTag(self, url=None, path=None, content=None, type='') -> 'ElementHandle':
+    async def addScriptTag(
+        self,
+        url: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        content: Optional[str] = None,
+        type: str = '',
+    ) -> 'ElementHandle':
         addScriptUrl = """
         async function addScriptUrl(url, type) {
           const script = document.createElement('script');
@@ -198,7 +209,7 @@ class DOMWorld(object):
         context = await self.executionContext
         if url:
             try:
-                return await context.evaluateHandle(addScriptUrl)
+                return await context.evaluateHandle(addScriptUrl, url, type)
             except Exception as e:
                 raise BrowserError(f'Loading script from {url} failed: {e}')
         if path:
@@ -211,7 +222,9 @@ class DOMWorld(object):
             return (await f).asElement()
         raise BrowserError('provide an object with url, path or content property')
 
-    async def addStyleTag(self, url=None, path=None, content=None) -> Optional['ElementHandle']:
+    async def addStyleTag(
+        self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
+    ) -> Optional['ElementHandle']:
         addStyleUrl = """
         async function addStyleUrl(url) {
           const link = document.createElement('link');
@@ -248,80 +261,97 @@ class DOMWorld(object):
                 raise BrowserError(f'Loading style from {url} failed')
 
         if path:
+            path = Path(path)
             contents = await readFileAsync(path, 'utf8')
-            contents += '/*# sourceURL=' + path.replace('\n', '') + '*/'
+            contents += '/*# sourceURL=' + path.name + '*/'
             return (await context.evaluateHandle(addStyleContent, contents)).asElement()
 
         if content:
             return (await context.evaluateHandle(addStyleContent, content)).asElement()
         raise BrowserError('provide an object with url, path or content property')
 
-    async def _select_handle(self, selector):
+    async def _select_handle(self, selector: str) -> 'ElementHandle':
         handle = await self.querySelector(selector)
         if not handle:
             raise BrowserError(f'No node found for selector: {selector}')
+        return handle
 
-    async def click(self, selector: str, button: MouseButton = 'left', clickCount: int = 1, delay: float = 0):
+    async def click(self, selector: str, button: MouseButton = 'left', clickCount: int = 1, delay: float = 0) -> None:
         """
-        :param selector:
-        :param kwargs:
-        delay: number, button: "left"|"right"|"middle", clickCount: number
-        :param kwargs:
+        :param selector: CSS selector for element
+        :param button:
+        :param delay:
+        :param clickCount:
         :return:
         """
         handle = await self._select_handle(selector)
         await handle.click(button=button, clickCount=clickCount, delay=delay)
         await handle.dispose()
 
-    async def focus(self, selector: str):
+    async def focus(self, selector: str) -> None:
         handle = await self._select_handle(selector)
         await handle.focus()
         await handle.dispose()
 
-    async def hover(self, selector: str):
+    async def hover(self, selector: str) -> None:
         handle = await self._select_handle(selector)
         await handle.hover()
         await handle.dispose()
 
-    async def select(self, selector: str, *values):
+    async def select(self, selector: str, *values: str) -> List[str]:
         handle = await self._select_handle(selector)
         result = await handle.select(*values)
         await handle.dispose()
         return result
 
-    async def tap(self, selector: str):
+    async def tap(self, selector: str) -> None:
         handle = await self._select_handle(selector)
         await handle.tap()
         await handle.dispose()
 
-    async def type(self, selector: str, text: str, **kwargs):
+    async def type(self, selector: str, text: str, delay: float = 0) -> None:
         handle = await self._select_handle(selector)
-        await handle.type(text, **kwargs)
+        await handle.type(text=text, delay=delay)
         await handle.dispose()
 
-    def waitForSelector(self, selector: str, visible: bool = False, hidden: bool = False, timeout: float = None):
-        return self._waitForSelectorOrXpath(selector, isXPath=False, visible=visible, hidden=hidden, timeout=timeout)
+    async def waitForSelector(
+        self, selector: str, visible: bool = False, hidden: bool = False, timeout: float = None
+    ) -> Optional['ElementHandle']:
+        return await self._waitForSelectorOrXpath(
+            selector, isXPath=False, visible=visible, hidden=hidden, timeout=timeout
+        )
 
-    def waitForXpath(self, xpath: str, visible: bool = False, hidden: bool = False, timeout: float = None):
-        return self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
+    async def waitForXpath(
+        self, xpath: str, visible: bool = False, hidden: bool = False, timeout: float = None
+    ) -> Optional['ElementHandle']:
+        return await self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
-    def waitForFunction(self, pageFunction, polling='raf', timeout=None, *args) -> Awaitable['JSHandle']:
+    async def waitForFunction(
+        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
+    ) -> 'JSHandle':
         if not timeout:
             timeout = self._timeoutSettings.timeout
-        return WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise
+        return await WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise
 
     @property
-    async def title(self):
+    async def title(self) -> str:
         return await self.evaluate('() => document.title')
 
-    async def _waitForSelectorOrXpath(self, selectorOrXpath, isXPath, visible=False, hidden=False, timeout=None):
+    async def _waitForSelectorOrXpath(
+        self,
+        selectorOrXpath: str,
+        isXPath: bool,
+        visible: bool = False,
+        hidden: bool = False,
+        timeout: Optional[float] = None,
+    ) -> Optional['ElementHandle']:
         if not timeout:
             timeout = self._timeoutSettings.timeout
         if visible or hidden:
             polling = 'raf'
         else:
             polling = 'mutation'
-        title = f"{'XPath' if isXPath else 'selector'} " f"{selectorOrXpath}" f"{' to be hidden' if hidden else ''}"
+        title = f"{'XPath' if isXPath else 'selector'} {selectorOrXpath}{' to be hidden' if hidden else ''}"
         predicate = """
         function predicate(selectorOrXPath, isXPath, waitForVisible, waitForHidden) {
           const node = isXPath
@@ -369,7 +399,7 @@ class WaitTask(object):
         polling: Union[str, int],
         timeout: float,
         loop: asyncio.AbstractEventLoop,
-        *args: Any,
+        *args: JSFunctionArg,
     ) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
@@ -403,9 +433,9 @@ class WaitTask(object):
 
         if timeout:
             self._timeoutTimer = self.loop.create_task(timer(self._timeout))
-        self._runningTask = self.loop.create_task(self.rerun())
+        self._runningTask: Optional[Task] = self.loop.create_task(self.rerun())
 
-    def __await__(self) -> Awaitable:
+    def __await__(self) -> Generator:
         """Make this class **awaitable**."""
         result = yield from self.promise
         if isinstance(result, Exception):
@@ -426,9 +456,9 @@ class WaitTask(object):
         error = None
 
         try:
+            if self._domWorld.executionContext is None:
+                raise PageError(f'No execution context for {self._domWorld}')
             context = await self._domWorld.executionContext
-            if context is None:
-                raise PageError('No execution context.')
             success = await context.evaluateHandle(
                 waitForPredicatePageFunction, self._predicateBody, self._polling, self._timeout, *self._args,
             )

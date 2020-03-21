@@ -98,7 +98,7 @@ class JSHandle:
             return helpers.valueFromRemoteObject(response['result'])
         return helpers.valueFromRemoteObject(self._remoteObject)
 
-    def asElement(self):
+    def asElement(self) -> 'ElementHandle':
         ...
 
     async def dispose(self) -> None:

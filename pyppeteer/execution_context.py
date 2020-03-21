@@ -27,7 +27,7 @@ SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILIN
 class ExecutionContext(object):
     """Execution Context class."""
 
-    def __init__(self, client: CDPSession, contextPayload: Dict, world: 'DOMWorld') -> None:
+    def __init__(self, client: CDPSession, contextPayload: Dict, world: Optional['DOMWorld']) -> None:
         self._client = client
         self._world = world
         self._contextId = contextPayload.get('id')
@@ -38,7 +38,7 @@ class ExecutionContext(object):
         if self._world:
             return self._world.frame
 
-    async def evaluate(self, pageFunction: str, *args: JSFunctionArg) -> Any:
+    async def evaluate(self, pageFunction: str, *args: JSFunctionArg) -> JSFunctionArg:
         """Execute ``pageFunction`` on this context.
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
@@ -51,7 +51,7 @@ class ExecutionContext(object):
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args: JSFunctionArg):
+    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args: JSFunctionArg) -> Union['JSHandle', 'ElementHandle', JSFunctionArg]:
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
         if not helpers.is_js_func(pageFunction):

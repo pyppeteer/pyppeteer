@@ -104,7 +104,7 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
         try:
             value = unserializableValueMap[value]
         except KeyError:
-            raise ElementHandleError('Unsupported unserializable value: {}'.format(value))
+            raise ElementHandleError(f'Unsupported unserializable value: {value}')
     return remoteObject.get('value')
 
 
