@@ -10,16 +10,19 @@ from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
 from tests.server import get_application
 
-firefox = False
-launch_options = {'args': ['--no-sandbox']}
+# internal, conftest.py only variables
+_launch_options = {'args': ['--no-sandbox']}
+_firefox = False
+_app = get_application()
+_port = get_free_port()
 
-if firefox:
-    launch_options['product'] = 'firefox'
+if _firefox:
+    _launch_options['product'] = 'firefox'
 
 
 @pytest.fixture(scope='session')
 def shared_browser() -> Browser:
-    browser = sync(launch(**launch_options))
+    browser = sync(launch(**_launch_options))
     yield browser
     sync(browser.close())
 
@@ -43,30 +46,20 @@ def isolated_page(isolated_context) -> Page:
 
 
 @pytest.fixture(scope='session')
-def _app():
-    return get_application()
-
-
-@pytest.fixture(scope='session')
-def _port():
-    return get_free_port()
-
-
-@pytest.fixture(scope='session')
-def server_url(_port):
+def server_url(server):
     return f'http://localhost:{_port}'
 
 
 @pytest.fixture(scope='session')
-def server(_app, _port):
-    server = _app.listen(_port)
-    yield server
-    sync(server.stop)
+def server():
+    _server = _app.listen(_port)
+    yield _server
+    sync(_server.stop)
 
 
 @pytest.fixture(scope='session')
 def firefox():
-    return firefox
+    return _firefox
 
 
 @pytest.fixture(scope='session')
@@ -74,4 +67,4 @@ def event_loop():
     return asyncio.get_event_loop()
 
 
-chrome_only = pytest.mark.skipif(firefox)
+chrome_only = pytest.mark.skipif(_firefox)
