@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from syncer import sync
 
@@ -61,13 +63,12 @@ class TestClose:
         assert page.isClosed
 
 
-
-
-
-
-
 class TestEventsLoad:
-    pass
+    @sync
+    async def test_load_event_fired(self, isolated_page):
+        event = waitEvent(isolated_page, 'load')
+        done, _ = await asyncio.wait((isolated_page.goto('about:blank'), event), timeout=5)
+        assert len(done) == 2
 
 
 class TestEventError:
