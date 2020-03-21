@@ -338,14 +338,6 @@ class BrowserContext(AsyncIOEventEmitter):
         pages = [target.page() for target in self.targets() if target.type == 'page']
         return [page for page in await asyncio.gather(*pages) if page]
 
-    def isIncognite(self) -> bool:
-        """[Deprecated] Miss spelled method.
-
-        Use :meth:`isIncognito` method instead.
-        """
-        logger.warning('isIncognite is deprecated. Use isIncognito instead.')
-        return self.isIncognito()
-
     def isIncognito(self) -> bool:
         """Return whether BrowserContext is incognito.
 
