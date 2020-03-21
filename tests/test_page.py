@@ -1,6 +1,8 @@
 import pytest
 from syncer import sync
 
+from tests.utils import waitEvent
+
 
 @sync
 async def test_async_stacks(isolated_page):
@@ -9,11 +11,10 @@ async def test_async_stacks(isolated_page):
 
 class TestClose:
     @sync
-    async def test_reject_all_pending_promises(self, isolated_context):
-        page = await isolated_context.newPage()
+    async def test_reject_all_pending_promises(self, isolated_page, event_loop):
         error = None
-        fut = page._loop.create_task(page.evaluate('()=>new Promise(resolve=>{})'))
-        await page.close()
+        fut = event_loop.create_task(isolated_page.evaluate('()=>new Promise(resolve=>{})'))
+        await isolated_page.close()
         with pytest.raises(Exception) as excpt:
             await fut
         assert 'Protocol error' in str(excpt)
@@ -26,10 +27,43 @@ class TestClose:
         assert page not in await shared_browser.pages
 
     @sync
-    async def test_(self, isolated_context, ):
+    async def test_run_beforeunload(self, isolated_page, server_url, firefox):
+        await isolated_page.goto(server_url + '/beforeunload.html')
+        # interact w/ page so beforeunload handler fires
+        await isolated_page.click('body')
+        page_closing_fut = isolated_page._loop.create_task(isolated_page.close(runBeforeUnload=True))
+        dialog = await waitEvent(isolated_page, 'dialog')
+        assert dialog.type == 'beforeunload'
+        assert dialog.defaultValue == ''
+        if not firefox:
+            assert dialog.message == ''
+        elif firefox:
+            assert (
+                dialog.message
+                == 'This page is asking you to confirm that you want to leave - data you have entered may not be saved.'
+            )
+        await dialog.accept()
+        await page_closing_fut
+
+    @sync
+    async def test_not_run_beforeunload_by_default(self, isolated_page, server_url):
+        await isolated_page.goto(server_url + '/beforeunload.html')
+        # interact w/ page so beforeunload handler fires
+        await isolated_page.click('body')
+        # if beforeunload handlers are fired, this will timeout as a dialog will block the close of the page
+        await isolated_page.close()
+
+    @sync
+    async def test_set_page_close_state(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        assert page.isClosed is False
+        await page.close()
+        assert page.isClosed
 
 
-        
+
+
+
 
 
 class TestEventsLoad:
