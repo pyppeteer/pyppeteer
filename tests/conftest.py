@@ -16,13 +16,12 @@ launch_options = {'args': ['--no-sandbox']}
 if firefox:
     launch_options['product'] = 'firefox'
 
-_browser: Browser = sync(launch(**launch_options))
-
 
 @pytest.fixture(scope='session')
 def shared_browser() -> Browser:
-    yield _browser
-    sync(_browser.close())
+    browser = sync(launch(**launch_options))
+    yield browser
+    sync(browser.close())
 
 
 @pytest.fixture
@@ -64,12 +63,15 @@ def server(_app, _port):
     yield server
     sync(server.stop)
 
+
 @pytest.fixture(scope='session')
 def firefox():
     return firefox
 
+
 @pytest.fixture(scope='session')
 def event_loop():
     return asyncio.get_event_loop()
+
 
 chrome_only = pytest.mark.skipif(firefox)
