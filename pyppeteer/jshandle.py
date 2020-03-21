@@ -26,7 +26,7 @@ def createJSHandle(context, remoteObject) -> Union['JSHandle', 'ElementHandle']:
     frame = context.frame
     if remoteObject.get('subtype') == 'node' and frame:
         frameManager = frame._frameManager
-        return ElementHandle(context, context._client, remoteObject, frameManager.page(), frameManager)
+        return ElementHandle(context, context._client, remoteObject, frameManager.page, frameManager)
     return JSHandle(context, context._client, remoteObject,)
 
 

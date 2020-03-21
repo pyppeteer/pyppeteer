@@ -54,7 +54,7 @@ def server_url(server):
 def server():
     _server = _app.listen(_port)
     yield _server
-    sync(_server.stop)
+    _server.stop()
 
 
 @pytest.fixture(scope='session')
