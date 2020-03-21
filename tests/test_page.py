@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import suppress
 
 import pytest
 from syncer import sync
@@ -7,8 +8,10 @@ from tests.utils import waitEvent
 
 
 @sync
-async def test_async_stacks(isolated_page):
-    pass
+async def test_async_stacks(isolated_page, server_url):
+    with pytest.raises(Exception) as excpt:
+        await isolated_page.goto(server_url + '/empty.html')
+        assert __file__ in str(excpt)
 
 
 class TestClose:
@@ -72,7 +75,12 @@ class TestEventsLoad:
 
 
 class TestEventError:
-    pass
+    @sync
+    async def test_raises_on_page_crash(self, event_loop, isolated_page):
+        error = waitEvent(isolated_page, 'error')
+        with suppress(asyncio.TimeoutError):
+            await isolated_page.goto('chrome://crash', timeout=2)
+        assert str(await error) == 'Page crashed!'
 
 
 class TestEventsPopup:
