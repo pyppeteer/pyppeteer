@@ -117,17 +117,19 @@ class BrowserFetcher:
             # (other options depend on the sys bittedness == python interpreter bittedness)
             self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
         assert self._platform in Platforms.__args__, f'Unsupported platform: {platform}'
+        logger.info(f'platform auto detected: {self._platform}')
 
     @property
-    def platform(self) -> str:
+    def platform(self) -> Platforms:
         return self._platform
 
     def canDownload(self, revision: str) -> bool:
-        url = download_url(self._platform, self.downloadHost, revision)
+        url = download_url(self.platform, self.downloadHost, revision)
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
-    def download(self, revision: str = __chromium_revision__) -> RevisionInfo:
-        url = download_url(self._platform, self.downloadHost, revision)
+    def download(self, revision: Optional[str] = None) -> RevisionInfo:
+        revision = revision or __chromium_revision__
+        url = download_url(self.platform, self.downloadHost, revision)
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
             return self.revision_info(revision)
