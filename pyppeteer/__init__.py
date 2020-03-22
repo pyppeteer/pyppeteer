@@ -98,11 +98,17 @@ class Pyppeteer:
 
 
 # shortcut methods
-async def launch(**kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
-    return await Pyppeteer().launch(**kwargs)
+async def launch(
+    projectRoot: Union[Path, str] = None,
+    preferredRevision: str = None,
+    **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions],
+) -> Browser:
+    return await Pyppeteer(projectRoot, preferredRevision).launch(**kwargs)
 
 
 async def connect(
+    projectRoot: Union[Path, str] = None,
+    preferredRevision: str = None,
     browserWSEndpoint: str = None,
     browserURL: str = None,
     transport: WebsocketTransport = None,
@@ -110,7 +116,7 @@ async def connect(
     slowMo: float = 0,
     defaultViewport: Viewport = None,
 ) -> Browser:
-    return await Pyppeteer().connect(
+    return await Pyppeteer(projectRoot, preferredRevision).connect(
         browserWSEndpoint=browserWSEndpoint,
         browserURL=browserURL,
         transport=transport,
