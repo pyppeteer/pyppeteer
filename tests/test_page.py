@@ -4,6 +4,7 @@ from contextlib import suppress
 import pytest
 from syncer import sync
 
+from pyppeteer.helpers import gather_with_timeout
 from tests.utils import waitEvent
 
 
@@ -79,12 +80,63 @@ class TestEventError:
     async def test_raises_on_page_crash(self, event_loop, isolated_page):
         error = waitEvent(isolated_page, 'error')
         with suppress(asyncio.TimeoutError):
-            await isolated_page.goto('chrome://crash', timeout=2)
+            await isolated_page.goto('chrome://crash', timeout=2_000)
         assert str(await error) == 'Page crashed!'
 
 
 class TestEventsPopup:
-    pass
+    @sync
+    async def test_popup_props(self, isolated_page):
+        popup, *_ = await gather_with_timeout(
+            waitEvent(isolated_page, 'popup'),
+            isolated_page.evaluate('() => window.open("about:blank")'),
+        )
+        assert await isolated_page.evaluate('() => !!window.opener') is False
+        assert await popup.evaluate('() => !!window.opener')
+
+    @sync
+    async def test_popup_noopener(self, isolated_page):
+        popup, *_ = await gather_with_timeout(
+            waitEvent(isolated_page, 'popup'),
+            isolated_page.evaluate('() => window.open("about:blank", null, "noopener")'),
+        )
+        assert await isolated_page.evaluate('() => !!window.opener') is False
+        assert await popup.evaluate('() => !!window.opener') is False
+
+    @sync
+    async def test_clicking_target_blank(self, isolated_page, server_url):
+        await isolated_page.goto(server_url + '/empty.html')
+        await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
+        popup, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'popup'),
+            isolated_page.click('a'),
+        )
+        assert await isolated_page.evaluate('() => !!window.opener') is False
+        assert await popup.evaluate('() => !!window.opener')
+
+    @sync
+    async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url):
+        await isolated_page.goto(server_url + '/empty.html')
+        await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
+        popup, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'popup'),
+            isolated_page.Jeval('a', 'elem => elem.click()')
+        )
+        assert await isolated_page.evaluate('() => !!window.opener') is False
+        assert await popup.evaluate('() => !!window.opener') is False
+
+    @sync
+    async def test_clicking_target_blank_and_noopener(self, isolated_page, server_url):
+        await isolated_page.goto(server_url + '/empty.html')
+        await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
+        popup, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'popup'),
+            isolated_page.click('a')
+        )
+        assert await isolated_page.evaluate('() => !!window.opener') is False
+        assert await popup.evaluate('() => !!window.opener') is False
+
+
 
 
 class TestBrowserContextOverridePermissions:
