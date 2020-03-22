@@ -55,7 +55,7 @@ class Target:
         if not opener or not opener._page or self.type != 'page':
             return self._initializedPromise.set_result(True)
         openerPage = opener._page
-        if not openerPage.listenerCount(Events.Page.Popup):
+        if not openerPage.listeners(Events.Page.Popup):
             return self._initializedPromise.set_result(True)
         openerPage.emit(Events.Page.Popup, openerPage)
         return self._initializedPromise.set_result(True)
