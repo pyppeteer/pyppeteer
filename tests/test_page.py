@@ -17,7 +17,6 @@ async def test_async_stacks(isolated_page, server_url):
 class TestClose:
     @sync
     async def test_reject_all_pending_promises(self, isolated_page, event_loop):
-        error = None
         fut = event_loop.create_task(isolated_page.evaluate('()=>new Promise(resolve=>{})'))
         await isolated_page.close()
         with pytest.raises(Exception) as excpt:
