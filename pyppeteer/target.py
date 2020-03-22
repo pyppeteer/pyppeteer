@@ -8,6 +8,7 @@ from typing import Callable, Dict, Optional, Awaitable, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.events import Events
+from pyppeteer.helpers import safe_future_set_result
 from pyppeteer.models import Viewport
 from pyppeteer.page import Page
 from pyppeteer.task_queue import TaskQueue
@@ -49,7 +50,7 @@ class Target:
 
     def _initializedCallback(self, success: bool) -> None:
         if not success:
-            return self._initializedPromise.set_result(False)
+            return safe_future_set_result(self._initializedPromise, False)
         opener = self.opener
         if not opener or not opener._page or self.type != 'page':
             return self._initializedPromise.set_result(True)

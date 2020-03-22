@@ -8,13 +8,13 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 """
 
 import asyncio
-from asyncio import Future
 from functools import partial
-from typing import Awaitable, List, Union, Optional, TYPE_CHECKING, Any
+from typing import Awaitable, List, Union, Optional, TYPE_CHECKING
 
 from pyppeteer import helpers
 from pyppeteer.errors import TimeoutError, BrowserError, PageError
 from pyppeteer.events import Events
+from pyppeteer.helpers import safe_future_set_result
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request, Response
 
@@ -175,6 +175,3 @@ class LifecycleWatcher:
                 continue
 
 
-def safe_future_set_result(fut: Future, res: Any):
-    if not fut.done():
-        fut.set_result(res)

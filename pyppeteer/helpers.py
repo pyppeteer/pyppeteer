@@ -8,6 +8,7 @@ import json
 import logging
 import math
 import re
+from asyncio.futures import Future
 from typing import Any, Awaitable, Callable, Dict, List, Union, Optional
 
 from pyee import AsyncIOEventEmitter
@@ -229,3 +230,8 @@ def is_js_func(func: str) -> bool:
             re.VERBOSE,
         )
     )
+
+
+def safe_future_set_result(fut: Future, res: Any):
+    if not fut.done():
+        fut.set_result(res)
