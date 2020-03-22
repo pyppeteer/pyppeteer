@@ -106,7 +106,7 @@ class TestEventsPopup:
     async def test_clicking_target_blank(self, isolated_page, server_url):
         await isolated_page.goto(server_url + '/empty.html')
         await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
-        popup, *_ = gather_with_timeout(
+        popup, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'popup'),
             isolated_page.click('a'),
         )
@@ -117,7 +117,7 @@ class TestEventsPopup:
     async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url):
         await isolated_page.goto(server_url + '/empty.html')
         await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
-        popup, *_ = gather_with_timeout(
+        popup, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'popup'),
             isolated_page.Jeval('a', 'elem => elem.click()')
         )
@@ -128,7 +128,7 @@ class TestEventsPopup:
     async def test_clicking_target_blank_and_noopener(self, isolated_page, server_url):
         await isolated_page.goto(server_url + '/empty.html')
         await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
-        popup, *_ = gather_with_timeout(
+        popup, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'popup'),
             isolated_page.click('a')
         )
