@@ -4,8 +4,7 @@ from contextlib import suppress
 import pytest
 from syncer import sync
 
-from pyppeteer.helpers import gather_with_timeout
-from tests.utils import waitEvent
+from tests.utils import waitEvent, gather_with_timeout
 
 
 @sync
