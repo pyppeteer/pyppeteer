@@ -6,7 +6,7 @@ import asyncio
 import logging
 from asyncio import Future
 from subprocess import Popen
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING, Sequence
 
 from pyee import AsyncIOEventEmitter
 
@@ -58,10 +58,10 @@ class Browser(AsyncIOEventEmitter):
         else:
             self._closeCallback = _dummy_callback
 
-        self._defaultContext = BrowserContext(self, None)
+        self._defaultContext = BrowserContext(self._connection, self, None)
         self._contexts: Dict[str, BrowserContext] = {}
         for contextId in contextIds:
-            self._contexts[contextId] = BrowserContext(self, contextId)
+            self._contexts[contextId] = BrowserContext(self._connection, self, None)
 
         self._targets: Dict[str, Target] = {}
         self._connection.on(Events.Connection.Disconnected, lambda: self.emit(Events.Browser.Disconnected))
@@ -102,7 +102,7 @@ class Browser(AsyncIOEventEmitter):
         """
         obj = await self._connection.send('Target.createBrowserContext')
         browserContextId = obj['browserContextId']
-        context = BrowserContext(self, browserContextId)  # noqa: E501
+        context = BrowserContext(self._connection, self, browserContextId)
         self._contexts[browserContextId] = context
         return context
 
@@ -316,8 +316,9 @@ class BrowserContext(AsyncIOEventEmitter):
         await context.close()
     """
 
-    def __init__(self, browser: Browser, contextId: Optional[str]) -> None:
+    def __init__(self, connection: Connection, browser: Browser, contextId: Optional[str]) -> None:
         super().__init__()
+        self._connection = connection
         self._browser = browser
         self._id = contextId
 
@@ -347,6 +348,40 @@ class BrowserContext(AsyncIOEventEmitter):
             The default browser context cannot be closed.
         """
         return bool(self._id)
+
+    # todo (Mattwmaster58): Literal type for this
+    async def overridePermissions(self, origin: str, permissions: Sequence[str]) -> None:
+        web_perm_to_protocol = {
+            'geolocation': 'geolocation',
+            'midi': 'midi',
+            'notifications': 'notifications',
+            'push': 'push',
+            'camera': 'videoCapture',
+            'microphone': 'audioCapture',
+            'background-sync': 'backgroundSync',
+            'ambient-light-sensor': 'sensors',
+            'accelerometer': 'sensors',
+            'gyroscope': 'sensors',
+            'magnetometer': 'sensors',
+            'accessibility-events': 'accessibilityEvents',
+            'clipboard-read': 'clipboardRead',
+            'clipboard-write': 'clipboardWrite',
+            'payment-handler': 'paymentHandler',
+            # chrome specific
+            'midi-sysex': 'midiSysex',
+        }
+        protocol_perms = []
+        for perm in permissions:
+            protocol_perm = web_perm_to_protocol.get(perm)
+            if protocol_perm is None:
+                raise RuntimeError(f'Unknown permission: {perm}')
+            protocol_perms.append(perm)
+        await self._connection.send(
+            'Browser.grantPermissions', {'origin': origin, 'browserContextId': self._id, 'permissions': permissions}
+        )
+
+    async def clearPermissionOverrides(self) -> None:
+        await self._connection.send('Browser.resetPermissions', {'browserContextId': self._id});
 
     async def newPage(self) -> 'Page':
         """Create a new page in the browser context."""
