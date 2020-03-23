@@ -23,7 +23,7 @@ from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
 from pyppeteer.emulation_manager import EmulationManager
-from pyppeteer.errors import PageError
+from pyppeteer.errors import PageError, BrowserError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import JSHandle
 from pyppeteer.frame_manager import Frame, FrameManager
@@ -786,9 +786,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.goto(url=url, referer=referer, timeout=timeout, waitUntil=waitUntil,)
 
-    async def reload(
-        self, timeout: float = None, waitUntil: Union[str, List[str]] = None,
-    ) -> Optional[Response]:
+    async def reload(self, timeout: float = None, waitUntil: Union[str, List[str]] = None,) -> Optional[Response]:
         return (
             await asyncio.gather(
                 self.waitForNavigation(timeout=timeout, waitUntil=waitUntil), self._client.send('Page.reload')
@@ -1003,13 +1001,15 @@ class Page(AsyncIOEventEmitter):
             raise ValueError(f'Unsupported media type: {mediaType}')
         await self._client.send('Emulation.setEmulatedMedia', {'media': mediaType or '',})
 
-    async def emulateMediaFeatures(self, features: List[Dict] = None) -> Optional[bool]:
+    async def emulateMediaFeatures(
+        self, features: List[Dict[Literal['prefers-colors-scheme', 'prefers-reduced-motion'], str]] = None
+    ) -> None:
         if not features:
             await self._client.send('Emulation.setEmulatedMedia', {'features': None})
         if isinstance(features, list):
             for feature in features:
-                if not re.match(r'/prefers-(?:color-scheme|reduced-motion)/', feature.get('name', '')):
-                    return True
+                if not re.match(r'prefers-(?:color-scheme|reduced-motion)', feature.get('name', '')):
+                    raise BrowserError(f'Unsupported media feature: {feature}')
         await self._client.send('Emulation.setEmulatedMedia', {'features': features})
 
     async def emulateTimezone(self, timezoneId: str) -> None:
@@ -1333,8 +1333,8 @@ class Page(AsyncIOEventEmitter):
             1. Script tags inside templates are not evaluated.
             2. Page styles are not visible inside templates.
         """  # noqa: E501
-        paperWidth = 8.5
-        paperHeight = 11.0
+        paperWidth: Optional[float] = 8.5
+        paperHeight: Optional[float] = 11.0
         if format:
             fmt = Page.PaperFormats.get(format.lower())
             if not fmt:
@@ -1342,8 +1342,8 @@ class Page(AsyncIOEventEmitter):
             paperWidth = fmt['width']
             paperHeight = fmt['height']
         else:
-            paperWidth = convertPrintParameterToInches(width or paperWidth)
-            paperHeight = convertPrintParameterToInches(height or paperHeight)
+            paperWidth = convertPrintParameterToInches(width or paperWidth)  # type: ignore
+            paperHeight = convertPrintParameterToInches(height or paperHeight)  # type: ignore
 
         margin = margin or {}
         marginTop = convertPrintParameterToInches(margin.get('top')) or 0
@@ -1618,7 +1618,7 @@ supportedMetrics = (
 unitToPixels = {'px': 1, 'in': 96, 'cm': 37.8, 'mm': 3.78}
 
 
-def convertPrintParameterToInches(parameter: Union[None, int, float, str]) -> Optional[float]:
+def convertPrintParameterToInches(parameter: Optional[Union[int, float, str]]) -> Optional[float]:
     """Convert print parameter to inches."""
     if parameter is None:
         return None
