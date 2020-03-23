@@ -42,7 +42,7 @@ valid_js_functions = [
     'async function named(arg1, ...spread){console.log("hey")}'
 ]
 invalid_js_functions = [
-    # self executing function statements
+    # Immediately-Invoked Function Expressions
     """
     (function (){
         console.log("hey");
@@ -50,10 +50,10 @@ invalid_js_functions = [
     """,
     '(()=>console.log("hey"))()',
     '((arg, *args, **kwargs)=>console.log("hey"))(1,2,3)',
-    # func assignments
+    # Function assignments
     'func=()=>console.log("hey");func()',
     'func=(arg, *args, **kwargs)=>console.log("hey");func()',
-    # almost arrow functions
+    # almost valid functions
     'arg1,arg2=>{console.log("hey")}',
     '*arg=>{console.log("hey")}',
     '...args=>{console.log("hey")}'

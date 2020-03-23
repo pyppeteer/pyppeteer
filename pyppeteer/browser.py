@@ -381,7 +381,7 @@ class BrowserContext(AsyncIOEventEmitter):
         )
 
     async def clearPermissionOverrides(self) -> None:
-        await self._connection.send('Browser.resetPermissions', {'browserContextId': self._id});
+        await self._connection.send('Browser.resetPermissions', {'browserContextId': self._id})
 
     async def newPage(self) -> 'Page':
         """Create a new page in the browser context."""
