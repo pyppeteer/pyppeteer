@@ -1,10 +1,12 @@
 import asyncio
 from contextlib import suppress
+from typing import Optional, List
 
 import pytest
 from syncer import sync
 
 from pyppeteer.errors import PageError
+from pyppeteer.page import ConsoleMessage
 from tests.utils import waitEvent, gather_with_timeout
 
 
@@ -263,10 +265,126 @@ class TestExecutionContextQueryObjects:
         assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt)
 
 
-
-
 class TestEventsConsole:
-    pass
+    @sync
+    async def test_console_works(self, isolated_page):
+        message: Optional[ConsoleMessage] = None
+
+        def set_message(m):
+            nonlocal message
+            message = m
+
+        isolated_page.once('console', set_message)
+        await gather_with_timeout(
+            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'), waitEvent(isolated_page, 'console'),
+        )
+        assert message.text == 'hello 5 JSHandle@object'
+        assert message.type == 'log'
+        assert await message.args[0].jsonValue() == 'hello'
+        assert await message.args[1].jsonValue() == 5
+        assert await message.args[2].jsonValue() == {'foo': 'bar'}
+
+    @sync
+    async def test_different_console_apis(self, isolated_page):
+        messages: Optional[List[ConsoleMessage]] = None
+
+        def append_msg(m):
+            nonlocal messages
+            messages.push(m)
+
+        isolated_page.on('console', append_msg)
+        await isolated_page.evaluate(
+            """() => {
+            // A pair of time/timeEnd generates only one Console API call.
+            console.time('calling console.time');
+            console.timeEnd('calling console.time');
+            console.trace('calling console.trace');
+            console.dir('calling console.dir');
+            console.warn('calling console.warn');
+            console.error('calling console.error');
+            console.log(Promise.resolve('should not wait until resolved!'));
+        }"""
+        )
+        assert [m.type for m in messages] == ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
+        assert 'calling console.time' in messages[0].text
+        assert [m.text for m in messages[1:]] == [
+            'calling console.trace',
+            'calling console.dir',
+            'calling console.warn',
+            'calling console.error',
+            'JSHandle@promise',
+        ]
+
+    @sync
+    async def test_works_with_window_obj(self, isolated_page):
+        message = None
+
+        def set_message(m):
+            nonlocal message
+            message = m
+
+        isolated_page.once('console', set_message)
+        await gather_with_timeout(
+            isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
+        )
+        assert message.text == 'JSHandle@object'
+
+    @sync
+    async def test_triggers_correct_log(self, isolated_page, firefox, server_url_empty_page):
+        await isolated_page.goto('about:blank')
+        message, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'console'),
+            isolated_page.evaluate('async url => fetch(url).catch(e => {})', server_url_empty_page),
+        )
+        assert 'Access-Control-Allow-Origin' in message.text
+        if firefox:
+            assert message.type == 'warn'
+        else:
+            assert message.type == 'error'
+
+    @sync
+    async def test_has_location_on_fetch_failure(self, isolated_page, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
+        message, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'console'),
+            isolated_page.evaluate('<script>fetch("http://wat");</script>', server_url_empty_page),
+        )
+        assert 'ERR_NAME_NOT_RESOLVED' in message.text
+        assert message.type == 'error'
+        assert message.location == {'url': 'http://wat/', 'lineNumber': None}
+
+    @sync
+    async def test_location_for_console_API_calls(self, isolated_page, server_url, server_url_empty_page, firefox):
+        await isolated_page.goto(server_url_empty_page)
+        message, *_ = gather_with_timeout(
+            waitEvent(isolated_page, 'console'), isolated_page.goto(server_url + '/consolelog.html'),
+        )
+        assert message.text == 'yellow'
+        assert message.type == 'log'
+        assert message.location == {
+            'url': server_url + '/consolelog.html',
+            'lineNumber': 7,
+            'columnNumber': 6 if firefox else 14,  # console.|log vs |console.log
+        }
+
+    # @see https://github.com/puppeteer/puppeteer/issues/3865
+    @sync
+    async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
+        await isolated_page.evaluate("""async() => {
+            // 1. Create a popup that Puppeteer is not connected to.
+            const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=780,height=200,top=0,left=0');
+            await new Promise(x => win.onload = x);
+            // 2. In this popup, create an iframe that console.logs a message.
+            win.document.body.innerHTML = `<iframe src='/consolelog.html'></iframe>`;
+            const frame = win.document.querySelector('iframe');
+            await new Promise(x => frame.onload = x);
+            // 3. After that, remove the iframe.
+            frame.remove();
+        }""")
+        popup_targ = [x for x in (await isolated_page.browserContext.targets()) if x != isolated_page.target][0]
+        # 4. Connect to the popup and make sure it doesn't throw.
+        await popup_targ.page()
 
 
 class TestEventsDOMContentLoaded:
