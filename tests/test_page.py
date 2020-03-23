@@ -371,7 +371,8 @@ class TestEventsConsole:
     @sync
     async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server_url_empty_page):
         await isolated_page.goto(server_url_empty_page)
-        await isolated_page.evaluate("""async() => {
+        await isolated_page.evaluate(
+            """async() => {
             // 1. Create a popup that Puppeteer is not connected to.
             const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=780,height=200,top=0,left=0');
             await new Promise(x => win.onload = x);
@@ -381,14 +382,18 @@ class TestEventsConsole:
             await new Promise(x => frame.onload = x);
             // 3. After that, remove the iframe.
             frame.remove();
-        }""")
-        popup_targ = [x for x in (await isolated_page.browserContext.targets()) if x != isolated_page.target][0]
+        }"""
+        )
+        popup_targ = [x for x in isolated_page.browserContext.targets() if x != isolated_page.target][0]
         # 4. Connect to the popup and make sure it doesn't throw.
         await popup_targ.page()
 
 
 class TestEventsDOMContentLoaded:
-    pass
+    @sync
+    async def test_domcontentloaded_fired(self, isolated_page):
+        await isolated_page.goto('about:blank')
+        await waitEvent(isolated_page, 'domcontentloaded')
 
 
 class TestMetrics:
