@@ -393,7 +393,7 @@ class TestEventsDOMContentLoaded:
     @sync
     async def test_domcontentloaded_fired(self, isolated_page):
         await isolated_page.goto('about:blank')
-        await waitEvent(isolated_page, 'domcontentloaded')
+        await gather_with_timeout(waitEvent(isolated_page, 'domcontentloaded'))
 
 
 class TestMetrics:
