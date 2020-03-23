@@ -212,8 +212,7 @@ class Page(AsyncIOEventEmitter):
             self._fileChooserInterceptors.remove(callback())
             raise e
 
-    async def setGeolocation(self, longitude: float, latitude: float, accuracy: Optional[float]) -> None:
-        accuracy = accuracy or 0
+    async def setGeolocation(self, longitude: float, latitude: float, accuracy: float = 0) -> None:
         if -180 >= longitude >= 180:
             raise PageError(f'Invalid longitude {longitude}: precondition -180 <= LONGITUDE <= 180 failed')
         if -90 >= latitude >= 90:

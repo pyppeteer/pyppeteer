@@ -49,8 +49,9 @@ def isolated_page(isolated_context) -> Page:
 def server_url(server):
     return f'http://localhost:{_port}'
 
+
 @pytest.fixture(scope='session')
-def server_url_empty_page(server_url):
+def server_url_empty_page(server_url) -> str:
     return f'{server_url}/empty.html'
 
 

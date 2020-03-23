@@ -213,6 +213,7 @@ class TestSetOfflineMode:
     async def test_emulate_navigator_online(self, isolated_page):
         def nav_online():
             return isolated_page.evaluate('() => window.navigator.onLine')
+
         assert await nav_online()
         await isolated_page.setOfflineMode(True)
         assert await nav_online() is False
@@ -221,7 +222,47 @@ class TestSetOfflineMode:
 
 
 class TestExecutionContextQueryObjects:
-    pass
+    @sync
+    async def test_queries_objects(self, isolated_page):
+        await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
+        proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
+        objs_handle = await isolated_page.queryObjects(proto_handle)
+        # todo (Mattwmaster58): correct typing
+        assert len(await isolated_page.evaluate('objects => objects.length', objs_handle)) == 1
+        assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
+            'hello',
+            'world',
+        ]
+
+    @sync
+    async def test_queries_objects_non_blank_page(self, isolated_page, server_url_blank_page):
+        await isolated_page.goto(server_url_blank_page)
+        await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
+        proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
+        objs_handle = await isolated_page.queryObjects(proto_handle)
+        # todo (Mattwmaster58): correct typing
+        assert len(await isolated_page.evaluate('objects => objects.length', objs_handle)) == 1
+        assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
+            'hello',
+            'world',
+        ]
+
+    @sync
+    async def test_fails_on_disposed_handles(self, isolated_page):
+        proto_handle = await isolated_page.evaluateHandle('() => HTMLBodyElement.prototype')
+        await proto_handle.dispose()
+        with pytest.raises(PageError) as excpt:
+            await isolated_page.queryObjects(proto_handle)
+        assert 'Prototype JSHandle is disposed!' in str(excpt)
+
+    @sync
+    async def test_fail_on_primitive_vals_as_proto(self, isolated_page):
+        proto_handle = await isolated_page.evaluateHandle('() => 42')
+        with pytest.raises(PageError) as excpt:
+            await isolated_page.queryObjects(proto_handle)
+        assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt)
+
+
 
 
 class TestEventsConsole:
