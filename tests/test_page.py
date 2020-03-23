@@ -4,6 +4,7 @@ from contextlib import suppress
 import pytest
 from syncer import sync
 
+from pyppeteer.errors import PageError
 from tests.utils import waitEvent, gather_with_timeout
 
 
@@ -139,7 +140,7 @@ class TestBrowserContextOverridePermissions:
         assert 'Unknown permission: foo' in str(excpt)
 
     @sync
-    async def test_grant_permission_when_overridden(self, isolated_page, server_url_empty_page):
+    async def test_grant_permission_when_overridden(self, isolated_page, isolated_context, server_url_empty_page):
         await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
 
@@ -153,7 +154,8 @@ class TestBrowserContextOverridePermissions:
     @sync
     async def test_permission_onchange_fired(self, isolated_page, isolated_context, server_url_empty_page):
         await isolated_page.goto(server_url_empty_page)
-        await isolated_page.evaluate("""
+        await isolated_page.evaluate(
+            """
         () => {
             window.events = [];
             return navigator.permissions.query({name: 'geolocation'}).then(function(result) {
@@ -163,7 +165,8 @@ class TestBrowserContextOverridePermissions:
                 };
             });
         }
-        """)
+        """
+        )
         assert await isolated_page.evaluate('() => window.events') == ['prompt']
         await isolated_context.overridePermissions(server_url_empty_page, [])
         assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied']
@@ -179,16 +182,42 @@ class TestSetGeolocation:
         await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
         await isolated_page.goto(server_url_empty_page)
         await isolated_page.setGeolocation(longitude=10, latitude=10)
-        geolocation = await isolated_page.evaluate("""
+        geolocation = await isolated_page.evaluate(
+            """
         () => new Promise(resolve => navigator.geolocation.getCurrentPosition(position => {
             resolve({latitude: position.coords.latitude, longitude: position.coords.longitude});
         }))
-        """)
+        """
+        )
         assert geolocation == {'longitude': 10, 'latitude': 10}
+
+    @sync
+    async def test_rejects_invalid_lat_long(self, isolated_page):
+        with pytest.raises(PageError):
+            await isolated_page.setGeolocation(longitude=200, latitude=10)
+        with pytest.raises(PageError):
+            await isolated_page.setGeolocation(longitude=90, latitude=200)
 
 
 class TestSetOfflineMode:
-    pass
+    @sync
+    async def test_set_offline_mode(self, isolated_page, server_url_empty_page):
+        await isolated_page.setOfflineMode(True)
+        with pytest.raises(PageError):
+            await isolated_page.goto(server_url_empty_page)
+        await isolated_page.setOfflineMode(False)
+        resp = await isolated_page.reload()
+        assert resp.status == 200
+
+    @sync
+    async def test_emulate_navigator_online(self, isolated_page):
+        def nav_online():
+            return isolated_page.evaluate('() => window.navigator.onLine')
+        assert await nav_online()
+        await isolated_page.setOfflineMode(True)
+        assert await nav_online() is False
+        await isolated_page.setOfflineMode(False)
+        assert await nav_online()
 
 
 class TestExecutionContextQueryObjects:
