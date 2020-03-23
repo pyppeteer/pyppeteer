@@ -64,6 +64,7 @@ class CoverageResult(TypedDict):
 
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
+# todo (Mattwmaster58): Enum
 Platforms = Literal['linux', 'mac', 'win32', 'win64']
 MouseButton = Literal['left', 'right', 'middle']
 WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
