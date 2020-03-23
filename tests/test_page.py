@@ -174,7 +174,17 @@ class TestBrowserContextOverridePermissions:
 
 
 class TestSetGeolocation:
-    pass
+    @sync
+    async def test_set_geolocation(self, isolated_page, isolated_context, server_url_empty_page):
+        await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
+        await isolated_page.goto(server_url_empty_page)
+        await isolated_page.setGeolocation(longitude=10, latitude=10)
+        geolocation = await isolated_page.evaluate("""
+        () => new Promise(resolve => navigator.geolocation.getCurrentPosition(position => {
+            resolve({latitude: position.coords.latitude, longitude: position.coords.longitude});
+        }))
+        """)
+        assert geolocation == {'longitude': 10, 'latitude': 10}
 
 
 class TestSetOfflineMode:
