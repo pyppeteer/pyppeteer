@@ -8,9 +8,9 @@ from tests.utils import waitEvent, gather_with_timeout
 
 
 @sync
-async def test_async_stacks(isolated_page, server_url):
+async def test_async_stacks(isolated_page, server_url_empty_page):
     with pytest.raises(Exception) as excpt:
-        await isolated_page.goto(server_url + '/empty.html')
+        await isolated_page.goto(server_url_empty_page)
         assert __file__ in str(excpt)
 
 
@@ -24,11 +24,10 @@ class TestClose:
         assert 'Protocol error' in str(excpt)
 
     @sync
-    async def test_closed_page_removed_from_pages_prop(self, shared_browser):
-        page = await shared_browser.newPage()
-        assert page in await shared_browser.pages
-        await page.close()
-        assert page not in await shared_browser.pages
+    async def test_closed_page_removed_from_pages_prop(self, isolated_page, shared_browser):
+        assert isolated_page in await shared_browser.pages
+        await isolated_page.close()
+        assert isolated_page not in await shared_browser.pages
 
     @sync
     async def test_run_beforeunload(self, isolated_page, server_url, firefox):
@@ -58,11 +57,10 @@ class TestClose:
         await isolated_page.close()
 
     @sync
-    async def test_set_page_close_state(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        assert page.isClosed is False
-        await page.close()
-        assert page.isClosed
+    async def test_set_page_close_state(self, isolated_page, server_url):
+        assert isolated_page.isClosed is False
+        await isolated_page.close()
+        assert isolated_page.isClosed
 
 
 class TestEventsLoad:
@@ -101,16 +99,16 @@ class TestEventsPopup:
         assert await popup.evaluate('() => !!window.opener') is False
 
     @sync
-    async def test_clicking_target_blank(self, isolated_page, server_url):
-        await isolated_page.goto(server_url + '/empty.html')
+    async def test_clicking_target_blank(self, isolated_page, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
         await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
         popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
         assert await isolated_page.evaluate('() => !!window.opener') is False
         assert await popup.evaluate('() => !!window.opener')
 
     @sync
-    async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url):
-        await isolated_page.goto(server_url + '/empty.html')
+    async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
         await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
         popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
         assert await isolated_page.evaluate('() => !!window.opener') is False
@@ -123,44 +121,39 @@ class TestBrowserContextOverridePermissions:
         return page.evaluate('name => navigator.permissions.query({name}).then(result => result.state)', name)
 
     @sync
-    async def test_prompt_by_default(self, isolated_page, server_url):
-        await isolated_page.goto(server_url + '/empty.html')
+    async def test_prompt_by_default(self, isolated_page, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
 
     @sync
-    async def test_deny_unlisted_permission(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        await page.goto(server_url + '/empty.html')
-        await isolated_context.overridePermissions(server_url + '/empty.html', [])
-        assert await self.get_permission_state(page, 'geolocation') == 'denied'
+    async def test_deny_unlisted_permission(self, isolated_page, isolated_context, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
+        await isolated_context.overridePermissions(server_url_empty_page, [])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'denied'
 
     @sync
-    async def test_fail_on_bad_permission(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        await page.goto(server_url + '/empty.html')
+    async def test_fail_on_bad_permission(self, isolated_page, isolated_context, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
         with pytest.raises(RuntimeError) as excpt:
-            await isolated_context.overridePermissions(server_url + '/empty.html', ['foo'])
+            await isolated_context.overridePermissions(server_url_empty_page, ['foo'])
         assert 'Unknown permission: foo' in str(excpt)
 
     @sync
-    async def test_grant_permission_when_overridden(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
-        assert await self.get_permission_state(page, 'geolocation') == 'granted'
+    async def test_grant_permission_when_overridden(self, isolated_page, server_url_empty_page):
+        await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
 
     @sync
-    async def test_reset_permissions(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
-        assert await self.get_permission_state(page, 'geolocation') == 'granted'
+    async def test_reset_permissions(self, isolated_page, isolated_context, server_url_empty_page):
+        await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
         await isolated_context.clearPermissionOverrides()
-        assert await self.get_permission_state(page, 'geolocation') == 'prompt'
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
 
     @sync
-    async def test_permission_onchange_fired(self, isolated_context, server_url):
-        page = await isolated_context.newPage()
-        await page.goto(server_url + '/empty.html')
-        await page.evaluate("""
+    async def test_permission_onchange_fired(self, isolated_page, isolated_context, server_url_empty_page):
+        await isolated_page.goto(server_url_empty_page)
+        await isolated_page.evaluate("""
         () => {
             window.events = [];
             return navigator.permissions.query({name: 'geolocation'}).then(function(result) {
@@ -171,13 +164,13 @@ class TestBrowserContextOverridePermissions:
             });
         }
         """)
-        assert await page.evaluate('() => window.events') == ['prompt']
-        await isolated_context.overridePermissions(server_url + '/empty.html', [])
-        assert await page.evaluate('() => window.events') == ['prompt', 'denied']
-        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
-        assert await page.evaluate('() => window.events') == ['prompt', 'denied', 'granted']
+        assert await isolated_page.evaluate('() => window.events') == ['prompt']
+        await isolated_context.overridePermissions(server_url_empty_page, [])
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied']
+        await isolated_context.overridePermissions(server_url_empty_page, ['geolocation'])
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied', 'granted']
         await isolated_context.clearPermissionOverrides()
-        assert await page.evaluate('() => window.events') == ['prompt', 'denied', 'granted', 'prompt']
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied', 'granted', 'prompt']
 
 
 class TestSetGeolocation:
