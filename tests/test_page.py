@@ -86,8 +86,7 @@ class TestEventsPopup:
     @sync
     async def test_popup_props(self, isolated_page):
         popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'),
-            isolated_page.evaluate('() => window.open("about:blank")'),
+            waitEvent(isolated_page, 'popup'), isolated_page.evaluate('() => window.open("about:blank")'),
         )
         assert await isolated_page.evaluate('() => !!window.opener') is False
         assert await popup.evaluate('() => !!window.opener')
@@ -105,10 +104,7 @@ class TestEventsPopup:
     async def test_clicking_target_blank(self, isolated_page, server_url):
         await isolated_page.goto(server_url + '/empty.html')
         await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
-        popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'),
-            isolated_page.click('a'),
-        )
+        popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
         assert await isolated_page.evaluate('() => !!window.opener') is False
         assert await popup.evaluate('() => !!window.opener')
 
@@ -116,29 +112,72 @@ class TestEventsPopup:
     async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url):
         await isolated_page.goto(server_url + '/empty.html')
         await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
-        popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'),
-            isolated_page.Jeval('a', 'elem => elem.click()')
-        )
+        popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
         assert await isolated_page.evaluate('() => !!window.opener') is False
         assert await popup.evaluate('() => !!window.opener') is False
-
-    @sync
-    async def test_clicking_target_blank_and_noopener(self, isolated_page, server_url):
-        await isolated_page.goto(server_url + '/empty.html')
-        await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
-        popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'),
-            isolated_page.click('a')
-        )
-        assert await isolated_page.evaluate('() => !!window.opener') is False
-        assert await popup.evaluate('() => !!window.opener') is False
-
-
 
 
 class TestBrowserContextOverridePermissions:
-    pass
+    @staticmethod
+    def get_permission_state(page, name):
+        return page.evaluate('name => navigator.permissions.query({name}).then(result => result.state)', name)
+
+    @sync
+    async def test_prompt_by_default(self, isolated_page, server_url):
+        await isolated_page.goto(server_url + '/empty.html')
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
+
+    @sync
+    async def test_deny_unlisted_permission(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        await page.goto(server_url + '/empty.html')
+        await isolated_context.overridePermissions(server_url + '/empty.html', [])
+        assert await self.get_permission_state(page, 'geolocation') == 'denied'
+
+    @sync
+    async def test_fail_on_bad_permission(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        await page.goto(server_url + '/empty.html')
+        with pytest.raises(RuntimeError) as excpt:
+            await isolated_context.overridePermissions(server_url + '/empty.html', ['foo'])
+        assert 'Unknown permission: foo' in str(excpt)
+
+    @sync
+    async def test_grant_permission_when_overridden(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
+        assert await self.get_permission_state(page, 'geolocation') == 'granted'
+
+    @sync
+    async def test_reset_permissions(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
+        assert await self.get_permission_state(page, 'geolocation') == 'granted'
+        await isolated_context.clearPermissionOverrides()
+        assert await self.get_permission_state(page, 'geolocation') == 'prompt'
+
+    @sync
+    async def test_permission_onchange_fired(self, isolated_context, server_url):
+        page = await isolated_context.newPage()
+        await page.goto(server_url + '/empty.html')
+        await page.evaluate("""
+        () => {
+            window.events = [];
+            return navigator.permissions.query({name: 'geolocation'}).then(function(result) {
+                window.events.push(result.state);
+                result.onchange = function() {
+                    window.events.push(result.state);
+                };
+            });
+        }
+        """)
+        assert await page.evaluate('() => window.events') == ['prompt']
+        await isolated_context.overridePermissions(server_url + '/empty.html', [])
+        assert await page.evaluate('() => window.events') == ['prompt', 'denied']
+        await isolated_context.overridePermissions(server_url + '/empty.html', ['geolocation'])
+        assert await page.evaluate('() => window.events') == ['prompt', 'denied', 'granted']
+        await isolated_context.clearPermissionOverrides()
+        assert await page.evaluate('() => window.events') == ['prompt', 'denied', 'granted', 'prompt']
 
 
 class TestSetGeolocation:
