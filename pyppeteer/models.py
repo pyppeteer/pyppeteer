@@ -7,7 +7,7 @@ except ImportError:
     from typing import TypedDict
 
 if TYPE_CHECKING:
-    pass
+    from pyppeteer.jshandle import JSHandle
 
 
 class Viewport(TypedDict, total=False):
@@ -64,8 +64,8 @@ class CoverageResult(TypedDict):
 
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
-# todo (Mattwmaster58): Enum
-Platforms = Literal['linux', 'mac', 'win32', 'win64']
+platforms = ('linux', 'mac', 'win32', 'win64')
+Platforms = Literal[platforms]
 MouseButton = Literal['left', 'right', 'middle']
 WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
 WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]

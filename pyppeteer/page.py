@@ -689,7 +689,7 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             helpers.debugError(logger, e)
 
-    def _addConsoleMessage(self, type: str, args: List[JSHandle],) -> None:
+    def _addConsoleMessage(self, type_: str, args: List[JSHandle], ) -> None:
         # TODO puppetter also takes stacktrace argument but it seems that
         # in python it's not necessary?
         if not self.listeners(Events.Page.Console):
@@ -704,7 +704,7 @@ class Page(AsyncIOEventEmitter):
                 textTokens.append(arg.toString())
             else:
                 textTokens.append(str(helpers.valueFromRemoteObject(remoteObject)))
-        message = ConsoleMessage(type, '  '.join(textTokens), args)
+        message = ConsoleMessage(type_, ' '.join(textTokens), args)
         self.emit(Events.Page.Console, message)
 
     def _onDialog(self, event: Any) -> None:

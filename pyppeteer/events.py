@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
 """
 Events module
 
 puppeteer equivalent: Events.js
 """
-from aenum import Enum
 
 
-class Events(Enum):
-    class Page(Enum):
+class Events:
+    class Page:
         Close = 'close'
         Console = 'console'
         Dialog = 'dialog'
@@ -32,24 +30,24 @@ class Events(Enum):
         WorkerCreated = 'workercreated'
         WorkerDestroyed = 'workerdestroyed'
 
-    class Browser(Enum):
+    class Browser:
         TargetCreated = 'targetcreated'
         TargetDestroyed = 'targetdestroyed'
         TargetChanged = 'targetchanged'
         Disconnected = 'disconnected'
 
-    class BrowserContext(Enum):
+    class BrowserContext:
         TargetCreated = 'targetcreated'
         TargetDestroyed = 'targetdestroyed'
         TargetChanged = 'targetchanged'
 
-    class NetworkManager(Enum):
+    class NetworkManager:
         Request = 'Events.NetworkManager.Request'
         Response = 'Events.NetworkManager.Response'
         RequestFailed = 'Events.NetworkManager.RequestFailed'
         RequestFinished = 'Events.NetworkManager.RequestFinished'
 
-    class FrameManager(Enum):
+    class FrameManager:
         FrameAttached = 'Events.FrameManager.FrameAttached'
         FrameNavigated = 'Events.FrameManager.FrameNavigated'
         FrameDetached = 'Events.FrameManager.FrameDetached'
@@ -58,8 +56,8 @@ class Events(Enum):
         ExecutionContextCreated = 'Events.FrameManager.ExecutionContextCreated'
         ExecutionContextDestroyed = 'Events.FrameManager.ExecutionContextDestroyed'
 
-    class Connection(Enum):
+    class Connection:
         Disconnected = 'Events.Connection.Disconnected'
 
-    class CDPSession(Enum):
+    class CDPSession:
         Disconnected = 'Events.CDPSession.Disconnected'
