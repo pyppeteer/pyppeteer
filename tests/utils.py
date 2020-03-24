@@ -4,9 +4,7 @@
 import asyncio
 from asyncio.futures import Future
 from asyncio.tasks import Task
-from typing import Awaitable, List, Union
-
-from pyppeteer.errors import TimeoutError
+from typing import Awaitable, List, Union, Optional
 
 
 def waitEvent(emitter, event_name):
@@ -19,7 +17,7 @@ def waitEvent(emitter, event_name):
     return fut
 
 
-def gather_with_timeout(*aws: Awaitable, timeout: float = 10, **kwargs) -> Awaitable[List[Union[Task, Future]]]:
+def gather_with_timeout(*aws: Awaitable, timeout: Optional[float] = 2.5, **kwargs) -> Awaitable[List[Union[Task, Future]]]:
     """
     Similar to asyncio.gather, but with one key difference: It will timeout. A wrapped asyncio.gather approach was
     chosen over asyncio.wait or asyncio.wait_for, etc. because asyncio.gather returns the awaitables in the same order
@@ -29,8 +27,4 @@ def gather_with_timeout(*aws: Awaitable, timeout: float = 10, **kwargs) -> Await
     :param kwargs: kwargs to pass to asyncio.gather
     :return: same as asyncio.gather
     """
-    async def timeout_func(after: float) -> None:
-        await asyncio.sleep(after)
-        raise TimeoutError('timeout error occurred while gathering awaitables')
-
-    return asyncio.gather(*[*aws, timeout_func(timeout)], **kwargs)
+    return asyncio.wait_for(asyncio.gather(*aws, **kwargs), timeout=timeout)

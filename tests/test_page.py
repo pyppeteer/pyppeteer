@@ -276,7 +276,8 @@ class TestEventsConsole:
 
         isolated_page.once('console', set_message)
         await gather_with_timeout(
-            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'), waitEvent(isolated_page, 'console'),
+            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
+            waitEvent(isolated_page, 'console'),
         )
         assert message.text == 'hello 5 JSHandle@object'
         assert message.type == 'log'
