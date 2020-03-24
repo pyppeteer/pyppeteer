@@ -5,13 +5,13 @@ from typing import Optional, List
 import pytest
 from syncer import sync
 
-from pyppeteer.errors import PageError
+from pyppeteer.errors import PageError, TimeoutError
 from pyppeteer.page import ConsoleMessage
 from tests.utils import waitEvent, gather_with_timeout
 
 
 @sync
-async def test_async_stacks(isolated_page,  server_url):
+async def test_async_stacks(isolated_page, server_url):
     with pytest.raises(Exception) as excpt:
         await isolated_page.goto(server_url.empty_page)
         assert __file__ in str(excpt)
@@ -34,7 +34,7 @@ class TestClose:
 
     @sync
     async def test_run_beforeunload(self, isolated_page, server_url, firefox):
-        await isolated_page.goto(server_url + '/beforeunload.html')
+        await isolated_page.goto(server_url / 'beforeunload.html')
         # interact w/ page so beforeunload handler fires
         await isolated_page.click('body')
         page_closing_fut = isolated_page._loop.create_task(isolated_page.close(runBeforeUnload=True))
@@ -53,7 +53,7 @@ class TestClose:
 
     @sync
     async def test_not_run_beforeunload_by_default(self, isolated_page, server_url):
-        await isolated_page.goto(server_url + '/beforeunload.html')
+        await isolated_page.goto(server_url / 'beforeunload.html')
         # interact w/ page so beforeunload handler fires
         await isolated_page.click('body')
         # if beforeunload handlers are fired, this will timeout as a dialog will block the close of the page
@@ -102,7 +102,7 @@ class TestEventsPopup:
         assert await popup.evaluate('() => !!window.opener') is False
 
     @sync
-    async def test_clicking_target_blank(self, isolated_page,  server_url):
+    async def test_clicking_target_blank(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
         popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
@@ -110,7 +110,7 @@ class TestEventsPopup:
         assert await popup.evaluate('() => !!window.opener')
 
     @sync
-    async def test_fake_clicking_target_and_noopener(self, isolated_page,  server_url):
+    async def test_fake_clicking_target_and_noopener(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
         popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
@@ -124,37 +124,37 @@ class TestBrowserContextOverridePermissions:
         return page.evaluate('name => navigator.permissions.query({name}).then(result => result.state)', name)
 
     @sync
-    async def test_prompt_by_default(self, isolated_page,  server_url):
+    async def test_prompt_by_default(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
 
     @sync
-    async def test_deny_unlisted_permission(self, isolated_page, isolated_context,  server_url):
+    async def test_deny_unlisted_permission(self, isolated_page, isolated_context, server_url):
         await isolated_page.goto(server_url.empty_page)
         await isolated_context.overridePermissions(server_url.empty_page, [])
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'denied'
 
     @sync
-    async def test_fail_on_bad_permission(self, isolated_page, isolated_context,  server_url):
+    async def test_fail_on_bad_permission(self, isolated_page, isolated_context, server_url):
         await isolated_page.goto(server_url.empty_page)
         with pytest.raises(RuntimeError) as excpt:
             await isolated_context.overridePermissions(server_url.empty_page, ['foo'])
         assert 'Unknown permission: foo' in str(excpt)
 
     @sync
-    async def test_grant_permission_when_overridden(self, isolated_page, isolated_context,  server_url):
+    async def test_grant_permission_when_overridden(self, isolated_page, isolated_context, server_url):
         await isolated_context.overridePermissions(server_url.empty_page, ['geolocation'])
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
 
     @sync
-    async def test_reset_permissions(self, isolated_page, isolated_context,  server_url):
+    async def test_reset_permissions(self, isolated_page, isolated_context, server_url):
         await isolated_context.overridePermissions(server_url.empty_page, ['geolocation'])
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
         await isolated_context.clearPermissionOverrides()
         assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
 
     @sync
-    async def test_permission_onchange_fired(self, isolated_page, isolated_context,  server_url):
+    async def test_permission_onchange_fired(self, isolated_page, isolated_context, server_url):
         await isolated_page.goto(server_url.empty_page)
         await isolated_page.evaluate(
             """
@@ -180,7 +180,7 @@ class TestBrowserContextOverridePermissions:
 
 class TestSetGeolocation:
     @sync
-    async def test_set_geolocation(self, isolated_page, isolated_context,  server_url):
+    async def test_set_geolocation(self, isolated_page, isolated_context, server_url):
         await isolated_context.overridePermissions(server_url.empty_page, ['geolocation'])
         await isolated_page.goto(server_url.empty_page)
         await isolated_page.setGeolocation(longitude=10, latitude=10)
@@ -203,7 +203,7 @@ class TestSetGeolocation:
 
 class TestSetOfflineMode:
     @sync
-    async def test_set_offline_mode(self, isolated_page,  server_url):
+    async def test_set_offline_mode(self, isolated_page, server_url):
         await isolated_page.setOfflineMode(True)
         with pytest.raises(PageError):
             await isolated_page.goto(server_url.empty_page)
@@ -330,7 +330,7 @@ class TestEventsConsole:
         assert message.text == 'JSHandle@object'
 
     @sync
-    async def test_triggers_correct_log(self, isolated_page, firefox,  server_url):
+    async def test_triggers_correct_log(self, isolated_page, firefox, server_url):
         await isolated_page.goto('about:blank')
         message, *_ = gather_with_timeout(
             waitEvent(isolated_page, 'console'),
@@ -343,7 +343,7 @@ class TestEventsConsole:
             assert message.type == 'error'
 
     @sync
-    async def test_has_location_on_fetch_failure(self, isolated_page,  server_url):
+    async def test_has_location_on_fetch_failure(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         message, *_ = gather_with_timeout(
             waitEvent(isolated_page, 'console'),
@@ -357,19 +357,19 @@ class TestEventsConsole:
     async def test_location_for_console_API_calls(self, isolated_page, server_url, firefox):
         await isolated_page.goto(server_url.empty_page)
         message, *_ = gather_with_timeout(
-            waitEvent(isolated_page, 'console'), isolated_page.goto(server_url + '/consolelog.html'),
+            waitEvent(isolated_page, 'console'), isolated_page.goto(server_url / 'consolelog.html'),
         )
         assert message.text == 'yellow'
         assert message.type == 'log'
         assert message.location == {
-            'url': server_url + '/consolelog.html',
+            'url': server_url / 'consolelog.html',
             'lineNumber': 7,
             'columnNumber': 6 if firefox else 14,  # console.|log vs |console.log
         }
 
     # @see https://github.com/puppeteer/puppeteer/issues/3865
     @sync
-    async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page,  server_url):
+    async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         await isolated_page.evaluate(
             """async() => {
@@ -399,9 +399,21 @@ class TestEventsDOMContentLoaded:
 class TestMetrics:
     @staticmethod
     def check_metrics(metrics):
-        metrics_to_check = {'Timestamp', 'Documents', 'Frames', 'JSEventListeners', 'Nodes', 'LayoutCount',
-                            'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration',
-                            'TaskDuration', 'JSHeapUsedSize', 'JSHeapTotalSize'}
+        metrics_to_check = {
+            'Timestamp',
+            'Documents',
+            'Frames',
+            'JSEventListeners',
+            'Nodes',
+            'LayoutCount',
+            'RecalcStyleCount',
+            'LayoutDuration',
+            'RecalcStyleDuration',
+            'ScriptDuration',
+            'TaskDuration',
+            'JSHeapUsedSize',
+            'JSHeapTotalSize',
+        }
         for name, value in metrics.items():
             assert name in metrics_to_check, f'Unrecognized/duplicate metric: {name}'
             assert value >= 0
@@ -430,36 +442,42 @@ class TestMetrics:
 
 class TestWaitForRequest:
     @sync
-    async def test_basic_wait_for_request_usage(self, isolated_page, server_url,):
+    async def test_basic_wait_for_request_usage(
+        self, isolated_page, server_url,
+    ):
         await isolated_page.goto(server_url.empty_page)
         request, *_ = await gather_with_timeout(
-            isolated_page.waitForRequest(server_url + '/digits/2.png'),
-            isolated_page.evaluate("""() => {
+            isolated_page.waitForRequest(server_url / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }""")
+            }"""
+            ),
         )
-        assert request.url == server_url + '/digits/2.png'
+        assert request.url == server_url / 'digits/2.png'
 
     @sync
-    async def test_works_with_predicate(self, isolated_page,  server_url):
+    async def test_works_with_predicate(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         request, *_ = await gather_with_timeout(
-            isolated_page.waitForRequest(lambda r: r.url == server_url.base / 'digits/2.png'),
-            isolated_page.evaluate("""() => {
+            isolated_page.waitForRequest(lambda r: r.url == server_url / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }""")
+            }"""
+            ),
         )
-        assert request.url == server_url.base / 'digits/2.png'
-        
+        assert request.url == server_url / 'digits/2.png'
+
     @sync
     async def test_respects_timeout(self, isolated_page):
         with pytest.raises(TimeoutError):
             await isolated_page.waitForRequest(lambda: False, timeout=1)
-    
+
     @sync
     async def test_respects_default_timeout(self, isolated_page):
         isolated_page.setDefaultTimeout(1)
@@ -470,16 +488,16 @@ class TestWaitForRequest:
     async def test_works_with_no_timeout(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
         request, *_ = await gather_with_timeout(
-            isolated_page.waitForRequest(server_url.base / 'digits/2.png'),
-            isolated_page.evaluate("""() => setTimeout(() => {
+            isolated_page.waitForRequest(server_url / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => setTimeout(() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }, 50)""")
+            }, 50)"""
+            ),
         )
-        assert request.url == server_url.base / 'digits/2.png'
-
-
+        assert request.url == server_url / 'digits/2.png'
 
 
 class TestWaitForResponse:
