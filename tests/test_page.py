@@ -397,7 +397,35 @@ class TestEventsDOMContentLoaded:
 
 
 class TestMetrics:
-    pass
+    @staticmethod
+    def check_metrics(metrics):
+        metrics_to_check = {'Timestamp', 'Documents', 'Frames', 'JSEventListeners', 'Nodes', 'LayoutCount',
+                            'RecalcStyleCount', 'LayoutDuration', 'RecalcStyleDuration', 'ScriptDuration',
+                            'TaskDuration', 'JSHeapUsedSize', 'JSHeapTotalSize'}
+        for name, value in metrics.items():
+            assert name in metrics_to_check, f'Unrecognized/duplicate metric: {name}'
+            assert value >= 0
+            metrics_to_check.remove(name)
+        assert len(metrics_to_check) == 0
+
+    @sync
+    async def test_retrieval_of_metrics(self, isolated_page):
+        await isolated_page.goto('about:blank')
+        self.check_metrics(await isolated_page.metrics())
+
+    @sync
+    async def test_metrics_event_fired_on_console_timestamp(self, event_loop, isolated_page):
+        await isolated_page.goto('about:blank')
+        metrics = event_loop.create_future()
+
+        def resolve_fut(res):
+            nonlocal metrics
+            metrics.set_result(res)
+
+        isolated_page.once('metrics', resolve_fut)
+        await isolated_page.evaluate('() => console.timeStamp("test42")')
+        await metrics
+        assert metrics.result().title == 'test42'
 
 
 class TestWaitForRequest:
