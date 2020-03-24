@@ -5,7 +5,7 @@ from typing import Optional, List
 import pytest
 from syncer import sync
 
-from pyppeteer.errors import PageError, TimeoutError
+from pyppeteer.errors import TimeoutError, ElementHandleError
 from pyppeteer.page import ConsoleMessage
 from tests.utils import waitEvent, gather_with_timeout
 
@@ -195,9 +195,9 @@ class TestSetGeolocation:
 
     @sync
     async def test_rejects_invalid_lat_long(self, isolated_page):
-        with pytest.raises(PageError):
+        with pytest.raises(NetworkError):
             await isolated_page.setGeolocation(longitude=200, latitude=10)
-        with pytest.raises(PageError):
+        with pytest.raises(NetworkError):
             await isolated_page.setGeolocation(longitude=90, latitude=200)
 
 
@@ -205,7 +205,7 @@ class TestSetOfflineMode:
     @sync
     async def test_set_offline_mode(self, isolated_page, server_url):
         await isolated_page.setOfflineMode(True)
-        with pytest.raises(PageError):
+        with pytest.raises(BrowserError):
             await isolated_page.goto(server_url.empty_page)
         await isolated_page.setOfflineMode(False)
         resp = await isolated_page.reload()
@@ -230,15 +230,15 @@ class TestExecutionContextQueryObjects:
         proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
         objs_handle = await isolated_page.queryObjects(proto_handle)
         # todo (Mattwmaster58): correct typing
-        assert len(await isolated_page.evaluate('objects => objects.length', objs_handle)) == 1
+        assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
         assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
             'hello',
             'world',
         ]
 
     @sync
-    async def test_queries_objects_non_blank_page(self, isolated_page, server_url_blank_page):
-        await isolated_page.goto(server_url_blank_page)
+    async def test_queries_objects_non_blank_page(self, isolated_page, server_url):
+        await isolated_page.goto(server_url.empty_page)
         await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
         proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
         objs_handle = await isolated_page.queryObjects(proto_handle)
@@ -253,14 +253,14 @@ class TestExecutionContextQueryObjects:
     async def test_fails_on_disposed_handles(self, isolated_page):
         proto_handle = await isolated_page.evaluateHandle('() => HTMLBodyElement.prototype')
         await proto_handle.dispose()
-        with pytest.raises(PageError) as excpt:
+        with pytest.raises(ElementHandleError) as excpt:
             await isolated_page.queryObjects(proto_handle)
         assert 'Prototype JSHandle is disposed!' in str(excpt)
 
     @sync
     async def test_fail_on_primitive_vals_as_proto(self, isolated_page):
         proto_handle = await isolated_page.evaluateHandle('() => 42')
-        with pytest.raises(PageError) as excpt:
+        with pytest.raises(ElementHandleError) as excpt:
             await isolated_page.queryObjects(proto_handle)
         assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt)
 
@@ -333,7 +333,7 @@ class TestEventsConsole:
     @sync
     async def test_triggers_correct_log(self, isolated_page, firefox, server_url):
         await isolated_page.goto('about:blank')
-        message, *_ = gather_with_timeout(
+        message, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'console'),
             isolated_page.evaluate('async url => fetch(url).catch(e => {})', server_url.empty_page),
         )
@@ -346,7 +346,7 @@ class TestEventsConsole:
     @sync
     async def test_has_location_on_fetch_failure(self, isolated_page, server_url):
         await isolated_page.goto(server_url.empty_page)
-        message, *_ = gather_with_timeout(
+        message, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'console'),
             isolated_page.evaluate('<script>fetch("http://wat");</script>', server_url.empty_page),
         )
@@ -357,7 +357,7 @@ class TestEventsConsole:
     @sync
     async def test_location_for_console_API_calls(self, isolated_page, server_url, firefox):
         await isolated_page.goto(server_url.empty_page)
-        message, *_ = gather_with_timeout(
+        message, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'console'), isolated_page.goto(server_url / 'consolelog.html'),
         )
         assert message.text == 'yellow'
@@ -437,7 +437,7 @@ class TestMetrics:
 
         isolated_page.once('metrics', resolve_fut)
         await isolated_page.evaluate('() => console.timeStamp("test42")')
-        metrics = asyncio.wait_for(metrics, 5)
+        metrics = await asyncio.wait_for(metrics, 5)
         assert metrics.title == 'test42'
 
 
