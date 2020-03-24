@@ -5,7 +5,7 @@ from typing import Optional, List
 import pytest
 from syncer import sync
 
-from pyppeteer.errors import TimeoutError, ElementHandleError
+from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError
 from pyppeteer.page import ConsoleMessage
 from tests.utils import waitEvent, gather_with_timeout
 
@@ -255,14 +255,14 @@ class TestExecutionContextQueryObjects:
         await proto_handle.dispose()
         with pytest.raises(ElementHandleError) as excpt:
             await isolated_page.queryObjects(proto_handle)
-        assert 'Prototype JSHandle is disposed!' in str(excpt)
+        assert 'Prototype JSHandle is disposed' in str(excpt.value)
 
     @sync
     async def test_fail_on_primitive_vals_as_proto(self, isolated_page):
         proto_handle = await isolated_page.evaluateHandle('() => 42')
         with pytest.raises(ElementHandleError) as excpt:
             await isolated_page.queryObjects(proto_handle)
-        assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt)
+        assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt.value)
 
 
 class TestEventsConsole:
@@ -348,7 +348,7 @@ class TestEventsConsole:
         await isolated_page.goto(server_url.empty_page)
         message, *_ = await gather_with_timeout(
             waitEvent(isolated_page, 'console'),
-            isolated_page.evaluate('<script>fetch("http://wat");</script>', server_url.empty_page),
+            isolated_page.setContent('<script>fetch("http://wat");</script>', server_url.empty_page),
         )
         assert 'ERR_NAME_NOT_RESOLVED' in message.text
         assert message.type == 'error'
@@ -438,7 +438,7 @@ class TestMetrics:
         isolated_page.once('metrics', resolve_fut)
         await isolated_page.evaluate('() => console.timeStamp("test42")')
         metrics = await asyncio.wait_for(metrics, 5)
-        assert metrics.title == 'test42'
+        assert metrics['title'] == 'test42'
 
 
 class TestWaitForRequest:
