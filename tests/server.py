@@ -4,7 +4,7 @@
 import asyncio
 import base64
 import functools
-import os
+from pathlib import Path
 from typing import Any, Callable
 
 from tornado import web
@@ -169,23 +169,10 @@ def log_handler(handler: Any) -> None:
 
 
 def get_application() -> web.Application:
-    static_path = os.path.join(os.path.dirname(__file__), 'static')
+    static_path = Path(__file__).parent / 'static'
+    # todo: subclass StaticFileHandler to return appropriate headers/status codes/whatever
     handlers = [
-        ('/', MainHandler),
-        ('/1', LinkHandler1),
-        ('/redirect1', RedirectHandler1),
-        ('/redirect2', RedirectHandler2),
-        ('/redirect3', RedirectHandler3),
-        ('/one-style.html', ResourceRedirectHandler),
-        ('/one-style.css', CSSRedirectHandler1),
-        ('/two-style.css', CSSRedirectHandler2),
-        ('/three-style.css', CSSRedirectHandler3),
-        ('/four-style.css', CSSRedirectHandler4),
-        ('/auth', AuthHandler),
-        ('/empty', EmptyHandler),
-        ('/long', LongHandler),
-        ('/csp', CSPHandler),
-        ('/static', web.StaticFileHandler, dict(path=static_path)),
+        (r'/(.*)', web.StaticFileHandler, {'path': static_path.name}),
     ]
     return web.Application(handlers, log_function=log_handler, static_path=static_path,)
 
