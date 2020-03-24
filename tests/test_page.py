@@ -436,8 +436,8 @@ class TestMetrics:
 
         isolated_page.once('metrics', resolve_fut)
         await isolated_page.evaluate('() => console.timeStamp("test42")')
-        await metrics
-        assert metrics.result().title == 'test42'
+        metrics = asyncio.wait_for(metrics, 5)
+        assert metrics.title == 'test42'
 
 
 class TestWaitForRequest:
