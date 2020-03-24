@@ -1,4 +1,6 @@
 import asyncio
+import logging
+from contextlib import suppress
 from urllib.parse import urljoin
 
 import pytest
@@ -24,7 +26,10 @@ if _firefox:
 class ServerURL:
     def __init__(self, base):
         self.base = base
-        self.empty_page = f'{base}/empty.html'
+        self.empty_page = self / 'empty.html'
+
+    def __repr__(self):
+        return f'<ServerURL "{self.base}">'
 
     def __truediv__(self, other):
         return urljoin(self.base, other)
@@ -41,18 +46,17 @@ def shared_browser() -> Browser:
 def isolated_context(shared_browser) -> BrowserContext:
     ctx = sync(shared_browser.createIncognitoBrowserContext())
     yield ctx
-    sync(ctx.close())
+    with suppress(ConnectionError):
+        sync(ctx.close())
+
 
 
 @pytest.fixture
 def isolated_page(isolated_context) -> Page:
     page = sync(isolated_context.newPage())
     yield page
-    try:
+    with suppress(PageError):
         sync(page.close())
-    except PageError as e:
-        if 'page has been closed' not in str(e):
-            raise e
 
 
 @pytest.fixture(scope='session')
