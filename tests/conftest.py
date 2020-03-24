@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urljoin
 
 import pytest
 from syncer import sync
@@ -18,6 +19,15 @@ _port = get_free_port()
 
 if _firefox:
     _launch_options['product'] = 'firefox'
+
+
+class ServerURL:
+    def __init__(self, base):
+        self.base = base
+        self.empty_page = f'{base}/empty.html'
+
+    def __truediv__(self, other):
+        return urljoin(self.base, other)
 
 
 @pytest.fixture(scope='session')
@@ -47,12 +57,7 @@ def isolated_page(isolated_context) -> Page:
 
 @pytest.fixture(scope='session')
 def server_url(server):
-    return f'http://localhost:{_port}'
-
-
-@pytest.fixture(scope='session')
-def server_url_empty_page(server_url) -> str:
-    return f'{server_url}/empty.html'
+    return ServerURL(f'http://localhost:{_port}')
 
 
 @pytest.fixture(scope='session')
