@@ -349,7 +349,7 @@ class Page(AsyncIOEventEmitter):
         """
         self._timeoutSettings.setDefaultNavigationTimeout(timeout)
 
-    def setDefaultTimeout(self, timeout: int) -> None:
+    def setDefaultTimeout(self, timeout: float) -> None:
         self._timeoutSettings.setDefaultTimeout(timeout)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
