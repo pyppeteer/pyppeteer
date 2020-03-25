@@ -168,11 +168,23 @@ def log_handler(handler: Any) -> None:
         access_log.error('{} {}'.format(handler.get_status(), handler._request_summary()))
 
 
+class _StaticFileHandler(web.StaticFileHandler):
+    special_request_behaviour = {}
+
+    def get(self, path: str, include_body: bool = True) -> None:
+        super().get(path, include_body)
+        if self.path in self.special_request_behaviour:
+            status, headers = self.special_request_behaviour[path]
+            if status:
+                self.set_status(status)
+            if headers:
+                [self.set_header(k, v) for k, v in headers.items()]
+
+
 def get_application() -> web.Application:
     static_path = Path(__file__).parent / 'static'
-    # todo: subclass StaticFileHandler to return appropriate headers/status codes/whatever
     handlers = [
-        (r'/(.*)', web.StaticFileHandler, {'path': static_path.name}),
+        (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
     ]
     return web.Application(handlers, log_function=log_handler, static_path=static_path,)
 
