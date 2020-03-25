@@ -38,9 +38,9 @@ else:
 logger = logging.getLogger(__name__)
 
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
-DOWNLOAD_HOST = os.environ.get('PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
+DOWNLOAD_HOST = os.environ.get('PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 
-NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
+NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER_NO_PROGRESS_BAR', 'false')))
 
 
 def get_archive_name(platform: Platform, revision: str) -> str:

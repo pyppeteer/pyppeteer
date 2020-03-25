@@ -647,8 +647,8 @@ def getWSEndpoint(url: str) -> str:
 
 def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[Optional[Path], Optional[str]]:
     missing_text = None
-    exec_path_env_var = 'PYPPETEER2_EXECUTABLE_PATH'
-    revision_env_var = 'PYPPETEER2_CHROMIUM_REVISION'
+    exec_path_env_var = 'PYPPETEER_EXECUTABLE_PATH'
+    revision_env_var = 'PYPPETEER_CHROMIUM_REVISION'
     executable = os.environ.get(exec_path_env_var)
     if executable:
         if not Path(executable).is_file():
@@ -671,7 +671,7 @@ def launcher(
     projectRoot: str = None, preferredRevision: str = None, product: str = None
 ) -> Union[FirefoxLauncher, ChromeLauncher]:
     """Returns the appropriate browser launcher class instance"""
-    product = product or os.environ.get('PYPPETEER2_PRODUCT') or 'chrome'
+    product = product or os.environ.get('PYPPETEER_PRODUCT') or 'chrome'
     if product == 'firefox':
         return FirefoxLauncher(projectRoot, preferredRevision)
     elif product in ('chrome', 'chromium'):

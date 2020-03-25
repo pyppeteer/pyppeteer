@@ -14,7 +14,7 @@ __email__ = 'pyppeteer@protonmail.com'
 __version__ = '0.2.2'
 __chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v1.6.0'
-__pyppeteer_home__ = os.environ.get('PYPPETEER2_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 from pyppeteer.websocket_transport import WebsocketTransport
 
