@@ -19,7 +19,7 @@ import sys
 from distutils.util import strtobool
 from io import BytesIO
 from pathlib import Path
-from typing import Union, List, Optional, Tuple
+from typing import Union, List, Optional, Tuple, cast, Sequence, Any
 from urllib import request
 from zipfile import ZipFile
 
@@ -27,7 +27,7 @@ import urllib3
 from tqdm import tqdm
 
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
-from pyppeteer.models import Platforms, RevisionInfo
+from pyppeteer.models import Platform, RevisionInfo
 
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
@@ -43,17 +43,17 @@ DOWNLOAD_HOST = os.environ.get('PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST
 NO_PROGRESS_BAR = bool(strtobool(os.environ.get('PYPPETEER2_NO_PROGRESS_BAR', 'false')))
 
 
-def archive_name(platform: str, revision: str) -> Optional[str]:
+def get_archive_name(platform: Platform, revision: str) -> str:
     if platform == 'linux':
         return 'chrome-linux'
     if platform == 'mac':
         return 'chrome-mac'
     if platform in ('win32', 'win64'):
         return 'chrome-win' if int(revision) > 591479 else 'chrome-win32'
-    return None
+    raise ValueError(f'Unsupported platform argument: {platform}')
 
 
-def download_url(platform: Platforms, host: str, revision: str) -> str:
+def download_url(platform: Platform, host: str, revision: str) -> str:
     windows_archive = 'chrome-win' if int(revision) > 591479 else 'chrome-win32'
 
     base_url = f'{host}/chromium-browser-snapshots'
@@ -69,10 +69,10 @@ def download_url(platform: Platforms, host: str, revision: str) -> str:
 
 def parse_folder_path(folder_path: Path) -> Tuple[Optional[str], Optional[str]]:
     name = folder_path.name
-    splits = name.split('-')
-    if len(splits) != 2 or splits[0] not in Platforms.__args__:
+    splits: Sequence[Any] = name.split('-')
+    if len(splits) != 2 or splits[0] not in get_args(Platform): # type: ignore
         splits = (None, None)
-    return splits
+    return cast(Tuple[Optional[str], Optional[str]], tuple(splits))
 
 
 def download_file(url: str, zip_path: BytesIO) -> None:
@@ -89,30 +89,30 @@ def download_file(url: str, zip_path: BytesIO) -> None:
     progress_bar.close()
 
 
-def extractZip(zip_file: BytesIO, folder_path: Path):
+def extractZip(zip_file: BytesIO, folder_path: Path) -> None:
     with ZipFile(zip_file) as zf:
         zf.extractall(folder_path)
 
 
 class BrowserFetcher:
     def __init__(
-        self, projectRoot: Union[Path, os.PathLike] = None, platform: Platforms = None, host: str = None,
+        self, projectRoot: Union[Path, os.PathLike] = None, platform: Platform = None, host: str = None,
     ):
-        self.host = host
         self.downloadsFolder = Path(projectRoot or __pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
-        self._platform = platform or sys.platform  # type: Platforms
-        if self._platform == 'darwin':
-            self._platform = 'mac'
-        elif self._platform == 'win32':
+        plat = platform or sys.platform  # type: ignore
+        if plat == 'darwin':
+            plat = 'mac'
+        elif plat == 'win32':
             # no really good way to detect system bittedness
             # (other options depend on the python interpreter bittedness == sys.bittedness)
-            self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
-        assert self._platform in get_args(Platforms), f'Unsupported platform: {platform}'
-        logger.info(f'platform auto detected: {self._platform}')
+            plat = plat.replace('32', str(struct.calcsize('P') * 8))
+        assert plat in get_args(Platform), f'Unsupported platform: {platform}' # type: ignore
+        logger.info(f'platform auto detected: {plat}')
+        self._platform = cast(Platform, plat)
 
     @property
-    def platform(self) -> Platforms:
+    def platform(self) -> Platform:
         return self._platform
 
     def canDownload(self, revision: str) -> bool:
@@ -153,14 +153,13 @@ class BrowserFetcher:
     def revision_info(self, revision: str) -> RevisionInfo:
         folder_path = self._get_folder_path(revision)
 
+        archive_name = get_archive_name(self._platform, revision)
         if self._platform == 'mac':
-            executable_path = folder_path.joinpath(
-                archive_name(self._platform, revision), 'Chromium.app', 'Contents', 'MacOS', 'Chromium'
-            )
+            executable_path = folder_path / archive_name / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'
         elif self._platform == 'linux':
-            executable_path = folder_path.joinpath(archive_name(self._platform, revision), 'chrome')
+            executable_path = folder_path / archive_name / 'chrome'
         elif self._platform in ('win32', 'win64'):
-            executable_path = folder_path.joinpath(archive_name(self._platform, revision), 'chrome.exe')
+            executable_path = folder_path / archive_name / 'chrome.exe'
         else:
             raise RuntimeError(f'Unsupported platform: {self._platform}')
 
@@ -179,7 +178,7 @@ class BrowserFetcher:
         return self.downloadsFolder.joinpath(f'{self._platform}-{revision}')
 
     def can_download(self, revision: str) -> bool:
-        url = download_url(self._platform, self.host, revision)
+        url = download_url(self._platform, self.downloadHost, revision)
         http = urllib3.PoolManager()
 
         try:

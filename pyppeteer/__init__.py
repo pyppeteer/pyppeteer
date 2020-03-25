@@ -30,7 +30,7 @@ from typing import Any, Union, List, Sequence
 from pyppeteer.browser import Browser
 from pyppeteer.device_descriptors import devices
 from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
-from pyppeteer.browser_fetcher import BrowserFetcher, Platforms
+from pyppeteer.browser_fetcher import BrowserFetcher, Platform
 
 
 class Pyppeteer:
@@ -93,7 +93,7 @@ class Pyppeteer:
     ) -> List[str]:
         return self._launcher.default_args(args=args, devtools=devtools, headless=headless, userDataDir=userDataDir)
 
-    def createBrowserFetcher(self, platform: Platforms = None, host: str = None,) -> BrowserFetcher:
+    def createBrowserFetcher(self, platform: Platform = None, host: str = None, ) -> BrowserFetcher:
         return BrowserFetcher(projectRoot=self._projectRoot, platform=platform, host=host)
 
 
