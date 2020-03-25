@@ -357,13 +357,19 @@ class Frame:
         self.xpath = self.Jx = self.mainWorld.xpath
 
         self.click = self.secondaryWorld.click
-        self.content = self.secondaryWorld.content
         self.focus = self.secondaryWorld.focus
         self.hover = self.secondaryWorld.hover
         self.select = self.secondaryWorld.select
         self.setContent = self.secondaryWorld.setContent
         self.tap = self.secondaryWorld.tap
-        self.title = self.secondaryWorld.title
+
+    @property
+    async def content(self):
+        return await self.secondaryWorld.content
+
+    @property
+    async def title(self):
+        return await self.secondaryWorld.title
 
     async def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None
