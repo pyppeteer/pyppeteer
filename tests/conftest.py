@@ -23,6 +23,7 @@ if _firefox:
     _launch_options['product'] = 'firefox'
 
 def pytest_configure(config):
+    # shim for running in pycharm - see https://youtrack.jetbrains.com/issue/PY-41295
     if config.getoption('--verbose'):
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter('[{levelname}] {name}: {message}', style='{'))
