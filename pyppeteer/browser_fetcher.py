@@ -27,23 +27,19 @@ import urllib3
 from tqdm import tqdm
 
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
-from pyppeteer.models import Platforms
+from pyppeteer.models import Platforms, RevisionInfo
 
 try:
     from typing import TypedDict, Literal
 except ImportError:
     from typing_extensions import TypedDict, Literal
 
+try:
+    from typing import get_args
+except ImportError:
+    from typing_inspect import get_args
+
 logger = logging.getLogger(__name__)
-
-
-class RevisionInfo(TypedDict):
-    folderPath: Union[Path, os.PathLike]
-    executablePath: Union[Path, os.PathLike]
-    url: str
-    local: bool
-    revision: str
-
 
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get('PYPPETEER2_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
@@ -116,7 +112,7 @@ class BrowserFetcher:
             # no really good way to detect system bittedness
             # (other options depend on the sys bittedness == python interpreter bittedness)
             self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
-        assert self._platform in Platforms.__args__, f'Unsupported platform: {platform}'
+        assert self._platform in get_args(Platforms), f'Unsupported platform: {platform}'
         logger.info(f'platform auto detected: {self._platform}')
 
     @property
@@ -155,7 +151,7 @@ class BrowserFetcher:
 
     def remove(self, revision: str) -> None:
         f_path = self._get_folder_path(revision)
-        assert f_path, f'Failed to remove: revision {revision} doesn\'t exist on the disk'
+        assert f_path.exists(), f'Failed to remove: revision {revision} doesn\'t exist on the disk'
         shutil.rmtree(f_path)
 
     def revision_info(self, revision: str) -> RevisionInfo:

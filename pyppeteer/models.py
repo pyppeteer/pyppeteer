@@ -1,5 +1,6 @@
 """Type definitions for widely used types"""
-
+import os
+from pathlib import Path
 
 try:
     from typing import TypedDict, Sequence, Union, Literal, Dict, List, Any, TYPE_CHECKING
@@ -69,3 +70,11 @@ Platforms = Literal[platforms]
 MouseButton = Literal['left', 'right', 'middle']
 WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
 WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]
+
+
+class RevisionInfo(TypedDict):
+    folderPath: Union[Path, os.PathLike]
+    executablePath: Union[Path, os.PathLike]
+    url: str
+    local: bool
+    revision: str

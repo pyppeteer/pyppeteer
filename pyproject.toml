@@ -53,6 +53,7 @@ pyee = "^7.0.1"
 urllib3 = "^1.25.8"
 aenum = "^2.2.3"
 typing_extensions = { version ="^3.7.4", python = '<3.8'}
+typing_inspect = { version ="^0.5.0", python = '<3.8'}
 
 [tool.poetry.dev-dependencies]
 tox = "^3.14.3"
