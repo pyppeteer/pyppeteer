@@ -22,6 +22,12 @@ _port = get_free_port()
 if _firefox:
     _launch_options['product'] = 'firefox'
 
+def pytest_configure(config):
+    if config.getoption('--verbose'):
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter('[{levelname}] {name}: {message}', style='{'))
+        logging.getLogger('pyppeteer').addHandler(handler)
+
 
 class ServerURL:
     def __init__(self, base):

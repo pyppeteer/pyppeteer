@@ -18,7 +18,7 @@ class TestBoundingBox(BaseTestCase):
     @sync
     async def test_bounding_box(self):
         await self.page.setViewport({'width': 500, 'height': 500})
-        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.goto(self.url + 'assets/grid.html')
         elementHandle = await self.page.J('.box:nth-of-type(13)')
         box = await elementHandle.boundingBox()
         assert {'x': 100, 'y': 50, 'width': 50, 'height': 50} == box
@@ -26,7 +26,7 @@ class TestBoundingBox(BaseTestCase):
     @sync
     async def test_nested_frame(self):
         await self.page.setViewport({'width': 500, 'height': 500})
-        await self.page.goto(self.url + 'static/nested-frames.html')
+        await self.page.goto(self.url + 'assets/nested-frames.html')
         nestedFrame = self.page.frames[1].childFrames[1]
         elementHandle = await nestedFrame.J('div')
         box = await elementHandle.boundingBox()
@@ -94,10 +94,10 @@ class TestBoxModel(BaseTestCase):
 
     @sync
     async def test_box_model(self):
-        await self.page.goto(self.url + 'static/resetcss.html')
+        await self.page.goto(self.url + 'assets/resetcss.html')
 
         # add frame and position it absolutely
-        await attachFrame(self.page, 'frame1', self.url + 'static/resetcss.html')
+        await attachFrame(self.page, 'frame1', self.url + 'assets/resetcss.html')
         await self.page.evaluate(
             '''() => {
             const frame = document.querySelector('#frame1');
@@ -186,21 +186,21 @@ class TestContentFrame(BaseTestCase):
 class TestClick(BaseTestCase):
     @sync
     async def test_clik(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         button = await self.page.J('button')
         await button.click()
         assert await self.page.evaluate('result') == 'Clicked'
 
     @sync
     async def test_shadow_dom(self):
-        await self.page.goto(self.url + 'static/shadow.html')
+        await self.page.goto(self.url + 'assets/shadow.html')
         button = await self.page.evaluateHandle('() => button')
         await button.click()
         assert await self.page.evaluate('clicked')
 
     @sync
     async def test_text_node(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         buttonTextNode = await self.page.evaluateHandle('() => document.querySelector("button").firstChild')
         with pytest.raises(ElementHandleError) as cm:
             await buttonTextNode.click()
@@ -208,7 +208,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_detached_node(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.remove()', button)
         with pytest.raises(ElementHandleError) as cm:
@@ -217,7 +217,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_hidden_node(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.style.display = "none"', button)
         with pytest.raises(ElementHandleError) as cm:
@@ -226,7 +226,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_recursively_hidden_node(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         button = await self.page.J('button')
         await self.page.evaluate('btn => btn.parentElement.style.display = "none"', button)
         with pytest.raises(ElementHandleError) as cm:
@@ -245,7 +245,7 @@ class TestClick(BaseTestCase):
 class TestHover(BaseTestCase):
     @sync
     async def test_hover(self):
-        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.goto(self.url + 'assets/scrollable.html')
         button = await self.page.J('#button-6')
         await button.hover()
         assert await self.page.evaluate('document.querySelector("button:hover").id') == 'button-6'
@@ -254,7 +254,7 @@ class TestHover(BaseTestCase):
 class TestIsIntersectingViewport(BaseTestCase):
     @sync
     async def test_is_intersecting_viewport(self):
-        await self.page.goto(self.url + 'static/offscreenbuttons.html')
+        await self.page.goto(self.url + 'assets/offscreenbuttons.html')
         for i in range(11):
             button = await self.page.J('#btn{}'.format(i))
             visible = i < 10

@@ -514,17 +514,17 @@ class TestWaitForXPath(BaseTestCase):
 class TestFrames(BaseTestCase):
     @sync
     async def test_frame_nested(self):
-        await self.page.goto(self.url + 'static/nested-frames.html')
+        await self.page.goto(self.url + 'assets/nested-frames.html')
         dumped_frames = dumpFrames(self.page.mainFrame)
         try:
             assert (
                 dumped_frames
                 == '''
-http://localhost:{port}/static/nested-frames.html
-    http://localhost:{port}/static/two-frames.html
-        http://localhost:{port}/static/frame.html
-        http://localhost:{port}/static/frame.html
-    http://localhost:{port}/static/frame.html
+http://localhost:{port}/assets/nested-frames.html
+    http://localhost:{port}/assets/two-frames.html
+        http://localhost:{port}/assets/frame.html
+        http://localhost:{port}/assets/frame.html
+    http://localhost:{port}/assets/frame.html
                 '''.format(
                     port=self.port
                 ).strip()
@@ -538,9 +538,9 @@ http://localhost:{port}/static/nested-frames.html
         await self.page.goto(self.url + 'empty')
         attachedFrames = []
         self.page.on('frameattached', lambda f: attachedFrames.append(f))
-        await attachFrame(self.page, 'frame1', './static/frame.html')
+        await attachFrame(self.page, 'frame1', './assets/frame.html')
         assert len(attachedFrames) == 1
-        assert 'static/frame.html' in attachedFrames[0].url
+        assert 'assets/frame.html' in attachedFrames[0].url
 
         navigatedFrames = []
         self.page.on('framenavigated', lambda f: navigatedFrames.append(f))
@@ -589,7 +589,7 @@ http://localhost:{port}/static/nested-frames.html
         self.page.on('frameattached', lambda f: attachedFrames.append(f))
         self.page.on('framedetached', lambda f: detachedFrames.append(f))
         self.page.on('framenavigated', lambda f: navigatedFrames.append(f))
-        await self.page.goto(self.url + 'static/nested-frames.html')
+        await self.page.goto(self.url + 'assets/nested-frames.html')
         assert len(attachedFrames) == 4
         assert len(detachedFrames) == 0
         assert len(navigatedFrames) == 5

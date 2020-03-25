@@ -29,22 +29,22 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.click('button')
         assert await self.page.evaluate('result') == 'Clicked'
 
     @sync
     async def test_click_with_disabled_javascript(self):
         await self.page.setJavaScriptEnabled(False)
-        await self.page.goto(self.url + 'static/wrappedlink.html')
+        await self.page.goto(self.url + 'assets/wrappedlink.html')
         await asyncio.gather(
             self.page.click('a'), self.page.waitForNavigation(),
         )
-        assert self.page.url == self.url + 'static/wrappedlink.html#clicked'
+        assert self.page.url == self.url + 'assets/wrappedlink.html#clicked'
 
     @sync
     async def test_click_offscreen_button(self):
-        await self.page.goto(self.url + 'static/offscreenbuttons.html')
+        await self.page.goto(self.url + 'assets/offscreenbuttons.html')
         messages = []
         self.page.on('console', lambda msg: messages.append(msg.text))
         for i in range(11):
@@ -66,15 +66,15 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click_wrapped_links(self):
-        await self.page.goto(self.url + 'static/wrappedlink.html')
+        await self.page.goto(self.url + 'assets/wrappedlink.html')
         await asyncio.gather(
             self.page.click('a'), self.page.waitForNavigation(),
         )
-        assert self.page.url == self.url + 'static/wrappedlink.html#clicked'
+        assert self.page.url == self.url + 'assets/wrappedlink.html#clicked'
 
     @sync
     async def test_click_events(self):
-        await self.page.goto(self.url + 'static/checkbox.html')
+        await self.page.goto(self.url + 'assets/checkbox.html')
         assert await self.page.evaluate('result.check') is None
         await self.page.click('input#agree')
         assert await self.page.evaluate('result.check')
@@ -94,7 +94,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click_label(self):
-        await self.page.goto(self.url + 'static/checkbox.html')
+        await self.page.goto(self.url + 'assets/checkbox.html')
         assert await self.page.evaluate('result.check') is None
         await self.page.click('label[for="agree"]')
         assert await self.page.evaluate('result.check')
@@ -109,7 +109,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click_fail(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         with pytest.raises(PageError) as cm:
             await self.page.click('button.does-not-exist')
         assert 'No node found for selector: button.does-not-exist' == cm.exception.args[0]
@@ -132,15 +132,15 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click_after_navigation(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.click('button')
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.click('button')
         assert await self.page.evaluate('result') == 'Clicked'
 
     @sync
     async def test_resize_textarea(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         dimensions = await self.page.evaluate(self.get_dimensions)
         x = dimensions['x']
         y = dimensions['y']
@@ -157,7 +157,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_scroll_and_click(self):
-        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.goto(self.url + 'assets/scrollable.html')
         await self.page.click('#button-5')
         assert await self.page.evaluate('document.querySelector("#button-5").textContent') == 'clicked'
         await self.page.click('#button-80')
@@ -165,7 +165,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_double_click(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.evaluate(
             '''() => {
             window.double = false;
@@ -182,7 +182,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_click_partially_obscured_button(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.evaluate(
             '''() => {
             const button = document.querySelector('button');
@@ -196,7 +196,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_select_text_by_mouse(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
         text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
         await self.page.keyboard.type(text)
@@ -212,7 +212,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_select_text_by_triple_click(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
         text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
         await self.page.keyboard.type(text)
@@ -223,7 +223,7 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_trigger_hover(self):
-        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.goto(self.url + 'assets/scrollable.html')
         await self.page.hover('#button-6')
         assert await self.page.evaluate('document.querySelector("button:hover").id') == 'button-6'
         await self.page.hover('#button-2')
@@ -233,13 +233,13 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_right_click(self):
-        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.goto(self.url + 'assets/scrollable.html')
         await self.page.click('#button-8', button='right')
         assert await self.page.evaluate('document.querySelector("#button-8").textContent') == 'context menu'
 
     @sync
     async def test_click_with_modifier_key(self):
-        await self.page.goto(self.url + 'static/scrollable.html')
+        await self.page.goto(self.url + 'assets/scrollable.html')
         await self.page.evaluate(
             '() => document.querySelector("#button-3").addEventListener("mousedown", e => window.lastEvent = e, true)'
         )  # noqa: E501
@@ -285,14 +285,14 @@ class TestClick(BaseTestCase):
 
     @sync
     async def test_tap_button(self):
-        await self.page.goto(self.url + 'static/button.html')
+        await self.page.goto(self.url + 'assets/button.html')
         await self.page.tap('button')
         assert await self.page.evaluate('result') == 'Clicked'
 
     @unittest.skipIf(sys.version_info < (3, 6), 'Fails on 3.5')
     @sync
     async def test_touches_report(self):
-        await self.page.goto(self.url + 'static/touches.html')
+        await self.page.goto(self.url + 'assets/touches.html')
         button = await self.page.J('button')
         await button.tap()
         assert await self.page.evaluate('getResult()') == ['Touchstart: 0', 'Touchend: 0']
@@ -301,7 +301,7 @@ class TestClick(BaseTestCase):
     async def test_click_insilde_frame(self):
         await self.page.goto(self.url + 'empty')
         await self.page.setContent('<div style="width:100px;height:100px;>spacer</div>"')
-        await attachFrame(self.page, 'button-test', self.url + 'static/button.html')
+        await attachFrame(self.page, 'button-test', self.url + 'assets/button.html')
         frame = self.page.frames[1]
         button = await frame.J('button')
         await button.click()
@@ -313,7 +313,7 @@ class TestClick(BaseTestCase):
         await self.page.setViewport({'width': 400, 'height': 400, 'deviceScaleFactor': 5})
         assert await self.page.evaluate('devicePixelRatio') == 5
         await self.page.setContent('<div style="width:100px;height:100px;>spacer</div>"')
-        await attachFrame(self.page, 'button-test', self.url + 'static/button.html')
+        await attachFrame(self.page, 'button-test', self.url + 'assets/button.html')
         frame = self.page.frames[1]
         button = await frame.J('button')
         await button.click()
@@ -326,7 +326,7 @@ class TestFileUpload(BaseTestCase):
     )
     @sync
     async def test_file_upload(self):
-        await self.page.goto(self.url + 'static/fileupload.html')
+        await self.page.goto(self.url + 'assets/fileupload.html')
         filePath = Path(__file__).parent / 'file-to-upload.txt'
         input = await self.page.J('input')
         await input.uploadFile(str(filePath))
@@ -348,7 +348,7 @@ class TestFileUpload(BaseTestCase):
 class TestType(BaseTestCase):
     @sync
     async def test_key_type(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         textarea = await self.page.J('textarea')
         text = 'Type in this text!'
         await textarea.type(text)
@@ -359,7 +359,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_key_arrowkey(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.type('textarea', 'Hello World!')
         for _ in 'World!':
             await self.page.keyboard.press('ArrowLeft')
@@ -377,7 +377,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_key_press_element_handle(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         textarea = await self.page.J('textarea')
         await textarea.press('a', text='f')
         result = await self.page.evaluate('() => document.querySelector("textarea").value')
@@ -391,7 +391,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_key_send_char(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
         await self.page.keyboard.sendCharacter('朝')
         result = await self.page.evaluate('() => document.querySelector("textarea").value')
@@ -406,7 +406,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_repeat_shift_key(self):
-        await self.page.goto(self.url + 'static/keyboard.html')
+        await self.page.goto(self.url + 'assets/keyboard.html')
         keyboard = self.page.keyboard
         codeForKey = {'Shift': 16, 'Alt': 18, 'Meta': 91, 'Control': 17}
         for key, code in codeForKey.items():
@@ -430,7 +430,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_repeat_multiple_modifiers(self):
-        await self.page.goto(self.url + 'static/keyboard.html')
+        await self.page.goto(self.url + 'assets/keyboard.html')
         keyboard = self.page.keyboard
         await keyboard.down('Control')
         assert await self.page.evaluate('getResult()') == 'Keydown: Control ControlLeft 17 [Control]'
@@ -447,7 +447,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_send_proper_code_while_typing(self):
-        await self.page.goto(self.url + 'static/keyboard.html')
+        await self.page.goto(self.url + 'assets/keyboard.html')
         await self.page.keyboard.type('!')
         assert (
             await self.page.evaluate('getResult()') == 'Keydown: ! Digit1 49 []\n'
@@ -463,7 +463,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_send_proper_code_while_typing_with_shift(self):
-        await self.page.goto(self.url + 'static/keyboard.html')
+        await self.page.goto(self.url + 'assets/keyboard.html')
         await self.page.keyboard.down('Shift')
         await self.page.keyboard.type('~')
         assert (
@@ -476,7 +476,7 @@ class TestType(BaseTestCase):
 
     @sync
     async def test_not_type_prevent_events(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
         await self.page.evaluate(
             '''
@@ -508,7 +508,7 @@ window.addEventListener('keydown', event => {
 
     @sync
     async def test_repeat_properly(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
         await self.page.evaluate(
             'document.querySelector("textarea").addEventListener("keydown",    e => window.lastEvent = e, true)',
@@ -530,7 +530,7 @@ window.addEventListener('keydown', event => {
 
     @sync
     async def test_key_type_long(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         textarea = await self.page.J('textarea')
         text = 'This text is two lines.\\nThis is character 朝.'
         await textarea.type(text)
@@ -541,7 +541,7 @@ window.addEventListener('keydown', event => {
 
     @sync
     async def test_key_location(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         textarea = await self.page.J('textarea')
         await self.page.evaluate(
             '() => window.addEventListener("keydown", e => window.keyLocation = e.location, true)'  # noqa: E501
@@ -570,7 +570,7 @@ window.addEventListener('keydown', event => {
 
     @sync
     async def test_emoji(self):
-        await self.page.goto(self.url + 'static/textarea.html')
+        await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.type('textarea', '👹 Tokyo street Japan 🇯🇵')
         assert await self.page.Jeval('textarea', 'textarea => textarea.value') == '👹 Tokyo street Japan 🇯🇵'
 
@@ -578,7 +578,7 @@ window.addEventListener('keydown', event => {
     async def test_emoji_in_iframe(self):
         await self.page.goto(self.url + 'empty')
         await attachFrame(
-            self.page, 'emoji-test', self.url + 'static/textarea.html',
+            self.page, 'emoji-test', self.url + 'assets/textarea.html',
         )
         frame = self.page.frames[1]
         textarea = await frame.J('textarea')

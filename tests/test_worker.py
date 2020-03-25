@@ -11,7 +11,7 @@ from .base import BaseTestCase
 class TestWorker(BaseTestCase):
     @sync
     async def test_worker(self):
-        await self.page.goto(self.url + 'static/worker/worker.html')
+        await self.page.goto(self.url + 'assets/worker/worker.html')
         await self.page.waitForFunction('() => !!worker')
         worker = self.page.workers[0]
         self.assertIn('worker.js', worker.url)

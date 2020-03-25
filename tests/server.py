@@ -77,7 +77,7 @@ class RedirectHandler2(BaseHandler):
 class RedirectHandler3(BaseHandler):
     def get(self) -> None:
         super().get()
-        self.redirect('/static/one-frame.html')
+        self.redirect('/assets/one-frame.html')
 
 
 class ResourceRedirectHandler(BaseHandler):
@@ -182,7 +182,7 @@ class _StaticFileHandler(web.StaticFileHandler):
 
 
 def get_application() -> web.Application:
-    static_path = Path(__file__).parent / 'static'
+    static_path = Path(__file__).parent / 'assets'
     handlers = [
         (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
     ]

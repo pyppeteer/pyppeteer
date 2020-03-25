@@ -72,10 +72,10 @@ class TestTarget(BaseTestCase):
         createdTargetPromise = asyncio.get_event_loop().create_future()
         self.context.once('targetcreated', lambda t: createdTargetPromise.set_result(t))
 
-        await self.page.goto(self.url + 'static/serviceworkers/empty/sw.html')
+        await self.page.goto(self.url + 'assets/serviceworkers/empty/sw.html')
         createdTarget = await createdTargetPromise
         self.assertEqual(createdTarget.type, 'service_worker')
-        self.assertEqual(createdTarget.url, self.url + 'static/serviceworkers/empty/sw.js')
+        self.assertEqual(createdTarget.url, self.url + 'assets/serviceworkers/empty/sw.js')
 
         destroyedTargetPromise = asyncio.get_event_loop().create_future()
         self.context.once('targetdestroyed', lambda t: destroyedTargetPromise.set_result(t))
@@ -139,10 +139,10 @@ class TestTarget(BaseTestCase):
         await self.page.goto(self.url + 'empty')
         targetPromise = asyncio.get_event_loop().create_future()
         self.context.once('targetcreated', lambda target: targetPromise.set_result(target))
-        await self.page.goto(self.url + 'static/popup/window-open.html')
+        await self.page.goto(self.url + 'assets/popup/window-open.html')
         createdTarget = await targetPromise
         self.assertEqual(
-            (await createdTarget.page()).url, self.url + 'static/popup/popup.html',
+            (await createdTarget.page()).url, self.url + 'assets/popup/popup.html',
         )
         self.assertEqual(createdTarget.opener, self.page.target)
         self.assertIsNone(self.page.target.opener)

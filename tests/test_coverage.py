@@ -11,7 +11,7 @@ class TestJSCoverage(BaseTestCase):
     async def test_js_coverage(self):
         await self.page.coverage.startJSCoverage()
         await self.page.goto(
-            self.url + 'static/jscoverage/simple.html', waitUntil='networkidle0',
+            self.url + 'assets/jscoverage/simple.html', waitUntil='networkidle0',
         )
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
@@ -24,7 +24,7 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_js_coverage_source_url(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/sourceurl.html')
+        await self.page.goto(self.url + 'assets/jscoverage/sourceurl.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
         assert coverage[0]['url'] == 'nicename.js'
@@ -39,14 +39,14 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_ignore_eval_script_by_default(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/eval.html')
+        await self.page.goto(self.url + 'assets/jscoverage/eval.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
 
     @sync
     async def test_not_ignore_eval_script_with_reportAnonymousScript(self):
         await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
-        await self.page.goto(self.url + 'static/jscoverage/eval.html')
+        await self.page.goto(self.url + 'assets/jscoverage/eval.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert any(entry for entry in coverage if entry['url'].startswith('debugger://'))
         assert len(coverage) == 2
@@ -72,7 +72,7 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_js_coverage_multiple_script(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/jscoverage/multiple.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 2
         coverage.sort(key=lambda cov: cov['url'])
@@ -82,7 +82,7 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_js_coverage_ranges(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/ranges.html')
+        await self.page.goto(self.url + 'assets/jscoverage/ranges.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
         entry = coverage[0]
@@ -93,17 +93,17 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_no_coverage(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/unused.html')
+        await self.page.goto(self.url + 'assets/jscoverage/unused.html')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 1
         entry = coverage[0]
-        assert 'static/jscoverage/unused.html' in entry['url']
+        assert 'assets/jscoverage/unused.html' in entry['url']
         assert len(entry['ranges']) == 0
 
     @sync
     async def test_js_coverage_condition(self):
         await self.page.coverage.startJSCoverage()
-        await self.page.goto(self.url + 'static/jscoverage/involved.html')
+        await self.page.goto(self.url + 'assets/jscoverage/involved.html')
         coverage = await self.page.coverage.stopJSCoverage()
         expected_range = [
             {'start': 0, 'end': 35},
@@ -117,7 +117,7 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_js_coverage_no_reset_navigation(self):
         await self.page.coverage.startJSCoverage(resetOnNavigation=False)
-        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/jscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 2
@@ -125,7 +125,7 @@ class TestJSCoverage(BaseTestCase):
     @sync
     async def test_js_coverage_reset_navigation(self):
         await self.page.coverage.startJSCoverage()  # enabled by default
-        await self.page.goto(self.url + 'static/jscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/jscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
         coverage = await self.page.coverage.stopJSCoverage()
         assert len(coverage) == 0
@@ -135,7 +135,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/simple.html')
+        await self.page.goto(self.url + 'assets/csscoverage/simple.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 1
         assert '/csscoverage/simple.html' in coverage[0]['url']
@@ -146,7 +146,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_url(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/sourceurl.html')
+        await self.page.goto(self.url + 'assets/csscoverage/sourceurl.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 1
         assert coverage[0]['url'] == 'nicename.css'
@@ -154,7 +154,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_multiple(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/csscoverage/multiple.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 2
         coverage.sort(key=lambda cov: cov['url'])
@@ -164,7 +164,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_no_coverage(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/unused.html')
+        await self.page.goto(self.url + 'assets/csscoverage/unused.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 1
         assert coverage[0]['url'] == 'unused.css'
@@ -173,7 +173,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_media(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/media.html')
+        await self.page.goto(self.url + 'assets/csscoverage/media.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 1
         assert '/csscoverage/media.html' in coverage[0]['url']
@@ -182,7 +182,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_complicated(self):
         await self.page.coverage.startCSSCoverage()
-        await self.page.goto(self.url + 'static/csscoverage/involved.html')
+        await self.page.goto(self.url + 'assets/csscoverage/involved.html')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 1
         range = coverage[0]['ranges']
@@ -205,7 +205,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_no_reset_navigation(self):
         await self.page.coverage.startCSSCoverage(resetOnNavigation=False)
-        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/csscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 2
@@ -213,7 +213,7 @@ class TestCSSCoverage(BaseTestCase):
     @sync
     async def test_css_coverage_reset_navigation(self):
         await self.page.coverage.startCSSCoverage()  # enabled by default
-        await self.page.goto(self.url + 'static/csscoverage/multiple.html')
+        await self.page.goto(self.url + 'assets/csscoverage/multiple.html')
         await self.page.goto(self.url + 'empty')
         coverage = await self.page.coverage.stopCSSCoverage()
         assert len(coverage) == 0

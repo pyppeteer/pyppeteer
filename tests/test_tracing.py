@@ -56,7 +56,7 @@ class TestTracing(BaseTestCase):
     @sync
     async def test_return_buffer(self):
         await self.page.tracing.start(screenshots=True, path=str(self.outfile))
-        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.goto(self.url + 'assets/grid.html')
         trace = await self.page.tracing.stop()
         with self.outfile.open('r') as f:
             buf = f.read()
@@ -66,11 +66,11 @@ class TestTracing(BaseTestCase):
     @sync
     async def test_return_null_on_error(self):
         await self.page.tracing.start(screenshots=True)
-        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.goto(self.url + 'assets/grid.html')
 
     @sync
     async def test_without_path(self):
         await self.page.tracing.start(screenshots=True)
-        await self.page.goto(self.url + 'static/grid.html')
+        await self.page.goto(self.url + 'assets/grid.html')
         trace = await self.page.tracing.stop()
         self.assertIn('screenshot', trace)

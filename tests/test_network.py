@@ -89,7 +89,7 @@ class TestNetworkEvent(BaseTestCase):
 
         self.page.on('response', set_response)
 
-        await self.page.goto(self.url + 'static/cached/one-style.html')
+        await self.page.goto(self.url + 'assets/cached/one-style.html')
         await self.page.reload()
 
         assert len(responses) == 2
@@ -109,7 +109,7 @@ class TestNetworkEvent(BaseTestCase):
         self.page.on('response', set_response)
 
         await self.page.goto(
-            self.url + 'static/serviceworkers/fetch/sw.html', waitUntil='networkidle2',
+            self.url + 'assets/serviceworkers/fetch/sw.html', waitUntil='networkidle2',
         )
         await self.page.evaluate('async() => await window.activationPromise')
         await self.page.reload()
@@ -125,7 +125,7 @@ class TestNetworkEvent(BaseTestCase):
     async def test_response_body(self):
         responses = []
         self.page.on('response', lambda res: responses.append(res))
-        await self.page.goto(self.url + 'static/simple.json')
+        await self.page.goto(self.url + 'assets/simple.json')
         assert len(responses) == 1
         res = responses[0]
         assert res
@@ -188,7 +188,7 @@ class TestNetworkEvent(BaseTestCase):
 
         failedRequests = []
         self.page.on('requestfailed', lambda req: failedRequests.append(req))
-        await self.page.goto(self.url + 'static/one-style.html')
+        await self.page.goto(self.url + 'assets/one-style.html')
         assert len(failedRequests) == 1
         assert 'one-style.css' in failedRequests[0].url
         assert failedRequests[0].response is None
@@ -271,7 +271,7 @@ class TestRequestInterception(BaseTestCase):
             await req.continue_()
 
         self.page.on('request', lambda req: asyncio.ensure_future(set_request(req)))
-        await self.page.goto(self.url + 'static/one-style.html')
+        await self.page.goto(self.url + 'assets/one-style.html')
         assert '/one-style.css' in requests[1].url
         assert '/one-style.html' in requests[1].headers['referer']
 
@@ -337,7 +337,7 @@ class TestRequestInterception(BaseTestCase):
         failedRequests = []
         self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         self.page.on('requestfailed', lambda e: failedRequests.append(e))
-        res = await self.page.goto(self.url + 'static/one-style.html')
+        res = await self.page.goto(self.url + 'assets/one-style.html')
         assert res.ok
         assert res.request.failure() is None
         assert len(failedRequests) == 1
@@ -524,7 +524,7 @@ class TestRequestInterception(BaseTestCase):
                 pathName = '/{}'.format(pathName)
             return 'file://{}'.format(pathName)
 
-        target = Path(__file__).parent / 'static' / 'one-style.html'
+        target = Path(__file__).parent / 'assets' / 'one-style.html'
         await self.page.goto(pathToFileURL(target))
         assert len(urls) == 2
         assert 'one-style.html' in urls
@@ -590,6 +590,6 @@ class TestNavigationRequest(BaseTestCase):
     async def test_image(self):
         requests = []
         self.page.on('request', lambda req: requests.append(req))
-        await self.page.goto(self.url + 'static/huge-image.png')
+        await self.page.goto(self.url + 'assets/huge-image.png')
         assert len(requests) == 1
         assert requests[0].isNavigationRequest()
