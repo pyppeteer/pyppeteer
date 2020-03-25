@@ -587,10 +587,11 @@ class TestExposeFunction:
         )
         assert message == 'WOOF WOOF'
         assert __file__ in stack
-        
+
     @sync
     async def test_callable_within_evaluateOnNewDocument(self, isolated_page):
         called = False
+
         def set_called():
             nonlocal called
             called = True
@@ -604,22 +605,26 @@ class TestExposeFunction:
     async def test_survives_navigation(self, isolated_page, server_url):
         await isolated_page.exposeFunction('compute', lambda a, b: a * b)
         await isolated_page.goto(server_url.empty_page)
-        res = await isolated_page.evaluate("""async function() {
+        res = await isolated_page.evaluate(
+            """async function() {
             return await compute(9, 4);
-        }""")
+        }"""
+        )
         assert res == 36
-        
+
     @sync
     async def test_awaits_returned_promise(self, isolated_page, event_loop):
         def compute(a, b):
             fut = event_loop.create_future()
-            fut.set_result(a*b)
+            fut.set_result(a * b)
             return fut
 
         await isolated_page.exposeFunction('compute', compute)
-        res = await isolated_page.evaluate("""async function() {
+        res = await isolated_page.evaluate(
+            """async function() {
             return await compute(9, 4);
-        }""")
+        }"""
+        )
         assert res == 36
 
     @sync
@@ -648,25 +653,22 @@ class TestExposeFunction:
 
     @sync
     async def test_works_with_complex_obj(self, isolated_page):
-        await isolated_page.exposeFunction('complexObject', lambda a,b: {'x': a['x']*b['x']})
+        await isolated_page.exposeFunction('complexObject', lambda a, b: {'x': a['x'] * b['x']})
         res = await isolated_page.evaluate('async(a,b) => complexObject(a,b)', {'x': 9}, {'x': 4})
         assert res == {'x': 36}
 
     @sync
     async def test_works_with_async_exposed_func(self, isolated_page):
-        async def my_async_func(a,b):
-            return a*b
+        async def my_async_func(a, b):
+            return a * b
+
         await isolated_page.exposeFunction('compute', my_async_func)
-        res = await isolated_page.evaluate("""async function() {
+        res = await isolated_page.evaluate(
+            """async function() {
             return await compute(9, 4);
-        }""")
+        }"""
+        )
         assert res == 36
-
-
-
-
-
-
 
 
 class TestEventsPageError:
