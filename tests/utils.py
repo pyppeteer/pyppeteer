@@ -17,7 +17,9 @@ def waitEvent(emitter, event_name):
     return fut
 
 
-def gather_with_timeout(*aws: Awaitable, timeout: Optional[float] = 2.5, **kwargs) -> Awaitable[List[Union[Task, Future]]]:
+def gather_with_timeout(
+    *aws: Awaitable, timeout: Optional[float] = 2.5, **kwargs
+) -> Awaitable[List[Union[Task, Future]]]:
     """
     Similar to asyncio.gather, but with one key difference: It will timeout. A wrapped asyncio.gather approach was
     chosen over asyncio.wait or asyncio.wait_for, etc. because asyncio.gather returns the awaitables in the same order
