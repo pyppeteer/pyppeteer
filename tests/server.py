@@ -10,6 +10,8 @@ from typing import Any, Callable
 from tornado import web
 from tornado.log import access_log
 
+from pyppeteer.util import get_free_port
+
 BASE_HTML = '''
 <html>
 <head><title>main</title></head>
@@ -191,6 +193,7 @@ def get_application() -> web.Application:
 
 if __name__ == '__main__':
     app = get_application()
-    app.listen(9000)
-    print('server running on http://localhost:9000')
+    port = get_free_port()
+    app.listen(port)
+    print(f'server running on http://localhost:{port}')
     asyncio.get_event_loop().run_forever()
