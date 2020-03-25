@@ -287,7 +287,7 @@ class Page(AsyncIOEventEmitter):
 
     @property
     def frames(self) -> List['Frame']:
-        return self._frameManager.frames()
+        return self._frameManager.frames
 
     @property
     def workers(self) -> List[Worker]:

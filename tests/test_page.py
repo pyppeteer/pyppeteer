@@ -276,8 +276,7 @@ class TestEventsConsole:
 
         isolated_page.once('console', set_message)
         await gather_with_timeout(
-            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
-            waitEvent(isolated_page, 'console'),
+            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'), waitEvent(isolated_page, 'console'),
         )
         assert message.text == 'hello 5 JSHandle@object'
         assert message.type == 'log'
@@ -507,11 +506,13 @@ class TestWaitForResponse:
         await isolated_page.goto(server_url.empty_page)
         response, *_ = await gather_with_timeout(
             isolated_page.waitForResponse(server_url / 'digits/2.png'),
-            isolated_page.evaluate("""() => {
+            isolated_page.evaluate(
+                """() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }""")
+            }"""
+            ),
         )
         assert response.url == server_url / 'digits/2.png'
 
@@ -531,11 +532,13 @@ class TestWaitForResponse:
         await isolated_page.goto(server_url.empty_page)
         response, *_ = await gather_with_timeout(
             isolated_page.waitForResponse(lambda r: r.url == server_url / 'digits/2.png'),
-            isolated_page.evaluate("""() => {
+            isolated_page.evaluate(
+                """() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }""")
+            }"""
+            ),
         )
         assert response.url == server_url / '/digits/2.png'
 
@@ -544,24 +547,112 @@ class TestWaitForResponse:
         await isolated_page.goto(server_url.empty_page)
         response, *_ = await gather_with_timeout(
             isolated_page.waitForResponse(server_url / 'digits/2.png', timeout=0),
-            isolated_page.evaluate("""() => {
+            isolated_page.evaluate(
+                """() => {
                 fetch('/digits/1.png');
                 fetch('/digits/2.png');
                 fetch('/digits/3.png');
-            }""")
+            }"""
+            ),
         )
         assert response.url == server_url / 'digits/2.png'
 
 
-
-
-
-
-
-
-
 class TestExposeFunction:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        res = await isolated_page.evaluate(
+            """async function() {
+            return await compute(9, 4);
+        }"""
+        )
+        assert res == 36
+
+    @sync
+    async def test_raises_exception_in_page_context(self, isolated_page):
+        def raise_me():
+            raise Exception('WOOF WOOF')
+
+        await isolated_page.exposeFunction('woof', raise_me)
+        message, stack = await isolated_page.evaluate(
+            """async() => {
+            try {
+                await woof();
+            } catch (e) {
+                return {message: e.message, stack: e.stack};
+            }
+        }
+        """
+        )
+        assert message == 'WOOF WOOF'
+        assert __file__ in stack
+        
+    @sync
+    async def test_callable_within_evaluateOnNewDocument(self, isolated_page):
+        called = False
+        def set_called():
+            nonlocal called
+            called = True
+
+        await isolated_page.exposeFunction('woof', set_called)
+        await isolated_page.evaluateOnNewDocument('()=>woof()')
+        await isolated_page.reload()
+        assert called
+
+    @sync
+    async def test_survives_navigation(self, isolated_page, server_url):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        await isolated_page.goto(server_url.empty_page)
+        res = await isolated_page.evaluate("""async function() {
+            return await compute(9, 4);
+        }""")
+        assert res == 36
+        
+    @sync
+    async def test_awaits_returned_promise(self, isolated_page, event_loop):
+        def compute(a,b):
+            fut = event_loop.create_future()
+            fut.set_result(a*b)
+
+        await isolated_page.exposeFunction('compute', compute)
+        res = await isolated_page.evaluate("""async function() {
+            return await compute(9, 4);
+        }""")
+        assert res == 36
+
+    @sync
+    async def test_works_on_frames(self, isolated_page, server_url):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        await isolated_page.goto(server_url / 'frames/nested-frames.html')
+        frame = isolated_page.frames[0]
+        res = await frame.evaluate(
+            """async function() {
+            return await compute(9, 4);
+        }"""
+        )
+        assert res == 36
+
+    @sync
+    async def test_works_on_frames_before_navigation(self, isolated_page, server_url):
+        await isolated_page.goto(server_url / 'frames/nested-frames.html')
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        frame = isolated_page.frames[0]
+        res = await frame.evaluate(
+            """async function() {
+            return await compute(9, 4);
+        }"""
+        )
+        assert res == 36
+
+    @sync
+    async def test_works_with_complex_obj(self, isolated_page):
+        await isolated_page.exposeFunction('complexObject', lambda a,b: {'x': a['x']*b['x']})
+        res = await isolated_page.evaluate('async(a,b) => complexObject(a,b)', {'x': 9}, {'x': 4});
+        assert res == 36
+
+
+
 
 
 class TestEventsPageError:
