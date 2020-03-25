@@ -502,7 +502,62 @@ class TestWaitForRequest:
 
 
 class TestWaitForResponse:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page, server_url):
+        await isolated_page.goto(server_url.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(server_url / 'digits/2.png'),
+            isolated_page.evaluate("""() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }""")
+        )
+        assert response.url == server_url / 'digits/2.png'
+
+    @sync
+    async def test_respects_timeout(self, isolated_page):
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForResponse(lambda: False, timeout=1),
+
+    @sync
+    async def test_respects_default_timeout(self, isolated_page):
+        isolated_page.setDefaultTimeout(1)
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForResponse(lambda: False)
+
+    @sync
+    async def test_works_with_predicate(self, isolated_page, server_url):
+        await isolated_page.goto(server_url.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(lambda r: r.url == server_url / 'digits/2.png'),
+            isolated_page.evaluate("""() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }""")
+        )
+        assert response.url == server_url / '/digits/2.png'
+
+    @sync
+    async def test_works_with_no_timeout(self, isolated_page, server_url):
+        await isolated_page.goto(server_url.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(server_url / 'digits/2.png', timeout=0),
+            isolated_page.evaluate("""() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }""")
+        )
+        assert response.url == server_url / 'digits/2.png'
+
+
+
+
+
+
+
 
 
 class TestExposeFunction:

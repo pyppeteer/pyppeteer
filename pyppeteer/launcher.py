@@ -671,7 +671,7 @@ def launcher(
     projectRoot: str = None, preferredRevision: str = None, product: str = None
 ) -> Union[FirefoxLauncher, ChromeLauncher]:
     """Returns the appropriate browser launcher class instance"""
-    product = product or os.environ.get('PYPPETEER2_PRODUCT')
+    product = product or os.environ.get('PYPPETEER2_PRODUCT') or 'chrome'
     if product == 'firefox':
         return FirefoxLauncher(projectRoot, preferredRevision)
     elif product in ('chrome', 'chromium'):
