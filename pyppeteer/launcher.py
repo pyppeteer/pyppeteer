@@ -167,9 +167,8 @@ class BaseBrowserLauncher:
     """
     Implements common BrowserLauncher operations
     """
-
-    def __init__(self, projectRoot: str = None, preferredRevision: str = None):
-        self.projectRoot = projectRoot
+    def __init__(self, projectRoot: Union[Path, str] = None, preferredRevision: str = None):
+        self.projectRoot = Path(projectRoot) if projectRoot else None
         self.preferredRevision = preferredRevision
 
     async def connect(
@@ -508,7 +507,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
         super().__init__(projectRoot, preferredRevision)
 
     @property
-    def executablePath(self) -> None:
+    def executablePath(self) -> Optional[Path]:
         raise NotImplementedError('executablePath method not implemented')
 
     async def launch(self, **kwargs: Union[LaunchOptions, ChromeArgOptions, BrowserOptions]) -> Browser:
@@ -646,7 +645,7 @@ def getWSEndpoint(url: str) -> str:
         raise RuntimeError(f'webSocketDebuggerUrl not found')
 
 
-def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[Optional[str], Optional[str]]:
+def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[Optional[Path], Optional[str]]:
     missing_text = None
     exec_path_env_var = 'PYPPETEER2_EXECUTABLE_PATH'
     revision_env_var = 'PYPPETEER2_CHROMIUM_REVISION'
@@ -675,5 +674,7 @@ def launcher(
     product = product or os.environ.get('PYPPETEER2_PRODUCT')
     if product == 'firefox':
         return FirefoxLauncher(projectRoot, preferredRevision)
-    else:
+    elif product in ('chrome', 'chromium'):
         return ChromeLauncher(projectRoot, preferredRevision)
+    raise ValueError(f'Support for {product} has not been implemented')
+

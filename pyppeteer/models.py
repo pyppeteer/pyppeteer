@@ -65,17 +65,17 @@ class CoverageResult(TypedDict):
     text: str
 
 
-JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
-Devices = Dict[str, DeviceDetails]
-Platform = Literal['linux', 'mac', 'win32', 'win64']
-MouseButton = Literal['left', 'right', 'middle']
-WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
-WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]
-
-
 class RevisionInfo(TypedDict):
     folderPath: Union[Path, os.PathLike]
     executablePath: Union[Path, os.PathLike]
     url: str
     local: bool
     revision: str
+
+
+JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
+Devices = Dict[str, DeviceDetails]
+Platform = Literal['linux', 'mac', 'win32', 'win64']
+MouseButton = Literal['left', 'right', 'middle']
+WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
+WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]

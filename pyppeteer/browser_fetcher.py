@@ -96,7 +96,7 @@ def extractZip(zip_file: BytesIO, folder_path: Path) -> None:
 
 class BrowserFetcher:
     def __init__(
-        self, projectRoot: Union[Path, os.PathLike] = None, platform: Platform = None, host: str = None,
+        self, projectRoot: Union[Path, str] = None, platform: Platform = None, host: str = None,
     ):
         self.downloadsFolder = Path(projectRoot or __pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
