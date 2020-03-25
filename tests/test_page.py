@@ -611,9 +611,10 @@ class TestExposeFunction:
         
     @sync
     async def test_awaits_returned_promise(self, isolated_page, event_loop):
-        def compute(a,b):
+        def compute(a, b):
             fut = event_loop.create_future()
             fut.set_result(a*b)
+            return fut
 
         await isolated_page.exposeFunction('compute', compute)
         res = await isolated_page.evaluate("""async function() {
@@ -648,8 +649,21 @@ class TestExposeFunction:
     @sync
     async def test_works_with_complex_obj(self, isolated_page):
         await isolated_page.exposeFunction('complexObject', lambda a,b: {'x': a['x']*b['x']})
-        res = await isolated_page.evaluate('async(a,b) => complexObject(a,b)', {'x': 9}, {'x': 4});
+        res = await isolated_page.evaluate('async(a,b) => complexObject(a,b)', {'x': 9}, {'x': 4})
+        assert res == {'x': 36}
+
+    @sync
+    async def test_works_with_async_exposed_func(self, isolated_page):
+        async def my_async_func(a,b):
+            return a*b
+        await isolated_page.exposeFunction('compute', my_async_func)
+        res = await isolated_page.evaluate("""async function() {
+            return await compute(9, 4);
+        }""")
         assert res == 36
+
+
+
 
 
 

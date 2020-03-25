@@ -5,6 +5,7 @@
 
 import asyncio
 import base64
+import inspect
 import json
 import logging
 import math
@@ -545,31 +546,30 @@ class Page(AsyncIOEventEmitter):
         Registered function can be called from chrome process.
 
         :arg string name: Name of the function on the window object.
-        :arg Callable pyppeteerFunction: Function which will be called on
-                                         python process. This function should
-                                         not be asynchronous function.
+        :arg Callable pyppeteerFunction: Function which will be called in
+                                         python process.
         """
         if self._pageBindings.get(name):
             raise PageError(f'Failed to add page binding with name {name}: window["{name}"] already exists!')
         self._pageBindings[name] = pyppeteerFunction
 
         addPageBinding = '''
-            function addPageBinding(bindingName) {
-              const binding = window[bindingName];
-              window[bindingName] = async(...args) => {
+        function addPageBinding(bindingName) {
+            const binding = window[bindingName];
+            window[bindingName] = (...args) => {
                 const me = window[bindingName];
                 let callbacks = me['callbacks'];
                 if (!callbacks) {
-                  callbacks = new Map();
-                  me['callbacks'] = callbacks;
+                    callbacks = new Map();
+                    me['callbacks'] = callbacks;
                 }
                 const seq = (me['lastSeq'] || 0) + 1;
                 me['lastSeq'] = seq;
-                const promise = new Promise(fulfill => callbacks.set(seq, fulfill));
+                const promise = new Promise((resolve, reject) => callbacks.set(seq, {resolve, reject}));
                 binding(JSON.stringify({name: bindingName, seq, args}));
                 return promise;
-              };
-            }
+            };
+        }
         '''  # noqa: E501
         expression = helpers.evaluationString(addPageBinding, name)
         await self._client.send('Runtime.addBinding', {'name': name})
@@ -668,23 +668,38 @@ class Page(AsyncIOEventEmitter):
             values.append(createJSHandle(context, arg))
         self._addConsoleMessage(event['type'], values)
 
-    def _onBindingCalled(self, event: Dict) -> None:
+    async def _onBindingCalled(self, event: Dict) -> None:
         obj = json.loads(event['payload'])
         name = obj['name']
         seq = obj['seq']
         args = obj['args']
-        result = self._pageBindings[name](*args)
+        try:
+            func = self._pageBindings[name]
+            func_res = func(*args)
+            result = await func_res if inspect.isawaitable(func_res) else func_res
+        except Exception as e:
+            result = str(e)
 
         deliverResult = '''
             function deliverResult(name, seq, result) {
-                window[name]['callbacks'].get(seq)(result);
+                window[name]['callbacks'].get(seq).resolve(result);
                 window[name]['callbacks'].delete(seq);
             }
         '''
+        deliverError = '''
+            function deliverError(name, seq, message) {
+                const error = new Error(message);
+                window[name]['callbacks'].get(seq).reject(error);
+                window[name]['callbacks'].delete(seq);
+            }
+        '''
+        if isinstance(result, Exception):
+            expression = helpers.evaluationString(deliverError, name, seq, str(result))
+        else:
+            expression = helpers.evaluationString(deliverResult, name, seq, result)
 
-        expression = helpers.evaluationString(deliverResult, name, seq, result)
         try:
-            self._client.send(
+            await self._client.send(
                 'Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId']},
             )
         except Exception as e:
