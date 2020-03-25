@@ -173,8 +173,8 @@ def log_handler(handler: Any) -> None:
 class _StaticFileHandler(web.StaticFileHandler):
     special_request_behaviour = {}
 
-    def get(self, path: str, include_body: bool = True) -> None:
-        super().get(path, include_body)
+    async def get(self, path: str, include_body: bool = True) -> None:
+        await super().get(path, include_body)
         if self.path in self.special_request_behaviour:
             status, headers = self.special_request_behaviour[path]
             if status:
