@@ -672,7 +672,19 @@ class TestExposeFunction:
 
 
 class TestEventsPageError:
-    pass
+    @sync
+    async def test_pageerror_fired(self, isolated_page, server_url):
+        error = None
+        def set_error(e):
+            nonlocal error
+            error = e
+
+        isolated_page.once('pageerror', set_error)
+        await gather_with_timeout(
+            isolated_page.goto(server_url / 'error.html'),
+            waitEvent(isolated_page, 'pageerror')
+        )
+        assert 'Fancy' in str(error)
 
 
 class TestSetUserAgent:
