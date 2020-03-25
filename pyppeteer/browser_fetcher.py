@@ -29,15 +29,11 @@ from tqdm import tqdm
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
 from pyppeteer.models import Platforms, RevisionInfo
 
-try:
-    from typing import TypedDict, Literal
-except ImportError:
+if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
-
-try:
-    from typing import get_args
-except ImportError:
     from typing_inspect import get_args
+else:
+    from typing import TypedDict, Literal, get_args
 
 logger = logging.getLogger(__name__)
 
@@ -103,14 +99,14 @@ class BrowserFetcher:
         self, projectRoot: Union[Path, os.PathLike] = None, platform: Platforms = None, host: str = None,
     ):
         self.host = host
-        self.downloadsFolder = projectRoot or Path(__pyppeteer_home__) / 'local-chromium'
+        self.downloadsFolder = Path(projectRoot or __pyppeteer_home__) / 'local-chromium'
         self.downloadHost = host or DEFAULT_DOWNLOAD_HOST
-        self._platform: Platforms = platform or sys.platform
+        self._platform = platform or sys.platform  # type: Platforms
         if self._platform == 'darwin':
             self._platform = 'mac'
         elif self._platform == 'win32':
             # no really good way to detect system bittedness
-            # (other options depend on the sys bittedness == python interpreter bittedness)
+            # (other options depend on the python interpreter bittedness == sys.bittedness)
             self._platform = self._platform.replace('32', str(struct.calcsize('P') * 8))
         assert self._platform in get_args(Platforms), f'Unsupported platform: {platform}'
         logger.info(f'platform auto detected: {self._platform}')

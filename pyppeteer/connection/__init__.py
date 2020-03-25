@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import sys
 from typing import Awaitable, Dict, Any
 
 import websockets
@@ -10,10 +11,10 @@ from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport
 
-try:
-    from typing import TypedDict
-except ImportError:
+if sys.version_info < (3, 8):
     from typing_extensions import TypedDict
+else:
+    from typing import TypedDict
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

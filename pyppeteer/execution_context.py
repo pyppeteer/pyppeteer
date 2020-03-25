@@ -51,7 +51,9 @@ class ExecutionContext(object):
         """
         return await self._evaluateInternal(False, pageFunction, *args)
 
-    async def _evaluateInternal(self, returnByValue: bool, pageFunction: str, *args: JSFunctionArg) -> Union['JSHandle', 'ElementHandle', JSFunctionArg]:
+    async def _evaluateInternal(
+        self, returnByValue: bool, pageFunction: str, *args: JSFunctionArg
+    ) -> Union['JSHandle', 'ElementHandle', JSFunctionArg]:
         suffix = f'//# sourceURL={EVALUATION_SCRIPT_URL}'
 
         if not helpers.is_js_func(pageFunction):

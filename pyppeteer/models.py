@@ -1,11 +1,13 @@
 """Type definitions for widely used types"""
 import os
+import sys
 from pathlib import Path
+from typing import Sequence, Union, Literal, Dict, List, Any, TYPE_CHECKING
 
-try:
-    from typing import TypedDict, Sequence, Union, Literal, Dict, List, Any, TYPE_CHECKING
-except ImportError:
-    from typing import TypedDict
+if sys.version_info < (3, 8):
+    from typing_extensions import TypedDict, Literal
+else:
+    from typing import TypedDict, Literal
 
 if TYPE_CHECKING:
     from pyppeteer.jshandle import JSHandle
@@ -65,8 +67,7 @@ class CoverageResult(TypedDict):
 
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
-platforms = ('linux', 'mac', 'win32', 'win64')
-Platforms = Literal[platforms]
+Platforms = Literal['linux', 'mac', 'win32', 'win64']
 MouseButton = Literal['left', 'right', 'middle']
 WaitTarget = Literal['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
 WaitTargets = Union[WaitTarget, Sequence[WaitTarget]]

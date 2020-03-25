@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from asyncio import Future, Task
 from pathlib import Path
 from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, Callable, Generator, Set
@@ -9,10 +10,10 @@ from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import MouseButton, JSFunctionArg
 from pyppeteer.timeout_settings import TimeoutSettings
 
-try:
-    from typing import Literal
-except ImportError:
+if sys.version_info < (3, 8):
     from typing_extensions import Literal
+else:
+    from typing import Literal
 
 if TYPE_CHECKING:
     from pyppeteer.jshandle import JSHandle, ElementHandle

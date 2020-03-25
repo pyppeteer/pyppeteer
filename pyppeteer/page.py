@@ -10,6 +10,7 @@ import logging
 import math
 import mimetypes
 import re
+import sys
 from copy import copy
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
@@ -38,10 +39,10 @@ from pyppeteer.timeout_settings import TimeoutSettings
 from pyppeteer.tracing import Tracing
 from pyppeteer.worker import Worker
 
-try:
-    from typing import Literal
-except ImportError:
+if sys.version_info < (3, 8):
     from typing_extensions import Literal
+else:
+    from typing import Literal
 
 
 if TYPE_CHECKING:
@@ -689,7 +690,7 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             helpers.debugError(logger, e)
 
-    def _addConsoleMessage(self, type_: str, args: List[JSHandle], ) -> None:
+    def _addConsoleMessage(self, type_: str, args: List[JSHandle],) -> None:
         # TODO puppetter also takes stacktrace argument but it seems that
         # in python it's not necessary?
         if not self.listeners(Events.Page.Console):

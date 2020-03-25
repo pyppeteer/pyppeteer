@@ -30,16 +30,11 @@ pyppeteerToProtocolLifecycle = {
 }
 
 
-
 class LifecycleWatcher:
     """LifecycleWatcher class."""
 
     def __init__(
-        self,
-        frameManager: 'FrameManager',
-        frame: 'Frame',
-        timeout: Optional[float],
-        waitUntil: WaitTargets = 'load',
+        self, frameManager: 'FrameManager', frame: 'Frame', timeout: Optional[float], waitUntil: WaitTargets = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
         self._expectedLifecycle: List[str] = []
@@ -173,5 +168,3 @@ class LifecycleWatcher:
                 fut.cancel()
             except AttributeError:
                 continue
-
-

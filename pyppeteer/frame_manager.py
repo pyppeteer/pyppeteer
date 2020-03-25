@@ -368,7 +368,9 @@ class Frame:
     async def goto(
         self, url: str, referer: str = None, timeout: float = None, waitUntil: WaitTargets = None
     ) -> Optional[Response]:
-        return await self._frameManager.navigateFrame(self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil)
+        return await self._frameManager.navigateFrame(
+            self, url=url, referer=referer, timeout=timeout, waitUntil=waitUntil
+        )
 
     async def waitForNavigation(
         self, timeout: Optional[float] = None, waitUntil: Optional[WaitTargets] = None

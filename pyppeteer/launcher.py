@@ -28,10 +28,10 @@ from pyppeteer.websocket_transport import WebsocketTransport
 if not sys.platform.startswith('win'):
     from signal import SIGHUP
 
-try:
-    from typing import TypedDict, Literal
-except ImportError:
+if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
+else:
+    from typing import TypedDict, Literal
 
 logger = logging.getLogger(__name__)
 
