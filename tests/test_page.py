@@ -18,6 +18,37 @@ async def test_async_stacks(isolated_page, server):
         assert __file__ in str(excpt)
 
 
+@sync
+async def test_url_prop(isolated_page, server):
+    assert isolated_page.url == 'about:blank'
+    await isolated_page.goto(server.empty_page)
+    assert isolated_page.url == server.empty_page
+
+
+@sync
+async def test_save_PDF(isolated_page, assets):
+    output_file = assets / 'output.pdf'
+    await isolated_page.pdf(path=output_file)
+    assert output_file.exists()
+    assert output_file.stat().st_size
+
+
+@sync
+async def test_title_prop(isolated_page, server):
+    await isolated_page.goto(server / 'title.html')
+    assert await isolated_page.title == 'Woof-Woof'
+
+
+@sync
+async def test_browser_prop(isolated_page, shared_browser):
+    assert isolated_page.browser == shared_browser
+
+
+@sync
+async def test_context_prop(isolated_page, isolated_context):
+    assert isolated_page.browserContext == isolated_context
+
+
 class TestClose:
     @sync
     async def test_reject_all_pending_promises(self, isolated_page, event_loop):
@@ -65,58 +96,6 @@ class TestClose:
         assert isolated_page.isClosed is False
         await isolated_page.close()
         assert isolated_page.isClosed
-
-
-class TestEventsLoad:
-    @sync
-    async def test_load_event_fired(self, isolated_page):
-        event = waitEvent(isolated_page, 'load')
-        done, _ = await asyncio.wait((isolated_page.goto('about:blank'), event), timeout=5)
-        assert len(done) == 2
-
-
-class TestEventError:
-    @sync
-    async def test_raises_on_page_crash(self, event_loop, isolated_page):
-        error = waitEvent(isolated_page, 'error')
-        with suppress(asyncio.TimeoutError):
-            await isolated_page.goto('chrome://crash', timeout=2_000)
-        assert str(await error) == 'Page crashed!'
-
-
-class TestEventsPopup:
-    @sync
-    async def test_popup_props(self, isolated_page):
-        popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'), isolated_page.evaluate('() => window.open("about:blank")'),
-        )
-        assert await isolated_page.evaluate('() => !!window.opener') is False
-        assert await popup.evaluate('() => !!window.opener')
-
-    @sync
-    async def test_popup_noopener(self, isolated_page):
-        popup, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'popup'),
-            isolated_page.evaluate('() => window.open("about:blank", null, "noopener")'),
-        )
-        assert await isolated_page.evaluate('() => !!window.opener') is False
-        assert await popup.evaluate('() => !!window.opener') is False
-
-    @sync
-    async def test_clicking_target_blank(self, isolated_page, server):
-        await isolated_page.goto(server.empty_page)
-        await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
-        popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
-        assert await isolated_page.evaluate('() => !!window.opener') is False
-        assert await popup.evaluate('() => !!window.opener')
-
-    @sync
-    async def test_fake_clicking_target_and_noopener(self, isolated_page, server):
-        await isolated_page.goto(server.empty_page)
-        await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
-        popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
-        assert await isolated_page.evaluate('() => !!window.opener') is False
-        assert await popup.evaluate('() => !!window.opener') is False
 
 
 class TestBrowserContextOverridePermissions:
@@ -264,137 +243,6 @@ class TestExecutionContextQueryObjects:
         with pytest.raises(ElementHandleError) as excpt:
             await isolated_page.queryObjects(proto_handle)
         assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt.value)
-
-
-class TestEventsConsole:
-    @sync
-    async def test_console_works(self, isolated_page):
-        message: Optional[ConsoleMessage] = None
-
-        def set_message(m):
-            nonlocal message
-            message = m
-
-        isolated_page.once('console', set_message)
-        await gather_with_timeout(
-            isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'), waitEvent(isolated_page, 'console'),
-        )
-        assert message.text == 'hello 5 JSHandle@object'
-        assert message.type == 'log'
-        assert await message.args[0].jsonValue() == 'hello'
-        assert await message.args[1].jsonValue() == 5
-        assert await message.args[2].jsonValue() == {'foo': 'bar'}
-
-    @sync
-    async def test_different_console_apis(self, isolated_page):
-        messages: List[ConsoleMessage] = []
-
-        def append_msg(m):
-            nonlocal messages
-            messages.append(m)
-
-        isolated_page.on('console', append_msg)
-        await isolated_page.evaluate(
-            """() => {
-            // A pair of time/timeEnd generates only one Console API call.
-            console.time('calling console.time');
-            console.timeEnd('calling console.time');
-            console.trace('calling console.trace');
-            console.dir('calling console.dir');
-            console.warn('calling console.warn');
-            console.error('calling console.error');
-            console.log(Promise.resolve('should not wait until resolved!'));
-        }"""
-        )
-        assert [m.type for m in messages] == ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
-        assert 'calling console.time' in messages[0].text
-        assert [m.text for m in messages[1:]] == [
-            'calling console.trace',
-            'calling console.dir',
-            'calling console.warn',
-            'calling console.error',
-            'JSHandle@promise',
-        ]
-
-    @sync
-    async def test_works_with_window_obj(self, isolated_page):
-        message = None
-
-        def set_message(m):
-            nonlocal message
-            message = m
-
-        isolated_page.once('console', set_message)
-        await gather_with_timeout(
-            isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
-        )
-        assert message.text == 'JSHandle@object'
-
-    @sync
-    async def test_triggers_correct_log(self, isolated_page, firefox, server):
-        await isolated_page.goto('about:blank')
-        message, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'console'),
-            isolated_page.evaluate('async url => fetch(url).catch(e => {})', server.empty_page),
-        )
-        assert 'Access-Control-Allow-Origin' in message.text
-        if firefox:
-            assert message.type == 'warn'
-        else:
-            assert message.type == 'error'
-
-    @sync
-    async def test_has_location_on_fetch_failure(self, isolated_page, server):
-        await isolated_page.goto(server.empty_page)
-        message, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'console'),
-            isolated_page.setContent('<script>fetch("http://wat");</script>', server.empty_page),
-        )
-        assert 'ERR_NAME_NOT_RESOLVED' in message.text
-        assert message.type == 'error'
-        assert message.location == {'url': 'http://wat/', 'lineNumber': None}
-
-    @sync
-    async def test_location_for_console_API_calls(self, isolated_page, server, firefox):
-        await isolated_page.goto(server.empty_page)
-        message, *_ = await gather_with_timeout(
-            waitEvent(isolated_page, 'console'), isolated_page.goto(server / 'consolelog.html'),
-        )
-        assert message.text == 'yellow'
-        assert message.type == 'log'
-        assert message.location == {
-            'url': server / 'consolelog.html',
-            'lineNumber': 7,
-            'columnNumber': 6 if firefox else 14,  # console.|log vs |console.log
-        }
-
-    # @see https://github.com/puppeteer/puppeteer/issues/3865
-    @sync
-    async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server):
-        await isolated_page.goto(server.empty_page)
-        await isolated_page.evaluate(
-            """async() => {
-            // 1. Create a popup that Puppeteer is not connected to.
-            const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=780,height=200,top=0,left=0');
-            await new Promise(x => win.onload = x);
-            // 2. In this popup, create an iframe that console.logs a message.
-            win.document.body.innerHTML = `<iframe src='/consolelog.html'></iframe>`;
-            const frame = win.document.querySelector('iframe');
-            await new Promise(x => frame.onload = x);
-            // 3. After that, remove the iframe.
-            frame.remove();
-        }"""
-        )
-        popup_targ = [x for x in isolated_page.browserContext.targets() if x != isolated_page.target][0]
-        # 4. Connect to the popup and make sure it doesn't throw.
-        await popup_targ.page()
-
-
-class TestEventsDOMContentLoaded:
-    @sync
-    async def test_domcontentloaded_fired(self, isolated_page):
-        await isolated_page.goto('about:blank')
-        await asyncio.wait_for(waitEvent(isolated_page, 'domcontentloaded'), timeout=5)
 
 
 class TestMetrics:
@@ -646,20 +494,6 @@ class TestExposeFunction:
         await isolated_page.exposeFunction('compute', my_async_func)
         res = await isolated_page.evaluate('async () => await compute(9, 4)')
         assert res == 36
-
-
-class TestEventsPageError:
-    @sync
-    async def test_pageerror_fired(self, isolated_page, server):
-        error = None
-
-        def set_error(e):
-            nonlocal error
-            error = e
-
-        isolated_page.once('pageerror', set_error)
-        await gather_with_timeout(isolated_page.goto(server / 'error.html'), waitEvent(isolated_page, 'pageerror'))
-        assert 'Fancy' in str(error)
 
 
 class TestSetUserAgent:
@@ -957,14 +791,6 @@ class TestAddStyleTag:
             await isolated_page.addStyleTag(url=server.cross_process_server / 'injectedstyle.css')
 
 
-class TestURL:
-    @sync
-    async def test_basic_usage(self, isolated_page, server):
-        assert isolated_page.url == 'about:blank'
-        await isolated_page.goto(server.empty_page)
-        assert isolated_page.url == server.empty_page
-
-
 class TestSetJSEnabled:
     @sync
     async def test_basic_usage(self, isolated_page, server):
@@ -1004,21 +830,6 @@ class TestSetCacheEnabled:
             server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
-
-
-@sync
-async def test_save_PDF(isolated_page, assets):
-    output_file = assets / 'output.pdf'
-    await isolated_page.pdf(path=output_file)
-    assert output_file.exists()
-    assert output_file.stat().st_size
-
-
-class TestTitle:
-    @sync
-    async def test_basic_usage(self, isolated_page, server):
-        await isolated_page.goto(server / 'title.html')
-        assert await isolated_page.title == 'Woof-Woof'
 
 
 class TestSelect:
@@ -1080,24 +891,203 @@ class TestSelect:
         pass
 
 
-class TestEventsClose:
-    @sync
-    async def test_works_with_window_close(self, isolated_page):
-        pass
+class TestEvents:
+    class TestClose:
+        @sync
+        async def test_works_with_window_close(self, isolated_page):
+            pass
+
+        @sync
+        async def test_works_with_page_close(self, isolated_context, event_loop):
+            page = await isolated_context.newPage()
+            close_event = event_loop.create_task(waitEvent(page, 'close'))
+            await page.close()
+            await gather_with_timeout(close_event)
+
+    class TestPopup:
+        @sync
+        async def test_popup_props(self, isolated_page):
+            popup, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'popup'), isolated_page.evaluate('() => window.open("about:blank")'),
+            )
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener')
+
+        @sync
+        async def test_popup_noopener(self, isolated_page):
+            popup, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'popup'),
+                isolated_page.evaluate('() => window.open("about:blank", null, "noopener")'),
+            )
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener') is False
+
+        @sync
+        async def test_clicking_target_blank(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
+            popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener')
+
+        @sync
+        async def test_fake_clicking_target_and_noopener(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
+            popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener') is False
+
+    class TestConsole:
+        @sync
+        async def test_console_works(self, isolated_page):
+            message: Optional[ConsoleMessage] = None
+
+            def set_message(m):
+                nonlocal message
+                message = m
+
+            isolated_page.once('console', set_message)
+            await gather_with_timeout(
+                isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
+                waitEvent(isolated_page, 'console'),
+            )
+            assert message.text == 'hello 5 JSHandle@object'
+            assert message.type == 'log'
+            assert await message.args[0].jsonValue() == 'hello'
+            assert await message.args[1].jsonValue() == 5
+            assert await message.args[2].jsonValue() == {'foo': 'bar'}
+
+        @sync
+        async def test_different_console_apis(self, isolated_page):
+            messages: List[ConsoleMessage] = []
+
+            def append_msg(m):
+                nonlocal messages
+                messages.append(m)
+
+            isolated_page.on('console', append_msg)
+            await isolated_page.evaluate(
+                """() => {
+                // A pair of time/timeEnd generates only one Console API call.
+                console.time('calling console.time');
+                console.timeEnd('calling console.time');
+                console.trace('calling console.trace');
+                console.dir('calling console.dir');
+                console.warn('calling console.warn');
+                console.error('calling console.error');
+                console.log(Promise.resolve('should not wait until resolved!'));
+            }"""
+            )
+            assert [m.type for m in messages] == ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
+            assert 'calling console.time' in messages[0].text
+            assert [m.text for m in messages[1:]] == [
+                'calling console.trace',
+                'calling console.dir',
+                'calling console.warn',
+                'calling console.error',
+                'JSHandle@promise',
+            ]
+
+        @sync
+        async def test_works_with_window_obj(self, isolated_page):
+            message = None
+
+            def set_message(m):
+                nonlocal message
+                message = m
+
+            isolated_page.once('console', set_message)
+            await gather_with_timeout(
+                isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
+            )
+            assert message.text == 'JSHandle@object'
+
+        @sync
+        async def test_triggers_correct_log(self, isolated_page, firefox, server):
+            await isolated_page.goto('about:blank')
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'),
+                isolated_page.evaluate('async url => fetch(url).catch(e => {})', server.empty_page),
+            )
+            assert 'Access-Control-Allow-Origin' in message.text
+            if firefox:
+                assert message.type == 'warn'
+            else:
+                assert message.type == 'error'
+
+        @sync
+        async def test_has_location_on_fetch_failure(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'),
+                isolated_page.setContent('<script>fetch("http://wat");</script>', server.empty_page),
+            )
+            assert 'ERR_NAME_NOT_RESOLVED' in message.text
+            assert message.type == 'error'
+            assert message.location == {'url': 'http://wat/', 'lineNumber': None}
+
+        @sync
+        async def test_location_for_console_API_calls(self, isolated_page, server, firefox):
+            await isolated_page.goto(server.empty_page)
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'), isolated_page.goto(server / 'consolelog.html'),
+            )
+            assert message.text == 'yellow'
+            assert message.type == 'log'
+            assert message.location == {
+                'url': server / 'consolelog.html',
+                'lineNumber': 7,
+                'columnNumber': 6 if firefox else 14,  # console.|log vs |console.log
+            }
+
+        # @see https://github.com/puppeteer/puppeteer/issues/3865
+        @sync
+        async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.evaluate(
+                """async() => {
+                // 1. Create a popup that Puppeteer is not connected to.
+                const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=780,height=200,top=0,left=0');
+                await new Promise(x => win.onload = x);
+                // 2. In this popup, create an iframe that console.logs a message.
+                win.document.body.innerHTML = `<iframe src='/consolelog.html'></iframe>`;
+                const frame = win.document.querySelector('iframe');
+                await new Promise(x => frame.onload = x);
+                // 3. After that, remove the iframe.
+                frame.remove();
+            }"""
+            )
+            popup_targ = [x for x in isolated_page.browserContext.targets() if x != isolated_page.target][0]
+            # 4. Connect to the popup and make sure it doesn't throw.
+            await popup_targ.page()
 
     @sync
-    async def test_works_with_page_close(self, isolated_context, event_loop):
-        page = await isolated_context.newPage()
-        close_event = event_loop.create_task(waitEvent(page, 'close'))
-        await page.close()
-        await gather_with_timeout(close_event)
+    async def test_domcontentloaded_fired(self, isolated_page):
+        await isolated_page.goto('about:blank')
+        await asyncio.wait_for(waitEvent(isolated_page, 'domcontentloaded'), timeout=5)
 
+    @sync
+    async def test_load_event_fired(self, isolated_page):
+        event = waitEvent(isolated_page, 'load')
+        done, _ = await asyncio.wait((isolated_page.goto('about:blank'), event), timeout=5)
+        assert len(done) == 2
 
-@sync
-async def test_returns_correct_browser_instance(isolated_page, shared_browser):
-    assert isolated_page.browser == shared_browser
+    @sync
+    async def test_pageerror_fired(self, isolated_page, server):
+        error = None
 
+        def set_error(e):
+            nonlocal error
+            error = e
 
-@sync
-async def test_returns_correct_context(isolated_page, isolated_context):
-    assert isolated_page.browserContext == isolated_context
+        isolated_page.once('pageerror', set_error)
+        await gather_with_timeout(isolated_page.goto(server / 'error.html'), waitEvent(isolated_page, 'pageerror'))
+        assert 'Fancy' in str(error)
+
+    @sync
+    async def test_error_event_raises_on_page_crash(self, event_loop, isolated_page):
+        error = waitEvent(isolated_page, 'error')
+        with suppress(asyncio.TimeoutError):
+            await isolated_page.goto('chrome://crash', timeout=2_000)
+        assert str(await error) == 'Page crashed!'
