@@ -966,7 +966,16 @@ class TestURL:
 
 
 class TestSetJSEnabled:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.setJavaScriptEnabled(False)
+        await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
+        with pytest.raises(BrowserError):
+            await isolated_page.evaluate('something')
+
+        await isolated_page.setJavaScriptEnabled(True)
+        await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
+        assert await isolated_page.evaluate('something') == 'forbidden'
 
 
 class TestSetCacheEnabled:
