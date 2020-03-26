@@ -817,7 +817,7 @@ class TestSetBypassCSP:
 
 class TestAddScriptTag:
     @sync
-    async def test_throws_if_no_option_provided(self, isolated_page):
+    async def test_raises_if_no_option_provided(self, isolated_page):
         with pytest.raises(BrowserError):
             await isolated_page.addScriptTag()
 
@@ -882,7 +882,8 @@ class TestAddScriptTag:
 
     @sync
     @pytest.mark.skip(
-        'chrome no longer throws exceptions when not executing inline script tags due to CSP: https://github.com/puppeteer/puppeteer/issues/4840'
+        'chrome no longer throws exceptions when not executing inline script tags due to CSP: '
+        'https://github.com/puppeteer/puppeteer/issues/4840'
     )
     async def test_raises_when_script_added_to_CSP_page_via_content(self, isolated_page, server):
         await isolated_page.goto(server / 'csp.html')
@@ -897,7 +898,63 @@ class TestAddScriptTag:
 
 
 class TestAddStyleTag:
-    pass
+    GET_BG_COLOR_JS = 'window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")'
+
+    @sync
+    async def test_raises_if_no_option_provided(self, isolated_page):
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag()
+
+    @sync
+    async def test_works_with_url(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(url='/injectedstyle.css')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(255, 0, 0)'
+
+    @sync
+    async def test_raises_on_url_loading_failure(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(url='/nonexistantfile.css')
+
+    @sync
+    async def test_works_with_path(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(path=assets / 'injectedstyle.css')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(255, 0, 0)'
+
+    @sync
+    async def test_includes_sourcemap_when_path_provided(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(path=assets / 'injectedstyle.css')
+        style_handle = await isolated_page.J('style')
+        res = await isolated_page.evaluate('style => style.innerHTML', style_handle)
+        assert (assets / 'injectedstyle.css').name in res
+
+    @sync
+    async def test_works_with_content(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(content='body { background-color: green; }')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(0, 128, 0)'
+
+    @sync
+    @pytest.mark.skip(
+        'chrome no longer throws exceptions when not executing inline style tags due to CSP: '
+        'https://github.com/puppeteer/puppeteer/issues/4840'
+    )
+    async def test_raises_on_added_style_CSP_via_content(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(content='body { background-color: green; }')
+
+    @sync
+    async def test_raises_on_added_style_CSP_via_url(self, isolated_page, server, assets):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(url=server.cross_process_server / 'injectedstyle.css')
 
 
 class TestURL:
