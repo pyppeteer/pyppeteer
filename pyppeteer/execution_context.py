@@ -30,7 +30,7 @@ class ExecutionContext(object):
     def __init__(self, client: CDPSession, contextPayload: Dict, world: Optional['DOMWorld']) -> None:
         self._client = client
         self._world = world
-        self._contextId = contextPayload.get('id')
+        self._contextId = contextPayload['id']
 
     @property
     def frame(self) -> Optional['Frame']:
