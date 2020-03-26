@@ -525,7 +525,7 @@ class Page(AsyncIOEventEmitter):
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
         """
-        return await self.mainFrame.addScriptTag({'url': url, 'path': path, 'content': content, '_type': _type,})
+        return await self.mainFrame.addScriptTag(url=url, path=path, content=content, _type=_type)
 
     async def addStyleTag(self, **kwargs: str) -> ElementHandle:
         """Add style or link tag to this page.

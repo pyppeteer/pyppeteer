@@ -227,7 +227,7 @@ class NetworkManager(AsyncIOEventEmitter):
         request._failureText = event.get('errorText')
         response = request.response
         if response:
-            response._bodyLoadedPromiseFulfill(None)
+            response._bodyLoadedFutureFulFill(None)
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(Events.NetworkManager.RequestFailed, request)
