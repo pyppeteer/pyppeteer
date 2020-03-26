@@ -958,7 +958,11 @@ class TestAddStyleTag:
 
 
 class TestURL:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        assert isolated_page.url == 'about:blank'
+        await isolated_page.goto(server.empty_page)
+        assert isolated_page.url == server.empty_page
 
 
 class TestSetJSEnabled:
