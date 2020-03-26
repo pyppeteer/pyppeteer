@@ -527,7 +527,9 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.addScriptTag(url=url, path=path, content=content, _type=_type)
 
-    async def addStyleTag(self, **kwargs: str) -> ElementHandle:
+    async def addStyleTag(
+        self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
+    ) -> ElementHandle:
         """Add style or link tag to this page.
 
         One of ``url``, ``path`` or ``content`` option is necessary.
@@ -538,7 +540,7 @@ class Page(AsyncIOEventEmitter):
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
         """
-        return await self.mainFrame.addStyleTag(**kwargs)
+        return await self.mainFrame.addStyleTag(url=url, path=path, content=content)
 
     async def exposeFunction(self, name: str, pyppeteerFunction: Callable[..., Any]) -> None:
         """Add python function to the browser's ``window`` object as ``name``.
