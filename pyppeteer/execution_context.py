@@ -154,6 +154,5 @@ def rewriteError(error: Exception) -> Union[None, Dict[str, Dict[str, str]]]:
     if "Object couldn't be returned by value" in msg:
         return {'result': {'type': 'undefined'}}
     if msg.endswith('Cannot find context with specified id'):
-        msg = 'Execution context was destroyed, most likely because of a navigation.'  # noqa: E501
-        raise type(error)(msg)
+        raise type(error)('Execution context was destroyed, most likely because of a navigation.' )
     raise error
