@@ -75,13 +75,13 @@ class DOMWorld(object):
             task.terminate(BrowserError('waitForFunctions failed: frame got detached.'))
 
     @property
-    def executionContext(self) -> Optional[Awaitable['ExecutionContext']]:
+    async def executionContext(self) -> Optional['ExecutionContext']:
         if self._detached:
             raise BrowserError(
                 'Execution Context is not available in detached '
                 f'frame: {self._frame.url} (are you trying to evaluate?)'
             )
-        return self._contextFuture
+        return await self._contextFuture if self._contextFuture else None
 
     async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> 'ElementHandle':
         context = await self.executionContext
