@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from contextlib import suppress
+from pathlib import Path
 from urllib.parse import urljoin
 
 import pytest
@@ -23,6 +24,7 @@ _port = get_free_port()
 if _firefox:
     _launch_options['product'] = 'firefox'
 
+
 def pytest_configure(config):
     # shim for running in pycharm - see https://youtrack.jetbrains.com/issue/PY-41295
     if config.getoption('--verbose'):
@@ -32,10 +34,10 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, port, app, cross_proccess: bool = False):
+    def __init__(self, port, app, cross_process: bool = False):
         self.app: _Application = app
-        self.base = f'http://{"localhost" if not cross_proccess else "127.0.0.1"}:{port}'
-        self.cross_process_server = ServerURL(port, app, cross_proccess=True) if not cross_proccess else self
+        self.base = f'http://{"localhost" if not cross_process else "127.0.0.1"}:{port}'
+        self.cross_process_server = ServerURL(port, app, cross_process=True) if not cross_process else self
         self.empty_page = self / 'empty.html'
 
     def __repr__(self):
@@ -43,6 +45,11 @@ class ServerURL:
 
     def __truediv__(self, other):
         return urljoin(self.base, other)
+
+
+@pytest.fixture(scope='session')
+def assets():
+    return Path(__file__).parent / 'assets'
 
 
 @pytest.fixture(scope='session')
@@ -62,14 +69,12 @@ def isolated_context(shared_browser) -> BrowserContext:
         sync(ctx.close())
 
 
-
 @pytest.fixture
 def isolated_page(isolated_context) -> Page:
     page = sync(isolated_context.newPage())
     yield page
     with suppress(PageError):
         sync(page.close())
-
 
 
 @pytest.fixture(scope='session')
