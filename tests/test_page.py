@@ -541,7 +541,7 @@ class TestWaitForResponse:
             }"""
             ),
         )
-        assert response.url == server / '/digits/2.png'
+        assert response.url == server / 'digits/2.png'
 
     @sync
     async def test_works_with_no_timeout(self, isolated_page, server):
@@ -1015,7 +1015,10 @@ async def test_save_PDF(isolated_page, assets):
 
 
 class TestTitle:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.goto(server / 'title.html')
+        assert await isolated_page.title == 'Woof-Woof'
 
 
 class TestEventsClose:
