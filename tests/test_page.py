@@ -26,8 +26,8 @@ async def test_url_prop(isolated_page, server):
 
 
 @sync
-async def test_save_PDF(isolated_page, assets):
-    output_file = assets / 'output.pdf'
+async def test_save_PDF(isolated_page, tmp_path):
+    output_file = tmp_path / 'output.pdf'
     await isolated_page.pdf(path=output_file)
     assert output_file.exists()
     assert output_file.stat().st_size
