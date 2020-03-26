@@ -1022,7 +1022,62 @@ class TestTitle:
 
 
 class TestSelect:
-    pass
+    @sync
+    async def test_selects_single_options(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_selects_only_first_options(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_does_not_raise_when_select_causes_nav(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_selects_multiple_options(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_respects_event_bubbling(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_raises_when_element_is_not_select_elem(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_returns_empty_list_on_no_matched_value(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_returns_list_of_matched_vals(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_returns_list_of_one_when_multiple_not_set(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_returns_list_of_no_values(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_deselects_all_opts_when_passed_no_vals_for_multi_select(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_deselects_all_opts_when_passed_no_vals_for_select(self, isolated_page, server):
+        pass
+
+    @sync
+    async def test_raises_on_nonstrings(self, isolated_page, server):
+        pass
+
+    # see https://github.com/puppeteer/puppeteer/issues/3327
+    @sync
+    async def test_works_even_with_redefined_top_level_Event_class(self, isolated_page, server):
+        pass
 
 
 class TestEventsClose:
@@ -1031,17 +1086,11 @@ class TestEventsClose:
         pass
 
     @sync
-    async def test_works_with_page_close(self, isolated_context,event_loop):
+    async def test_works_with_page_close(self, isolated_context, event_loop):
         page = await isolated_context.newPage()
         close_event = event_loop.create_task(waitEvent(page, 'close'))
         await page.close()
         await gather_with_timeout(close_event)
-
-
-
-
-
-
 
 
 @sync
