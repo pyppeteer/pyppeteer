@@ -351,8 +351,7 @@ class Frame:
         self.querySelectorAllEval = self.JJeval = self.mainWorld.querySelectorAllEval
         self.querySelectorEval = self.Jeval = self.mainWorld.querySelectorEval
         self.type = self.mainWorld.type
-        # todo: proper signature
-        self.waitForFunction = partial(self.mainWorld.waitForFunction, self)
+        self.waitForFunction = self.mainWorld.waitForFunction
         self.xpath = self.Jx = self.mainWorld.xpath
 
         self.click = self.secondaryWorld.click

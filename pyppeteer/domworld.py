@@ -21,9 +21,10 @@ if TYPE_CHECKING:
     from pyppeteer.execution_context import ExecutionContext
 
 
-async def readFileAsync(path, file):
-    # TODO implement this
-    pass
+async def readFileAsync(path, encoding):
+    # TODO implement this async if need
+    with open(path, 'r', encoding=encoding) as f:
+        return f.read()
 
 
 class DOMWorld(object):
@@ -178,7 +179,7 @@ class DOMWorld(object):
         path: Optional[Union[str, Path]] = None,
         content: Optional[str] = None,
         _type: str = '',
-    ) -> 'ElementHandle':
+    ) -> Union['ElementHandle', 'JSHandle']:
         addScriptUrl = """
         async function addScriptUrl(url, type) {
           const script = document.createElement('script');
@@ -214,14 +215,19 @@ class DOMWorld(object):
             except Exception as e:
                 raise BrowserError(f'Loading script from {url} failed: {e}')
         if path:
+            path = Path(path)
+            if not path.exists():
+                raise FileNotFoundError(f'The specified file, {path.name}, does not exist')
+            if not path.is_file():
+                raise ValueError(f'The specified path, {path.name}, is not a file')
             contents = await readFileAsync(path, 'utf8')
-            contents += '//# sourceURL' + path.replace('\n', '')
+            contents += '//# sourceURL' + path.name
             f = context.evaluateHandle(addScriptContent, contents, _type)
             return (await f).asElement()
         if content:
             f = context.evaluateHandle(addScriptContent, content, _type)
             return (await f).asElement()
-        raise BrowserError('provide an object with url, path or content property')
+        raise BrowserError('provide a url, path or content argument')
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
@@ -332,7 +338,7 @@ class DOMWorld(object):
     ) -> 'JSHandle':
         if not timeout:
             timeout = self._timeoutSettings.timeout
-        return await WaitTask(self, pageFunction, 'function', polling, timeout, *args).promise
+        return await WaitTask(self, pageFunction, 'function', polling, timeout, self.loop, *args).promise
 
     @property
     async def title(self) -> str:
@@ -430,7 +436,7 @@ class WaitTask(object):
         async def timer(timeout: float) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
-            self.terminate(TimeoutError(f'Waiting for {title} failed: timeout {timeout}ms exceeds.'))
+            self.terminate(TimeoutError(f'Waiting for {title} failed: timeout of {timeout}ms exceeded.'))
 
         if timeout:
             self._timeoutTimer = self.loop.create_task(timer(self._timeout))
