@@ -39,7 +39,7 @@ valid_js_functions = [
     '(arg1, ...spread)=>{console.log("hey")}'
     'async (arg1, ...spread)=>{console.log("hey")}'
     'async function (arg1, ...spread){console.log("hey")}'
-    'async function named(arg1, ...spread){console.log("hey")}'
+    'async function named(arg1, ...spread){console.log("hey")}',
 ]
 invalid_js_functions = [
     # Immediately-Invoked Function Expressions
@@ -56,7 +56,7 @@ invalid_js_functions = [
     # almost valid functions
     'arg1,arg2=>{console.log("hey")}',
     '*arg=>{console.log("hey")}',
-    '...args=>{console.log("hey")}'
+    '...args=>{console.log("hey")}',
 ]
 
 input_expected = [(x, True) for x in valid_js_functions] + [(x, False) for x in invalid_js_functions]

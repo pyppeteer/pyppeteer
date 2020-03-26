@@ -227,10 +227,10 @@ class _Application(web.Application):
     def add_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
         self._handlers[0][1].add_request_precondition(urlparse(path).path, precondition)
 
-    def add_one_time_header_for_request(self, path: str, headers: Dict[str,str]):
+    def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
         self._handlers[0][1].set_request_header(urlparse(path).path, headers, True)
 
-    def add_header_for_request(self, path: str, headers: Dict[str,str]):
+    def add_header_for_request(self, path: str, headers: Dict[str, str]):
         self._handlers[0][1].set_request_header(urlparse(path).path, headers, False)
 
     def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:

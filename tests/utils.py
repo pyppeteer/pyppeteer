@@ -28,7 +28,6 @@ async def attachFrame(page: Page, url: str, frameId: str = None):
     return await handle.asElement().contentFrame()
 
 
-
 def waitEvent(emitter, event_name: str) -> Awaitable[Any]:
     """
     Returns a future which resolves to the event's details when event_name is emitted from emitter

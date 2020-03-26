@@ -386,4 +386,3 @@ class TestFilteringOfLeafNodes:
                     {'role': 'button', 'name': 'My Button', 'children': [{'role': 'text', 'name': 'My Button'}]}
                 ],
             }
-
