@@ -775,7 +775,57 @@ class TestSetContent:
 
 
 class TestSetBypassCSP:
-    pass
+    async def assert_working_CSP(self, page, server_):
+        # make sure CSP bypass is actually working
+        await page.goto(server_ / 'csp.html')
+        await page.addScriptTag(content='window.__injected = 42;')
+        assert await page.evaluate('window.__injected') is None
+
+    @sync
+    async def test_bypass_CSP_meta_tag(self, isolated_page, server):
+        await self.assert_working_CSP(isolated_page, server)
+
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    # todo (Mattwmaster58): Make server set correct headers
+    @sync
+    async def test_bypass_CSP_header(self, isolated_page, server):
+        await self.assert_working_CSP(isolated_page, server)
+
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_bypass_persists_after_cross_platform_nav(self, isolated_page, server):
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.goto(server / 'csp.html')
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+        await isolated_page.goto(server.cross_process_server / 'csp.html')
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_bypasses_CSP_in_iframes(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        # make sure CSP bypass is actually working
+        frame = await attachFrame(isolated_page, server / 'csp.html')
+        await frame.addScriptTag(content='window.__injected = 42;')
+        assert await frame.evaluate('window.__injected') is None
+
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+
+        frame = await attachFrame(isolated_page, server / 'csp.html')
+        await frame.addScriptTag(content='window.__injected = 42;')
+        assert await frame.evaluate('window.__injected') == 42
+
 
 
 class TestAddScriptTag:
