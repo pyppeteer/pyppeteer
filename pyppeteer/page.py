@@ -744,17 +744,20 @@ class Page(AsyncIOEventEmitter):
         return self.mainFrame.url
 
     @property
-    def content(self) -> str:
+    async def content(self) -> str:
         """Get the full HTML contents of the page.
 
         Returns HTML including the doctype.
         """
-        return self.mainFrame.content
+        return await self.mainFrame.content
 
     async def setContent(self, html: str, timeout: float = None, waitUntil: Union[str, List[str]] = None) -> None:
-        """Set content to this page.
-
-        :arg str html: HTML markup to assign to the page.
+        """
+        Sets the content of the page
+        :param html: str containing the HTML to set on the page
+        :param timeout: amount of time, in ms
+        :param waitUntil:
+        :return: None
         """
         await self.mainFrame.setContent(html=html, timeout=timeout, waitUntil=waitUntil)
 
