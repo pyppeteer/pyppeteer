@@ -1026,7 +1026,22 @@ class TestSelect:
 
 
 class TestEventsClose:
-    pass
+    @sync
+    async def test_works_with_window_close(self, isolated_page):
+        pass
+
+    @sync
+    async def test_works_with_page_close(self, isolated_context,event_loop):
+        page = await isolated_context.newPage()
+        close_event = event_loop.create_task(waitEvent(page, 'close'))
+        await page.close()
+        await gather_with_timeout(close_event)
+
+
+
+
+
+
 
 
 @sync
