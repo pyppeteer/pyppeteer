@@ -5,10 +5,13 @@ import asyncio
 import base64
 import functools
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Union, List, Type, Awaitable
+from urllib.parse import urlparse
 
 from tornado import web
+from tornado.httputil import HTTPServerRequest
 from tornado.log import access_log
+from tornado.routing import _RuleList
 
 from pyppeteer.util import get_free_port
 
@@ -171,7 +174,13 @@ def log_handler(handler: Any) -> None:
 
 
 class _StaticFileHandler(web.StaticFileHandler):
+    # todo: feels like a hack...
     special_request_behaviour = {}
+    callbacks = {}
+
+    @classmethod
+    def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
+        cls.callbacks[path.strip('/')] = func
 
     async def get(self, path: str, include_body: bool = True) -> None:
         await super().get(path, include_body)
@@ -181,14 +190,38 @@ class _StaticFileHandler(web.StaticFileHandler):
                 self.set_status(status)
             if headers:
                 [self.set_header(k, v) for k, v in headers.items()]
+        if path in self.callbacks:
+            self.callbacks[path](self.request)
+            del self.callbacks[path]
 
 
-def get_application() -> web.Application:
+class _Application(web.Application):
+    def __init__(
+        self,
+        handlers: _RuleList = None,
+        default_host: str = None,
+        transforms: List[Type["OutputTransform"]] = None,
+        **settings: Any,
+    ) -> None:
+        self._handlers = handlers
+        super().__init__(handlers, default_host, transforms, **settings)
+
+    def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
+        fut = asyncio.get_event_loop().create_future()
+
+        def resolve_fut(req):
+            fut.set_result(req)
+
+        self._handlers[0][1].add_one_time_callback(urlparse(path).path, resolve_fut)
+        return fut
+
+
+def get_application() -> _Application:
     static_path = Path(__file__).parent / 'assets'
     handlers = [
         (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
     ]
-    return web.Application(handlers, log_function=log_handler, static_path=static_path,)
+    return _Application(handlers, log_function=log_handler, static_path=static_path,)
 
 
 if __name__ == '__main__':

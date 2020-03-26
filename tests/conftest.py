@@ -5,13 +5,14 @@ from urllib.parse import urljoin
 
 import pytest
 from syncer import sync
+from websockets import ConnectionClosedError
 
 from pyppeteer import launch, Browser
 from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
-from tests.server import get_application
+from tests.server import get_application, _Application
 
 # internal, conftest.py only variables
 _launch_options = {'args': ['--no-sandbox']}
@@ -31,7 +32,8 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, base):
+    def __init__(self, base, app):
+        self.app: _Application = app
         self.base = base
         self.empty_page = self / 'empty.html'
 
@@ -46,7 +48,9 @@ class ServerURL:
 def shared_browser() -> Browser:
     browser = sync(launch(**_launch_options))
     yield browser
-    sync(browser.close())
+    # we don't care if we interrupt the websocket connection
+    with suppress(ConnectionClosedError):
+        sync(browser.close())
 
 
 @pytest.fixture
@@ -66,15 +70,11 @@ def isolated_page(isolated_context) -> Page:
         sync(page.close())
 
 
-@pytest.fixture(scope='session')
-def server_url(server):
-    return ServerURL(f'http://localhost:{_port}')
-
 
 @pytest.fixture(scope='session')
 def server():
     _server = _app.listen(_port)
-    yield _server
+    yield ServerURL(f'http://localhost:{_port}', _app)
     _server.stop()
 
 
