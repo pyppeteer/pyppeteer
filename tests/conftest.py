@@ -32,9 +32,10 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, base, app):
+    def __init__(self, port, app, cross_proccess: bool = False):
         self.app: _Application = app
-        self.base = base
+        self.base = f'http://{"localhost" if not cross_proccess else "127.0.0.1"}:{port}'
+        self.cross_process_server = ServerURL(port, app, cross_proccess=True) if not cross_proccess else self
         self.empty_page = self / 'empty.html'
 
     def __repr__(self):
@@ -74,7 +75,7 @@ def isolated_page(isolated_context) -> Page:
 @pytest.fixture(scope='session')
 def server():
     _server = _app.listen(_port)
-    yield ServerURL(f'http://localhost:{_port}', _app)
+    yield ServerURL(_port, _app)
     _server.stop()
 
 
