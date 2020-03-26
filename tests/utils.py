@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
 from typing import Awaitable, List, Union, Optional, Any
@@ -10,7 +11,9 @@ from pyppeteer.frame_manager import Frame
 from pyppeteer.page import Page
 
 
-async def attachFrame(page: Page, frameId: str, url: str):
+async def attachFrame(page: Page, url: str, frameId: str = None):
+    if frameId is None:
+        frameId = f'frame_autogen_name_{random.randint(100000,999999)}'
     attach_frame_js = '''
     async function attachFrame(frameId, url) {
       const frame = document.createElement('iframe');

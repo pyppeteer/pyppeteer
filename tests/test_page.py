@@ -697,7 +697,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, 'frame1', server.empty_page),
+            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
