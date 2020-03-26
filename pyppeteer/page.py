@@ -901,7 +901,7 @@ class Page(AsyncIOEventEmitter):
         This method accepts below options:
 
         * ``timeout`` (int|float): Maximum wait time in milliseconds, defaults
-          to 30 seconds, pass ``0`` to disable the timeout.
+          to 30_000 ms, pass ``0`` to disable the timeout.
 
         Example:
 
