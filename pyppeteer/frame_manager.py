@@ -346,7 +346,6 @@ class Frame:
         self.addStyleTag = self.mainWorld.addStyleTag
         self.evaluate = self.mainWorld.evaluate
         self.evaluateHandle = self.mainWorld.evaluateHandle
-        self.executionContext = self.mainWorld.executionContext
         self.querySelector = self.J = self.mainWorld.querySelector
         self.querySelectorAll = self.JJ = self.mainWorld.querySelectorAll
         self.querySelectorAllEval = self.JJeval = self.mainWorld.querySelectorAllEval
@@ -362,6 +361,10 @@ class Frame:
         self.select = self.secondaryWorld.select
         self.setContent = self.secondaryWorld.setContent
         self.tap = self.secondaryWorld.tap
+
+    @property
+    def executionContext(self):
+        return self.mainWorld.executionContext
 
     @property
     async def content(self):
