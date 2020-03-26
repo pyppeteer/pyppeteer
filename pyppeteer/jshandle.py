@@ -49,10 +49,10 @@ class JSHandle:
         return self._context
 
     async def evaluate(self, pageFunction: str, *args: JSFunctionArg):
-        return await self.executionContext.evaluate(pageFunction, *args)
+        return await self.executionContext.evaluate(pageFunction, self, *args)
 
     async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg):
-        return await self.executionContext.evaluateHandle(pageFunction, *args)
+        return await self.executionContext.evaluateHandle(pageFunction, self, *args)
 
     async def getProperty(self, propertyName: str) -> 'JSHandle':
         """Get property value of ``propertyName``."""
@@ -251,7 +251,10 @@ class ElementHandle(JSHandle):
         y = obj.get('y', 0)
         await self._page.mouse.click(x, y, button=button, clickCount=clickCount, delay=delay)
 
-    async def select(self, values: List[str]) -> List[str]:
+    async def select(self, *values: str) -> List[str]:
+        for val in values:
+            if not isinstance(val, str):
+                raise ValueError(f'value "{val}" needs to be of type str, but found value of type {type(val)}')
         return await self.evaluate(
             """(element, values) => {
               if (element.nodeName.toLowerCase() !== 'select')
