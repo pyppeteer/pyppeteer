@@ -1021,12 +1021,17 @@ class TestTitle:
         assert await isolated_page.title == 'Woof-Woof'
 
 
+class TestSelect:
+    pass
+
+
 class TestEventsClose:
     pass
 
 
-class TestBrowser:
-    pass
+@sync
+async def test_returns_correct_browser_instance(isolated_page, shared_browser):
+    assert isolated_page.browser == shared_browser
 
 
 class TestBrowserContext:
