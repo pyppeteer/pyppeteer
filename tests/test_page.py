@@ -790,11 +790,19 @@ class TestSetBypassCSP:
         await isolated_page.addScriptTag(content='window.__injected = 42;')
         assert await isolated_page.evaluate('window.__injected') == 42
 
-    # todo (Mattwmaster58): Make server set correct headers
     @sync
     async def test_bypass_CSP_header(self, isolated_page, server):
-        await self.assert_working_CSP(isolated_page, server)
+        server.app.add_one_time_header_for_request(
+            server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
+        )
+        # make sure CSP bypass is actually working
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') is None
 
+        server.app.add_one_time_header_for_request(
+            server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
+        )
         await isolated_page.setBypassCSP(True)
         await isolated_page.reload()
         await isolated_page.addScriptTag(content='window.__injected = 42;')
@@ -825,7 +833,6 @@ class TestSetBypassCSP:
         frame = await attachFrame(isolated_page, server / 'csp.html')
         await frame.addScriptTag(content='window.__injected = 42;')
         assert await frame.evaluate('window.__injected') == 42
-
 
 
 class TestAddScriptTag:
