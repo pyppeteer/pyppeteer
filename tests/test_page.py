@@ -979,7 +979,31 @@ class TestSetJSEnabled:
 
 
 class TestSetCacheEnabled:
-    pass
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.goto(server / 'cached/one-style.html')
+        cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert cached_req.headers.get('if-modified-since')
+
+        await isolated_page.setCacheEnabled(False)
+        non_cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert non_cached_req.headers.get('if-modified-since') is None
+
+    @sync
+    async def test_stays_disabled_when_toggling_request_interception(self, isolated_page, server):
+        await isolated_page.setCacheEnabled(False)
+        await isolated_page.setRequestInterception(True)
+        await isolated_page.setRequestInterception(False)
+
+        await isolated_page.goto(server / 'cached/one-style.html')
+        non_cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert non_cached_req.headers.get('if-modified-since') is None
 
 
 class TestTitle:
