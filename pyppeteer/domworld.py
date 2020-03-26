@@ -177,7 +177,7 @@ class DOMWorld(object):
         url: Optional[str] = None,
         path: Optional[Union[str, Path]] = None,
         content: Optional[str] = None,
-        type: str = '',
+        _type: str = '',
     ) -> 'ElementHandle':
         addScriptUrl = """
         async function addScriptUrl(url, type) {
@@ -210,16 +210,16 @@ class DOMWorld(object):
         context = await self.executionContext
         if url:
             try:
-                return await context.evaluateHandle(addScriptUrl, url, type)
+                return await context.evaluateHandle(addScriptUrl, url, _type)
             except Exception as e:
                 raise BrowserError(f'Loading script from {url} failed: {e}')
         if path:
             contents = await readFileAsync(path, 'utf8')
             contents += '//# sourceURL' + path.replace('\n', '')
-            f = context.evaluateHandle(addScriptContent, contents, type)
+            f = context.evaluateHandle(addScriptContent, contents, _type)
             return (await f).asElement()
         if content:
-            f = context.evaluateHandle(addScriptContent, content, type)
+            f = context.evaluateHandle(addScriptContent, content, _type)
             return (await f).asElement()
         raise BrowserError('provide an object with url, path or content property')
 

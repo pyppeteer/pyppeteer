@@ -430,7 +430,7 @@ class Frame:
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, type=type)
+        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, _type=type)
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[str, Path]] = None, content: Optional[str] = None
