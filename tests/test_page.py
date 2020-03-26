@@ -835,60 +835,106 @@ class TestSetCacheEnabled:
 class TestSelect:
     @sync
     async def test_selects_single_options(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
 
     @sync
     async def test_selects_only_first_options(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue', 'green', 'red')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
 
     @sync
     async def test_does_not_raise_when_select_causes_nav(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.Jeval(
+            'select', 'select => select.addEventListener(\'input\', () => window.location = \'/empty.html\')'
+        )
+        await gather_with_timeout(
+            isolated_page.select('select', 'blue'), isolated_page.waitForNavigation(),
+        )
+        assert server.empty_page in isolated_page.url
 
     @sync
     async def test_selects_multiple_options(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        await isolated_page.select('select', 'blue', 'green', 'red')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue', 'green', 'red']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue', 'green', 'red']
 
     @sync
     async def test_respects_event_bubbling(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onBubblingChange') == ['blue']
+        assert await isolated_page.evaluate('() => result.onBubblingInput') == ['blue']
 
     @sync
     async def test_raises_when_element_is_not_select_elem(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        with pytest.raises(ElementHandleError) as excpt:
+            await isolated_page.select('body')
+        assert 'Element is not a <select> element.' in str(excpt)
 
     @sync
     async def test_returns_empty_list_on_no_matched_value(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select', 'blue')
+        assert res == []
 
     @sync
     async def test_returns_list_of_matched_vals(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        res = await isolated_page.select('select', 'blue', 'black', 'magenta')
+        assert res == ['blue', 'black', 'magenta']
 
     @sync
     async def test_returns_list_of_one_when_multiple_not_set(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select', 'blue', 'black', 'magenta')
+        assert len(res) == 1
 
     @sync
     async def test_returns_list_of_no_values(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select')
+        assert res == []
 
     @sync
     async def test_deselects_all_opts_when_passed_no_vals_for_multi_select(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        await isolated_page.select('select', 'blue', 'black', 'magenta')
+        await isolated_page.select('select')
+        assert await isolated_page.Jeval('select', 's => Array.from(s.options).every(o => !o.selected)')
 
     @sync
     async def test_deselects_all_opts_when_passed_no_vals_for_select(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue', 'black', 'magenta')
+        await isolated_page.select('select')
+        assert await isolated_page.Jeval('select', 's => Array.from(s.options).every(o => !o.selected)')
 
     @sync
     async def test_raises_on_nonstrings(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        with pytest.raises(ElementHandleError):
+            # noinspection PyTypeChecker
+            await isolated_page.select(420)
 
     # see https://github.com/puppeteer/puppeteer/issues/3327
     @sync
     async def test_works_even_with_redefined_top_level_Event_class(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => window.Event = null')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
 
 
 class TestEvents:
