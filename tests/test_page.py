@@ -1034,5 +1034,6 @@ async def test_returns_correct_browser_instance(isolated_page, shared_browser):
     assert isolated_page.browser == shared_browser
 
 
-class TestBrowserContext:
-    pass
+@sync
+async def test_returns_correct_context(isolated_page, isolated_context):
+    assert isolated_page.browserContext == isolated_context
