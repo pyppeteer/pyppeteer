@@ -1006,6 +1006,14 @@ class TestSetCacheEnabled:
         assert non_cached_req.headers.get('if-modified-since') is None
 
 
+@sync
+async def test_save_PDF(isolated_page, assets):
+    output_file = assets / 'output.pdf'
+    await isolated_page.pdf(path=output_file)
+    assert output_file.exists()
+    assert output_file.stat().st_size
+
+
 class TestTitle:
     pass
 
