@@ -6,7 +6,7 @@ import pytest
 from syncer import sync
 
 from pyppeteer import devices
-from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError
+from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
 from pyppeteer.page import ConsoleMessage
 from tests.utils import waitEvent, gather_with_timeout, attachFrame
 
@@ -602,11 +602,7 @@ class TestExposeFunction:
     async def test_survives_navigation(self, isolated_page, server):
         await isolated_page.exposeFunction('compute', lambda a, b: a * b)
         await isolated_page.goto(server.empty_page)
-        res = await isolated_page.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
         assert res == 36
 
     @sync
@@ -617,11 +613,7 @@ class TestExposeFunction:
             return fut
 
         await isolated_page.exposeFunction('compute', compute)
-        res = await isolated_page.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
         assert res == 36
 
     @sync
@@ -629,11 +621,7 @@ class TestExposeFunction:
         await isolated_page.exposeFunction('compute', lambda a, b: a * b)
         await isolated_page.goto(server / 'frames/nested-frames.html')
         frame = isolated_page.frames[0]
-        res = await frame.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await frame.evaluate('async () => await compute(9, 4)')
         assert res == 36
 
     @sync
@@ -641,11 +629,7 @@ class TestExposeFunction:
         await isolated_page.goto(server / 'frames/nested-frames.html')
         await isolated_page.exposeFunction('compute', lambda a, b: a * b)
         frame = isolated_page.frames[0]
-        res = await frame.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await frame.evaluate('async () => await compute(9, 4)')
         assert res == 36
 
     @sync
@@ -660,11 +644,7 @@ class TestExposeFunction:
             return a * b
 
         await isolated_page.exposeFunction('compute', my_async_func)
-        res = await isolated_page.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
         assert res == 36
 
 
@@ -836,7 +816,84 @@ class TestSetBypassCSP:
 
 
 class TestAddScriptTag:
-    pass
+    @sync
+    async def test_throws_if_no_option_provided(self, isolated_page):
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag()
+
+    @sync
+    async def test_works_with_url(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(url='/injectedfile.js')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    async def test_works_with_url_type_module(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(url='/es6/es6import.js', _type='module')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    async def test_works_with_path_type_module(self, isolated_page, server, assets):
+        isolated_page.setDefaultTimeout(2000)
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(path=assets / 'es6/es6import.js', _type='module')
+        await isolated_page.waitForFunction('window.__es6injected')
+        assert await isolated_page.evaluate('__es6injected') == 42
+
+    @sync
+    async def test_works_with_content_and_type_module(self, isolated_page, server):
+        isolated_page.setDefaultTimeout(2000)
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(
+            content="import num from '/es6/es6module.js';window.__es6injected = num;", _type='module'
+        )
+        await isolated_page.waitForFunction('window.__es6injected')
+        assert await isolated_page.evaluate('__es6injected') == 42
+
+    @sync
+    async def test_raises_on_url_load_failure(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(url='/nonexistantfile.js')
+
+    @sync
+    async def test_works_with_path(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    async def test_includes_sourcemap_when_path_provided(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
+        res = await isolated_page.evaluate('() => __injectedError.stack')
+        assert (assets / 'injectedfile.js').name in res
+
+    @sync
+    async def test_works_with_content(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(content='window.__injected = 42')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    @pytest.mark.skip(
+        'chrome no longer throws exceptions when not executing inline script tags due to CSP: https://github.com/puppeteer/puppeteer/issues/4840'
+    )
+    async def test_raises_when_script_added_to_CSP_page_via_content(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(content='window.__injected = 42')
+
+    @sync
+    async def test_raises_when_script_added_to_CSP_page_via_url(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(url=server.cross_process_server / 'injectedfile.js')
 
 
 class TestAddStyleTag:
