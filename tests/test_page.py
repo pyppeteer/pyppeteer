@@ -563,11 +563,7 @@ class TestExposeFunction:
     @sync
     async def test_basic_usage(self, isolated_page):
         await isolated_page.exposeFunction('compute', lambda a, b: a * b)
-        res = await isolated_page.evaluate(
-            """async function() {
-            return await compute(9, 4);
-        }"""
-        )
+        res = await isolated_page.evaluate('async() =>{  return await compute(9, 4); }')
         assert res == 36
 
     @sync
@@ -692,18 +688,16 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page),
-            isolated_page.goto(server.empty_page),
+            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
-        
+
     @sync
     async def test_works_with_subframes(self, isolated_page, server):
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page),
-            attachFrame(isolated_page, 'frame1', server.empty_page),
+            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, 'frame1', server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -715,10 +709,69 @@ class TestSetUserAgent:
         assert 'iPhone' in await isolated_page.evaluate("() => navigator.userAgent")
 
 
-
-
 class TestSetContent:
-    pass
+    expected = '<html><head></head><body><div>hello</div></body></html>'
+
+    @sync
+    async def test_basic_usage(self, isolated_page):
+        await isolated_page.setContent('<div>hello</div>')
+        assert await isolated_page.content == self.expected
+
+    @sync
+    async def test_works_with_doctype(self, isolated_page):
+        doctype = '<!DOCTYPE html>'
+        await isolated_page.setContent(f'{doctype}<div>hello</div>')
+        assert await isolated_page.content == f'{doctype}{self.expected}'
+
+    @sync
+    async def test_works_with_HTML4_doctype(self, isolated_page):
+        doctype = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">'
+        await isolated_page.setContent(f'{doctype}<div>hello</div>')
+        assert await isolated_page.content == f'{doctype}{self.expected}'
+
+    @sync
+    async def test_respects_timeout(self, isolated_page, server):
+        img_path = server / 'img.png'
+        # stall image response by 1s, causing the setContent to timeout
+        server.app.add_request_precondition('/img.png', lambda: asyncio.sleep(1))
+        with pytest.raises(TimeoutError):
+            # note: timeout in ms
+            await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
+
+    @sync
+    async def test_respects_default_timeout(self, isolated_page, server):
+        img_path = server / 'img.png'
+        # stall image response by 1s, causing the setContent to timeout
+        server.app.add_request_precondition('/img.png', lambda: asyncio.sleep(1))
+        # note: timeout in ms
+        isolated_page.setDefaultNavigationTimeout(1)
+        with pytest.raises(TimeoutError):
+            await isolated_page.setContent(f'<img src="{img_path}"/>')
+
+    @sync
+    @pytest.mark.skip('need good way to determine if waiting for loading')
+    async def test_awaits_loading_of_resources(self, event_loop, isolated_page, server):
+        pass
+
+    @sync
+    async def test_works_with_badly_formed_input(self, isolated_page, server):
+        await isolated_page.setContent('<div>Hello World</div>' + '\x7F')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == 'Hello World'
+
+    @sync
+    async def test_works_with_accents(self, isolated_page, server):
+        await isolated_page.setContent('<div>aberración</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == 'aberración'
+
+    @sync
+    async def test_works_with_emojis(self, isolated_page, server):
+        await isolated_page.setContent('<div>🐥</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == '🐥'
+
+    @sync
+    async def test_works_with_newline(self, isolated_page, server):
+        await isolated_page.setContent('<div>\n</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == '\n'
 
 
 class TestSetBypassCSP:

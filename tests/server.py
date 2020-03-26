@@ -4,6 +4,7 @@
 import asyncio
 import base64
 import functools
+from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Callable, Union, List, Type, Awaitable
 from urllib.parse import urlparse
@@ -50,7 +51,7 @@ class EmptyHandler(BaseHandler):
 class LongHandler(BaseHandler):
     async def get(self) -> None:
         super().get()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.5)
         self.write('')
 
 
@@ -177,22 +178,32 @@ class _StaticFileHandler(web.StaticFileHandler):
     # todo: feels like a hack...
     special_request_behaviour = {}
     callbacks = {}
+    request_preconditions = {}
 
     @classmethod
     def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
         cls.callbacks[path.strip('/')] = func
 
+    @classmethod
+    def add_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
+        cls.request_preconditions[path.strip('/')] = precondition
+
     async def get(self, path: str, include_body: bool = True) -> None:
-        await super().get(path, include_body)
-        if self.path in self.special_request_behaviour:
-            status, headers = self.special_request_behaviour[path]
-            if status:
-                self.set_status(status)
-            if headers:
-                [self.set_header(k, v) for k, v in headers.items()]
         if path in self.callbacks:
             self.callbacks[path](self.request)
             del self.callbacks[path]
+        if path in self.request_preconditions:
+            func = self.request_preconditions[path]
+            del self.request_preconditions[path]
+            func_res = func()
+            if isawaitable(func_res):
+                await func_res
+        status, headers = self.special_request_behaviour.get(path, (None, None))
+        if status:
+            self.set_status(status)
+        if headers:
+            [self.set_header(k, v) for k, v in headers.items()]
+        await super().get(path, include_body)
 
 
 class _Application(web.Application):
@@ -205,6 +216,9 @@ class _Application(web.Application):
     ) -> None:
         self._handlers = handlers
         super().__init__(handlers, default_host, transforms, **settings)
+
+    def add_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
+        self._handlers[0][1].add_request_precondition(urlparse(path).path, precondition)
 
     def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
         fut = asyncio.get_event_loop().create_future()
