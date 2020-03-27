@@ -6,31 +6,27 @@
 import logging
 import os
 from pathlib import Path
+from typing import Any, Union, List, Sequence
 
 from appdirs import AppDirs
 
-__author__ = """Hiroyuki Takagi"""
+from pyppeteer.browser import Browser
+from pyppeteer.browser_fetcher import BrowserFetcher, Platform
+from pyppeteer.device_descriptors import devices
+from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
+from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport, Devices
+from pyppeteer.websocket_transport import WebsocketTransport
+
+__author__ = 'Hiroyuki Takagi, Bernardas Ališauskas, Matt Marcus'
 __email__ = 'pyppeteer@protonmail.com'
 __version__ = '0.2.2'
 __chromium_revision__ = '722234'
-__base_puppeteer_version__ = 'v1.6.0'
+__base_puppeteer_version__ = 'v2.1.1'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
-
-from pyppeteer.websocket_transport import WebsocketTransport
-
-from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport, Devices
-
 
 # Setup root logger
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.DEBUG)
-
-from typing import Any, Union, List, Sequence
-
-from pyppeteer.browser import Browser
-from pyppeteer.device_descriptors import devices
-from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
-from pyppeteer.browser_fetcher import BrowserFetcher, Platform
 
 
 class Pyppeteer:
@@ -93,7 +89,7 @@ class Pyppeteer:
     ) -> List[str]:
         return self._launcher.default_args(args=args, devtools=devtools, headless=headless, userDataDir=userDataDir)
 
-    def createBrowserFetcher(self, platform: Platform = None, host: str = None, ) -> BrowserFetcher:
+    def createBrowserFetcher(self, platform: Platform = None, host: str = None,) -> BrowserFetcher:
         return BrowserFetcher(projectRoot=self._projectRoot, platform=platform, host=host)
 
 
@@ -129,9 +125,4 @@ async def connect(
 version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
-__all__ = [
-    '__chromium_revision__',
-    '__pyppeteer_home__',
-    'version',
-    'version_info',
-]
+__all__ = ['__chromium_revision__', '__pyppeteer_home__', 'version', 'version_info', 'devices']
