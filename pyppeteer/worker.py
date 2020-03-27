@@ -34,7 +34,7 @@ class Worker(AsyncIOEventEmitter):
         self,
         client: 'CDPSession',
         url: str,
-        consoleAPICalled: Callable[[str, List[JSHandle]], None],
+        consoleAPICalled: Callable[[str, List[JSHandle], Any], None],
         exceptionThrown: Callable[[Dict], None],
     ) -> None:
         super().__init__()
@@ -49,6 +49,7 @@ class Worker(AsyncIOEventEmitter):
         def onExecutionContentCreated(event: Dict) -> None:
             nonlocal jsHandleFactory
 
+            # noinspection PyRedeclaration
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 return JSHandle(executionContext, client, remoteObject)
 
@@ -63,11 +64,11 @@ class Worker(AsyncIOEventEmitter):
         except Exception as e:
             debugError(logger, e)
 
-        def onConsoleAPICalled(event: Dict) -> None:
+        def onConsoleAPICalled(event: Dict[str, Any]) -> None:
             args: List[JSHandle] = []
             for arg in event.get('args', []):
                 args.append(jsHandleFactory(arg))
-            consoleAPICalled(event['type'], args)
+            consoleAPICalled(event['type'], args, event['stackTrace'])
 
         self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
         self._client.on(

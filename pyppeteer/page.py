@@ -248,7 +248,7 @@ class Page(AsyncIOEventEmitter):
         args = entry.get('args', [])
         source = entry.get('source', '')
         url = entry.get('url', '')
-        lineNumber = entry.get('lineNumber', '')
+        lineNumber = entry.get('lineNumber')
         for arg in args:
             helpers.releaseObject(self._client, arg)
 
@@ -667,7 +667,7 @@ class Page(AsyncIOEventEmitter):
         values: List[JSHandle] = []
         for arg in event.get('args', []):
             values.append(createJSHandle(context, arg))
-        self._addConsoleMessage(event['type'], values)
+        self._addConsoleMessage(event['type'], values, event['stackTrace'])
 
     async def _onBindingCalled(self, event: Dict) -> None:
         obj = json.loads(event['payload'])
@@ -706,9 +706,7 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             helpers.debugError(logger, e)
 
-    def _addConsoleMessage(self, type_: str, args: List[JSHandle],) -> None:
-        # TODO puppetter also takes stacktrace argument but it seems that
-        # in python it's not necessary?
+    def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace=None) -> None:
         if not self.listeners(Events.Page.Console):
             for arg in args:
                 self._client.loop.create_task(arg.dispose())
@@ -721,7 +719,17 @@ class Page(AsyncIOEventEmitter):
                 textTokens.append(arg.toString())
             else:
                 textTokens.append(str(helpers.valueFromRemoteObject(remoteObject)))
-        message = ConsoleMessage(type_, ' '.join(textTokens), args)
+
+        if stackTrace and stackTrace['callFrames']:
+            location = {
+                'url': stackTrace['callFrames'][0]['url'],
+                'lineNumber': stackTrace['callFrames'][0]['lineNumber'],
+                'columnNumber': stackTrace['callFrames'][0]['columnNumber'],
+            }
+        else:
+            location = {}
+
+        message = ConsoleMessage(type_, ' '.join(textTokens), args, location)
         self.emit(Events.Page.Console, message)
 
     def _onDialog(self, event: Any) -> None:
@@ -1667,14 +1675,17 @@ class ConsoleMessage:
     ConsoleMessage objects are dispatched by page via the ``console`` event.
     """
 
-    def __init__(self, type: str, text: str, args: List[JSHandle] = None, location: Dict[str, Any] = None) -> None:
-        #: (str) type of console message
+    def __init__(
+        self, type: str, text: str, args: List[JSHandle] = None, location: Dict[str, Union[str, int]] = None
+    ) -> None:
+        self._args = args
         self._type = type
-        #: (str) console message string
-        self._text = text
-        #: list of JSHandle
-        self._args = args if args is not None else []
+        self._text = text or []
         self._location = location or {}
+
+    @property
+    def args(self) -> List[JSHandle]:
+        return self._args
 
     @property
     def type(self) -> str:
@@ -1685,11 +1696,6 @@ class ConsoleMessage:
     def text(self) -> str:
         """Return text representation of this message."""
         return self._text
-
-    @property
-    def args(self) -> List[JSHandle]:
-        """Return list of args (JSHandle) of this message."""
-        return self._args
 
     @property
     def location(self) -> Dict[str, Any]:

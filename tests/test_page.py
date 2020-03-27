@@ -796,11 +796,11 @@ class TestSetJSEnabled:
         await isolated_page.setJavaScriptEnabled(False)
         await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
         with pytest.raises(BrowserError):
-            await isolated_page.evaluate('() => something')
+            await isolated_page.evaluate('something')
 
         await isolated_page.setJavaScriptEnabled(True)
-        await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
-        assert await isolated_page.evaluate('() => something') == 'forbidden'
+        await isolated_page.goto('data:text/html, <script>something = "forbidden"</script>')
+        assert await isolated_page.evaluate('something') == 'forbidden'
 
 
 class TestSetCacheEnabled:

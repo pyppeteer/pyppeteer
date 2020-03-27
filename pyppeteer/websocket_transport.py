@@ -1,8 +1,10 @@
 import asyncio
+import logging
 from typing import Iterable, Union, AsyncIterable, Callable, Any, Optional
 
 from websockets import connect, WebSocketClientProtocol, Data
 
+logger = logging.getLogger(__name__)
 
 class WebsocketTransport:
     def __init__(self, ws: WebSocketClientProtocol):
@@ -31,6 +33,7 @@ class WebsocketTransport:
         await self.ws.send(message)
 
     async def close(self, code: int = 1000, reason: str = '') -> None:
+        logger.debug(f'Disposing connection: code={code} reason={reason}')
         await self.ws.close(code=code, reason=reason)
         if self.onclose:
             await self.onclose()
