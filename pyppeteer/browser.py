@@ -48,14 +48,11 @@ class Browser(AsyncIOEventEmitter):
         self._connection = connection
         self.loop = self._connection.loop
 
-        def _dummy_callback() -> Awaitable[None]:
-            fut = self.loop.create_future()
-            fut.set_result(None)
-            return fut
-
         if closeCallback:
             self._closeCallback = closeCallback
         else:
+            async def _dummy_callback() -> None:
+                pass
             self._closeCallback = _dummy_callback
 
         self._defaultContext = BrowserContext(self._connection, self, None)
@@ -131,7 +128,6 @@ class Browser(AsyncIOEventEmitter):
         defaultViewport: Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
-        **kwargs: Any,
     ) -> 'Browser':
         """Create browser object."""
         browser = Browser(connection, contextIds, ignoreHTTPSErrors, defaultViewport, process, closeCallback)
@@ -275,7 +271,7 @@ class Browser(AsyncIOEventEmitter):
 
     async def close(self) -> None:
         """Close connections and terminate browser process."""
-        await self._closeCallback()  # Launcher.killChrome()
+        await self._closeCallback()
         await self.disconnect()
 
     async def disconnect(self) -> None:
