@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
-"""Meta data for pyppeteer."""
-
 import logging
 import os
 from pathlib import Path
 from typing import Any, Union, List, Sequence
 
 from appdirs import AppDirs
+
+"""Meta data for pyppeteer."""
+__author__ = 'Hiroyuki Takagi, Bernardas Ališauskas, Matt Marcus'
+__email__ = 'pyppeteer@protonmail.com'
+__version__ = '0.2.2'
+__chromium_revision__ = '722234'
+__base_puppeteer_version__ = 'v2.1.1'
+__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+
 
 from pyppeteer.browser import Browser
 from pyppeteer.browser_fetcher import BrowserFetcher, Platform
@@ -17,12 +23,6 @@ from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
 from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport, Devices
 from pyppeteer.websocket_transport import WebsocketTransport
 
-__author__ = 'Hiroyuki Takagi, Bernardas Ališauskas, Matt Marcus'
-__email__ = 'pyppeteer@protonmail.com'
-__version__ = '0.2.2'
-__chromium_revision__ = '722234'
-__base_puppeteer_version__ = 'v2.1.1'
-__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 # Setup root logger
 _logger = logging.getLogger(__name__)
