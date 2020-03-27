@@ -27,11 +27,10 @@ from pyppeteer.dialog import Dialog
 from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError, BrowserError
 from pyppeteer.events import Events
-from pyppeteer.execution_context import JSHandle
 from pyppeteer.frame_manager import Frame, FrameManager
 from pyppeteer.helpers import debugError
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
-from pyppeteer.jshandle import ElementHandle, createJSHandle
+from pyppeteer.jshandle import ElementHandle, createJSHandle, JSHandle
 from pyppeteer.models import Viewport, MouseButton, ScreenshotClip, JSFunctionArg
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request, Response
