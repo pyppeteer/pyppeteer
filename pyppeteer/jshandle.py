@@ -181,22 +181,23 @@ class ElementHandle(JSHandle):
             self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']}),
             self._client.send('Page.getLayoutMetrics'),
         )
-        if not result or not result.get('quads', {}).get('length'):
-            raise BrowserError('Node is either not visible or not an HTMLEelement')
-        clientWidth, clientHeight = layoutMetrics.layoutViewport
+        if not result or not result.get('quads'):
+            raise BrowserError('Node is either not visible or not an HTMLElement')
+        clientWidth = layoutMetrics['layoutViewport']['clientWidth']
+        clientHeight = layoutMetrics['layoutViewport']['clientHeight']
         quads = []
-        for quad in result.quads:
+        for quad in result['quads']:
             quad = self._intersectQuadWithViewport(self._fromProtocolQuad(quad), clientWidth, clientHeight)
             if computeQuadArea(quad) > 1:
                 quads.append(quad)
-
-        raise BrowserError('Node is either not visible or not an HTMLElement')
+        if not quads:
+            raise BrowserError('Node is either not visible or not an HTMLElement')
+        # return middle of quad[0]
         quad = quads[0]
-        x = 0
-        y = 0
+        x, y = 0, 0
         for point in quad:
-            x += point.x
-            y += point.y
+            x += point['x']
+            y += point['y']
         return {
             'x': x / 4,
             'y': y / 4,
@@ -216,8 +217,8 @@ class ElementHandle(JSHandle):
             {'x': quad[6], 'y': quad[7]},
         ]
 
-    def _intersectQuadWithViewport(self, quad, width, height):
-        return [{'x': min(max(point.x, 0, width)), 'y': min(max(point.y, 0, height)),} for point in quad]
+    def _intersectQuadWithViewport(self, quad: List[Dict[str, float]], width: float, height: float):
+        return [{'x': min(max(point['x'], 0), width), 'y': min(max(point['y'], 0), height)} for point in quad]
 
     async def hover(self) -> None:
         """Move mouse over to center of this element.
