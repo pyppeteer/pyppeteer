@@ -65,11 +65,11 @@ class TestClose:
         assert isolated_page not in await shared_browser.pages
 
     @sync
-    async def test_run_beforeunload(self, isolated_page, server, firefox):
+    async def test_run_beforeunload(self, isolated_page, server, firefox, event_loop):
         await isolated_page.goto(server / 'beforeunload.html')
         # interact w/ page so beforeunload handler fires
         await isolated_page.click('body')
-        page_closing_fut = isolated_page._loop.create_task(isolated_page.close(runBeforeUnload=True))
+        page_closing_fut = event_loop.create_task(isolated_page.close(runBeforeUnload=True))
         dialog = await waitEvent(isolated_page, 'dialog')
         assert dialog.type == 'beforeunload'
         assert dialog.defaultValue == ''
@@ -222,8 +222,7 @@ class TestExecutionContextQueryObjects:
         await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
         proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
         objs_handle = await isolated_page.queryObjects(proto_handle)
-        # todo (Mattwmaster58): correct typing
-        assert len(await isolated_page.evaluate('objects => objects.length', objs_handle)) == 1
+        assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
         assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
             'hello',
             'world',
@@ -797,11 +796,11 @@ class TestSetJSEnabled:
         await isolated_page.setJavaScriptEnabled(False)
         await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
         with pytest.raises(BrowserError):
-            await isolated_page.evaluate('something')
+            await isolated_page.evaluate('() => something')
 
         await isolated_page.setJavaScriptEnabled(True)
         await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
-        assert await isolated_page.evaluate('something') == 'forbidden'
+        assert await isolated_page.evaluate('() => something') == 'forbidden'
 
 
 class TestSetCacheEnabled:
@@ -883,7 +882,7 @@ class TestSelect:
     @sync
     async def test_returns_empty_list_on_no_matched_value(self, isolated_page, server):
         await isolated_page.goto(server / 'input/select.html')
-        res = await isolated_page.select('select', 'blue')
+        res = await isolated_page.select('select', '42', 'abc')
         assert res == []
 
     @sync
@@ -891,7 +890,7 @@ class TestSelect:
         await isolated_page.goto(server / 'input/select.html')
         await isolated_page.evaluate('() => makeMultiple()')
         res = await isolated_page.select('select', 'blue', 'black', 'magenta')
-        assert res == ['blue', 'black', 'magenta']
+        assert set(res) == {'blue', 'black', 'magenta'}
 
     @sync
     async def test_returns_list_of_one_when_multiple_not_set(self, isolated_page, server):
@@ -946,7 +945,7 @@ class TestEvents:
         @sync
         async def test_works_with_page_close(self, isolated_context, event_loop):
             page = await isolated_context.newPage()
-            close_event = event_loop.create_task(waitEvent(page, 'close'))
+            close_event = waitEvent(page, 'close')
             await page.close()
             await gather_with_timeout(close_event)
 
