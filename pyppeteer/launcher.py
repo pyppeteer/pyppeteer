@@ -29,9 +29,9 @@ if not sys.platform.startswith('win'):
     from signal import SIGHUP
 
 if sys.version_info < (3, 8):
-    from typing_extensions import TypedDict, Literal
+    pass
 else:
-    from typing import TypedDict, Literal
+    pass
 
 logger = logging.getLogger(__name__)
 

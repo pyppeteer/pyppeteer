@@ -7,7 +7,7 @@ from asyncio.futures import Future
 from asyncio.tasks import Task
 from typing import Awaitable, List, Union, Optional, Any
 
-from pyppeteer.frame_manager import Frame
+from pyppeteer.frame import Frame
 from pyppeteer.page import Page
 
 

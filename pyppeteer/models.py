@@ -2,7 +2,7 @@
 import os
 import sys
 from pathlib import Path
-from typing import Sequence, Union, Literal, Dict, List, Any, TYPE_CHECKING
+from typing import Sequence, Union, Dict, List, Any, TYPE_CHECKING
 
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
@@ -10,7 +10,7 @@ else:
     from typing import TypedDict, Literal
 
 if TYPE_CHECKING:
-    from pyppeteer.jshandle import JSHandle
+    pass
 
 
 class Viewport(TypedDict, total=False):

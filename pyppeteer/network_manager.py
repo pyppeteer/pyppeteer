@@ -18,7 +18,7 @@ from pyppeteer.events import Events
 from pyppeteer.helpers import debugError
 
 if TYPE_CHECKING:
-    from pyppeteer.frame_manager import FrameManager, Frame
+    from pyppeteer.frame import Frame, FrameManager
 
 logger = logging.getLogger(__name__)
 

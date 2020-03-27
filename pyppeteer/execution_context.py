@@ -16,7 +16,7 @@ from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
-    from pyppeteer.frame_manager import Frame
+    from pyppeteer.frame import Frame
 
 logger = logging.getLogger(__name__)
 

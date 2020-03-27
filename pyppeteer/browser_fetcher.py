@@ -30,10 +30,9 @@ from pyppeteer import __chromium_revision__, __pyppeteer_home__
 from pyppeteer.models import Platform, RevisionInfo
 
 if sys.version_info < (3, 8):
-    from typing_extensions import TypedDict, Literal
     from typing_inspect import get_args
 else:
-    from typing import TypedDict, Literal, get_args
+    from typing import get_args
 
 logger = logging.getLogger(__name__)
 
