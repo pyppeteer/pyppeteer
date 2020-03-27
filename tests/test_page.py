@@ -939,7 +939,8 @@ class TestSelect:
 class TestEvents:
     class TestClose:
         @sync
-        async def test_works_with_window_close(self, isolated_page):
+        @pytest.mark.skip('needs implementation')
+        async def test_works_with_window_close(self, isolated_context, isolated_page):
             pass
 
         @sync
