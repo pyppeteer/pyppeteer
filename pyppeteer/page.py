@@ -971,7 +971,7 @@ class Page(AsyncIOEventEmitter):
         """Bring page to front (activate tab)."""
         await self._client.send('Page.bringToFront')
 
-    async def emulate(self, viewport: Viewport, userAgent: str,) -> None:
+    async def emulate(self, viewport: Viewport, userAgent: str) -> None:
         """Emulate given device metrics and user agent.
 
         This method is a shortcut for calling two methods:
