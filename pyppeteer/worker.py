@@ -53,7 +53,7 @@ class Worker(AsyncIOEventEmitter):
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 return JSHandle(executionContext, client, remoteObject)
 
-            executionContext = ExecutionContext(client, event['context'], jsHandleFactory)
+            executionContext = ExecutionContext(client, event['context'], None)
             self._executionContextCallback(executionContext)
 
         self._client.once('Runtime.executionContextCreated', onExecutionContentCreated)
@@ -83,6 +83,7 @@ class Worker(AsyncIOEventEmitter):
         """Return URL."""
         return self._url
 
+    @property
     async def executionContext(self) -> ExecutionContext:
         """Return ExecutionContext."""
         return await self._executionContextPromise
