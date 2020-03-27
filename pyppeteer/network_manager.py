@@ -105,7 +105,7 @@ class NetworkManager(AsyncIOEventEmitter):
         if enabled:
             await asyncio.gather(
                 self._updateProtocolCacheDisabled(),
-                self._client.send('Fetch.enable', {'handleAuthRequests': True, 'patterns': {'urlPattern': '*'}}),
+                self._client.send('Fetch.enable', {'handleAuthRequests': True, 'patterns': [{'urlPattern': '*'}]}),
             )
         else:
             await asyncio.gather(self._updateProtocolCacheDisabled(), self._client.send('Fetch.disable'))

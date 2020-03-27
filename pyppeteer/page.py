@@ -327,7 +327,7 @@ class Page(AsyncIOEventEmitter):
             page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
             await page.goto('https://example.com')
             await browser.close()
-        """  # noqa: E501
+        """
         return await self._frameManager.networkManager.setRequestInterception(value)
 
     async def setOfflineMode(self, enabled: bool) -> None:
