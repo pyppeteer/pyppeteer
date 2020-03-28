@@ -10,7 +10,7 @@ else:
     from typing import TypedDict, Literal
 
 if TYPE_CHECKING:
-    pass
+    from pyppeteer.jshandle import JSHandle
 
 
 class Viewport(TypedDict, total=False):
