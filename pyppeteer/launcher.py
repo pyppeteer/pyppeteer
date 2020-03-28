@@ -136,13 +136,13 @@ class BrowserRunner:
                 if sys.platform.startswith('win'):
                     subprocess.Popen(['taskkill', '/PID', str(self.proc.pid), '/F'], shell=True).communicate()
 
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f'Exception occurred while killing process {e}')
         try:
             if self.temp_dir:
                 self.temp_dir.cleanup()
         except Exception as e:
-            logger.warning(f'failed to cleanup {self.temp_dir}: {e}')
+            logger.warning(f'Failed to cleanup {self.temp_dir}: {e}')
 
     async def setupConnection(
         self, usePipe: bool = None, timeout: float = None, slowMo: float = 0, preferredRevision: str = None,
