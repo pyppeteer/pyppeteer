@@ -11,7 +11,7 @@ from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
     from pyppeteer.jshandle import JSHandle, ElementHandle
-    from pyppeteer.frame_manager import Frame, FrameManager
+    from pyppeteer.frame import Frame, FrameManager
     from pyppeteer.execution_context import ExecutionContext
 
 

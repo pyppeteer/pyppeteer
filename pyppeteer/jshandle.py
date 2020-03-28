@@ -15,7 +15,7 @@ from pyppeteer.models import MouseButton, JSFunctionArg
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
-    from pyppeteer.frame_manager import FrameManager
+    from pyppeteer.frame import FrameManager
     from pyppeteer.execution_context import ExecutionContext
 
 

@@ -125,4 +125,13 @@ async def connect(
 version = __version__
 version_info = tuple(int(i) for i in version.split('.'))
 
-__all__ = ['__chromium_revision__', '__pyppeteer_home__', 'version', 'version_info', 'devices']
+__all__ = [
+    '__chromium_revision__',
+    '__pyppeteer_home__',
+    'version',
+    'version_info',
+    'devices',
+    'launch',
+    'connect',
+    'Pyppeteer',
+]

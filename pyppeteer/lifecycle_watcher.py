@@ -19,7 +19,7 @@ from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request, Response
 
 if TYPE_CHECKING:
-    from pyppeteer.frame_manager import FrameManager, Frame
+    from pyppeteer.frame import Frame, FrameManager
 
 pyppeteerToProtocolLifecycle = {
     'load': 'load',

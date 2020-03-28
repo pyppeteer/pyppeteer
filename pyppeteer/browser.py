@@ -6,7 +6,7 @@ import asyncio
 import logging
 from asyncio import Future
 from subprocess import Popen
-from typing import Any, Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING, Sequence
+from typing import Awaitable, Callable, Dict, List, Optional, TYPE_CHECKING, Sequence
 
 from pyee import AsyncIOEventEmitter
 
