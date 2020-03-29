@@ -6,13 +6,14 @@ import json
 import logging
 import re
 import time
-from collections import deque
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Any, Hashable, Match, List, Union, Iterable
+from typing import Dict, Any, Hashable, Match, List, Union, Tuple
+
+import networkx as nx
 
 from pyppeteer import launch
 
@@ -27,7 +28,8 @@ logger.setLevel(logging.INFO)
 handler.setLevel(logging.INFO)
 
 
-class ProtcolTypesGenerator:
+class ProtocolTypesGenerator:
+
     _forward_ref_re = r'\'Protocol\.(\w+\.\w+)\''
     js_to_py_types = {
         'any': 'Any',
@@ -38,12 +40,14 @@ class ProtcolTypesGenerator:
         'integer': 'int',
         'binary': 'bytes',
     }
+    MAX_RECURSIVE_TYPE_EXPANSION_DEPTH = 2
 
     def __init__(self):
         self.domains = []
         # cache of all known types
         self.all_known_types = {}
-        self.typed_dicts = []
+        self.typed_dicts = {}
+        self.class_references = {}
         self.code_gen = TypingCodeGenerator()
 
     @property
@@ -58,21 +62,25 @@ class ProtcolTypesGenerator:
         ref, domain_ = None, None
         try:
             domain_, ref = match.group(1).split('.')
-            forward_ref = self.all_known_types[domain_][ref]
+            resolved_fwref = self.all_known_types[domain_][ref]
 
             # resolve nested forward references
-            if re.search(self._forward_ref_re, forward_ref):
-                forward_ref = self.resolve_forward_ref_on_line(forward_ref)
-            if forward_ref not in self.js_to_py_types.values() and not forward_ref.startswith('Literal'):
+            if re.search(self._forward_ref_re, resolved_fwref):
+                resolved_fwref = self.resolve_forward_ref_on_line(resolved_fwref)
+            if (
+                resolved_fwref not in self.js_to_py_types.values()
+                and not resolved_fwref.startswith('Literal')
+                and not resolved_fwref.startswith('List')
+            ):
                 # forward ref to a typed dict, not sure that it will be defined
-                forward_ref = f'\'{forward_ref}\''
+                resolved_fwref = f'\'{resolved_fwref}\''
         except KeyError:
             logger.warning(f'Protocol.{domain_}{"." + ref if ref else ""} forward reference type not found')
-            forward_ref = match.group(0)
+            resolved_fwref = match.group(0)
         except ValueError:  # too few values to unpack, ie malformed forward reference
             raise ValueError(f'Forward reference not nested as expected (forward reference={match.group(0)})')
 
-        return forward_ref
+        return resolved_fwref
 
     def resolve_forward_ref_on_line(self, line: str) -> str:
         return re.sub(self._forward_ref_re, self._resolve_forward_ref_re_sub_repl, line)
@@ -121,7 +129,7 @@ class ProtcolTypesGenerator:
                         if 'properties' in type_info:
                             # name mangled to avoid collisions
                             _type = f'_{domain_name}_{type_info["id"]}'
-                            self.typed_dicts.extend(self.generate_typed_dicts(type_info, domain_name, name=_type))
+                            self.typed_dicts.update(self.generate_typed_dicts(type_info, domain_name, name=_type))
                         else:
                             _type = self.convert_js_to_py_type(type_info, domain_name)
 
@@ -133,7 +141,7 @@ class ProtcolTypesGenerator:
                         self.code_gen.add_comment_from_info(command_info)
                         if 'parameters' in command_info:
                             _type = f'{command_info["name"]}_{domain_name}_Parameters'
-                            self.typed_dicts.extend(self.generate_typed_dicts(command_info, domain_name, name=_type))
+                            self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
                         else:
                             _type = 'None'
 
@@ -142,7 +150,7 @@ class ProtcolTypesGenerator:
 
                         if 'returns' in command_info:
                             _type = f'{command_info["name"]}_{domain_name}_ReturnValue'
-                            self.typed_dicts.extend(self.generate_typed_dicts(command_info, domain_name, name=_type))
+                            self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
                         else:
                             _type = 'None'
 
@@ -153,11 +161,6 @@ class ProtcolTypesGenerator:
 
             # todo: events, commands, retvals
 
-        # all typed dicts are inserted prior to the main Protocol class
-        for td in self.typed_dicts:
-            td.add_newlines(num=2)
-            self.code_gen.insert_before_code(td)
-
         # no need for copying list as we aren't adding/removing elements
         # resolve forward refs in main protocol class
         for index, line in enumerate(self.code_gen.code_lines):
@@ -166,20 +169,56 @@ class ProtcolTypesGenerator:
                 continue
             self.code_gen.code_lines[index] = self.resolve_forward_ref_on_line(line)
 
-        # resolve forward refs in main protocol class
-        for index, line in enumerate(self.code_gen.inserted_lines):
-            # skip empty lines or lines positively without forward reference
-            if not line.strip() or 'Protocol' not in line:
-                continue
-            self.code_gen.inserted_lines[index] = self.resolve_forward_ref_on_line(line)
+        # resolve forward refs in typed dicts
+        for td_name, td in self.typed_dicts.items():
+            for index, line in enumerate(td.code_lines):
+                # skip empty lines or lines positively without forward reference
+                resolved_fw_ref = self.resolve_forward_ref_on_line(line)
+                resolved_fw_ref_splits = resolved_fw_ref.split(': ')
+                if len(resolved_fw_ref_splits) == 2:  # only pay attention to actual resolve fw refs
+                    ref = resolved_fw_ref_splits[1]
+                    if re.search('_\w+_\w+', ref):
+                        if td_name not in self.class_references:
+                            self.class_references[td_name] = []
+                        if ref.strip("'") not in self.class_references[td_name]:
+                            self.class_references[td_name].append(ref.strip("'"))
+                self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
-        # todo: expand cyclic references n-times
+        edges = []
+        for node, refs in self.class_references.items():
+            for ref in refs:
+                edges.append((node, re.search(r'\'?(_\w+_\w+)\'?', ref).group(1)))
+
+        for start, cycling_start in nx.simple_cycles(nx.DiGraph(edges)):
+            expanded_cyclic_reference = None
+            td_1: TypedDictGenerator = self.typed_dicts[start]
+            for index, line in enumerate(td_1.code_lines):
+                if cycling_start in line:
+                    if expanded_cyclic_reference is None:
+                        expanded_cyclic_reference = f'{start}_cyclic_ref{cycling_start}'
+                        self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
+                            expanded_cyclic_reference, r'\'_\w+_\w+\'', 'Any'
+                        )
+
+                    self.typed_dicts[start].code_lines[index] = line.replace(f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\'')
+
+        # all typed dicts are inserted prior to the main Protocol class
+        for td in self.typed_dicts.values():
+            td.add_newlines(num=2)
+            self.code_gen.insert_before_code(td)
 
         logger.info(f'Parsed protocol spec in {time.perf_counter()-t_start:.2f}s')
         # newline at end of file
         self.code_gen.add_newlines(num=1)
 
-    def write_generated_code(self, path: Path = Path('protocol.py')):
+    def write_generated_code(self, path: Path = Path('protocol.py')) -> None:
+        """
+        Write generated code lines to the specified path. Writes to a temporary file and checks that file with mypy to
+        'resolve' any cyclic references.
+
+        :param path: path to write type code to.
+        :return: None
+        """
         if path.is_dir():
             path /= 'protocol.py'
         logger.info(f'Writing generated protocol code to {path}')
@@ -189,15 +228,25 @@ class ProtcolTypesGenerator:
 
     def generate_typed_dicts(
         self, type_info: Dict[str, Any], domain_name: str, name: str = None, _depth: int = 0
-    ) -> Iterable['TypedDictGenerator']:
+    ) -> Dict[str, 'TypedDictGenerator']:
+        """
+        Generates TypedDicts based on type_info. If the TypedDict references itself, the recursive type reference is
+        expanded upon MAX_RECURSIVE_TYPE_EXPANSION_DEPTH times.
+
+        :param type_info: Dict containing the info for the TypedDict
+        :param domain_name: path to resolve relative forward references in type_info against
+        :param name: (Optional) Name of TypedDict. Defaults to name found in type_info
+        :param _depth: Internally used param to track recursive function call depth.
+        :return: List of TypedDicts corresponding to type information found in type_info
+        """
+
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
         recursive_ref = self.get_forward_ref(type_info_name, domain_name)
         td_name = name or type_info_name
         is_total = any(1 for x in items if x.get('optional'))
-        # the base typed dict is always guaranteed to be the last element
         base_td = TypedDictGenerator(td_name, is_total)
-        tds = [base_td]
+        tds = {td_name: base_td}
         with base_td.indent_manager:
             non_recursive_ref = None
             for item in items:
@@ -205,24 +254,22 @@ class ProtcolTypesGenerator:
                 _type = self.convert_js_to_py_type(item, domain_name)
 
                 if recursive_ref in _type:
-
                     if non_recursive_ref is None:
-                        if _depth >= 2:
-                            non_recursive_ref = 'Any'
+                        if _depth >= self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH:
+                            # last ditch recursive reference expansion to expand the type 2x more
+                            non_recursive_ref = 'Dict[str, Dict[str, Any]]'
                         else:
                             if 'FWRef' in td_name:
                                 td_name = td_name.replace(f'FWRef{_depth-1}', f'FWRef{_depth}')
                             else:
                                 td_name += f'_FWRef{_depth}'
-                            tds.extend(self.generate_typed_dicts(type_info, domain_name, td_name, _depth + 1))
+                            tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth + 1))
                             non_recursive_ref = td_name
-
                     _type = _type.replace(recursive_ref, non_recursive_ref)
 
                 base_td.add(f'{item["name"]}: {_type}')
 
-        tds.reverse()
-        return tds
+        return {k: v for k, v in sorted(tds.items(), key=lambda x: x[0])}
 
     @staticmethod
     def _multi_fallback_get(d: Dict[Hashable, Any], *k: Hashable):
@@ -353,8 +400,15 @@ class TypedDictGenerator(TypingCodeGenerator):
     def __init__(self, name: str, total: bool):
         super().__init__()
         self.name = name
+        self.total = total
         total_spec = ', total=False' if total else ''
         self.add(f'class {name}(TypedDict{total_spec}):')
+
+    def copy_with_filter(self, new_name, sub_p, sub_r):
+        inst = TypedDictGenerator(new_name, self.total)
+        for line in self.code_lines[1:]:
+            inst.code_lines.append(re.sub(sub_p, sub_r, line))
+        return inst
 
     def init_imports(self):
         pass
@@ -385,7 +439,7 @@ def temp_var_change(cls_instance: object, var: str, value: Any):
 
 
 if __name__ == '__main__':
-    generator = ProtcolTypesGenerator()
+    generator = ProtocolTypesGenerator()
     generator.retrieve_domains()
     generator.parse_spec()
     generator.write_generated_code()
