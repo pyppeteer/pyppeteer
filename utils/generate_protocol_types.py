@@ -11,7 +11,7 @@ from datetime import datetime
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Dict, Any, Hashable, Match, List, Union, Tuple
+from typing import Dict, Any, Hashable, Match, List, Union
 
 import networkx as nx
 
@@ -19,7 +19,6 @@ from pyppeteer import launch
 
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('[{levelname}] {name}: {message}', style='{'))
-# logging.getLogger('pyppeteer.connection.Connection').setLevel(logging.ERROR)
 logging.getLogger('pyppeteer').addHandler(handler)
 
 logger = logging.getLogger('CLI')
@@ -29,7 +28,6 @@ handler.setLevel(logging.INFO)
 
 
 class ProtocolTypesGenerator:
-
     _forward_ref_re = r'\'Protocol\.(\w+\.\w+)\''
     js_to_py_types = {
         'any': 'Any',
@@ -47,7 +45,8 @@ class ProtocolTypesGenerator:
         # cache of all known types
         self.all_known_types = {}
         self.typed_dicts = {}
-        self.class_references = {}
+        # store all references from one TypedDict to another
+        self.td_cross_references = {}
         self.code_gen = TypingCodeGenerator()
 
     @property
@@ -74,18 +73,20 @@ class ProtocolTypesGenerator:
             ):
                 # forward ref to a typed dict, not sure that it will be defined
                 resolved_fwref = f'\'{resolved_fwref}\''
-        except KeyError:
-            logger.warning(f'Protocol.{domain_}{"." + ref if ref else ""} forward reference type not found')
-            resolved_fwref = match.group(0)
         except ValueError:  # too few values to unpack, ie malformed forward reference
             raise ValueError(f'Forward reference not nested as expected (forward reference={match.group(0)})')
 
         return resolved_fwref
 
     def resolve_forward_ref_on_line(self, line: str) -> str:
+        """
+        Replaces a forward reference in the form 'Protocol.domain.ref' to the actual value of Protocol.domain.ref
+        :param line: line in which protocol forward reference occurs.
+        :return: line with resolved forward reference
+        """
         return re.sub(self._forward_ref_re, self._resolve_forward_ref_re_sub_repl, line)
 
-    async def _retrieve_domains(self):
+    async def _retrieve_top_level_domain(self):
         browser = await launch(args=['--no-sandbox', '--disable-setuid-sandbox'])
         base_endpoint = re.search(r'ws://([0-9A-Za-z:.]*)/', browser.wsEndpoint).group(1)
         page = await browser.newPage()
@@ -101,24 +102,35 @@ class ProtocolTypesGenerator:
             logger.warning(f'Exception on browser close: {e}')
 
         logger.info(f'Loaded protocol into memory in {time.perf_counter()-t_start:.2f}s')
-        self.domains = json.loads(page_content)['domains']
+        self.domain = json.loads(page_content)
 
-    def retrieve_domains(self):
-        asyncio.get_event_loop().run_until_complete(self._retrieve_domains())
+    def retrieve_top_level_domain(self):
+        """
+        Fetches as sets the class variable domains for later use.
+        :return: None
+        """
+        asyncio.get_event_loop().run_until_complete(self._retrieve_top_level_domain())
 
-    def parse_spec(self):
+    def gen_spec(self):
+        """
+        Generate the Protocol class file lines within self.code_gen attribute. Uses an IndentManager context manager to 
+        keep track of the current indentation level. Resolves all forward references. Expands self-recursive types to
+        MAX_RECURSIVE_TYPE_EXPANSION_DEPTH. Expands cyclic types to 1 level.
+        :return: None
+        """
+
         self.code_gen.insert_before_code('"""')
         self.code_gen.insert_before_code(self.header)
         self.code_gen.insert_before_code('"""')
         self.code_gen.add_newlines(num=2)
 
-        logger.info(f'Parsing protocol spec')
+        logger.info(f'Generating protocol spec')
         t_start = time.perf_counter()
 
         self.code_gen.add('class Protocol:')
         with self.code_gen.indent_manager:
-            for domain in self.domains:
-                domain_name = domain["domain"]
+            for domain in self.domain['domains']:
+                domain_name = domain['domain']
                 self.code_gen.add(f'class {domain_name}:')
                 self.code_gen.add_comment_from_info(domain)
                 self.all_known_types[domain_name] = domain_known_types = {}
@@ -159,7 +171,29 @@ class ProtocolTypesGenerator:
 
                     self.code_gen.add_newlines(num=1)
 
-            # todo: events, commands, retvals
+            self.code_gen.add(f'class Events:')
+            with self.code_gen.indent_manager:
+                for domain in self.domain['domains']:
+                    for event in domain.get('events', []):
+                        self.code_gen.add(
+                            f'{domain["domain"]}.{event["name"]} = \'Protocol.{domain["domain"]}.{event["name"]}Payload\''
+                        )
+
+            self.code_gen.add(f'class CommandParameters:')
+            with self.code_gen.indent_manager:
+                for domain in self.domain['domains']:
+                    for command in domain.get('commands', []):
+                        self.code_gen.add(
+                            f'{domain["domain"]}.{command["name"]} = \'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
+                        )
+
+            self.code_gen.add(f'class CommandReturnValues:')
+            with self.code_gen.indent_manager:
+                for domain in self.domain['domains']:
+                    for command in domain.get('commands', []):
+                        self.code_gen.add(
+                            f'{domain["domain"]}.{command["name"]} = \'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
+                        )
 
         # no need for copying list as we aren't adding/removing elements
         # resolve forward refs in main protocol class
@@ -169,42 +203,43 @@ class ProtocolTypesGenerator:
                 continue
             self.code_gen.code_lines[index] = self.resolve_forward_ref_on_line(line)
 
-        # resolve forward refs in typed dicts
+        # resolve forward refs in typed dicts, and store instances where TypedDict is referenced somewhere else
         for td_name, td in self.typed_dicts.items():
             for index, line in enumerate(td.code_lines):
-                # skip empty lines or lines positively without forward reference
                 resolved_fw_ref = self.resolve_forward_ref_on_line(line)
                 resolved_fw_ref_splits = resolved_fw_ref.split(': ')
                 if len(resolved_fw_ref_splits) == 2:  # only pay attention to actual resolve fw refs
                     ref = resolved_fw_ref_splits[1]
                     if re.search('_\w+_\w+', ref):
-                        if td_name not in self.class_references:
-                            self.class_references[td_name] = []
-                        if ref.strip("'") not in self.class_references[td_name]:
-                            self.class_references[td_name].append(ref.strip("'"))
+                        if td_name not in self.td_cross_references:
+                            self.td_cross_references[td_name] = []
+                        if ref.strip("'") not in self.td_cross_references[td_name]:
+                            self.td_cross_references[td_name].append(ref.strip("'"))
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
         edges = []
-        for node, refs in self.class_references.items():
+        for node, refs in self.td_cross_references.items():
             for ref in refs:
                 edges.append((node, re.search(r'\'?(_\w+_\w+)\'?', ref).group(1)))
 
+        # fix cyclic references by finding them and replacing them
         for start, cycling_start in nx.simple_cycles(nx.DiGraph(edges)):
-            expanded_cyclic_reference = None
-            td_1: TypedDictGenerator = self.typed_dicts[start]
+            expanded_cyclic_reference = f'{start}_cyclic_ref{cycling_start}'
+            self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
+                expanded_cyclic_reference, r'\'_\w+_\w+\'', 'Any'
+            )
+            td_1 = self.typed_dicts[start]
             for index, line in enumerate(td_1.code_lines):
                 if cycling_start in line:
-                    if expanded_cyclic_reference is None:
-                        expanded_cyclic_reference = f'{start}_cyclic_ref{cycling_start}'
-                        self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
-                            expanded_cyclic_reference, r'\'_\w+_\w+\'', 'Any'
-                        )
-
-                    self.typed_dicts[start].code_lines[index] = line.replace(f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\'')
+                    self.typed_dicts[start].code_lines[index] = line.replace(
+                        f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\''
+                    )
 
         # all typed dicts are inserted prior to the main Protocol class
-        for td in self.typed_dicts.values():
-            td.add_newlines(num=2)
+        last_item_index = len(type_info) - 1
+        for index, td in enumerate(self.typed_dicts.values()):
+            if index < last_item_index:
+                td.add_newlines(num=1)
             self.code_gen.insert_before_code(td)
 
         logger.info(f'Parsed protocol spec in {time.perf_counter()-t_start:.2f}s')
@@ -289,7 +324,7 @@ class ProtocolTypesGenerator:
         """
         Generates a valid python type from the JS type. In the case of type_info being a str, we simply return the
         matching python type from self.js_to_py_types. Otherwise, in the case of type_info being a Dict, we know that
-        it will contian vital information about the type we are trying to convert.
+        it will contain vital information about the type we are trying to convert.
 
         The domain_name is used to qualify relative forward reference in type_info. For example, if
         type_info['$ref'] == 'foo', domain_name would be used produce an absolute forward reference, ie domain_name.foo
@@ -440,6 +475,6 @@ def temp_var_change(cls_instance: object, var: str, value: Any):
 
 if __name__ == '__main__':
     generator = ProtocolTypesGenerator()
-    generator.retrieve_domains()
-    generator.parse_spec()
+    generator.retrieve_top_level_domain()
+    generator.gen_spec()
     generator.write_generated_code()
