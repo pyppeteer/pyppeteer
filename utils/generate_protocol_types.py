@@ -176,7 +176,8 @@ class ProtocolTypesGenerator:
                 for domain in self.domain['domains']:
                     for event in domain.get('events', []):
                         self.code_gen.add(
-                            f'{domain["domain"]}.{event["name"]} = \'Protocol.{domain["domain"]}.{event["name"]}Payload\''
+                            f'{domain["domain"]}.{event["name"]} = '
+                            f'\'Protocol.{domain["domain"]}.{event["name"]}Payload\''
                         )
 
             self.code_gen.add(f'class CommandParameters:')
@@ -184,7 +185,8 @@ class ProtocolTypesGenerator:
                 for domain in self.domain['domains']:
                     for command in domain.get('commands', []):
                         self.code_gen.add(
-                            f'{domain["domain"]}.{command["name"]} = \'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
+                            f'{domain["domain"]}.{command["name"]} = '
+                            f'\'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
                         )
 
             self.code_gen.add(f'class CommandReturnValues:')
@@ -192,7 +194,8 @@ class ProtocolTypesGenerator:
                 for domain in self.domain['domains']:
                     for command in domain.get('commands', []):
                         self.code_gen.add(
-                            f'{domain["domain"]}.{command["name"]} = \'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
+                            f'{domain["domain"]}.{command["name"]} = '
+                            f'\'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
                         )
 
         # no need for copying list as we aren't adding/removing elements
