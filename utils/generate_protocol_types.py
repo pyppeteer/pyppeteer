@@ -148,6 +148,18 @@ class ProtocolTypesGenerator:
                         domain_known_types[item_name] = _type
                         self.code_gen.add(f'{item_name} = {_type}')
 
+                    for payload in domain.get('events', []):
+                        item_name = payload["name"]
+                        self.code_gen.add_comment_from_info(payload)
+                        if 'parameters' in payload:
+                            _type = f'{payload["name"]}_{domain_name}_Payload'
+                            self.typed_dicts.update(self.generate_typed_dicts(payload, domain_name, name=_type))
+                        else:
+                            _type = 'None'
+
+                        domain_known_types[f'{item_name}Payload'] = _type
+                        self.code_gen.add(f'{item_name}Payload = {_type}')
+
                     for command_info in domain.get('commands', []):
                         item_name = command_info["name"]
                         self.code_gen.add_comment_from_info(command_info)
@@ -174,29 +186,38 @@ class ProtocolTypesGenerator:
             self.code_gen.add(f'class Events:')
             with self.code_gen.indent_manager:
                 for domain in self.domain['domains']:
-                    for event in domain.get('events', []):
-                        self.code_gen.add(
-                            f'{domain["domain"]}.{event["name"]} = '
-                            f'\'Protocol.{domain["domain"]}.{event["name"]}Payload\''
-                        )
+                    if 'events' in domain:
+                        self.code_gen.add(f'class {domain["domain"]}:')
+                        with self.code_gen.indent_manager:
+                            for event in domain.get('events', []):
+                                self.code_gen.add(
+                                    f'{event["name"]} = '
+                                    f'\'Protocol.{domain["domain"]}.{event["name"]}Payload\''
+                                )
 
             self.code_gen.add(f'class CommandParameters:')
             with self.code_gen.indent_manager:
                 for domain in self.domain['domains']:
-                    for command in domain.get('commands', []):
-                        self.code_gen.add(
-                            f'{domain["domain"]}.{command["name"]} = '
-                            f'\'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
-                        )
+                    if 'commands' in domain:
+                        self.code_gen.add(f'class {domain["domain"]}:')
+                        with self.code_gen.indent_manager:
+                            for command in domain.get('commands', []):
+                                self.code_gen.add(
+                                    f'{command["name"]} = '
+                                    f'\'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
+                                )
 
             self.code_gen.add(f'class CommandReturnValues:')
             with self.code_gen.indent_manager:
                 for domain in self.domain['domains']:
-                    for command in domain.get('commands', []):
-                        self.code_gen.add(
-                            f'{domain["domain"]}.{command["name"]} = '
-                            f'\'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
-                        )
+                    if 'commands' in domain:
+                        self.code_gen.add(f'class {domain["domain"]}:')
+                        with self.code_gen.indent_manager:
+                            for command in domain.get('commands', []):
+                                self.code_gen.add(
+                                    f'{command["name"]} = '
+                                    f'\'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
+                                )
 
         # no need for copying list as we aren't adding/removing elements
         # resolve forward refs in main protocol class
