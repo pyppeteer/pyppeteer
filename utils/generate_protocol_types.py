@@ -91,7 +91,7 @@ class ProtocolTypesGenerator:
         base_endpoint = re.search(r'ws://([0-9A-Za-z:.]*)/', browser.wsEndpoint).group(1)
         page = await browser.newPage()
 
-        logger.info(f'Loading protocol into memory')
+        logger.info(f'Loading raw protocol specification')
         t_start = time.perf_counter()
 
         await page.goto(f'http://{base_endpoint}/json/protocol')
@@ -101,7 +101,7 @@ class ProtocolTypesGenerator:
         except Exception as e:
             logger.warning(f'Exception on browser close: {e}')
 
-        logger.info(f'Loaded protocol into memory in {time.perf_counter()-t_start:.2f}s')
+        logger.info(f'Loading raw protocol specification in {time.perf_counter()-t_start:.2f}s')
         self.domain = json.loads(page_content)
 
     def retrieve_top_level_domain(self):
@@ -183,41 +183,27 @@ class ProtocolTypesGenerator:
 
                     self.code_gen.add_newlines(num=1)
 
-            self.code_gen.add(f'class Events:')
-            with self.code_gen.indent_manager:
-                for domain in self.domain['domains']:
-                    if 'events' in domain:
-                        self.code_gen.add(f'class {domain["domain"]}:')
-                        with self.code_gen.indent_manager:
-                            for event in domain.get('events', []):
-                                self.code_gen.add(
-                                    f'{event["name"]} = '
-                                    f'\'Protocol.{domain["domain"]}.{event["name"]}Payload\''
-                                )
+            extra_info = {
+                'Events': ('events', 'Payload'),
+                'CommandParameters': ('commands', 'Parameters'),
+                'CommandReturnValues': ('commands', 'ReturnValue'),
+            }
 
-            self.code_gen.add(f'class CommandParameters:')
-            with self.code_gen.indent_manager:
-                for domain in self.domain['domains']:
-                    if 'commands' in domain:
-                        self.code_gen.add(f'class {domain["domain"]}:')
-                        with self.code_gen.indent_manager:
-                            for command in domain.get('commands', []):
-                                self.code_gen.add(
-                                    f'{command["name"]} = '
-                                    f'\'Protocol.{domain["domain"]}.{command["name"]}Parameters\''
-                                )
-
-            self.code_gen.add(f'class CommandReturnValues:')
-            with self.code_gen.indent_manager:
-                for domain in self.domain['domains']:
-                    if 'commands' in domain:
-                        self.code_gen.add(f'class {domain["domain"]}:')
-                        with self.code_gen.indent_manager:
-                            for command in domain.get('commands', []):
-                                self.code_gen.add(
-                                    f'{command["name"]} = '
-                                    f'\'Protocol.{domain["domain"]}.{command["name"]}ReturnValue\''
-                                )
+            for class_name, (domain_key, item_suffix) in extra_info.items():
+                class_code_gen = TypingCodeGenerator()
+                class_code_gen.add(f'class {class_name}:')
+                with class_code_gen.indent_manager:
+                    for domain in self.domain['domains']:
+                        if domain_key in domain:
+                            class_code_gen.add(f'class {domain["domain"]}:')
+                            with class_code_gen.indent_manager:
+                                for item in domain[domain_key]:
+                                    class_code_gen.add(
+                                        f'{item["name"]} = '
+                                        f'\'Protocol.{domain["domain"]}.{item["name"]}{item_suffix}\''
+                                    )
+                class_code_gen.add_newlines(num=2)
+                self.code_gen.add(lines=class_code_gen.code_lines)
 
         # no need for copying list as we aren't adding/removing elements
         # resolve forward refs in main protocol class
@@ -328,7 +314,7 @@ class ProtocolTypesGenerator:
 
                 base_td.add(f'{item["name"]}: {_type}')
 
-        return {k: v for k, v in sorted(tds.items(), key=lambda x: x[0])}
+        return {k: v for k, v in sorted(tds.items(), key=lambda x: x[0], reverse=True)}
 
     @staticmethod
     def _multi_fallback_get(d: Dict[Hashable, Any], *k: Hashable):
@@ -398,7 +384,7 @@ class ProtocolTypesGenerator:
 
 
 class TypingCodeGenerator:
-    def __init__(self):
+    def __init__(self, init_imports: bool = True):
         self.indent_manager = IndentManager()
         self.temp_lines_classification = partial(temp_var_change, self, 'lines_classification')
 
@@ -406,7 +392,8 @@ class TypingCodeGenerator:
         self.inserted_lines = []
         self.code_lines = []
         self.lines_classification = 'code'
-        self.init_imports()
+        if init_imports:
+            self.init_imports()
 
     def init_imports(self):
         with self.temp_lines_classification('import'):
@@ -440,8 +427,11 @@ class TypingCodeGenerator:
 
     def add(self, code: str = None, lines: List[str] = None):
         if code:
-            preprocessed = [line for line in dedent(code).split('\n')]
-            lines = [f'{self.indent_manager}{li}' for li in preprocessed]
+            lines = [line for line in dedent(code).split('\n')]
+            # if we are adding a newline '\n'.split('\n') == ['', ''], which will expand to 2 newlines instead of one
+            if lines[-1] == '':
+                lines = lines[:-1]
+        lines = [f'{self.indent_manager}{li}' for li in lines]
         self.__getattribute__(f'{self.lines_classification}_lines').extend(lines)
 
     def insert_before_code(self, other: Union['TypingCodeGenerator', 'str']):
@@ -457,7 +447,7 @@ class TypingCodeGenerator:
 
 class TypedDictGenerator(TypingCodeGenerator):
     def __init__(self, name: str, total: bool):
-        super().__init__()
+        super().__init__(init_imports=False)
         self.name = name
         self.total = total
         total_spec = ', total=False' if total else ''
@@ -468,9 +458,6 @@ class TypedDictGenerator(TypingCodeGenerator):
         for line in self.code_lines[1:]:
             inst.code_lines.append(re.sub(sub_p, sub_r, line))
         return inst
-
-    def init_imports(self):
-        pass
 
     def __repr__(self):
         return f'<TypedDictGenerator {self.name}>'
