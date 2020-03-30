@@ -181,7 +181,7 @@ class ProtocolTypesGenerator:
             }
 
             for class_name, domain_key in extra_info.items():
-                class_code_gen = TypingCodeGenerator()
+                class_code_gen = TypingCodeGenerator(init_imports=False)
                 class_code_gen.add(f'class {class_name}:')
                 with class_code_gen.indent_manager:
                     for domain in self.domain['domains']:
@@ -224,27 +224,30 @@ class ProtocolTypesGenerator:
 
         # fix cyclic references by finding them and replacing them
         for recursive_ref in nx.simple_cycles(nx.DiGraph(edges)):
-            if len(recursive_ref) == 1:  # ie, simple, self ref
+            if len(recursive_ref) == 1:  # ie, simple self ref
                 start, cycling_start = recursive_ref[0], recursive_ref[0]
             else:
                 start, cycling_start = recursive_ref
-            expanded_cyclic_reference = f'{start}_{id(cycling_start)}_{self.RECURSIVE_REF_SUFFIX}'
-            self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
-                new_name=expanded_cyclic_reference,
-                sub_pattern_replacements=((r'\'_\w+_\w+\'', 'Any'), (r'\s*#.*', '')),
-            )
-            td_1 = self.typed_dicts[start]
-            for index, line in enumerate(td_1.code_lines):
-                if cycling_start in line:
-                    self.typed_dicts[start].code_lines[index] = line.replace(
-                        f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\''
-                    )
+            td_chain_prev = start
+            for depth_level in range(self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH):
+                expanded_cyclic_reference = f'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level}'
+                if depth_level == range(self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH)[-1]:  # ie, last depth level
+                    next_expanded_rref = 'Dict[str, Union[Dict[str, Any], str]]'
+                else:
+                    next_expanded_rref = f'\'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level+1}\''
+                self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
+                    sub_pattern_replacements=((r'\'_\w+_\w+\'', next_expanded_rref), (r'\s*#.*', '')),
+                    new_name=expanded_cyclic_reference,
+                )
+                self.typed_dicts[td_chain_prev] = self.typed_dicts[td_chain_prev].copy_with_filter(
+                    sub_pattern_replacements=((f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\''),)
+                )
+                td_chain_prev = expanded_cyclic_reference
 
+        self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
         # all typed dicts are inserted prior to the main Protocol class
-        last_item_index = len(type_info) - 1
         for index, td in enumerate(self.typed_dicts.values()):
-            if index < last_item_index:
-                td.add_newlines(num=1)
+            td.add_newlines(num=2)
             self.code_gen.insert_before_code(td)
 
         logger.info(f'Parsed protocol spec in {time.perf_counter()-t_start:.2f}s')
@@ -375,7 +378,7 @@ class TypingCodeGenerator:
         with self.temp_lines_classification('import'):
             self.add('import sys')
             self.add_newlines(num=1)
-            self.add('from typing import List, Dict, Any')
+            self.add('from typing import Any, Dict, List, Union')
             self.add_newlines(num=1)
             self.add('if sys.version_info < (3,8):')
             with self.indent_manager:
@@ -429,8 +432,8 @@ class TypedDictGenerator(TypingCodeGenerator):
         total_spec = ', total=False' if total else ''
         self.add(f'class {name}(TypedDict{total_spec}):')
 
-    def copy_with_filter(self, new_name, sub_pattern_replacements):
-        inst = TypedDictGenerator(new_name, self.total)
+    def copy_with_filter(self, sub_pattern_replacements, new_name=None):
+        inst = TypedDictGenerator(new_name or self.name, self.total)
         for line in self.code_lines[1:]:
             for sub_p, sub_r in sub_pattern_replacements:
                 line = re.sub(sub_p, sub_r, line)
