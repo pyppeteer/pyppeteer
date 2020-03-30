@@ -161,27 +161,18 @@ class ProtocolTypesGenerator:
                         self.code_gen.add(f'{item_name}Payload = {_type}')
 
                     for command_info in domain.get('commands', []):
-                        item_name = command_info["name"]
-                        self.code_gen.add_comment_from_info(command_info)
-                        if 'parameters' in command_info:
-                            _type = f'{command_info["name"]}_{domain_name}_Parameters'
-                            self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
-                        else:
-                            _type = 'None'
+                        for key, suffix in (('parameters', 'Parameters'), ('returns', 'ReturnValue')):
+                            item_name = command_info["name"]
+                            self.code_gen.add_comment_from_info(command_info)
+                            if key in command_info:
+                                _type = f'{command_info["name"]}_{domain_name}_{suffix}'
+                                self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
+                            else:
+                                _type = 'None'
 
-                        domain_known_types[f'{item_name}Parameters'] = _type
-                        self.code_gen.add(f'{item_name}Parameters = {_type}')
+                            domain_known_types[f'{item_name}{suffix}'] = _type
+                            self.code_gen.add(f'{item_name}{suffix} = {_type}')
 
-                        if 'returns' in command_info:
-                            _type = f'{command_info["name"]}_{domain_name}_ReturnValue'
-                            self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
-                        else:
-                            _type = 'None'
-
-                        domain_known_types[f'{item_name}ReturnValue'] = _type
-                        self.code_gen.add(f'{item_name}ReturnValue = {_type}')
-
-                    self.code_gen.add_newlines(num=1)
 
             extra_info = {
                 'Events': ('events', 'Payload'),
