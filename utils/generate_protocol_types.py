@@ -39,6 +39,7 @@ class ProtocolTypesGenerator:
         'binary': 'bytes',
     }
     MAX_RECURSIVE_TYPE_EXPANSION_DEPTH = 2
+    RECURSIVE_REF_SUFFIX = 'RRef'
 
     def __init__(self):
         self.domains = []
@@ -57,34 +58,32 @@ class ProtocolTypesGenerator:
     
             Last regeneration: {datetime.utcnow()}'''
 
-    def _resolve_forward_ref_re_sub_repl(self, match: Match) -> str:
-        ref, domain_ = None, None
-        try:
-            domain_, ref = match.group(1).split('.')
-            resolved_fwref = self.all_known_types[domain_][ref]
+    def _resolve_forward_ref_re_sub_repl(self, match: Match, fw_ref: bool) -> str:
+        domain_, ref = match.group(1).split('.')
+        resolved_fwref = self.all_known_types[domain_][ref]
 
-            # resolve nested forward references
-            if re.search(self._forward_ref_re, resolved_fwref):
-                resolved_fwref = self.resolve_forward_ref_on_line(resolved_fwref)
-            if (
-                resolved_fwref not in self.js_to_py_types.values()
-                and not resolved_fwref.startswith('Literal')
-                and not resolved_fwref.startswith('List')
-            ):
-                # forward ref to a typed dict, not sure that it will be defined
-                resolved_fwref = f'\'{resolved_fwref}\''
-        except ValueError:  # too few values to unpack, ie malformed forward reference
-            raise ValueError(f'Forward reference not nested as expected (forward reference={match.group(0)})')
+        # resolve nested forward references
+        if re.search(self._forward_ref_re, resolved_fwref):
+            resolved_fwref = self.resolve_forward_ref_on_line(resolved_fwref)
+        if (
+            fw_ref
+            and resolved_fwref not in self.js_to_py_types.values()
+            and not resolved_fwref.startswith('Literal')
+            and not resolved_fwref.startswith('List')
+        ):
+            # forward ref to a typed dict, not sure that it will be defined
+            resolved_fwref = f'\'{resolved_fwref}\''
 
         return resolved_fwref
 
-    def resolve_forward_ref_on_line(self, line: str) -> str:
+    def resolve_forward_ref_on_line(self, line: str, fw_ref: bool = True) -> str:
         """
         Replaces a forward reference in the form 'Protocol.domain.ref' to the actual value of Protocol.domain.ref
         :param line: line in which protocol forward reference occurs.
+        :param fw_ref: whether or not to forward reference the resolved reference
         :return: line with resolved forward reference
         """
-        return re.sub(self._forward_ref_re, self._resolve_forward_ref_re_sub_repl, line)
+        return re.sub(self._forward_ref_re, partial(self._resolve_forward_ref_re_sub_repl, fw_ref=fw_ref), line)
 
     async def _retrieve_top_level_domain(self):
         browser = await launch(args=['--no-sandbox', '--disable-setuid-sandbox'])
@@ -149,38 +148,39 @@ class ProtocolTypesGenerator:
                         self.code_gen.add(f'{item_name} = {_type}')
 
                     for payload in domain.get('events', []):
-                        item_name = payload["name"]
+                        item_name = payload["name"] = payload["name"] + 'Payload'
                         self.code_gen.add_comment_from_info(payload)
                         if 'parameters' in payload:
-                            _type = f'{payload["name"]}_{domain_name}_Payload'
+                            _type = f'{payload["name"]}_{domain_name}'  # todo: necessary?
                             self.typed_dicts.update(self.generate_typed_dicts(payload, domain_name, name=_type))
                         else:
                             _type = 'None'
 
-                        domain_known_types[f'{item_name}Payload'] = _type
-                        self.code_gen.add(f'{item_name}Payload = {_type}')
+                        domain_known_types[f'{item_name}'] = _type
+                        self.code_gen.add(f'{item_name} = {_type}')
 
                     for command_info in domain.get('commands', []):
                         for key, suffix in (('parameters', 'Parameters'), ('returns', 'ReturnValue')):
-                            item_name = command_info["name"]
+                            item_name = command_info["name"] = command_info['name'] + suffix
                             self.code_gen.add_comment_from_info(command_info)
                             if key in command_info:
-                                _type = f'{command_info["name"]}_{domain_name}_{suffix}'
-                                self.typed_dicts.update(self.generate_typed_dicts(command_info, domain_name, name=_type))
+                                _type = f'{command_info["name"]}_{domain_name}'
+                                self.typed_dicts.update(
+                                    self.generate_typed_dicts(command_info, domain_name, name=_type)
+                                )
                             else:
                                 _type = 'None'
 
-                            domain_known_types[f'{item_name}{suffix}'] = _type
-                            self.code_gen.add(f'{item_name}{suffix} = {_type}')
-
+                            domain_known_types[f'{item_name}'] = _type
+                            self.code_gen.add(f'{item_name} = {_type}')
 
             extra_info = {
-                'Events': ('events', 'Payload'),
-                'CommandParameters': ('commands', 'Parameters'),
-                'CommandReturnValues': ('commands', 'ReturnValue'),
+                'Events': 'events',
+                'CommandParameters': 'commands',
+                'CommandReturnValues': 'commands',
             }
 
-            for class_name, (domain_key, item_suffix) in extra_info.items():
+            for class_name, domain_key in extra_info.items():
                 class_code_gen = TypingCodeGenerator()
                 class_code_gen.add(f'class {class_name}:')
                 with class_code_gen.indent_manager:
@@ -190,8 +190,7 @@ class ProtocolTypesGenerator:
                             with class_code_gen.indent_manager:
                                 for item in domain[domain_key]:
                                     class_code_gen.add(
-                                        f'{item["name"]} = '
-                                        f'\'Protocol.{domain["domain"]}.{item["name"]}{item_suffix}\''
+                                        f'{item["name"]} = ' f'\'Protocol.{domain["domain"]}.{item["name"]}\''
                                     )
                 class_code_gen.add_newlines(num=2)
                 self.code_gen.add(lines=class_code_gen.code_lines)
@@ -202,7 +201,7 @@ class ProtocolTypesGenerator:
             # skip empty lines or lines positively without forward reference
             if not line.strip() or 'Protocol' not in line:
                 continue
-            self.code_gen.code_lines[index] = self.resolve_forward_ref_on_line(line)
+            self.code_gen.code_lines[index] = self.resolve_forward_ref_on_line(line, fw_ref=False)
 
         # resolve forward refs in typed dicts, and store instances where TypedDict is referenced somewhere else
         for td_name, td in self.typed_dicts.items():
@@ -224,10 +223,15 @@ class ProtocolTypesGenerator:
                 edges.append((node, re.search(r'\'?(_\w+_\w+)\'?', ref).group(1)))
 
         # fix cyclic references by finding them and replacing them
-        for start, cycling_start in nx.simple_cycles(nx.DiGraph(edges)):
-            expanded_cyclic_reference = f'{start}_cyclic_ref{cycling_start}'
+        for possible_cyclic_ref in nx.simple_cycles(nx.DiGraph(edges)):
+            if len(possible_cyclic_ref) == 1:
+                # dead end, no need to fix
+                continue
+            start, cycling_start = possible_cyclic_ref
+            expanded_cyclic_reference = f'{start}_{id(cycling_start)}_{self.RECURSIVE_REF_SUFFIX}'
             self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
-                expanded_cyclic_reference, (r'\'_\w+_\w+\'', 'Any'), (r'\s*#.*', ''),
+                new_name=expanded_cyclic_reference,
+                sub_pattern_replacements=((r'\'_\w+_\w+\'', 'Any'), (r'\s*#.*', '')),
             )
             td_1 = self.typed_dicts[start]
             for index, line in enumerate(td_1.code_lines):
@@ -263,7 +267,7 @@ class ProtocolTypesGenerator:
             p.write(str(self.code_gen))
 
     def generate_typed_dicts(
-        self, type_info: Dict[str, Any], domain_name: str, name: str = None, recursion_start: str = None, _depth: int = 0
+        self, type_info: Dict[str, Any], domain_name: str, name: str = None, _depth: int = 0,
     ) -> Dict[str, 'TypedDictGenerator']:
         """
         Generates TypedDicts based on type_info. If the TypedDict references itself, the recursive type reference is
@@ -275,10 +279,9 @@ class ProtocolTypesGenerator:
         :param _depth: Internally used param to track recursive function call depth.
         :return: List of TypedDicts corresponding to type information found in type_info
         """
-        RECURSIVE_REF_SUFFIX = 'RRef'
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
-        recursive_ref = self.get_forward_ref(type_info_name or recursion_start, domain_name)
+        recursive_ref = self.get_forward_ref(type_info_name, domain_name)
         td_name = name or type_info_name
         is_total = any(1 for x in items if x.get('optional'))
         base_td = TypedDictGenerator(td_name, is_total)
@@ -295,10 +298,12 @@ class ProtocolTypesGenerator:
                             # last ditch recursive reference expansion to expand the type 2x more
                             non_recursive_ref = 'Dict[str, Dict[str, Any]]'
                         else:
-                            if RECURSIVE_REF_SUFFIX in td_name:
-                                td_name = td_name.replace(f'{RECURSIVE_REF_SUFFIX}{_depth-1}', f'{RECURSIVE_REF_SUFFIX}{_depth}')
+                            if self.RECURSIVE_REF_SUFFIX in td_name:
+                                td_name = td_name.replace(
+                                    f'{self.RECURSIVE_REF_SUFFIX}{_depth-1}', f'{self.RECURSIVE_REF_SUFFIX}{_depth}'
+                                )
                             else:
-                                td_name += f'_{RECURSIVE_REF_SUFFIX}{_depth}'
+                                td_name += f'_{self.RECURSIVE_REF_SUFFIX}{_depth}'
                             tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth=_depth + 1))
                             non_recursive_ref = td_name
                     _type = _type.replace(recursive_ref, non_recursive_ref)
@@ -444,10 +449,10 @@ class TypedDictGenerator(TypingCodeGenerator):
         total_spec = ', total=False' if total else ''
         self.add(f'class {name}(TypedDict{total_spec}):')
 
-    def copy_with_filter(self, new_name, *sub_p_r):
+    def copy_with_filter(self, new_name, sub_pattern_replacements):
         inst = TypedDictGenerator(new_name, self.total)
         for line in self.code_lines[1:]:
-            for sub_p, sub_r in sub_p_r:
+            for sub_p, sub_r in sub_pattern_replacements:
                 line = re.sub(sub_p, sub_r, line)
             if line:
                 inst.code_lines.append(line)
