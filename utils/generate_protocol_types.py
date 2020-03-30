@@ -42,12 +42,12 @@ class ProtocolTypesGenerator:
     RECURSIVE_REF_SUFFIX = 'RRef'
 
     def __init__(self):
+        self.td_cross_references_s = set()
         self.domains = []
         # cache of all known types
         self.all_known_types = {}
         self.typed_dicts = {}
         # store all references from one TypedDict to another
-        self.td_cross_references = {}
         self.code_gen = TypingCodeGenerator()
 
     @property
@@ -210,20 +210,15 @@ class ProtocolTypesGenerator:
                 resolved_fw_ref_splits = resolved_fw_ref.split(': ')
                 if len(resolved_fw_ref_splits) == 2:  # only pay attention to actual resolve fw refs
                     ref = resolved_fw_ref_splits[1]
-                    if re.search('_\w+_\w+', ref):
-                        if td_name not in self.td_cross_references:
-                            self.td_cross_references[td_name] = []
-                        if ref.strip("'") not in self.td_cross_references[td_name]:
-                            self.td_cross_references[td_name].append(ref.strip("'"))
+                    td_ref_re = r'_\w+_\w+'
+                    if re.search(td_ref_re, ref):
+                        self.td_cross_references_s.add((td_name, re.search(td_ref_re, ref).group(0)))
+
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
-        edges = []
-        for node, refs in self.td_cross_references.items():
-            for ref in refs:
-                edges.append((node, re.search(r'\'?(_\w+_\w+)\'?', ref).group(1)))
 
         # fix cyclic references by finding them and replacing them
-        for recursive_ref in nx.simple_cycles(nx.DiGraph(edges)):
+        for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
             if len(recursive_ref) == 1:  # ie, simple self ref
                 start, cycling_start = recursive_ref[0], recursive_ref[0]
             else:
