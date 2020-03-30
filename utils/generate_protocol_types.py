@@ -275,7 +275,7 @@ class ProtocolTypesGenerator:
         :param _depth: Internally used param to track recursive function call depth.
         :return: List of TypedDicts corresponding to type information found in type_info
         """
-
+        RECURSIVE_REF_SUFFIX = 'RRef'
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
         recursive_ref = self.get_forward_ref(type_info_name, domain_name)
@@ -295,10 +295,10 @@ class ProtocolTypesGenerator:
                             # last ditch recursive reference expansion to expand the type 2x more
                             non_recursive_ref = 'Dict[str, Dict[str, Any]]'
                         else:
-                            if 'FWRef' in td_name:
-                                td_name = td_name.replace(f'FWRef{_depth-1}', f'FWRef{_depth}')
+                            if RECURSIVE_REF_SUFFIX in td_name:
+                                td_name = td_name.replace(f'{RECURSIVE_REF_SUFFIX}{_depth-1}', f'{RECURSIVE_REF_SUFFIX}{_depth}')
                             else:
-                                td_name += f'_FWRef{_depth}'
+                                td_name += f'_{RECURSIVE_REF_SUFFIX}{_depth}'
                             tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth + 1))
                             non_recursive_ref = td_name
                     _type = _type.replace(recursive_ref, non_recursive_ref)
