@@ -38,7 +38,7 @@ class ProtocolTypesGenerator:
         'integer': 'int',
         'binary': 'bytes',
     }
-    MAX_RECURSIVE_TYPE_EXPANSION_DEPTH = 2
+    RECURSIVE_TYPE_EXPANSION_DEPTH = 2
     RECURSIVE_REF_SUFFIX = 'RRef'
 
     def __init__(self):
@@ -114,7 +114,7 @@ class ProtocolTypesGenerator:
         """
         Generate the Protocol class file lines within self.code_gen attribute. Uses an IndentManager context manager to 
         keep track of the current indentation level. Resolves all forward references. Expands self-recursive types to
-        MAX_RECURSIVE_TYPE_EXPANSION_DEPTH. Expands cyclic types to 1 level.
+        RECURSIVE_TYPE_EXPANSION_DEPTH. Expands cyclic types to 1 level.
         :return: None
         """
 
@@ -216,17 +216,16 @@ class ProtocolTypesGenerator:
 
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
-
-        # fix cyclic references by finding them and replacing them
+        # fix cyclic references by expanding them RECURSIVE_TYPE_EXPANSION_DEPTH times
         for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
             if len(recursive_ref) == 1:  # ie, simple self ref
                 start, cycling_start = recursive_ref[0], recursive_ref[0]
             else:
                 start, cycling_start = recursive_ref
             td_chain_prev = start
-            for depth_level in range(self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH):
+            for depth_level in range(self.RECURSIVE_TYPE_EXPANSION_DEPTH):
                 expanded_cyclic_reference = f'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level}'
-                if depth_level == range(self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH)[-1]:  # ie, last depth level
+                if depth_level == range(self.RECURSIVE_TYPE_EXPANSION_DEPTH)[-1]:  # ie, last depth level
                     next_expanded_rref = 'Dict[str, Union[Dict[str, Any], str]]'
                 else:
                     next_expanded_rref = f'\'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level+1}\''
@@ -268,14 +267,12 @@ class ProtocolTypesGenerator:
         self, type_info: Dict[str, Any], domain_name: str, name: str = None, _depth: int = 0,
     ) -> Dict[str, 'TypedDictGenerator']:
         """
-        Generates TypedDicts based on type_info. If the TypedDict references itself, the recursive type reference is
-        expanded upon MAX_RECURSIVE_TYPE_EXPANSION_DEPTH times.
+        Generates TypedDicts based on type_info.
 
         :param type_info: Dict containing the info for the TypedDict
         :param domain_name: path to resolve relative forward references in type_info against
         :param name: (Optional) Name of TypedDict. Defaults to name found in type_info
-        :param _depth: Internally used param to track recursive function call depth.
-        :return: List of TypedDicts corresponding to type information found in type_info
+        :return: TypedDict corresponding to type information found in type_info
         """
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
