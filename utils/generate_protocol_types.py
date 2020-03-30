@@ -227,7 +227,7 @@ class ProtocolTypesGenerator:
         for start, cycling_start in nx.simple_cycles(nx.DiGraph(edges)):
             expanded_cyclic_reference = f'{start}_cyclic_ref{cycling_start}'
             self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
-                expanded_cyclic_reference, r'\'_\w+_\w+\'', 'Any'
+                expanded_cyclic_reference, (r'\'_\w+_\w+\'', 'Any'), (r'\s*#.*', ''),
             )
             td_1 = self.typed_dicts[start]
             for index, line in enumerate(td_1.code_lines):
@@ -263,7 +263,7 @@ class ProtocolTypesGenerator:
             p.write(str(self.code_gen))
 
     def generate_typed_dicts(
-        self, type_info: Dict[str, Any], domain_name: str, name: str = None, _depth: int = 0
+        self, type_info: Dict[str, Any], domain_name: str, name: str = None, recursion_start: str = None, _depth: int = 0
     ) -> Dict[str, 'TypedDictGenerator']:
         """
         Generates TypedDicts based on type_info. If the TypedDict references itself, the recursive type reference is
@@ -278,7 +278,7 @@ class ProtocolTypesGenerator:
         RECURSIVE_REF_SUFFIX = 'RRef'
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
-        recursive_ref = self.get_forward_ref(type_info_name, domain_name)
+        recursive_ref = self.get_forward_ref(type_info_name or recursion_start, domain_name)
         td_name = name or type_info_name
         is_total = any(1 for x in items if x.get('optional'))
         base_td = TypedDictGenerator(td_name, is_total)
@@ -299,7 +299,7 @@ class ProtocolTypesGenerator:
                                 td_name = td_name.replace(f'{RECURSIVE_REF_SUFFIX}{_depth-1}', f'{RECURSIVE_REF_SUFFIX}{_depth}')
                             else:
                                 td_name += f'_{RECURSIVE_REF_SUFFIX}{_depth}'
-                            tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth + 1))
+                            tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth=_depth + 1))
                             non_recursive_ref = td_name
                     _type = _type.replace(recursive_ref, non_recursive_ref)
 
@@ -444,10 +444,13 @@ class TypedDictGenerator(TypingCodeGenerator):
         total_spec = ', total=False' if total else ''
         self.add(f'class {name}(TypedDict{total_spec}):')
 
-    def copy_with_filter(self, new_name, sub_p, sub_r):
+    def copy_with_filter(self, new_name, *sub_p_r):
         inst = TypedDictGenerator(new_name, self.total)
         for line in self.code_lines[1:]:
-            inst.code_lines.append(re.sub(sub_p, sub_r, line))
+            for sub_p, sub_r in sub_p_r:
+                line = re.sub(sub_p, sub_r, line)
+            if line:
+                inst.code_lines.append(line)
         return inst
 
     def __repr__(self):
