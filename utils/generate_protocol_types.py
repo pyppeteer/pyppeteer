@@ -223,11 +223,11 @@ class ProtocolTypesGenerator:
                 edges.append((node, re.search(r'\'?(_\w+_\w+)\'?', ref).group(1)))
 
         # fix cyclic references by finding them and replacing them
-        for possible_cyclic_ref in nx.simple_cycles(nx.DiGraph(edges)):
-            if len(possible_cyclic_ref) == 1:
-                # dead end, no need to fix
-                continue
-            start, cycling_start = possible_cyclic_ref
+        for recursive_ref in nx.simple_cycles(nx.DiGraph(edges)):
+            if len(recursive_ref) == 1:  # ie, simple, self ref
+                start, cycling_start = recursive_ref[0], recursive_ref[0]
+            else:
+                start, cycling_start = recursive_ref
             expanded_cyclic_reference = f'{start}_{id(cycling_start)}_{self.RECURSIVE_REF_SUFFIX}'
             self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
                 new_name=expanded_cyclic_reference,
@@ -281,36 +281,16 @@ class ProtocolTypesGenerator:
         """
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
-        recursive_ref = self.get_forward_ref(type_info_name, domain_name)
         td_name = name or type_info_name
         is_total = any(1 for x in items if x.get('optional'))
-        base_td = TypedDictGenerator(td_name, is_total)
-        tds = {td_name: base_td}
-        with base_td.indent_manager:
-            non_recursive_ref = None
+        td = TypedDictGenerator(td_name, is_total)
+        with td.indent_manager:
             for item in items:
-                base_td.add_comment_from_info(item)
+                td.add_comment_from_info(item)
                 _type = self.convert_js_to_py_type(item, domain_name)
+                td.add(f'{item["name"]}: {_type}')
 
-                if recursive_ref in _type:
-                    if non_recursive_ref is None:
-                        if _depth >= self.MAX_RECURSIVE_TYPE_EXPANSION_DEPTH:
-                            # last ditch recursive reference expansion to expand the type 2x more
-                            non_recursive_ref = 'Dict[str, Dict[str, Any]]'
-                        else:
-                            if self.RECURSIVE_REF_SUFFIX in td_name:
-                                td_name = td_name.replace(
-                                    f'{self.RECURSIVE_REF_SUFFIX}{_depth-1}', f'{self.RECURSIVE_REF_SUFFIX}{_depth}'
-                                )
-                            else:
-                                td_name += f'_{self.RECURSIVE_REF_SUFFIX}{_depth}'
-                            tds.update(self.generate_typed_dicts(type_info, domain_name, td_name, _depth=_depth + 1))
-                            non_recursive_ref = td_name
-                    _type = _type.replace(recursive_ref, non_recursive_ref)
-
-                base_td.add(f'{item["name"]}: {_type}')
-
-        return {k: v for k, v in sorted(tds.items(), key=lambda x: x[0], reverse=True)}
+        return {td_name: td}
 
     @staticmethod
     def _multi_fallback_get(d: Dict[Hashable, Any], *k: Hashable):
