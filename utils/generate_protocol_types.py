@@ -163,8 +163,8 @@ class ProtocolTypesGenerator:
                         self.code_gen.add(f'{item_name} = {_type}')
 
                     for command_info in domain.get('commands', []):
-                        for key, suffix in (('parameters', 'Parameters'), ('returns', 'ReturnValue')):
-                            item_name = command_info["name"] = command_info['name'] + suffix
+                        for key, suffix in (('parameters', 'Parameters'), ('returns', 'ReturnValues')):
+                            item_name = command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
                             self.code_gen.add_comment_from_info(command_info)
                             if key in command_info:
                                 td = self.generate_typed_dicts(command_info, domain_name)
