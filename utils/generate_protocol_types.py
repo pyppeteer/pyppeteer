@@ -2,6 +2,7 @@
 CLI script to generate Protocol types
 """
 import asyncio
+import itertools
 import json
 import logging
 import re
@@ -39,7 +40,7 @@ class ProtocolTypesGenerator:
         'binary': 'bytes',
     }
     RECURSIVE_TYPE_EXPANSION_DEPTH = 2
-    RECURSIVE_REF_SUFFIX = 'RRef'
+    RREF_SUFFIX = 'RRef'
 
     def __init__(self):
         self.td_cross_references_s = set()
@@ -139,7 +140,7 @@ class ProtocolTypesGenerator:
                         item_name = type_info["id"]
                         if 'properties' in type_info:
                             # name mangled to avoid collisions
-                            # _type = f'_{domain_name}_{type_info["id"]}'
+                            type_info["id"] = f'{domain_name}_{type_info["id"]}'
                             td = self.generate_typed_dicts(type_info, domain_name)
                             self.typed_dicts.update(td)
                             _type = [*td.keys()][0]
@@ -164,7 +165,9 @@ class ProtocolTypesGenerator:
 
                     for command_info in domain.get('commands', []):
                         for key, suffix in (('parameters', 'Parameters'), ('returns', 'ReturnValues')):
-                            item_name = command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
+                            item_name = command_info['name'] = re.subn(
+                                r'(Parameters$|$)', suffix, command_info['name'], 1
+                            )[0]
                             self.code_gen.add_comment_from_info(command_info)
                             if key in command_info:
                                 td = self.generate_typed_dicts(command_info, domain_name)
@@ -218,12 +221,7 @@ class ProtocolTypesGenerator:
 
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
-        # fix cyclic references by expanding them RECURSIVE_TYPE_EXPANSION_DEPTH times
-        for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
-            # insert code here
-            pass
-
-
+        self.expand_recursive_references()
         self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
         # all typed dicts are inserted prior to the main Protocol class
         for index, td in enumerate(self.typed_dicts.values()):
@@ -233,6 +231,45 @@ class ProtocolTypesGenerator:
         logger.info(f'Parsed protocol spec in {time.perf_counter()-t_start:.2f}s')
         # newline at end of file
         self.code_gen.add_newlines(num=1)
+
+    def expand_recursive_references(self):
+        for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
+            names_in_ref_re = f'(?:{"|".join(recursive_ref)})'
+            chain = [
+                [self.typed_dicts[x] for x in recursive_ref] for _ in range(self.RECURSIVE_TYPE_EXPANSION_DEPTH + 1)
+            ]
+            initial_first_chain_name = chain[0][0].name
+            last_chain_index = len(chain) - 1
+            for index, chain_link in enumerate(chain):
+                if index >= 1:
+                    for index_n, item in enumerate(chain_link):
+
+                        def bump_ref(match):
+                            if self.RREF_SUFFIX in match.group(0):
+                                return match.group(0).replace(
+                                    f'_{self.RREF_SUFFIX}{match.group(2)}',
+                                    f'_{self.RREF_SUFFIX}{index}',
+                                )
+                            return f'\'{match.group(1)}_{self.RREF_SUFFIX}1\''
+
+                        chain[index][index_n] = chain[index][index_n].copy_with_filter(
+                            sub_pattern_replacements=(
+                                (r'\s*#.*', ''),
+                                (rf'\'({names_in_ref_re}(?:_{self.RREF_SUFFIX}(\d*))?)\'', bump_ref),
+                            ),
+                            new_name=f'{item.name}_{self.RREF_SUFFIX}{index - 1}',
+                        )
+                # continue or terminate the chain
+                first, last = chain_link[0], chain_link[-1]
+                if index == last_chain_index:
+                    repl_name = 'Dict[str, Union[Dict[str, Any], bool, int, float, List]]'
+                else:
+                    repl_name = f'\'{initial_first_chain_name}_{self.RREF_SUFFIX}{index}\''
+                chain[index][-1] = last.copy_with_filter(
+                    sub_pattern_replacements=((r'\s*#.*', f''), (f'\'{initial_first_chain_name}(?:_{self.RREF_SUFFIX}\d+)?\'', f'{repl_name}'))
+                )
+            for td in itertools.chain(*chain):
+                self.typed_dicts[td.name] = td
 
     def write_generated_code(self, path: Path = Path('protocol.py')) -> None:
         """
@@ -249,9 +286,7 @@ class ProtocolTypesGenerator:
         with open(path, 'w') as p:
             p.write(str(self.code_gen))
 
-    def generate_typed_dicts(
-        self, type_info: Dict[str, Any], domain_name: str
-    ) -> Dict[str, 'TypedDictGenerator']:
+    def generate_typed_dicts(self, type_info: Dict[str, Any], domain_name: str) -> Dict[str, 'TypedDictGenerator']:
         """
         Generates TypedDicts based on type_info.
 
