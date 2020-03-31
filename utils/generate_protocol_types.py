@@ -139,8 +139,10 @@ class ProtocolTypesGenerator:
                         item_name = type_info["id"]
                         if 'properties' in type_info:
                             # name mangled to avoid collisions
-                            _type = f'_{domain_name}_{type_info["id"]}'
-                            self.typed_dicts.update(self.generate_typed_dicts(type_info, domain_name, name=_type))
+                            # _type = f'_{domain_name}_{type_info["id"]}'
+                            td = self.generate_typed_dicts(type_info, domain_name)
+                            self.typed_dicts.update(td)
+                            _type = [*td.keys()][0]
                         else:
                             _type = self.convert_js_to_py_type(type_info, domain_name)
 
@@ -151,8 +153,9 @@ class ProtocolTypesGenerator:
                         item_name = payload["name"] = payload["name"] + 'Payload'
                         self.code_gen.add_comment_from_info(payload)
                         if 'parameters' in payload:
-                            _type = f'{payload["name"]}_{domain_name}'  # todo: necessary?
-                            self.typed_dicts.update(self.generate_typed_dicts(payload, domain_name, name=_type))
+                            td = self.generate_typed_dicts(payload, domain_name)
+                            self.typed_dicts.update(td)
+                            _type = [*td.keys()][0]
                         else:
                             _type = 'None'
 
@@ -164,10 +167,9 @@ class ProtocolTypesGenerator:
                             item_name = command_info["name"] = command_info['name'] + suffix
                             self.code_gen.add_comment_from_info(command_info)
                             if key in command_info:
-                                _type = f'{command_info["name"]}_{domain_name}'
-                                self.typed_dicts.update(
-                                    self.generate_typed_dicts(command_info, domain_name, name=_type)
-                                )
+                                td = self.generate_typed_dicts(command_info, domain_name)
+                                self.typed_dicts.update(td)
+                                _type = [*td.keys()][0]
                             else:
                                 _type = 'None'
 
@@ -210,33 +212,17 @@ class ProtocolTypesGenerator:
                 resolved_fw_ref_splits = resolved_fw_ref.split(': ')
                 if len(resolved_fw_ref_splits) == 2:  # only pay attention to actual resolve fw refs
                     ref = resolved_fw_ref_splits[1]
-                    td_ref_re = r'_\w+_\w+'
+                    td_ref_re = r'^(?:List\[)?\'(\w+)\'\]?'
                     if re.search(td_ref_re, ref):
-                        self.td_cross_references_s.add((td_name, re.search(td_ref_re, ref).group(0)))
+                        self.td_cross_references_s.add((td_name, re.search(td_ref_re, ref).group(1)))
 
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
         # fix cyclic references by expanding them RECURSIVE_TYPE_EXPANSION_DEPTH times
         for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
-            if len(recursive_ref) == 1:  # ie, simple self ref
-                start, cycling_start = recursive_ref[0], recursive_ref[0]
-            else:
-                start, cycling_start = recursive_ref
-            td_chain_prev = start
-            for depth_level in range(self.RECURSIVE_TYPE_EXPANSION_DEPTH):
-                expanded_cyclic_reference = f'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level}'
-                if depth_level == range(self.RECURSIVE_TYPE_EXPANSION_DEPTH)[-1]:  # ie, last depth level
-                    next_expanded_rref = 'Dict[str, Union[Dict[str, Any], str]]'
-                else:
-                    next_expanded_rref = f'\'{start}_{self.RECURSIVE_REF_SUFFIX}{depth_level+1}\''
-                self.typed_dicts[expanded_cyclic_reference] = self.typed_dicts[cycling_start].copy_with_filter(
-                    sub_pattern_replacements=((r'\'_\w+_\w+\'', next_expanded_rref), (r'\s*#.*', '')),
-                    new_name=expanded_cyclic_reference,
-                )
-                self.typed_dicts[td_chain_prev] = self.typed_dicts[td_chain_prev].copy_with_filter(
-                    sub_pattern_replacements=((f'\'{cycling_start}\'', f'\'{expanded_cyclic_reference}\''),)
-                )
-                td_chain_prev = expanded_cyclic_reference
+            # insert code here
+            pass
+
 
         self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
         # all typed dicts are inserted prior to the main Protocol class
@@ -264,7 +250,7 @@ class ProtocolTypesGenerator:
             p.write(str(self.code_gen))
 
     def generate_typed_dicts(
-        self, type_info: Dict[str, Any], domain_name: str, name: str = None, _depth: int = 0,
+        self, type_info: Dict[str, Any], domain_name: str
     ) -> Dict[str, 'TypedDictGenerator']:
         """
         Generates TypedDicts based on type_info.
@@ -275,8 +261,7 @@ class ProtocolTypesGenerator:
         :return: TypedDict corresponding to type information found in type_info
         """
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
-        type_info_name = self._multi_fallback_get(type_info, 'id', 'name')
-        td_name = name or type_info_name
+        td_name = self._multi_fallback_get(type_info, 'id', 'name')
         is_total = any(1 for x in items if x.get('optional'))
         td = TypedDictGenerator(td_name, is_total)
         with td.indent_manager:
@@ -301,7 +286,7 @@ class ProtocolTypesGenerator:
 
         raise KeyError(f'{", ".join([str(s) for s in k])} all not found in {d}')
 
-    def convert_js_to_py_type(self, type_info: Union[Dict[str, Any], str], domain_name) -> str:
+    def convert_js_to_py_type(self, item_info: Union[Dict[str, Any], str], domain_name) -> str:
         """
         Generates a valid python type from the JS type. In the case of type_info being a str, we simply return the
         matching python type from self.js_to_py_types. Otherwise, in the case of type_info being a Dict, we know that
@@ -310,29 +295,29 @@ class ProtocolTypesGenerator:
         The domain_name is used to qualify relative forward reference in type_info. For example, if
         type_info['$ref'] == 'foo', domain_name would be used produce an absolute forward reference, ie domain_name.foo
 
-        :param type_info: Dict or str containing type_info
+        :param item_info: Dict or str containing type_info
         :param domain_name: path to resolve relative forward references in type_info against
         :return: valid python type, either in the form of an absolute forward reference (eg Protocol.bar.foo) or
             primitive type (eg int, float, str, etc)
         """
-        if isinstance(type_info, str):
-            _type = self.js_to_py_types[type_info]
-        elif 'items' in type_info:
-            assert type_info['type'] == 'array'
-            if '$ref' in type_info['items']:
-                ref = type_info["items"]["$ref"]
+        if isinstance(item_info, str):
+            _type = self.js_to_py_types[item_info]
+        elif 'items' in item_info:
+            assert item_info['type'] == 'array'
+            if '$ref' in item_info['items']:
+                ref = item_info["items"]["$ref"]
                 _type = f'List[{self.get_forward_ref(ref, domain_name)}]'
             else:
-                _type = f'List[{self.convert_js_to_py_type(type_info["items"]["type"], domain_name)}]'
+                _type = f'List[{self.convert_js_to_py_type(item_info["items"]["type"], domain_name)}]'
         else:
-            if '$ref' in type_info:
-                _type = self.get_forward_ref(type_info["$ref"], domain_name)
+            if '$ref' in item_info:
+                _type = self.get_forward_ref(item_info["$ref"], domain_name)
             else:
-                if 'enum' in type_info:
-                    _enum_vals = ", ".join([f'\'{x}\'' for x in type_info["enum"]])
+                if 'enum' in item_info:
+                    _enum_vals = ", ".join([f'\'{x}\'' for x in item_info["enum"]])
                     _type = f'Literal[{_enum_vals}]'
                 else:
-                    _type = self.js_to_py_types[type_info['type']]
+                    _type = self.js_to_py_types[item_info['type']]
 
         return _type
 
