@@ -278,7 +278,7 @@ class ProtocolTypesGenerator:
         and adds a comment with the actual type reference.
         Returns: None
         """
-        expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
+        expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float`, List]]'
         for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_references])):
             any_recursive_ref = rf'(?:{"|".join(recursive_refs)})'
             for recursing_itm in recursive_refs:
