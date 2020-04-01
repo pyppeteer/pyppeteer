@@ -31,7 +31,6 @@ include = [
     "CHANGES.md",
     "tests/*",
     "docs/*",
-    "Makefile",
 ]
 exclude = [
     '*/__pycache__',
