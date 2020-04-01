@@ -239,17 +239,17 @@ class ProtocolTypesGenerator:
             # item_name = type_info[type_name_key] = '{type_info[type_name_key]}'
             td = self.generate_typed_dict(type_info, domain_name)
             self.typed_dicts.update(td)
-            _type = [*td.keys()][0]
+            type_ = [*td.keys()][0]
         else:
             try:
-                _type = self.convert_js_to_py_type(type_info, domain_name)
+                type_ = self.convert_js_to_py_type(type_info, domain_name)
             except KeyError:
                 if type_conversion_fallback is not False:
-                    _type = type_conversion_fallback
+                    type_ = type_conversion_fallback
                 else:
                     raise
-        self.all_known_types[domain_name][item_name] = _type
-        self.code_gen.add(f'{item_name} = {_type}')
+        self.all_known_types[domain_name][item_name] = type_
+        self.code_gen.add(f'{item_name} = {type_}')
 
     def expand_recursive_references(self):
         """
@@ -299,8 +299,8 @@ class ProtocolTypesGenerator:
         with td.indent_manager:
             for item in items:
                 td.add_comment_from_info(item)
-                _type = self.convert_js_to_py_type(item, domain_name)
-                td.add(f'{item["name"]}: {_type}')
+                type_ = self.convert_js_to_py_type(item, domain_name)
+                td.add(f'{item["name"]}: {type_}')
 
         return {td_name: td}
 
@@ -333,25 +333,25 @@ class ProtocolTypesGenerator:
             primitive type (eg int, float, str, etc)
         """
         if isinstance(item_info, str):
-            _type = self.js_to_py_types[item_info]
+            type_ = self.js_to_py_types[item_info]
         elif 'items' in item_info:
             assert item_info['type'] == 'array'
             if '$ref' in item_info['items']:
                 ref = item_info['items']['$ref']
-                _type = f'List[{self.get_forward_ref(ref, domain_name)}]'
+                type_ = f'List[{self.get_forward_ref(ref, domain_name)}]'
             else:
-                _type = f'List[{self.convert_js_to_py_type(item_info["items"]["type"], domain_name)}]'
+                type_ = f'List[{self.convert_js_to_py_type(item_info["items"]["type"], domain_name)}]'
         else:
             if '$ref' in item_info:
-                _type = self.get_forward_ref(item_info['$ref'], domain_name)
+                type_ = self.get_forward_ref(item_info['$ref'], domain_name)
             else:
                 if 'enum' in item_info:
                     _enum_vals = ', '.join([f'\'{x}\'' for x in item_info['enum']])
-                    _type = f'Literal[{_enum_vals}]'
+                    type_ = f'Literal[{_enum_vals}]'
                 else:
-                    _type = self.js_to_py_types[item_info['type']]
+                    type_ = self.js_to_py_types[item_info['type']]
 
-        return _type
+        return type_
 
     @staticmethod
     def get_forward_ref(relative_ref: str, potential_domain_context: str):
