@@ -233,43 +233,18 @@ class ProtocolTypesGenerator:
         self.code_gen.add_newlines(num=1)
 
     def expand_recursive_references(self):
-        for recursive_ref in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
-            names_in_ref_re = f'(?:{"|".join(recursive_ref)})'
-            chain = [
-                [self.typed_dicts[x] for x in recursive_ref] for _ in range(self.RECURSIVE_TYPE_EXPANSION_DEPTH + 1)
-            ]
-            initial_first_chain_name = chain[0][0].name
-            last_chain_index = len(chain) - 1
-            for index, chain_link in enumerate(chain):
-                if index >= 1:
-                    for index_n, item in enumerate(chain_link):
-
-                        def bump_ref(match):
-                            if self.RREF_SUFFIX in match.group(0):
-                                return match.group(0).replace(
-                                    f'_{self.RREF_SUFFIX}{match.group(2)}',
-                                    f'_{self.RREF_SUFFIX}{index}',
-                                )
-                            return f'\'{match.group(1)}_{self.RREF_SUFFIX}1\''
-
-                        chain[index][index_n] = chain[index][index_n].copy_with_filter(
-                            sub_pattern_replacements=(
-                                (r'\s*#.*', ''),
-                                (rf'\'({names_in_ref_re}(?:_{self.RREF_SUFFIX}(\d*))?)\'', bump_ref),
-                            ),
-                            new_name=f'{item.name}_{self.RREF_SUFFIX}{index - 1}',
-                        )
-                # continue or terminate the chain
-                first, last = chain_link[0], chain_link[-1]
-                if index == last_chain_index:
-                    repl_name = 'Dict[str, Union[Dict[str, Any], bool, int, float, List]]'
-                else:
-                    repl_name = f'\'{initial_first_chain_name}_{self.RREF_SUFFIX}{index}\''
-                chain[index][-1] = last.copy_with_filter(
-                    sub_pattern_replacements=((r'\s*#.*', f''), (f'\'{initial_first_chain_name}(?:_{self.RREF_SUFFIX}\d+)?\'', f'{repl_name}'))
+        for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_cross_references_s])):
+            any_recursive_ref = rf'(?:{"|".join(recursive_refs)})'
+            expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
+            for recursing_itm in recursive_refs:
+                self.typed_dicts[recursing_itm].filter_lines(
+                    sub_pattern_replacements=(
+                        (
+                            rf'(\s+)(\w+): [\w\[]*?\'({any_recursive_ref})\'\]?',
+                            rf'\1# actual: \3\n\1\2: {expansion}\n'
+                        ),
+                    )
                 )
-            for td in itertools.chain(*chain):
-                self.typed_dicts[td.name] = td
 
     def write_generated_code(self, path: Path = Path('protocol.py')) -> None:
         """
@@ -444,14 +419,14 @@ class TypedDictGenerator(TypingCodeGenerator):
         total_spec = ', total=False' if total else ''
         self.add(f'class {name}(TypedDict{total_spec}):')
 
-    def copy_with_filter(self, sub_pattern_replacements, new_name=None):
-        inst = TypedDictGenerator(new_name or self.name, self.total)
-        for line in self.code_lines[1:]:
+    def filter_lines(self, sub_pattern_replacements):
+        for index, line in enumerate(self.code_lines):
+            if index == 0:
+                # skip the class declaration line
+                continue
             for sub_p, sub_r in sub_pattern_replacements:
                 line = re.sub(sub_p, sub_r, line)
-            if line:
-                inst.code_lines.append(line)
-        return inst
+            self.code_lines[index] = line
 
     def __repr__(self):
         return f'<TypedDictGenerator {self.name}>'
