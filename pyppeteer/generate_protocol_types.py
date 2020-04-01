@@ -35,7 +35,7 @@ class ProtocolTypesGenerator:
         td_references: set of relations of one TypedDict to another. Needed to detect/resolve recursive references
         domains: List containing all the domains of the CDP protocol
         all_known_types: Dict containing all known types. Needed to resolve forward references.
-        typed_dicts: Dict of typed_dict_name: TypedDictGenerator(). We need a dict so we can access arbitrary elements
+        typed_dicts: Dict of typed_dict_name to TypedDictGenerator(). We need a dict so we can access arbitrary elements
             and update them if a recursive reference is found
         code_gen = instance of TypingCodeGenerator for actually recording code
     """
@@ -80,8 +80,8 @@ class ProtocolTypesGenerator:
         """
         Replaces a forward reference in the form 'Protocol.domain.ref' to the actual value of Protocol.domain.ref
         Args:
-            :param line: line in which protocol forward reference occurs.
-            :param fw_ref: whether or not to forward reference the resolved reference
+            line: line in which protocol forward reference occurs.
+            fw_ref: whether or not to forward reference the resolved reference
         Returns:
             str: line with resolved forward reference
         """
