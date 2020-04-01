@@ -1,8 +1,10 @@
+import logging
 from typing import Callable, Optional
 
 from pyppeteer import helpers
 from pyppeteer.helpers import debugError
 
+logger = logging.getLogger(__name__)
 
 class PipeTransport:
     def __init__(
@@ -20,8 +22,8 @@ class PipeTransport:
         self._eventListeners = [
             helpers.addEventListener(pipeRead, 'data', lambda buffer: self._dispatch(buffer)),
             helpers.addEventListener(pipeRead, 'close', _onclose),
-            helpers.addEventListener(pipeRead, 'error', debugError),
-            helpers.addEventListener(pipeWrite, 'error', debugError),
+            helpers.addEventListener(pipeRead, 'error', lambda e: logger.error(f'An exception occurred on pipe read: {e}')),
+            helpers.addEventListener(pipeWrite, 'error', lambda e: logger.error(f'An exception occurred on pipe read: {e}')),
         ]
 
     def send(self, message: str) -> None:

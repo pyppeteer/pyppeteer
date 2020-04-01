@@ -127,7 +127,7 @@ class Page(AsyncIOEventEmitter):
                 try:
                     client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    debugError(logger, e)
+                    logger.error(f'An exception occured: {e}')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
@@ -580,7 +580,7 @@ class Page(AsyncIOEventEmitter):
             try:
                 await frame.evaluate(expression)
             except Exception as e:
-                debugError(logger, e)
+                logger.error(f'An exception occured: {e}')
 
         await asyncio.gather(*(_evaluate(frame) for frame in self.frames))
 
@@ -704,7 +704,7 @@ class Page(AsyncIOEventEmitter):
                 'Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId']},
             )
         except Exception as e:
-            helpers.debugError(logger, e)
+            logger.error(f'An exception occurred: {e}')
 
     def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace=None) -> None:
         if not self.listeners(Events.Page.Console):

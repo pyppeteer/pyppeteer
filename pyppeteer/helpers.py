@@ -13,19 +13,10 @@ from typing import Any, Awaitable, Callable, Dict, List, Union, Optional
 
 from pyee import AsyncIOEventEmitter
 
-import pyppeteer
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
 logger = logging.getLogger(__name__)
-
-
-def debugError(_logger: logging.Logger, msg: Any) -> None:
-    """Log error messages."""
-    if pyppeteer.DEBUG:
-        _logger.error(msg)
-    else:
-        _logger.debug(msg)
 
 
 async def future_race(*fs) -> Union[None, Exception]:
@@ -121,7 +112,7 @@ def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
     except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
-        debugError(logger, e)
+        logger.error(f'An exception occured: {e}')
     return fut_none
 
 

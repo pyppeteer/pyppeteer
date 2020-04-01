@@ -124,7 +124,7 @@ class BrowserRunner:
                 try:
                     await self.connection.send('Browser.close')
                 except Exception as e:
-                    debugError(logger, e)
+                    logger.error(f'An exception occured: {e}')
                     self.kill()
         return await self._close_proc()
 
