@@ -11,6 +11,7 @@ import stat
 import sys
 from zipfile import ZipFile
 
+import certifi
 import urllib3
 from tqdm import tqdm
 
@@ -33,7 +34,7 @@ if NO_PROGRESS_BAR.lower() in ('1', 'true'):
 
 # Windows archive name changed at r591479.
 windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
-    
+
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
@@ -75,11 +76,9 @@ def download_zip(url: str) -> BytesIO:
     logger.warning('start chromium download.\n'
                    'Download may take a few minutes.')
 
-    # disable warnings so that we don't need a cert.
-    # see https://urllib3.readthedocs.io/en/latest/advanced-usage.html for more
-    urllib3.disable_warnings()
-
-    with urllib3.PoolManager() as http:
+    with urllib3.PoolManager(
+        cert_reqs="CERT_REQUIRED", ca_certs=certifi.where()
+    ) as http:
         # Get data from url.
         # set preload_content=False means using stream later.
         data = http.request('GET', url, preload_content=False)
