@@ -79,9 +79,11 @@ class ProtocolTypesGenerator:
     def resolve_forward_ref_on_line(self, line: str, fw_ref: bool = True) -> str:
         """
         Replaces a forward reference in the form 'Protocol.domain.ref' to the actual value of Protocol.domain.ref
-        :param line: line in which protocol forward reference occurs.
-        :param fw_ref: whether or not to forward reference the resolved reference
-        :return: line with resolved forward reference
+        Args:
+            :param line: line in which protocol forward reference occurs.
+            :param fw_ref: whether or not to forward reference the resolved reference
+        Returns:
+            str: line with resolved forward reference
         """
         # PyCharm can't handle partial
         # noinspection PyTypeChecker
@@ -108,7 +110,7 @@ class ProtocolTypesGenerator:
     def retrieve_top_level_domain(self):
         """
         Fetches and data, parses it, and sets the class variable 'domains' to it for later use.
-        :return: None
+        Returns: None
         """
         asyncio.get_event_loop().run_until_complete(self._retrieve_top_level_domain())
 
@@ -118,7 +120,7 @@ class ProtocolTypesGenerator:
         keep track of the current indentation level. Resolves all forward references. Expands recursive types to an
         approximation of the cyclic type referenced.
 
-        :return: None
+        Returns: None
         """
 
         self.generate_header_doc_string()
@@ -165,7 +167,7 @@ class ProtocolTypesGenerator:
     def generate_header_doc_string(self):
         """
         Generates a headers doc string for the top of the file.
-        :return: None
+        Returns: None
         """
         self.code_gen.insert_before_code('"""')
         self.code_gen.insert_before_code(
@@ -178,7 +180,11 @@ class ProtocolTypesGenerator:
         self.code_gen.insert_before_code('"""')
         self.code_gen.add_newlines_before_code(num=2)
 
-    def resolve_all_fw_refs(self):
+    def resolve_all_fw_refs(self) -> None:
+        """
+        Resolves all forward reference to the root of said references eg 'Protocol.Animation.thingParams' -> thingParams
+        Returns: None
+        """
         # no need for copying list as we aren't adding/removing elements
         # resolve forward refs in main protocol class
         for index, line in enumerate(self.code_gen.code_lines):
@@ -199,10 +205,10 @@ class ProtocolTypesGenerator:
 
                 self.typed_dicts[td_name].code_lines[index] = resolved_fw_ref
 
-    def generate_overview(self):
+    def generate_overview(self) -> None:
         """
         Generate several convenience overview classes, listed in overview_info
-        :return: None
+        Returns: None
         """
         overview_info = {
             'Events': ('events', '\'Protocol.{domain}.{item_name}\''),
@@ -239,12 +245,14 @@ class ProtocolTypesGenerator:
         """
         Adds a class attr based on type_info, type_name_key, td_key, domain_name, and type_conversion_fallback
 
-        :param type_info: Dict containing info pertaining to the type
-        :param type_name_key: Key to the name of the type
-        :param td_key: Key to the item which contains TypedDict info
-        :param domain_name: Name of domain
-        :param type_conversion_fallback: If not false, used when the type cannot be determined from type_info
-        :return: None
+        Args:
+            type_info: Dict containing info pertaining to the type
+            type_name_key: Key to the name of the type
+            td_key: Key to the item which contains TypedDict info
+            domain_name: Name of domain
+            type_conversion_fallback: If not false, used when the type cannot be determined from type_info
+            
+        Returns: None
         """
         self.code_gen.add_comment_from_info(type_info)
         item_name = type_info[type_name_key]
@@ -268,11 +276,11 @@ class ProtocolTypesGenerator:
         """
         Expands recursive references to TypedDicts with Dict[str, Union[Dict[str, Any], str, bool, int, float, List]],
         and adds a comment with the actual type reference.
-        :return: None
+        Returns: None
         """
+        expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
         for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_references])):
             any_recursive_ref = rf'(?:{"|".join(recursive_refs)})'
-            expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
             for recursing_itm in recursive_refs:
                 self.typed_dicts[recursing_itm].filter_lines(
                     (rf'(\s+)(\w+): [\w\[]*?\'({any_recursive_ref})\'\]?', rf'\1# actual: \3\n\1\2: {expansion}\n'),
@@ -283,8 +291,10 @@ class ProtocolTypesGenerator:
         Write generated code lines to the specified path. Writes to a temporary file and checks that file with mypy to
         'resolve' any cyclic references.
 
-        :param path: path to write type code to.
-        :return: None
+        Args:
+            path: path to write type code to.
+
+        Returns: None
         """
         if path.is_dir():
             path /= 'protocol.py'
@@ -298,10 +308,11 @@ class ProtocolTypesGenerator:
         """
         Generates TypedDicts based on type_info.
 
-        :param type_info: Dict containing the info for the TypedDict
-        :param domain_name: path to resolve relative forward references in type_info against
-        :param name: (Optional) Name of TypedDict. Defaults to name found in type_info
-        :return: TypedDict corresponding to type information found in type_info
+        Args:
+            type_info: Dict containing the info for the TypedDict
+            domain_name: path to resolve relative forward references in type_info against
+
+        Returns: TypedDict corresponding to type information found in type_info
         """
         items = self._multi_fallback_get(type_info, 'returns', 'parameters', 'properties')
         td_name = self._multi_fallback_get(type_info, 'id', 'name')
@@ -319,9 +330,12 @@ class ProtocolTypesGenerator:
     def _multi_fallback_get(d: Dict[Hashable, Any], *k: Hashable) -> Any:
         """
         Convenience method to retrieve item from dict with multiple keys as fallbacks for failed accesses
-        :param d: Dict to retrieve values from
-        :param k: keys of Dict to retrieve values from
-        :return: first found value where key in k
+
+        Args:
+            d: Dict to retrieve values from
+            k: keys of Dict to retrieve values from
+        Returns: Any
+            first found value where key in k
         """
         for key in k:
             if key in d:
@@ -338,9 +352,11 @@ class ProtocolTypesGenerator:
         The domain_name is used to qualify relative forward reference in type_info. For example, if
         type_info['$ref'] == 'foo', domain_name would be used produce an absolute forward reference, ie domain_name.foo
 
-        :param item_info: Dict or str containing type_info
-        :param domain_name: path to resolve relative forward references in type_info against
-        :return: valid python type, either in the form of an absolute forward reference (eg Protocol.bar.foo) or
+        Args:
+            item_info: Dict or str containing type_info
+            domain_name: path to resolve relative forward references in type_info against
+        Returns: str
+            valid python type, either in the form of an absolute forward reference (eg Protocol.bar.foo) or
             primitive type (eg int, float, str, etc)
         """
         if isinstance(item_info, str):
@@ -371,9 +387,12 @@ class ProtocolTypesGenerator:
         to a nested class, the full path is resolved against potential_domain_context. In the case of
         the reference being relative to the Protocol class, the path is simple resolved against the Protocol class
 
-        :param relative_ref: reference to another class, in the form of foo or foo.bar
-        :param potential_domain_context: context to resolve class against if relative_ref is relative to it
-        :return: absolute forward reference to nested class attr
+        Args:
+            relative_ref: reference to another class, in the form of foo or foo.bar
+            potential_domain_context: context to resolve class against if relative_ref is relative to it
+
+        Returns: str
+            absolute forward reference to nested class attr
         """
         if len(relative_ref.split('.')) == 2:
             non_fw_ref = f'Protocol.{relative_ref}'
