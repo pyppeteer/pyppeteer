@@ -237,26 +237,24 @@ class ProtocolTypesGenerator:
         Returns: None
         """
         overview_info = {
-            'Events': ('events', '\'Protocol.{domain}.{item_name}\'', False),
-            'CommandParameters': ('commands', '\'Protocol.{domain}.{item_name}\'', False),
-            'CommandReturnValues': ('commands', '\'Protocol.{domain}.{item_name}\'', False),
-            'CommandNames': ('commands', '\'{domain}.{item_name}\'', True),
+            'Events': ('events', '\'{domain}.{item_name}\'', True, False),
+            'CommandParameters': ('commands', '\'Protocol.{domain}.{item_name}\'', False, False),
+            'CommandReturnValues': ('commands', '\'Protocol.{domain}.{item_name}\'', False, False),
+            'CommandNames': ('commands', '\'{domain}.{item_name}\'', True, True),
         }
 
         last_overview_class_name = [*overview_info.keys()][-1]
-        for overview_class_name, (domain_key, item_fmt, gen_externally) in overview_info.items():
+        for overview_class_name, (domain_key, item_fmt, gen_externally, no_suffix) in overview_info.items():
             overview_code_gen = TypingCodeGenerator(init_imports=False)
             overview_code_gen.add_code(f'class {overview_class_name}:')
             with overview_code_gen.indent_manager:
-                for domain in reversed(self.domains):
-                    if domain_key in domain:
-                        last_domain = domain
-                        break
                 for domain in self.domains:
                     if domain_key in domain:
                         overview_code_gen.add_code(f'class {domain["domain"]}:')
                         with overview_code_gen.indent_manager:
                             for item in domain[domain_key]:
+                                if no_suffix:
+                                    item['name'] = re.sub('(ReturnValues|Parameters)$', '', item['name'])
                                 formatted_name = item_fmt.format(domain=domain['domain'], item_name=item['name'])
                                 overview_code_gen.add_code(f'{item["name"]} = {formatted_name}')
                         overview_code_gen.add_newlines(num=1)

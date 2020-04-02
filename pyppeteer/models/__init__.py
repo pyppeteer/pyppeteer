@@ -4,7 +4,9 @@ import sys
 from pathlib import Path
 from typing import Sequence, Union, Dict, List, Any, TYPE_CHECKING
 
-from ._protocol import Protocol, CommandNames
+from pyppeteer.models._protocol import Protocol
+from pyppeteer.models._protocol import CommandNames as DPC
+from pyppeteer.models._protocol import Events as DPE
 
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
