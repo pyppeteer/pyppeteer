@@ -336,7 +336,7 @@ class ProtocolTypesGenerator:
         Returns: None
         """
         if path.is_dir():
-            path /= 'protocol.py'
+            path /= '_protocol.py'
         logger.info(f'Writing generated protocol code to {path}')
         # PyCharm can't handle this path type properly
         # noinspection PyTypeChecker
@@ -592,7 +592,7 @@ if __name__ == '__main__':
         '--output',
         '-o',
         help='dir or file to output to',
-        default=Path(__file__).parents[1] / 'pyppeteer' / 'models' / 'protocol.py',
+        default=Path(__file__).parents[1] / 'pyppeteer' / 'models' / '_protocol.py',
     )
     generator = ProtocolTypesGenerator()
     generator.retrieve_top_level_domain()
