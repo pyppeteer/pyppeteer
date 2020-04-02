@@ -37,7 +37,9 @@ class ProtocolTypesGenerator:
         all_known_types: Dict containing all known types. Needed to resolve forward references.
         typed_dicts: Dict of typed_dict_name to TypedDictGenerator(). We need a dict so we can access arbitrary elements
             and update them if a recursive reference is found
-        code_gen = instance of TypingCodeGenerator for actually recording code
+        code_gen = instance of TypingCodeGenerator for recording code lines
+        _extern_code_gen = instance of TypingCodeGenerator for actually recording code the will appear outside the if
+            TYPE_CHECKING guard
     """
 
     _forward_ref_re = r'\'Protocol\.(\w+\.\w+)\''
@@ -57,6 +59,7 @@ class ProtocolTypesGenerator:
         self.all_known_types = {}
         self.typed_dicts = {}
         self.code_gen = TypingCodeGenerator()
+        self._extern_code_gen = TypingCodeGenerator()
 
     def _resolve_forward_ref_re_sub_repl(self, match: Match, fw_ref: bool) -> str:
         domain_, ref = match.group(1).split('.')
@@ -116,9 +119,10 @@ class ProtocolTypesGenerator:
 
     def gen_spec(self):
         """
-        Generate the Protocol class file lines within self.code_gen attribute. Uses an IndentManager context manager to 
+        Generate the Protocol class file lines within self.code_gen attribute. Uses an IndentManager context manager to
         keep track of the current indentation level. Resolves all forward references. Expands recursive types to an
-        approximation of the cyclic type referenced.
+        approximation of the cyclic type referenced. Wraps protocol class in a if TYPE_CHECKING guard and provides a
+        dummy protocol class for runtime for performance.
 
         Returns: None
         """
@@ -128,57 +132,71 @@ class ProtocolTypesGenerator:
         logger.info(f'Generating protocol spec')
         t_start = time.perf_counter()
 
-        self.code_gen.add('class Protocol:')
+        self.code_gen.add('if TYPE_CHECKING:', lines_classification='inserted')
         with self.code_gen.indent_manager:
-            for domain in self.domains:
-                domain_name = domain['domain']
-                self.code_gen.add(f'class {domain_name}:')
-                self.code_gen.add_comment_from_info(domain)
-                self.all_known_types[domain_name] = {}
-                with self.code_gen.indent_manager:
-                    for type_info in domain.get('types', []):
-                        self.add_type_item(type_info, 'id', 'properties', domain_name)
+            self.code_gen.add('class Protocol:')
+            with self.code_gen.indent_manager:
+                for domain in self.domains:
+                    domain_name = domain['domain']
+                    self.code_gen.add(f'class {domain_name}:')
+                    self.code_gen.add_comment_from_info(domain)
+                    self.all_known_types[domain_name] = {}
+                    with self.code_gen.indent_manager:
+                        for type_info in domain.get('types', []):
+                            self.add_type_item(type_info, 'id', 'properties', domain_name)
 
-                    for payload in domain.get('events', []):
-                        payload["name"] = payload["name"] + 'Payload'
-                        self.add_type_item(payload, 'name', 'parameters', domain_name, type_conversion_fallback='None')
-
-                    for command_info in domain.get('commands', []):
-                        for td_key, suffix in (('properties', 'Parameters'), ('returns', 'ReturnValues')):
-                            command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
+                        for payload in domain.get('events', []):
+                            payload["name"] = payload["name"] + 'Payload'
                             self.add_type_item(
-                                command_info, 'name', td_key, domain_name, type_conversion_fallback='None'
+                                payload, 'name', 'parameters', domain_name, type_conversion_fallback='None'
                             )
 
-            self.generate_overview()
-            self.resolve_all_fw_refs()
+                        for command_info in domain.get('commands', []):
+                            for td_key, suffix in (('properties', 'Parameters'), ('returns', 'ReturnValues')):
+                                command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
+                                self.add_type_item(
+                                    command_info, 'name', td_key, domain_name, type_conversion_fallback='None'
+                                )
 
-        self.expand_recursive_references()
-        self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
-        # all typed dicts are inserted prior to the main Protocol class
-        for index, td in enumerate(self.typed_dicts.values()):
-            td.add_newlines(num=2)
-            self.code_gen.insert_before_code(td)
+                self.generate_overview()
+                self.resolve_all_fw_refs()
 
+            self.expand_recursive_references()
+            self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
+            # all typed dicts are inserted prior to the main Protocol class
+            for index, td in enumerate(self.typed_dicts.values()):
+                td.add_newlines(num=1)
+                self.code_gen.add(lines=td.code_lines, lines_classification='inserted')
+
+        self.code_gen.add('else:')
+        with self.code_gen.indent_manager:
+            self.code_gen.add_newlines(num=1)
+            # only define dummy class if not TYPE_CHECKING (runtime)
+            self.code_gen.add('class Protocol:')
+            with self.code_gen.indent_manager:
+                self.code_gen.add('def __getattr__(self, _):')
+                with self.code_gen.indent_manager:
+                    self.code_gen.add('return self')
+            self.code_gen.add_newlines(num=2)
+
+        self.code_gen.add(lines=self._extern_code_gen.code_lines)
         logger.info(f'Generated protocol spec in {time.perf_counter() - t_start:.2f}s')
-        # newline at end of file
-        self.code_gen.add_newlines(num=1)
 
     def generate_header_doc_string(self):
         """
         Generates a headers doc string for the top of the file.
         Returns: None
         """
-        self.code_gen.insert_before_code('"""')
-        self.code_gen.insert_before_code(
+        self.code_gen.add('"""', lines_classification='inserted')
+        self.code_gen.add(
             f'''\
             Automatically generated by ./{Path(__file__).relative_to(Path(__file__).parents[1]).as_posix()}
             Attention! This file should *not* be modified directly! Instead, use the script to update it. 
     
-            Last regeneration: {datetime.utcnow()}'''
+            Last regeneration: {datetime.utcnow()}''',
+            lines_classification='inserted',
         )
-        self.code_gen.insert_before_code('"""')
-        self.code_gen.add_newlines_before_code(num=2)
+        self.code_gen.add('"""', lines_classification='inserted')
 
     def resolve_all_fw_refs(self) -> None:
         """
@@ -211,28 +229,38 @@ class ProtocolTypesGenerator:
         Returns: None
         """
         overview_info = {
-            'Events': ('events', '\'Protocol.{domain}.{item_name}\''),
-            'CommandParameters': ('commands', '\'Protocol.{domain}.{item_name}\''),
-            'CommandReturnValues': ('commands', '\'Protocol.{domain}.{item_name}\''),
-            'CommandNames': ('commands', '\'{domain}.{item_name}\''),
+            'Events': ('events', '\'Protocol.{domain}.{item_name}\'', False),
+            'CommandParameters': ('commands', '\'Protocol.{domain}.{item_name}\'', False),
+            'CommandReturnValues': ('commands', '\'Protocol.{domain}.{item_name}\'', False),
+            'CommandNames': ('commands', '\'{domain}.{item_name}\'', True),
         }
         last_overview_class = [*overview_info.keys()][0]
-        for overview_class, (domain_key, item_fmt) in overview_info.items():
+        for overview_class, (domain_key, item_fmt, gen_externally) in overview_info.items():
             overview_code_gen = TypingCodeGenerator(init_imports=False)
             overview_code_gen.add(f'class {overview_class}:')
             with overview_code_gen.indent_manager:
-                for domain in self.domain['domains']:
+                for domain in reversed(self.domains):
+                    if domain_key in domain:
+                        last_domain = domain
+                        break
+                else:  # no break
+                    last_domain = None
+                for domain in self.domains:
                     if domain_key in domain:
                         overview_code_gen.add(f'class {domain["domain"]}:')
                         with overview_code_gen.indent_manager:
                             for item in domain[domain_key]:
                                 formatted_name = item_fmt.format(domain=domain['domain'], item_name=item['name'])
                                 overview_code_gen.add(f'{item["name"]} = {formatted_name}')
-                        overview_code_gen.add_newlines(num=2)
+                        if domain != last_domain:
+                            overview_code_gen.add_newlines(num=1)
             if overview_class != last_overview_class:
                 # don't add newlines to EOF
-                overview_code_gen.add_newlines(num=2)
-            self.code_gen.add(lines=overview_code_gen.code_lines)
+                overview_code_gen.add_newlines(num=1)
+            if gen_externally:
+                self._extern_code_gen.add(lines=overview_code_gen.code_lines)
+            else:
+                self.code_gen.add(lines=overview_code_gen.code_lines)
 
     def add_type_item(
         self,
@@ -261,6 +289,7 @@ class ProtocolTypesGenerator:
             td = self.generate_typed_dict(type_info, domain_name)
             self.typed_dicts.update(td)
             type_ = [*td.keys()][0]
+            typed_dict = True
         else:
             try:
                 type_ = self.convert_js_to_py_type(type_info, domain_name)
@@ -269,7 +298,12 @@ class ProtocolTypesGenerator:
                     type_ = type_conversion_fallback
                 else:
                     raise
+            typed_dict = False
+
         self.all_known_types[domain_name][item_name] = type_
+        if typed_dict:
+            # https://github.com/python/mypy/issues/7866
+            type_ = f'Union[{type_}]'
         self.code_gen.add(f'{item_name} = {type_}')
 
     def expand_recursive_references(self) -> None:
@@ -278,7 +312,7 @@ class ProtocolTypesGenerator:
         and adds a comment with the actual type reference.
         Returns: None
         """
-        expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float`, List]]'
+        expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
         for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_references])):
             any_recursive_ref = rf'(?:{"|".join(recursive_refs)})'
             for recursing_itm in recursive_refs:
@@ -427,40 +461,26 @@ class TypingCodeGenerator:
         if init_imports:
             self.init_imports()
 
-    @contextmanager
-    def temp_lines_classification(self, value: Any):
-        """
-        Context manager to temporarily change the lines classification
-        Args:
-            value: value to change lines_classification to
-
-        Returns: Context manager which changes lines_classification to value on entering and changes it back to its
-            initial state upon exiting.
-        """
-        initial = self.lines_classification
-        self.lines_classification = value
-        yield
-        self.lines_classification = initial
-
     def init_imports(self) -> None:
         """
         Writes import code relating to typing to self.import_lines
         Returns: None
         """
-        with self.temp_lines_classification('import'):
-            self.add('import sys')
-            self.add_newlines(num=1)
-            self.add('from typing import Any, Dict, List, Union')
-            self.add_newlines(num=1)
-            self.add('if sys.version_info < (3,8):')
-            with self.indent_manager:
-                self.add('from typing_extensions import Literal, TypedDict')
-            self.add('else:')
-            with self.indent_manager:
-                self.add('from typing import Literal, TypedDict')
-            self.add_newlines(num=2)
+        self.lines_classification = 'import'
+        self.add('import sys')
+        self.add_newlines(num=1)
+        self.add('from typing import Any, Dict, List, TYPE_CHECKING, Union')
+        self.add_newlines(num=1)
+        self.add('if sys.version_info < (3, 8):')
+        with self.indent_manager:
+            self.add('from typing_extensions import Literal, TypedDict')
+        self.add('else:')
+        with self.indent_manager:
+            self.add('from typing import Literal, TypedDict')
+        self.add_newlines(num=1)
+        self.lines_classification = 'code'
 
-    def add_newlines(self, num: int = 1) -> None:
+    def add_newlines(self, num: int = 1, lines_classification: str = None) -> None:
         """
         Adds num newlines
         Args:
@@ -468,18 +488,11 @@ class TypingCodeGenerator:
 
         Returns: None
         """
-        self.add('\n' * num)
-
-    def add_newlines_before_code(self, num: int = 1) -> None:
-        """
-        Adds num newlines before code_lines
-        Args:
-            num: number of newlines to add before code_lines
-
-        Returns: None
-        """
-        with self.temp_lines_classification('inserted'):
-            self.add_newlines(num)
+        with self.indent_manager as indent_mgr:
+            initial_indent = indent_mgr.indent
+            indent_mgr.indent = ''
+            self.add('\n' * num, lines_classification)
+            indent_mgr.indent = initial_indent
 
     def add_comment_from_info(self, info: Dict[str, Any]) -> None:
         """
@@ -493,7 +506,7 @@ class TypingCodeGenerator:
             newline = '\n'
             self.add(f'# {info["description"].replace(newline, " ")}')
 
-    def add(self, code: str = None, lines: List[str] = None) -> None:
+    def add(self, code: str = None, lines: List[str] = None, lines_classification: str = None) -> None:
         """
         Adds code from a string or code from lines. If code is not None, lines is assigned to the str dedented and
         split by newlines. Each line in lines is applied the current indent level before being added to the
@@ -501,30 +514,20 @@ class TypingCodeGenerator:
         Args:
             code: str containing code
             lines: List[str] containing code
+            lines_classification: str of lines_classification, defaults to 'code'
 
         Returns: None
         """
         assert code or lines, 'One of code or lines must be specified'
+        lines_classification = lines_classification or self.lines_classification
         if code:
             lines = [line for line in dedent(code).split('\n')]
             # if we are adding a newline, '\n'.split('\n') == ['', ''], which will expand to 2 newlines instead of one,
             # so we need to remove the last element if it's empty
-            if lines[-1] == '':
-                lines = lines[:-1]
+            if lines == ['', ''] and code.count('\n') == 1:
+                lines = ['']
         lines = [f'{self.indent_manager}{li}' for li in lines]
-        self.__getattribute__(f'{self.lines_classification}_lines').extend(lines)
-
-    def insert_before_code(self, code: str = None, lines: List[str] = None) -> None:
-        """
-        Shortcut for inserting code before code_lines.
-        Args:
-            code: str containing code
-            lines: List[str] containing code
-
-        Returns: None
-        """
-        with self.temp_lines_classification('inserted'):
-            self.add(code=code, lines=lines)
+        self.__getattribute__(f'{lines_classification}_lines').extend(lines)
 
     def __str__(self):
         return '\n'.join(self.import_lines) + '\n'.join(self.inserted_lines) + '\n'.join(self.code_lines)
@@ -552,30 +555,32 @@ class TypedDictGenerator(TypingCodeGenerator):
 
         Returns: None
         """
-        for index, line in enumerate(self.code_lines):
-            if index == 0:
-                # skip the class declaration line
-                continue
-            for sub_p, sub_r in sub_pattern_replacements:
-                line = re.sub(sub_p, sub_r, line)
-            self.code_lines[index] = line
+        temp_code_lines = self.code_lines[:]
+        self.code_lines = [self.code_lines[0]]
+        for line in temp_code_lines[1:]:
+            with self.indent_manager:
+                for sub_p, sub_r in sub_pattern_replacements:
+                    line = re.sub(sub_p, sub_r, line)
+                self.add(code=line)
 
 
 class IndentManager:
     """
     Simple class which can be used with a with statement to increment/decrement the current indent level/
     """
-    def __init__(self):
-        self._indent = ''
 
-    def __enter__(self) -> None:
-        self._indent += '    '
+    def __init__(self):
+        self.indent = ''
+
+    def __enter__(self) -> 'IndentManager':
+        self.indent += '    '
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self._indent = self._indent[:-4]
+        self.indent = self.indent[:-4]
 
     def __str__(self) -> str:
-        return self._indent
+        return self.indent
 
 
 if __name__ == '__main__':
