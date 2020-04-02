@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from typing import Sequence, Union, Dict, List, Any, TYPE_CHECKING
 
+from .protocol import Protocol, CommandNames
+
 if sys.version_info < (3, 8):
     from typing_extensions import TypedDict, Literal
 else:

@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import time
+from argparse import ArgumentParser
 from datetime import datetime
 from functools import partial
 from pathlib import Path
@@ -324,7 +325,7 @@ class ProtocolTypesGenerator:
                     (rf'(\s+)(\w+): [\w\[]*?\'({any_recursive_ref})\'\]?', rf'\1# actual: \3\n\1\2: {expansion}\n'),
                 )
 
-    def write_generated_code(self, path: Path = Path('protocol.py')) -> None:
+    def write_generated_code(self, path: Path) -> None:
         """
         Write generated code lines to the specified path. Writes to a temporary file and checks that file with mypy to
         'resolve' any cyclic references.
@@ -586,7 +587,14 @@ class IndentManager:
 
 
 if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument(
+        '--output',
+        '-o',
+        help='dir or file to output to',
+        default=Path(__file__).parents[1] / 'pyppeteer' / 'models' / 'protocol.py',
+    )
     generator = ProtocolTypesGenerator()
     generator.retrieve_top_level_domain()
     generator.gen_spec()
-    generator.write_generated_code()
+    generator.write_generated_code(path=parser.parse_args().output)
