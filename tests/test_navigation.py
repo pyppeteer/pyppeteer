@@ -114,6 +114,74 @@ class TestPage:
                 await isolated_page.goto('http://localhost:27182/non-existing-url')
             assert 'CONNECTION_REFUSED' in str(excpt)
 
+        @sync
+        async def test_fails_on_exceeding_nav_timeout(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_fails_on_exceeding_default_nav_timeout(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_fails_on_exceeding_default_timeout(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_prioritizes_nav_timeout_of_default(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_timeout_disabled_when_equal_to_0(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_when_navigating_to_valid_url(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_when_navigating_to_valid_data_url(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_when_navigating_to_404(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_returns_last_response_in_redirect_chain(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_does_not_leak_listeners_during_nav(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_does_not_leak_listeners_during_bad_nav(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_does_not_leak_listeners_during_nav_of_many_pages(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_navs_to_dataURL_and_fires_dataURL_reqs(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_self_requesting_pages(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_shows_proper_error_msg_on_failed_nav(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_sends_referer(self, isolated_page, server):
+            pass
+
     class TestWaitForNavigation:
         pass
 
