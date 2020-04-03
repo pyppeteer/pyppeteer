@@ -23,6 +23,7 @@ from typing import Union, List, Optional, Tuple, cast, Sequence, Any
 from urllib import request
 from zipfile import ZipFile
 
+import certifi
 import urllib3
 from tqdm import tqdm
 
@@ -178,7 +179,9 @@ class BrowserFetcher:
 
     def can_download(self, revision: str) -> bool:
         url = download_url(self._platform, self.downloadHost, revision)
-        http = urllib3.PoolManager()
+        http = urllib3.PoolManager(
+            cert_reqs='CERT_REQUIRED', ca_certs=certifi.where()
+        )
 
         try:
             res = http.request('HEAD', url)

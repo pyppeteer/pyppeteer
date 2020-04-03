@@ -207,7 +207,7 @@ class ElementHandle(JSHandle):
         try:
             return await self._client.send('DOM.getBoxModel', {'objectId': self._remoteObject['objectId']})
         except Exception as e:
-            debugError(logger, e)
+            logger.error(f'An exception occured: {e}')
 
     def _fromProtocolQuad(self, quad):
         return [

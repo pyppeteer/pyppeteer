@@ -176,7 +176,7 @@ class JSCoverage:
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
             # This might happen if the page has already navigated away.
-            debugError(logger, e)
+            logger.error(f'An exception occured: {e}')
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
@@ -257,7 +257,7 @@ class CSSCoverage:
             self._stylesheetSources[header['styleSheetId']] = response['text']
         except Exception as e:
             # This might happen if the page has already navigated away.
-            debugError(logger, e)
+            logger.error(f'An exception occured: {e}')
 
     async def stop(self) -> List[CoverageResult]:
         """Stop coverage measurement and return results."""

@@ -410,7 +410,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            debugError(logger, str(e))
+            logger.error(f'An exception occured: {e}')
 
     async def respond(self, response: Dict[str, Any]) -> None:
         """Fulfills request with given response.
@@ -456,7 +456,7 @@ class Request:
             # todo: find out what error is raised from here
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            debugError(logger, str(e))
+            logger.error(f'An exception occured: {e}')
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
@@ -506,7 +506,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            debugError(logger, e)
+            logger.error(f'An exception occured: {e}')
 
     @property
     def _actionable_request(self) -> bool:

@@ -62,7 +62,7 @@ class Worker(AsyncIOEventEmitter):
             # execution contexts.
             self._client.send('Runtime.enable', {})
         except Exception as e:
-            debugError(logger, e)
+            logger.error(f'An exception occured: {e}')
 
         def onConsoleAPICalled(event: Dict[str, Any]) -> None:
             args: List[JSHandle] = []

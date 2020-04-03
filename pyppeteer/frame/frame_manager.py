@@ -242,7 +242,7 @@ class FrameManager(AsyncIOEventEmitter):
         )
         for result in results:
             if isinstance(result, Exception):
-                debugError(logger, result)
+                logger.exception(f'An exception occurred: {result}')
 
     def _onFrameNavigatedWithinDocument(self, frameId: str, url: str) -> None:
         frame = self._frames.get(frameId)
