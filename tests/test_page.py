@@ -546,7 +546,7 @@ class TestSetContent:
     async def test_respects_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_request_precondition('/img.png', lambda: asyncio.sleep(1))
+        server.app.add_one_time_request_delay('/img.png', 1)
         with pytest.raises(TimeoutError):
             # note: timeout in ms
             await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
@@ -555,7 +555,7 @@ class TestSetContent:
     async def test_respects_default_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_request_precondition('/img.png', lambda: asyncio.sleep(1))
+        server.app.add_one_time_request_delay('/img.png', 1)
         # note: timeout in ms
         isolated_page.setDefaultNavigationTimeout(1)
         with pytest.raises(TimeoutError):
