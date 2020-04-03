@@ -180,6 +180,7 @@ class _StaticFileHandler(web.StaticFileHandler):
     one_time_request_headers = {}
     callbacks = {}
     request_preconditions = {}
+    request_resp = {}
 
     @classmethod
     def set_request_header(cls, path: str, headers: Dict[str, str], one_time: bool = False):
@@ -187,22 +188,28 @@ class _StaticFileHandler(web.StaticFileHandler):
 
     @classmethod
     def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
-        cls.callbacks[path.strip('/')] = func
+        stripped = path.strip('/')
+        if stripped in cls.callbacks:
+            cls.callbacks[stripped] = []
+        cls.callbacks[stripped].append(func)
 
     @classmethod
     def add_one_time_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        cls.request_preconditions[path.strip('/')] = precondition
+        cls.add_one_time_callback(path, lambda _: precondition() if callable(precondition) else precondition)
+
+    @classmethod
+    def add_one_time_request_resp(cls, path: str, resp: bytes):
+        cls.request_resp[path.strip('/')] = resp
 
     async def get(self, path: str, include_body: bool = True) -> None:
         if path in self.callbacks:
-            self.callbacks[path](self.request)
+            callbacks = self.callbacks[path][:]
             del self.callbacks[path]
-        if path in self.request_preconditions:
-            func = self.request_preconditions[path]
-            del self.request_preconditions[path]
-            func_res = func()
-            if isawaitable(func_res):
-                await func_res
+            for callback in callbacks:
+                func_res = callback(self.request)
+                if isawaitable(func_res):
+                    await func_res
+
         headers = self.request_headers.get(path, {})
         if path in self.one_time_request_headers:
             headers = self.one_time_request_headers[path]
@@ -210,7 +217,13 @@ class _StaticFileHandler(web.StaticFileHandler):
 
         if headers:
             [self.set_header(k, v) for k, v in headers.items()]
-        await super().get(path, include_body)
+
+        if path in self.request_resp:
+            resp = self.request_resp[path]
+            del self.request_resp[path]
+            self.write(resp)
+        else:
+            await super().get(path, include_body)
 
 
 class _Application(web.Application):
@@ -227,10 +240,14 @@ class _Application(web.Application):
     def add_one_time_request_delay(self, path: str, delay: float):
         async def _delay():
             await asyncio.sleep(delay)
+
         self.add_one_time_request_precondition(path, precondition=_delay)
 
+    def add_one_time_request_resp(self, path: str, resp: bytes):
+        self._handlers[0][1].add_one_time_request_resp(urlparse(path), resp)
+
     def add_one_time_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        self._handlers[0][1].add_request_precondition(urlparse(path).path, precondition)
+        self._handlers[0][1].add_one_time_request_precondition(urlparse(path).path, precondition)
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
         self._handlers[0][1].set_request_header(urlparse(path).path, headers, True)
