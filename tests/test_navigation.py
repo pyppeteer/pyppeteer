@@ -183,18 +183,67 @@ class TestPage:
             pass
 
     class TestWaitForNavigation:
-        pass
+        @sync
+        async def test_basic_usage(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_clicking_anchor_urls(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_historypushState(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_historyreplaceState(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_with_historyback_forward(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_works_when_subframe_runs_windowstop(self, isolated_page, server):
+            pass
 
     class TestGoBack:
-        pass
+        @sync
+        async def test_basic_usage(self, isolated_page, server):
+            pass
 
-    class TestReload:
+        @sync
+        async def test_works_with_historyAPI(self, isolated_page, server):
+            pass
+
+    @sync
+    async def test_reload_works(self, isolated_page, server):
         pass
 
 
 class Frame:
     class TestGoto:
-        pass
+        @sync
+        async def test_navigates_subframes(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_rejects_when_frame_detaches(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_returns_matching_responses(self, isolated_page, server):
+            pass
 
     class TestWaitForNavigation:
-        pass
+        @sync
+        async def test_basic_usage(self, isolated_page, server):
+            pass
+
+        @sync
+        async def test_fails_when_frame_detaches(self, isolated_page, server):
+            pass
