@@ -86,3 +86,7 @@ def dumpFrames(frame: Frame, indentation: str = '') -> str:
     for child in frame.childFrames:
         results.append(dumpFrames(child, '    ' + indentation))
     return '\n'.join(results)
+
+
+def isFavicon(req):
+    return 'favicon.ico' in req.url

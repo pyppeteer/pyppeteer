@@ -6,10 +6,6 @@
 import gc
 import socket
 
-__all__ = [
-    'get_free_port',
-]
-
 
 def get_free_port() -> int:
     """Get free port."""

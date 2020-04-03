@@ -4,7 +4,8 @@ Tests relating to page/frame navigation
 import pytest
 from syncer import sync
 
-from pyppeteer.errors import BrowserError, TimeoutError
+from pyppeteer.errors import BrowserError, TimeoutError, NetworkError
+from tests.utils import isFavicon
 from tests.conftest import needs_server_side_implementation
 from tests.utils import gather_with_timeout
 
