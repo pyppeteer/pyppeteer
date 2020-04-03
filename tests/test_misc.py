@@ -7,7 +7,7 @@ import unittest
 import pytest
 
 import pyppeteer
-from pyppeteer.helpers import debugError, get_positive_int
+from pyppeteer.helpers import get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
 
 

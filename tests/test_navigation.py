@@ -4,7 +4,9 @@ Tests relating to page/frame navigation
 import pytest
 from syncer import sync
 
-from pyppeteer.errors import BrowserError
+from pyppeteer.errors import BrowserError, TimeoutError
+from tests.conftest import needs_server_side_implementation
+from tests.utils import gather_with_timeout
 
 
 class TestPage:
@@ -24,7 +26,7 @@ class TestPage:
             assert isolated_page.url == server.empty_page + '#bar'
 
         @sync
-        @pytest.mark.skip(reason='Needs server side implementation')
+        @needs_server_side_implementation
         async def test_works_with_redirects(self, isolated_page, server):
             pass
 
@@ -39,12 +41,12 @@ class TestPage:
             assert resp.status == 200
 
         @sync
-        @pytest.mark.skip(reason='Needs server side implementation')
+        @needs_server_side_implementation
         async def test_works_with_204_subframes(self, isolated_page, server):
             pass
 
         @sync
-        @pytest.mark.skip(reason='Needs server side implementation')
+        @needs_server_side_implementation
         async def test_fail_when_server_204s(self, isolated_page, server):
             pass
 
@@ -79,12 +81,12 @@ class TestPage:
 
         @sync
         async def test_fails_on_bad_url(self, isolated_page):
-            with pytest.raises(BrowserError) as excpt:
+            with pytest.raises(NetworkError) as excpt:
                 await isolated_page.goto('yeet')
             assert 'invalid url' in str(excpt).lower()
 
         @sync
-        async def test_fails_on_bad_ss(self, isolated_page, server):
+        async def test_fails_on_bad_ssl(self, isolated_page, server):
             # Make sure that network events do not emit 'undefined'.
             # @see https://crbug.com/750469
             def assert_truthy(o):
@@ -95,10 +97,10 @@ class TestPage:
             isolated_page.on('requestfailed', assert_truthy)
             with pytest.raises(BrowserError) as excpt:
                 await isolated_page.goto(server.https.empty_page)
-            assert 'ERR_CERT_AUTHORITY_INVALID' in str(excpt) or 'SSL_ERROR_UNKNOWN' in str(excpt)
+            assert 'ERR_SSL_PROTOCOL_ERROR' in str(excpt) or 'SSL_ERROR_UNKNOWN' in str(excpt)
 
         @sync
-        @pytest.mark.skip(reason='Needs server side implementation')
+        @needs_server_side_implementation
         async def test_fails_on_bad_ssl_redirects(self, isolated_page, server):
             pass
 
@@ -116,43 +118,69 @@ class TestPage:
 
         @sync
         async def test_fails_on_exceeding_nav_timeout(self, isolated_page, server):
-            pass
+            server.app.add_one_time_request_delay(server.empty_page, 1)
+            with pytest.raises(TimeoutError) as excpt:
+                await isolated_page.goto(server.empty_page, timeout=1)
+            assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_fails_on_exceeding_default_nav_timeout(self, isolated_page, server):
-            pass
+            server.app.add_one_time_request_delay(server.empty_page, 1)
+            isolated_page.setDefaultNavigationTimeout(1)
+            with pytest.raises(TimeoutError) as excpt:
+                await isolated_page.goto(server.empty_page)
+            assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_fails_on_exceeding_default_timeout(self, isolated_page, server):
-            pass
+            server.app.add_one_time_request_delay(server.empty_page, 1)
+            isolated_page.setDefaultTimeout(1)
+            with pytest.raises(TimeoutError) as excpt:
+                await isolated_page.goto(server.empty_page)
+            assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_prioritizes_nav_timeout_of_default(self, isolated_page, server):
-            pass
+            server.app.add_one_time_request_delay(server.empty_page, 1)
+            isolated_page.setDefaultTimeout(0)
+            isolated_page.setDefaultNavigationTimeout(1)
+            with pytest.raises(TimeoutError) as excpt:
+                await isolated_page.goto(server.empty_page)
+            assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_timeout_disabled_when_equal_to_0(self, isolated_page, server):
-            pass
+            loaded = False
 
-        @sync
-        async def test_works_when_navigating_to_valid_url(self, isolated_page, server):
-            pass
+            def set_loaded():
+                nonlocal loaded
+                loaded = True
+
+            isolated_page.once('load', set_loaded)
+            await isolated_page.goto(server / 'grid.html', timeout=1, waitUntil='load')
+            assert loaded
 
         @sync
         async def test_works_when_navigating_to_valid_data_url(self, isolated_page, server):
-            pass
+            assert (await isolated_page.goto('data:text/html,hello')).ok
 
         @sync
         async def test_works_when_navigating_to_404(self, isolated_page, server):
-            pass
+            resp = await isolated_page.goto(server / 'not-found')
+            assert resp.ok is False
+            assert resp.status == 404
 
         @sync
+        @needs_server_side_implementation
         async def test_returns_last_response_in_redirect_chain(self, isolated_page, server):
             pass
 
         @sync
+
         async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
             pass
+
+
 
         @sync
         async def test_does_not_leak_listeners_during_nav(self, isolated_page, server):
@@ -168,19 +196,59 @@ class TestPage:
 
         @sync
         async def test_navs_to_dataURL_and_fires_dataURL_reqs(self, isolated_page, server):
-            pass
+            requests = []
+
+            def append_req(r):
+                nonlocal requests
+                if not isFavicon(r):
+                    requests.append(r)
+
+            isolated_page.on('request', append_req)
+            data_url = 'data:text/html,<div>yo</div>'
+            resp = await isolated_page.goto(data_url)
+            assert resp.status == 200
+            assert len(requests) == 1
+            assert requests[0].url == data_url
+
+        @sync
+        async def test_navigates_to_url_with_hash_and_fires_events_without_hash(self, isolated_page, server):
+            requests = []
+
+            def append_req(r):
+                nonlocal requests
+                if not isFavicon(r):
+                    requests.append(r)
+
+            isolated_page.on('request', append_req)
+            # todo: test url join on hash
+            resp = await isolated_page.goto(server.empty_page / '#hash')
+            assert resp.status == 200
+            assert resp.url == server.empty_page
+            assert len(requests) == 1
+            assert requests[0].url == server.empty_page
 
         @sync
         async def test_works_with_self_requesting_pages(self, isolated_page, server):
-            pass
+            resp = await isolated_page.goto(server.empty_page / 'self-request.html')
+            assert resp.status == 200
+            assert 'self-request' in resp.url
 
         @sync
         async def test_shows_proper_error_msg_on_failed_nav(self, isolated_page, server):
-            pass
+            url = server.https / 'redirect/1.html'
+            with pytest.raises(BrowserError) as excpt:
+                await isolated_page.goto(url)
+            assert url in str(excpt)
 
         @sync
         async def test_sends_referer(self, isolated_page, server):
-            pass
+            req1, req2, *_ = await gather_with_timeout(
+                server.app.waitForRequest('/grid.html'),
+                server.app.waitForRequest('/digits/1.png'),
+                isolated_page.goto(server / 'grid.html', referer='http://google.com'),
+            )
+            assert req1.headers.get('referer') == 'http://google.com'
+            assert req2.headers.get('referer') == server / 'grid.html'
 
     class TestWaitForNavigation:
         @sync

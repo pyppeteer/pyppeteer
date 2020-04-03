@@ -190,7 +190,7 @@ class _StaticFileHandler(web.StaticFileHandler):
         cls.callbacks[path.strip('/')] = func
 
     @classmethod
-    def add_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
+    def add_one_time_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
         cls.request_preconditions[path.strip('/')] = precondition
 
     async def get(self, path: str, include_body: bool = True) -> None:
@@ -224,7 +224,12 @@ class _Application(web.Application):
         self._handlers = handlers
         super().__init__(handlers, default_host, transforms, **settings)
 
-    def add_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
+    def add_one_time_request_delay(self, path: str, delay: float):
+        async def _delay():
+            await asyncio.sleep(delay)
+        self.add_one_time_request_precondition(path, precondition=_delay)
+
+    def add_one_time_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
         self._handlers[0][1].add_request_precondition(urlparse(path).path, precondition)
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):

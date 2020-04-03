@@ -34,16 +34,12 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, port, app, cross_process: bool = False, https: bool = False):
+    def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_inst: bool = False):
         self.app: _Application = app
-        self.base = f'http://{"localhost" if not cross_process else "127.0.0.1"}:{port}'
-        if https:
-            self.https = self
-        else:
-            _https = ServerURL(port, app, https=True)
-            _https.base.replace('http', 'https')
-            self.https = _https
-        self.cross_process_server = ServerURL(port, app, cross_process=True) if not cross_process else self
+        self.base = f'http{"s" if https else ""}://{"localhost" if not cross_process else "127.0.0.1"}:{port}'
+        if not child_inst:
+            self.https = ServerURL(port, app, https=True, child_inst=True)
+            self.cross_process_server = ServerURL(port, app, cross_process=True, child_inst=True)
         self.empty_page = self / 'empty.html'
 
     def __repr__(self):
@@ -100,4 +96,5 @@ def event_loop():
     return asyncio.get_event_loop()
 
 
-chrome_only = pytest.mark.skipif(_firefox)
+chrome_only = pytest.mark.skipif(_firefox, reason='Test fails under firefox, or is not implemented for it')
+needs_server_side_implementation = pytest.mark.skip(reason='Needs server side implementation')
