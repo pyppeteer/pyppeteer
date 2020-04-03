@@ -11,7 +11,6 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.helpers import debugError
 from pyppeteer.models import CoverageResult
 
 logger = logging.getLogger(__name__)

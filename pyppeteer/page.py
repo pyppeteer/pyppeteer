@@ -28,7 +28,7 @@ from pyppeteer.emulation_manager import EmulationManager
 from pyppeteer.errors import PageError, BrowserError
 from pyppeteer.events import Events
 from pyppeteer.frame import Frame, FrameManager
-from pyppeteer.helpers import debugError
+
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle, JSHandle
 from pyppeteer.models import Viewport, MouseButton, ScreenshotClip, JSFunctionArg

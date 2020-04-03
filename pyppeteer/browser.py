@@ -51,8 +51,10 @@ class Browser(AsyncIOEventEmitter):
         if closeCallback:
             self._closeCallback = closeCallback
         else:
+
             async def _dummy_callback() -> None:
                 pass
+
             self._closeCallback = _dummy_callback
 
         self._defaultContext = BrowserContext(self._connection, self, None)

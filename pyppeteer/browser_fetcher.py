@@ -70,7 +70,7 @@ def download_url(platform: Platform, host: str, revision: str) -> str:
 def parse_folder_path(folder_path: Path) -> Tuple[Optional[str], Optional[str]]:
     name = folder_path.name
     splits: Sequence[Any] = name.split('-')
-    if len(splits) != 2 or splits[0] not in get_args(Platform): # type: ignore
+    if len(splits) != 2 or splits[0] not in get_args(Platform):  # type: ignore
         splits = (None, None)
     return cast(Tuple[Optional[str], Optional[str]], tuple(splits))
 
@@ -107,7 +107,7 @@ class BrowserFetcher:
             # no really good way to detect system bittedness
             # (other options depend on the python interpreter bittedness == sys.bittedness)
             plat = plat.replace('32', str(struct.calcsize('P') * 8))
-        assert plat in get_args(Platform), f'Unsupported platform: {platform}' # type: ignore
+        assert plat in get_args(Platform), f'Unsupported platform: {platform}'  # type: ignore
         logger.info(f'platform auto detected: {plat}')
         self._platform = cast(Platform, plat)
 
@@ -179,9 +179,7 @@ class BrowserFetcher:
 
     def can_download(self, revision: str) -> bool:
         url = download_url(self._platform, self.downloadHost, revision)
-        http = urllib3.PoolManager(
-            cert_reqs='CERT_REQUIRED', ca_certs=certifi.where()
-        )
+        http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
 
         try:
             res = http.request('HEAD', url)

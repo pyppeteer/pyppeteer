@@ -9,7 +9,7 @@ from typing import Any, Callable, Dict, List, TYPE_CHECKING
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer.execution_context import ExecutionContext
-from pyppeteer.helpers import debugError
+
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.models import JSFunctionArg
 

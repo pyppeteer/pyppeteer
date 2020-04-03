@@ -10,7 +10,6 @@ from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
-from pyppeteer.helpers import debugError
 from pyppeteer.models import MouseButton, JSFunctionArg
 
 if TYPE_CHECKING:

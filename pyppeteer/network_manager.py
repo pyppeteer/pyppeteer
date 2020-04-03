@@ -15,7 +15,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
-from pyppeteer.helpers import debugError
+
 
 if TYPE_CHECKING:
     from pyppeteer.frame import Frame, FrameManager

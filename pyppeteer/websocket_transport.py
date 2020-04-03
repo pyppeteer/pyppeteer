@@ -6,6 +6,7 @@ from websockets import connect, WebSocketClientProtocol, Data
 
 logger = logging.getLogger(__name__)
 
+
 class WebsocketTransport:
     def __init__(self, ws: WebSocketClientProtocol):
         self.onmessage: Optional[Callable[[str], Any]] = None

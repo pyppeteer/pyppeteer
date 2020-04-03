@@ -15,7 +15,7 @@ from pyppeteer.errors import BrowserError, PageError, ElementHandleError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.frame import Frame
-from pyppeteer.helpers import debugError
+
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response

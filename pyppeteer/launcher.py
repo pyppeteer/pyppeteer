@@ -20,7 +20,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.browser_fetcher import BrowserFetcher
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
-from pyppeteer.helpers import debugError
+
 from pyppeteer.models import LaunchOptions, Viewport, ChromeArgOptions, BrowserOptions
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
@@ -167,6 +167,7 @@ class BaseBrowserLauncher:
     """
     Implements common BrowserLauncher operations
     """
+
     def __init__(self, projectRoot: Union[Path, str] = None, preferredRevision: str = None):
         self.projectRoot = Path(projectRoot) if projectRoot else None
         self.preferredRevision = preferredRevision
@@ -677,4 +678,3 @@ def launcher(
     elif product in ('chrome', 'chromium'):
         return ChromeLauncher(projectRoot, preferredRevision)
     raise ValueError(f'Support for {product} has not been implemented')
-
