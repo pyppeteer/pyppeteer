@@ -138,7 +138,7 @@ version = "5.0.4"
 toml = ["toml"]
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Decorators for Humans"
 name = "decorator"
 optional = false
@@ -397,7 +397,7 @@ python-versions = "*"
 version = "0.4.3"
 
 [[package]]
-category = "main"
+category = "dev"
 description = "Python package for creating and manipulating graphs and networks"
 name = "networkx"
 optional = false
@@ -946,7 +946,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "54ee251dc83728c2bb78e9cbf8cc87b6a1dc827716eceba1a46afecc08cc7146"
+content-hash = "1566cb32ab73448e6f3a3df75fc60c96164965accd6b4899fd77faa0ceb6d585"
 python-versions = "^3.6.1"
 
 [metadata.files]
