@@ -94,7 +94,7 @@ six = ">=1.9.0"
 webencodings = "*"
 
 [[package]]
-category = "dev"
+category = "main"
 description = "Python package for providing Mozilla's CA Bundle."
 name = "certifi"
 optional = false
@@ -914,7 +914,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "54ee251dc83728c2bb78e9cbf8cc87b6a1dc827716eceba1a46afecc08cc7146"
+content-hash = "d7f2a4b4a3749380ff442b3282fb12ca77a4e97e68ac50b1ebb101fbcd2c295c"
 python-versions = "^3.6.1"
 
 [metadata.files]
