@@ -1,11 +1,13 @@
 """
 Tests relating to page/frame navigation
 """
+from contextlib import suppress
+
 import pytest
 from syncer import sync
 
 from pyppeteer.errors import BrowserError, TimeoutError, NetworkError
-from tests.utils import isFavicon
+from tests.utils import isFavicon, attachFrame, set_var_in_caller_frame
 from tests.conftest import needs_server_side_implementation
 from tests.utils import gather_with_timeout
 
@@ -177,21 +179,22 @@ class TestPage:
             pass
 
         @sync
-
+        @pytest.mark.skip(reason='No analogous python behaviour')
         async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
             pass
 
-
-
         @sync
+        @pytest.mark.skip(reason='No analogous python behaviour')
         async def test_does_not_leak_listeners_during_nav(self, isolated_page, server):
             pass
 
         @sync
+        @pytest.mark.skip(reason='No analogous python behaviour')
         async def test_does_not_leak_listeners_during_bad_nav(self, isolated_page, server):
             pass
 
         @sync
+        @pytest.mark.skip(reason='No analogous python behaviour')
         async def test_does_not_leak_listeners_during_nav_of_many_pages(self, isolated_page, server):
             pass
 
@@ -254,27 +257,100 @@ class TestPage:
     class TestWaitForNavigation:
         @sync
         async def test_basic_usage(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            resp, *_ = gather_with_timeout(
+                isolated_page.waitForNavigation(),
+                isolated_page.evaluate('url => window.location.href = url', server / 'grid.html'),
+            )
+            assert resp.ok
+            assert 'grid.html' in resp.url
 
         @sync
-        async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server):
-            pass
+        async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server, event_loop):
+            continue_resp = event_loop.create_future()
+
+            server.app.add_one_time_request_precondition(server / 'one-style.css', continue_resp)
+            nav_promise = event_loop.create_task(isolated_page.goto(server / 'one-style.html'))
+            domcontentloaded_task = event_loop.create_task(isolated_page.waitForNavigation())
+
+            both_fired = False
+
+            async def bothFired():
+                await isolated_page.waitForNavigation(waitUntil=['load', 'domcontentloaded'])
+                nonlocal both_fired
+                both_fired = True
+
+            both_fired_task = event_loop.create_task(bothFired())
+
+            await server.app.waitForRequest('/one-style.css')
+            await domcontentloaded_task
+
+            assert both_fired is False
+            continue_resp.set_result(None)
+            await both_fired_task
+            await nav_promise
 
         @sync
         async def test_works_with_clicking_anchor_urls(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent('<a href="#foobar">foobar</a>')
+            resp, *_ = await gather_with_timeout(isolated_page.waitForNavigation(), isolated_page.click('a'),)
+            assert resp is None
+            assert isolated_page.url == server.empty_page + '#foobar'
 
         @sync
         async def test_works_with_historypushState(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent(
+                '''
+                <a onclick='javascript:pushState()'>SPA</a>
+                <script>
+                    function pushState() { history.pushState({}, '', 'wow.html') }
+                </script>
+            '''
+            )
+            resp, *_ = await gather_with_timeout(isolated_page.waitForNavigation(), isolated_page.click('a'),)
+            assert resp is None
+            assert isolated_page.url == server / '/wow.html'
 
         @sync
         async def test_works_with_historyreplaceState(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent(
+                '''
+                <a onclick='javascript:pushState()'>SPA</a>
+                <script>
+                    function pushState() { history.replaceState({}, '', 'wow.html') }
+                </script>
+            '''
+            )
+            resp, *_ = await gather_with_timeout(isolated_page.waitForNavigation(), isolated_page.click('a'),)
+            assert resp is None
+            assert isolated_page.url == server / 'replaced.html'
 
         @sync
         async def test_works_with_historyback_forward(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent(
+                '''
+                <a id=back onclick='javascript:goBack()'>back</a>
+                <a id=forward onclick='javascript:goForward()'>forward</a>
+                <script>
+                    function goBack() { history.back(); }
+                    function goForward() { history.forward(); }
+                    history.pushState({}, '', '/first.html');
+                    history.pushState({}, '', '/second.html');
+                </script>
+            ''',
+            )
+            assert isolated_page.url == server / 'second.html'
+            back_resp, *_ = await gather_with_timeout(isolated_page.waitForNavigation(), isolated_page.click('a#back'),)
+            assert back_resp is None
+            forward_resp, *_ = await gather_with_timeout(
+                isolated_page.waitForNavigation(), isolated_page.click('a#forward'),
+            )
+            assert forward_resp is None
+            assert isolated_page.url == server / 'second.html'
 
         @sync
         async def test_works_when_subframe_runs_windowstop(self, isolated_page, server):
@@ -283,36 +359,124 @@ class TestPage:
     class TestGoBack:
         @sync
         async def test_basic_usage(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.goto(server / 'grid.html')
+
+            resp = await isolated_page.goBack()
+            assert resp.ok
+            assert server.empty_page in resp.url
+
+            resp = await isolated_page.goForward()
+            assert resp.ok
+            assert 'grid.html' in resp.url
+
+            resp = await isolated_page.goForward()
+            assert resp is None
 
         @sync
         async def test_works_with_historyAPI(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.evaluate(
+                '''() => {
+                history.pushState({}, '', '/first.html');
+                history.pushState({}, '', '/second.html');
+            }'''
+            )
+            assert isolated_page.url == server / 'second.html'
+            await isolated_page.goBack()
+            assert isolated_page.url == server / 'first.html'
+            await isolated_page.goBack()
+            assert isolated_page.url == server.empty_page
+            await isolated_page.goForward()
+            assert isolated_page.url == server / 'first.html'
 
     @sync
     async def test_reload_works(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.evaluate('window._foo = 10')
+        await isolated_page.reload()
+        assert await isolated_page.evaluate('window._foo') is None
 
 
-class Frame:
+class TestFrame:
     class TestGoto:
         @sync
         async def test_navigates_subframes(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server / 'frames/one-frame.html')
+            assert 'one-frame.html' in isolated_page.frames[0].url
+            assert 'frame.html' in isolated_page.frames[1].url
+
+            resp = await isolated_page.frames[1].goto(server.empty_page)
+            assert resp.ok
+            assert resp.frame == isolated_page.frames[1]
 
         @sync
-        async def test_rejects_when_frame_detaches(self, isolated_page, server):
-            pass
+        async def test_rejects_when_frame_detaches(self, isolated_page, server, event_loop):
+            await isolated_page.goto(server / 'frame/one-frame.html')
+
+            nav_task = event_loop.create_task(await isolated_page.frames[1].goto(server.empty_page))
+
+            await server.app.waitForRequest(server.empty_page)
+            await isolated_page.Jeval('iframe', 'f => f.remove()')
+
+            with pytest.raises(NetworkError) as excpt:
+                await nav_task
+
+            assert 'frame was detached' in str(excpt)
 
         @sync
         async def test_returns_matching_responses(self, isolated_page, server):
-            pass
+            await isolated_page.setCacheEnabled(False)
+            await isolated_page.goto(server.empty_page)
+
+            frames = gather_with_timeout(
+                attachFrame(isolated_page, server.empty_page),
+                attachFrame(isolated_page, server.empty_page),
+                attachFrame(isolated_page, server.empty_page),
+            )
+
+            server_resps = ['aaa', 'bbb', 'ccc']
+            navigations = []
+            for resp, frame in zip(['aaa', 'bbb', 'ccc'], frames):
+                server.app.add_one_time_request_resp(
+                    '/one-style.html', resp.encode()
+                )
+                navigations.append(await frame.goto(server / 'one-style.html'))
+                await server.app.waitForRequest('/one-style.html')
+
+            for expected_resp, expected_frame, actual_resp in zip(server_resps, frames, navigations):
+                assert actual_resp.frame == frames
+                assert actual_resp.text == expected_resp
+
 
     class TestWaitForNavigation:
         @sync
         async def test_basic_usage(self, isolated_page, server):
-            pass
+            await isolated_page.goto(server / 'frame/one-frame.html')
+            frame = isolated_page.frames[1]
+            resp, *_ = gather_with_timeout(
+                frame.waitForNavigation(),
+                frame.evaluate('url => window.location.href = url', server / 'grid.html')
+            )
+            assert resp.ok
+            assert 'grid.html' in resp.url
+            assert resp.frame == frame
+            assert 'one-frame.html' in resp.url
 
         @sync
-        async def test_fails_when_frame_detaches(self, isolated_page, server):
-            pass
+        async def test_fails_when_frame_detaches(self, isolated_page, server, event_loop):
+            # see corresponding Page test
+            await isolated_page.goto(server / 'frame/one-frame.html')
+            frame = isolated_page.frames[1]
+
+            nav_task = event_loop.create_task(frame.waitForNavigation())
+
+            await gather_with_timeout(
+                server.app.waitForRequest(server.empty_page),
+                isolated_page.Jeval('iframe', 'f => f.remove()'),
+            )
+
+            with pytest.raises(NetworkError) as excpt:
+                await nav_task
+
+            assert 'frame was detached' in str(excpt)
