@@ -179,23 +179,8 @@ class TestPage:
             pass
 
         @sync
-        @pytest.mark.skip(reason='No analogous python behaviour')
+        @needs_server_side_implementation
         async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
-            pass
-
-        @sync
-        @pytest.mark.skip(reason='No analogous python behaviour')
-        async def test_does_not_leak_listeners_during_nav(self, isolated_page, server):
-            pass
-
-        @sync
-        @pytest.mark.skip(reason='No analogous python behaviour')
-        async def test_does_not_leak_listeners_during_bad_nav(self, isolated_page, server):
-            pass
-
-        @sync
-        @pytest.mark.skip(reason='No analogous python behaviour')
-        async def test_does_not_leak_listeners_during_nav_of_many_pages(self, isolated_page, server):
             pass
 
         @sync
