@@ -59,8 +59,8 @@ class Frame:
         self.tap = self.secondaryWorld.tap
 
     @property
-    def executionContext(self):
-        return self.mainWorld.executionContext
+    async def executionContext(self):
+        return await self.mainWorld.executionContext
 
     @property
     async def content(self):
