@@ -43,8 +43,10 @@ class LifecycleWatcher:
         for value in waitUntil:
             try:
                 protocolEvent = pyppeteerToProtocolLifecycle[value]
-            except AttributeError:
-                raise ValueError(f'Unknown value for options.waitUntil: {value}')
+            except KeyError:
+                raise KeyError(
+                    f'Unknown value for waitUntil: "{value}", it\'s possible "{value}" is no longer supported'
+                )
             else:
                 self._expectedLifecycle.append(protocolEvent)
 
@@ -79,7 +81,7 @@ class LifecycleWatcher:
         self._newDocumentNavigationFuture = self.loop.create_future()
         self._terminationFuture = self.loop.create_future()
 
-        self._timeoutFuture = self._createTimeoutPromise()
+        self._timeoutFuture = self._createTimeoutFuture()
 
         for class_attr in dir(self):
             if class_attr.endswith('Future'):
@@ -120,7 +122,7 @@ class LifecycleWatcher:
     def timeoutOrTerminationFuture(self) -> Awaitable:
         return self._frame._client.loop.create_task(helpers.future_race(self._timeoutFuture, self._terminationFuture))
 
-    def _createTimeoutPromise(self) -> Awaitable[None]:
+    def _createTimeoutFuture(self) -> Awaitable[None]:
         self._maximumTimerFuture = self.loop.create_future()
         if self._timeout:
             errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'  # noqa: E501
