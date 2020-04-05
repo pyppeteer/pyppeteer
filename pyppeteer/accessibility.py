@@ -259,7 +259,7 @@ class AXNode(object):
         for node in nodeById.values():
             for childId in node._payload.get('childIds', []):
                 node._children.append(nodeById[childId])
-        return list(nodeById.values())[0]
+        return [*nodeById.values()][0]
 
 
 def collectInterestingNodes(collection: Set[AXNode], node: AXNode, insideControl: bool):
@@ -275,7 +275,7 @@ def collectInterestingNodes(collection: Set[AXNode], node: AXNode, insideControl
 def serializeTree(node: 'AXNode', whitelistedNodes: Set[AXNode] = None):
     children = []
     for child in node._children:
-        children.append(serializeTree(child, whitelistedNodes))
+        children.extend(serializeTree(child, whitelistedNodes))
     if whitelistedNodes and node not in whitelistedNodes:
         return children
     serializedNode = node.serialize()
