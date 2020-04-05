@@ -109,8 +109,8 @@ class TestPage:
 
         @sync
         async def test_raises_on_deprecated_networkidle_waituntil(self, isolated_page, server):
-            with pytest.raises(BrowserError) as excpt:
-                await isolated_page.goto(server.empty_page)
+            with pytest.raises(KeyError) as excpt:
+                await isolated_page.goto(server.empty_page, waitUntil='networkidle')
             assert 'no longer supported' in str(excpt)
 
         @sync
@@ -160,7 +160,7 @@ class TestPage:
                 loaded = True
 
             isolated_page.once('load', set_loaded)
-            await isolated_page.goto(server / 'grid.html', timeout=1, waitUntil='load')
+            await isolated_page.goto(server / 'grid.html', timeout=0, waitUntil='load')
             assert loaded
 
         @sync
@@ -209,8 +209,7 @@ class TestPage:
                     requests.append(r)
 
             isolated_page.on('request', append_req)
-            # todo: test url join on hash
-            resp = await isolated_page.goto(server.empty_page / '#hash')
+            resp = await isolated_page.goto(server.empty_page + '#hash')
             assert resp.status == 200
             assert resp.url == server.empty_page
             assert len(requests) == 1
@@ -218,7 +217,7 @@ class TestPage:
 
         @sync
         async def test_works_with_self_requesting_pages(self, isolated_page, server):
-            resp = await isolated_page.goto(server.empty_page / 'self-request.html')
+            resp = await isolated_page.goto(server / 'self-request.html')
             assert resp.status == 200
             assert 'self-request' in resp.url
 
@@ -243,7 +242,7 @@ class TestPage:
         @sync
         async def test_basic_usage(self, isolated_page, server):
             await isolated_page.goto(server.empty_page)
-            resp, *_ = gather_with_timeout(
+            resp, *_ = await gather_with_timeout(
                 isolated_page.waitForNavigation(),
                 isolated_page.evaluate('url => window.location.href = url', server / 'grid.html'),
             )
@@ -305,7 +304,7 @@ class TestPage:
                 '''
                 <a onclick='javascript:pushState()'>SPA</a>
                 <script>
-                    function pushState() { history.replaceState({}, '', 'wow.html') }
+                    function pushState() { history.replaceState({}, '', '/replaced.html') }
                 </script>
             '''
             )
@@ -414,7 +413,7 @@ class TestFrame:
             await isolated_page.setCacheEnabled(False)
             await isolated_page.goto(server.empty_page)
 
-            frames = gather_with_timeout(
+            frames = await gather_with_timeout(
                 attachFrame(isolated_page, server.empty_page),
                 attachFrame(isolated_page, server.empty_page),
                 attachFrame(isolated_page, server.empty_page),
@@ -439,7 +438,7 @@ class TestFrame:
         async def test_basic_usage(self, isolated_page, server):
             await isolated_page.goto(server / 'frame/one-frame.html')
             frame = isolated_page.frames[1]
-            resp, *_ = gather_with_timeout(
+            resp, *_ = await gather_with_timeout(
                 frame.waitForNavigation(),
                 frame.evaluate('url => window.location.href = url', server / 'grid.html')
             )

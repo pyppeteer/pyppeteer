@@ -189,7 +189,7 @@ class _StaticFileHandler(web.StaticFileHandler):
     @classmethod
     def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
         stripped = path.strip('/')
-        if stripped in cls.callbacks:
+        if stripped not in cls.callbacks:
             cls.callbacks[stripped] = []
         cls.callbacks[stripped].append(func)
 

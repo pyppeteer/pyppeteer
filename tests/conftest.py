@@ -36,7 +36,7 @@ def pytest_configure(config):
 class ServerURL:
     def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_inst: bool = False):
         self.app: _Application = app
-        self.base = f'http{"s" if https else ""}://{"localhost" if not cross_process else "127.0.0.1"}:{port}'
+        self.base = f'http{"s" if https else ""}://{"127.0.0.1" if cross_process else "localhost"}:{port}'
         if not child_inst:
             self.https = ServerURL(port, app, https=True, child_inst=True)
             self.cross_process_server = ServerURL(port, app, cross_process=True, child_inst=True)
