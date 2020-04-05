@@ -86,7 +86,7 @@ async def test_accessibility_properties(shared_browser, isolated_page, firefox):
                 },
             ],
         }
-    assert expected_snapshot == accessibility_snapshot
+    assert accessibility_snapshot == expected_snapshot
 
 
 @sync

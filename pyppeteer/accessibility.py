@@ -10,7 +10,7 @@ class Accessibility:
         self._client = client
 
     async def snapshot(self, interestingOnly: bool = False, root: 'ElementHandle' = None):
-        nodes = await self._client.send('Accessibility.getFullAXTree')
+        nodes = (await self._client.send('Accessibility.getFullAXTree'))['nodes']
         backendNodeId = None
         if root:
             node = await self._client.send('DOM.describeNode', {'objectId': 'root._remoteObject.objectId',})
@@ -44,13 +44,13 @@ class AXNode(object):
         self._focusable = False
         self._expanded = False
         self._hidden = False
-        self._name = payload.get('name', '')
-        self._role = payload.get('role', 'Unknown')
+        self._name = payload.get('name', {}).get('value', 'Unknown')
+        self._role = payload.get('role', {}).get('value', 'Unknown')
         self._cacheHasFocusableChild = None
 
-        for property in payload['properties']:
+        for property in payload.get('properties', []):
             _name = property['name']
-            _value = property['value']['value']
+            _value = property.get('value', {}).get('value', None)
             if _name == 'editable':
                 self._richlyEditable = _value == 'richtext'
                 self._editable = True
@@ -166,8 +166,8 @@ class AXNode(object):
 
     def serialize(self):  # noqa C901
         properties: Dict[str, Union[str, float, bool]] = {}
-        for property in self._payload.get('properties', []):
-            properties[property['name'].lower()] = property['value']['value']
+        for property_ in self._payload.get('properties', []):
+            properties[property_['name'].lower()] = property_['value'].get('value')
         if self._payload.get('name'):
             properties['name'] = self._payload['name']['value']
         if self._payload.get('value'):
@@ -185,7 +185,7 @@ class AXNode(object):
             'valuetext',
         ]
         for prop in userStringProperties:
-            if prop in properties:
+            if prop not in properties:
                 continue
             node[prop] = properties[prop]
         booleanProperties = [
@@ -204,7 +204,7 @@ class AXNode(object):
             # not whether focus is specifically on the root node.
             if prop == 'focused' and self._role == 'WebArea':
                 continue
-            value = properties[prop]
+            value = properties.get(prop)
             if value:
                 node[prop] = value
 
@@ -213,9 +213,9 @@ class AXNode(object):
             'pressed',
         ]
         for prop in tristateProperties:
-            if prop in properties:
+            if prop not in properties:
                 continue
-            value = properties[prop]
+            value = properties.get(prop)
             if value != 'mixed':
                 if value == 'true':
                     value = True
@@ -229,7 +229,7 @@ class AXNode(object):
             'valuemin',
         ]
         for prop in numericProperties:
-            if prop in properties:
+            if prop not in properties:
                 continue
             node[prop] = properties.get(prop)
 
@@ -280,5 +280,5 @@ def serializeTree(node: 'AXNode', whitelistedNodes: Set[AXNode] = None):
         return children
     serializedNode = node.serialize()
     if children:
-        serializedNode.children = children
+        serializedNode['children'] = children
     return [serializedNode]
