@@ -29,8 +29,6 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGES.md",
-    "tests/*",
-    "docs/*",
 ]
 exclude = [
     '*/__pycache__',

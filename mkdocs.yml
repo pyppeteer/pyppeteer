@@ -1,0 +1,22 @@
+site_name: pyppeteer2 docs
+repo_name: GitHub
+repo_url: https://github.com/pyppeteer/pyppeteer2
+
+
+theme:
+  name: "material"
+
+markdown_extensions:
+  - pymdownx.snippets:
+      base_path: docs
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          rendering:
+            show_source: true
+      watch:
+        - pyppeteer
