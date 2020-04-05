@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
+import ctypes
+import inspect
 import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
@@ -90,3 +92,30 @@ def dumpFrames(frame: Frame, indentation: str = '') -> str:
 
 def isFavicon(req):
     return 'favicon.ico' in req.url
+
+
+def set_var_in_caller_frame(name):
+    """
+    Returns a function which takes one argument, value. The function returned takes one arg, value and sets the
+    variable in the locals of the caller with the name of name to value. If name refers to a future,
+    then <name>.set_result(value) is used.
+
+    Args:
+        name: name of value in callers locals to set
+
+    Returns: Callable
+        function taking one arg to set variable with the name of name in callers locals
+    """
+    stack_frame = inspect.stack()[1][0]
+
+    def _setter_func(value=None):
+        var = stack_frame.f_locals[name]
+        if asyncio.isfuture(var):
+            stack_frame.f_locals[name].set_result(value)
+        elif isinstance(var, list):
+            stack_frame.f_locals[name].append(value)
+        else:
+            stack_frame.f_locals[name] = value
+        ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(stack_frame), ctypes.c_int(0))
+
+    return _setter_func

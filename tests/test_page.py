@@ -8,7 +8,7 @@ from syncer import sync
 from pyppeteer import devices
 from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
 from pyppeteer.page import ConsoleMessage
-from tests.utils import waitEvent, gather_with_timeout, attachFrame
+from tests.utils import waitEvent, gather_with_timeout, attachFrame, set_var_in_caller_frame
 
 
 @sync
@@ -987,13 +987,8 @@ class TestEvents:
     class TestConsole:
         @sync
         async def test_console_works(self, isolated_page):
-            message: Optional[ConsoleMessage] = None
-
-            def set_message(m):
-                nonlocal message
-                message = m
-
-            isolated_page.once('console', set_message)
+            message = None
+            isolated_page.once('console', set_var_in_caller_frame('message'))
             await gather_with_timeout(
                 isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
                 waitEvent(isolated_page, 'console'),
