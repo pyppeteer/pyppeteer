@@ -91,7 +91,7 @@ def isFavicon(req):
     return 'favicon.ico' in req.url
 
 
-def set_var_in_caller_frame(name):
+def var_setter(name, default_value=None):
     """
     Returns a function which takes one argument, value. The function returned takes one arg, value and sets the
     variable in the locals of the caller with the name of name to value. If name refers to a future,
@@ -99,13 +99,14 @@ def set_var_in_caller_frame(name):
 
     Args:
         name: name of value in callers locals to set
+        default_value: value to set variable too on calling the returned function
 
     Returns: Callable
         function taking one arg to set variable with the name of name in callers locals
     """
     stack_frame = inspect.stack()[1][0]
 
-    def _setter_func(value=None):
+    def _setter_func(value=default_value):
         var = stack_frame.f_locals[name]
         if asyncio.isfuture(var):
             stack_frame.f_locals[name].set_result(value)

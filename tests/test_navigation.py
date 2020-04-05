@@ -8,7 +8,7 @@ from syncer import sync
 
 import tests.utils.server
 from pyppeteer.errors import BrowserError, TimeoutError, NetworkError
-from tests.utils import isFavicon, attachFrame, set_var_in_caller_frame
+from tests.utils import isFavicon, attachFrame, var_setter
 from tests.conftest import needs_server_side_implementation
 from tests.utils import gather_with_timeout
 
@@ -155,12 +155,7 @@ class TestPage:
         @sync
         async def test_timeout_disabled_when_equal_to_0(self, isolated_page, server):
             loaded = False
-
-            def set_loaded():
-                nonlocal loaded
-                loaded = True
-
-            isolated_page.once('load', set_loaded)
+            isolated_page.once('load', var_setter('loaded', True))
             await isolated_page.goto(server / 'grid.html', timeout=0, waitUntil='load')
             assert loaded
 

@@ -9,7 +9,7 @@ import tests.utils.server
 from pyppeteer import devices
 from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
 from pyppeteer.page import ConsoleMessage
-from tests.utils import waitEvent, gather_with_timeout, attachFrame, set_var_in_caller_frame
+from tests.utils import waitEvent, gather_with_timeout, attachFrame, var_setter
 
 
 @sync
@@ -437,11 +437,7 @@ class TestExposeFunction:
     async def test_callable_within_evaluateOnNewDocument(self, isolated_page):
         called = False
 
-        def set_called():
-            nonlocal called
-            called = True
-
-        await isolated_page.exposeFunction('woof', set_called)
+        await isolated_page.exposeFunction('woof', var_setter('called', True))
         await isolated_page.evaluateOnNewDocument('()=>woof()')
         await isolated_page.reload()
         assert called
@@ -989,7 +985,7 @@ class TestEvents:
         @sync
         async def test_console_works(self, isolated_page):
             message = None
-            isolated_page.once('console', set_var_in_caller_frame('message'))
+            isolated_page.once('console', var_setter('message'))
             await gather_with_timeout(
                 isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
                 waitEvent(isolated_page, 'console'),
@@ -1034,12 +1030,7 @@ class TestEvents:
         @sync
         async def test_works_with_window_obj(self, isolated_page):
             message = None
-
-            def set_message(m):
-                nonlocal message
-                message = m
-
-            isolated_page.once('console', set_message)
+            isolated_page.once('console', var_setter('message'))
             await gather_with_timeout(
                 isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
             )

@@ -13,7 +13,7 @@ class Accessibility:
         nodes = (await self._client.send('Accessibility.getFullAXTree'))['nodes']
         backendNodeId = None
         if root:
-            node = await self._client.send('DOM.describeNode', {'objectId': 'root._remoteObject.objectId',})
+            node = (await self._client.send('DOM.describeNode', {'objectId': 'root._remoteObject.objectId',}))['node']
             backendNodeId = node['backendNodeId']
         defaultRoot = AXNode.createTree(nodes)
         needle = defaultRoot
@@ -26,7 +26,7 @@ class Accessibility:
             return serializeTree(needle)[0]
 
         interestingNodes = set()
-        collectInterstingNodes(interestingNodes, defaultRoot, False)
+        collectInterestingNodes(interestingNodes, defaultRoot, False)
         if needle not in interestingNodes:
             return None
         return serializeTree(needle, interestingNodes)[0]
@@ -262,14 +262,14 @@ class AXNode(object):
         return list(nodeById.values())[0]
 
 
-def collectInterstingNodes(collection: Set[AXNode], node: AXNode, insideControl: bool):
+def collectInterestingNodes(collection: Set[AXNode], node: AXNode, insideControl: bool):
     if node.isInteresting(insideControl):
         collection.add(node)
     if node.isLeafNode():
         return
     insideControl = insideControl or node.isControl
     for child in node._children:
-        collectInterstingNodes(collection, child, insideControl)
+        collectInterestingNodes(collection, child, insideControl)
 
 
 def serializeTree(node: 'AXNode', whitelistedNodes: Set[AXNode] = None):
