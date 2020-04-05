@@ -273,7 +273,7 @@ class ProtocolTypesGenerator:
         td_key,
         domain_name,
         type_conversion_fallback: Union[str, Literal[False]] = False,
-    ):
+    ) -> None:
         """
         Adds a class attr based on type_info, type_name_key, td_key, domain_name, and type_conversion_fallback
 
