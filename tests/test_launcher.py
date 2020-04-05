@@ -24,7 +24,7 @@ from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
 
 from .base import DEFAULT_OPTIONS
-from .server import get_application
+from .utils.server import get_application
 import pytest
 
 

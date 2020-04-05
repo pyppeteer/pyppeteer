@@ -6,6 +6,7 @@ from contextlib import suppress
 import pytest
 from syncer import sync
 
+import tests.utils.server
 from pyppeteer.errors import BrowserError, TimeoutError, NetworkError
 from tests.utils import isFavicon, attachFrame, set_var_in_caller_frame
 from tests.conftest import needs_server_side_implementation
@@ -121,14 +122,14 @@ class TestPage:
 
         @sync
         async def test_fails_on_exceeding_nav_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            tests.utils.server.app.add_one_time_request_delay(server.empty_page, 1)
             with pytest.raises(TimeoutError) as excpt:
                 await isolated_page.goto(server.empty_page, timeout=1)
             assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_fails_on_exceeding_default_nav_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            tests.utils.server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultNavigationTimeout(1)
             with pytest.raises(TimeoutError) as excpt:
                 await isolated_page.goto(server.empty_page)
@@ -136,7 +137,7 @@ class TestPage:
 
         @sync
         async def test_fails_on_exceeding_default_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            tests.utils.server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultTimeout(1)
             with pytest.raises(TimeoutError) as excpt:
                 await isolated_page.goto(server.empty_page)
@@ -144,7 +145,7 @@ class TestPage:
 
         @sync
         async def test_prioritizes_nav_timeout_of_default(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            tests.utils.server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultTimeout(0)
             isolated_page.setDefaultNavigationTimeout(1)
             with pytest.raises(TimeoutError) as excpt:
@@ -231,8 +232,8 @@ class TestPage:
         @sync
         async def test_sends_referer(self, isolated_page, server):
             req1, req2, *_ = await gather_with_timeout(
-                server.app.waitForRequest('/grid.html'),
-                server.app.waitForRequest('/digits/1.png'),
+                tests.utils.server.app.waitForRequest('/grid.html'),
+                tests.utils.server.app.waitForRequest('/digits/1.png'),
                 isolated_page.goto(server / 'grid.html', referer='http://google.com'),
             )
             assert req1.headers.get('referer') == 'http://google.com'
@@ -253,7 +254,7 @@ class TestPage:
         async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server, event_loop):
             continue_resp = event_loop.create_future()
 
-            server.app.add_one_time_request_precondition(server / 'one-style.css', continue_resp)
+            tests.utils.server.app.add_one_time_request_precondition(server / 'one-style.css', continue_resp)
             nav_promise = event_loop.create_task(isolated_page.goto(server / 'one-style.html'))
             domcontentloaded_task = event_loop.create_task(isolated_page.waitForNavigation())
 
@@ -266,7 +267,7 @@ class TestPage:
 
             both_fired_task = event_loop.create_task(bothFired())
 
-            await server.app.waitForRequest('/one-style.css')
+            await tests.utils.server.app.waitForRequest('/one-style.css')
             await domcontentloaded_task
 
             assert both_fired is False
@@ -400,7 +401,7 @@ class TestFrame:
 
             nav_task = event_loop.create_task(await isolated_page.frames[1].goto(server.empty_page))
 
-            await server.app.waitForRequest(server.empty_page)
+            await tests.utils.server.app.waitForRequest(server.empty_page)
             await isolated_page.Jeval('iframe', 'f => f.remove()')
 
             with pytest.raises(NetworkError) as excpt:
@@ -422,11 +423,11 @@ class TestFrame:
             server_resps = ['aaa', 'bbb', 'ccc']
             navigations = []
             for resp, frame in zip(['aaa', 'bbb', 'ccc'], frames):
-                server.app.add_one_time_request_resp(
+                tests.utils.server.app.add_one_time_request_resp(
                     '/one-style.html', resp.encode()
                 )
                 navigations.append(await frame.goto(server / 'one-style.html'))
-                await server.app.waitForRequest('/one-style.html')
+                await tests.utils.server.app.waitForRequest('/one-style.html')
 
             for expected_resp, expected_frame, actual_resp in zip(server_resps, frames, navigations):
                 assert actual_resp.frame == frames
@@ -456,7 +457,7 @@ class TestFrame:
             nav_task = event_loop.create_task(frame.waitForNavigation())
 
             await gather_with_timeout(
-                server.app.waitForRequest(server.empty_page),
+                tests.utils.server.app.waitForRequest(server.empty_page),
                 isolated_page.Jeval('iframe', 'f => f.remove()'),
             )
 

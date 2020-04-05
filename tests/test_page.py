@@ -5,6 +5,7 @@ from typing import Optional, List
 import pytest
 from syncer import sync
 
+import tests.utils.server
 from pyppeteer import devices
 from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
 from pyppeteer.page import ConsoleMessage
@@ -501,7 +502,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
+            tests.utils.server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -510,7 +511,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
+            tests.utils.server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -546,7 +547,7 @@ class TestSetContent:
     async def test_respects_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_one_time_request_delay('/img.png', 1)
+        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
         with pytest.raises(TimeoutError):
             # note: timeout in ms
             await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
@@ -555,7 +556,7 @@ class TestSetContent:
     async def test_respects_default_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_one_time_request_delay('/img.png', 1)
+        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
         # note: timeout in ms
         isolated_page.setDefaultNavigationTimeout(1)
         with pytest.raises(TimeoutError):
@@ -605,7 +606,7 @@ class TestSetBypassCSP:
 
     @sync
     async def test_bypass_CSP_header(self, isolated_page, server):
-        server.app.add_one_time_header_for_request(
+        tests.utils.server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         # make sure CSP bypass is actually working
@@ -613,7 +614,7 @@ class TestSetBypassCSP:
         await isolated_page.addScriptTag(content='window.__injected = 42;')
         assert await isolated_page.evaluate('window.__injected') is None
 
-        server.app.add_one_time_header_for_request(
+        tests.utils.server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         await isolated_page.setBypassCSP(True)
@@ -808,13 +809,13 @@ class TestSetCacheEnabled:
     async def test_basic_usage(self, isolated_page, server):
         await isolated_page.goto(server / 'cached/one-style.html')
         cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert cached_req.headers.get('if-modified-since')
 
         await isolated_page.setCacheEnabled(False)
         non_cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 
@@ -826,7 +827,7 @@ class TestSetCacheEnabled:
 
         await isolated_page.goto(server / 'cached/one-style.html')
         non_cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 

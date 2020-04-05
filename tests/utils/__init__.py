@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import asyncio
 import ctypes
 import inspect
 import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
-from typing import Awaitable, List, Union, Optional, Any
+from typing import Awaitable, Any, Optional, List, Union
 
 from pyppeteer.frame import Frame
 from pyppeteer.page import Page
