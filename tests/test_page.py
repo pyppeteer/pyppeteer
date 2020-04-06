@@ -278,12 +278,7 @@ class TestMetrics:
     async def test_metrics_event_fired_on_console_timestamp(self, event_loop, isolated_page):
         await isolated_page.goto('about:blank')
         metrics = event_loop.create_future()
-
-        def resolve_fut(res):
-            nonlocal metrics
-            metrics.set_result(res)
-
-        isolated_page.once('metrics', resolve_fut)
+        isolated_page.once('metrics', lambda event: metrics.set_result(event))
         await isolated_page.evaluate('() => console.timeStamp("test42")')
         metrics = await asyncio.wait_for(metrics, 5)
         assert metrics['title'] == 'test42'
@@ -1109,12 +1104,7 @@ class TestEvents:
     @sync
     async def test_pageerror_fired(self, isolated_page, server):
         error = None
-
-        def set_error(e):
-            nonlocal error
-            error = e
-
-        isolated_page.once('pageerror', set_error)
+        isolated_page.once('pageerror', var_setter('error'))
         await gather_with_timeout(isolated_page.goto(server / 'error.html'), waitEvent(isolated_page, 'pageerror'))
         assert 'Fancy' in str(error)
 

@@ -183,12 +183,7 @@ class TestPage:
         async def test_navs_to_dataURL_and_fires_dataURL_reqs(self, isolated_page, server):
             requests = []
 
-            def append_req(r):
-                nonlocal requests
-                if not isFavicon(r):
-                    requests.append(r)
-
-            isolated_page.on('request', append_req)
+            isolated_page.on('request', lambda r: requests.append(r) if isFavicon(r) else None)
             data_url = 'data:text/html,<div>yo</div>'
             resp = await isolated_page.goto(data_url)
             assert resp.status == 200
