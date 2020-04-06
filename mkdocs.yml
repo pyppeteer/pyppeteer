@@ -2,7 +2,6 @@ site_name: pyppeteer2 docs
 repo_name: GitHub
 repo_url: https://github.com/pyppeteer/pyppeteer2
 
-
 theme:
   name: "material"
 

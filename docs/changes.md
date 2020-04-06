@@ -1,1 +1,1 @@
-.. mdinclude:: ../CHANGES.md
+--8<-- "../CHANGES.md"

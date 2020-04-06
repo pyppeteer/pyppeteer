@@ -3,6 +3,7 @@ API Reference
 
 Commands
 --------
+::: pyppeteer
 
 * ``pyppeteer-install``: Download and install chromium for pyppeteer.
 

@@ -1,8 +1,4 @@
-Pyppeteer's documentation
-=========================
-
-.. mdinclude:: ../README.md
-
+--8<-- "../README.md"
 
 Contents
 --------
