@@ -114,6 +114,11 @@ class NetworkManager(BaseEventEmitter):
         await self._updateProtocolRequestInterception()
 
     async def _updateProtocolRequestInterception(self) -> None:
+        """Enables issuing of requestPaused events.
+        A request will be paused until client calls one of failRequest, fulfillRequest or
+        continueRequest/continueWithAuth.
+        https://chromedevtools.github.io/devtools-protocol/tot/Fetch#method-enable
+        """
         enabled = (self._userRequestInterceptionEnabled or
                    bool(self._credentials))
         if enabled == self._protocolRequestInterceptionEnabled:
@@ -139,7 +144,6 @@ class NetworkManager(BaseEventEmitter):
                 ),
                 self._client.send('Fetch.disable')
             )
-
 
     async def _onRequestPaused(self, event):
         if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
@@ -204,6 +208,23 @@ class NetworkManager(BaseEventEmitter):
             event.get('frameId'),
             redirectChain,
         )
+
+    async def _onAuthRequired(self, event):
+        response = 'Default'
+        if event.get('requestId') in self._attemptedAuthentications:
+            response = 'CancelAuth'
+        elif self._credentials:
+            response = 'ProvideCredentials'
+            self._attemptedAuthentications.add(event.requestId)
+
+        username, password = 'undefined', 'undefined'
+        if self._credentials:
+            username, password = self._credentials.get('username'), self._credentials.get('password')
+
+        await self._client.send('Fetch.continueWithAuth', {
+            'requestId': event.get('requestId'),
+            'authChallengeResponse': {response, username, password},
+        })
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
         request = self._requestIdToRequest.get(event.get('requestId'))
