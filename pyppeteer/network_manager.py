@@ -474,11 +474,11 @@ class Request(object):
 
         ``response`` is a dictionary which can have the following fields:
 
-        * ``status`` (int): Response status code, defaults to 200.
-        * ``headers`` (dict): Optional response headers.
-        * ``contentType`` (str): If set, equals to setting ``Content-Type``
-          response header.
+        * ``responseCode`` (int): Response status code, defaults to 200.
+        * ``responseHeaders`` (dict): Optional response headers.
         * ``body`` (str|bytes): Optional response body.
+        * ``responsePhrase`` (string): A textual representation of responseCode.
+        If absent, a standard phrase matching responseCode is used.
         """
         if self._url.startswith('data:'):
             return
@@ -517,9 +517,12 @@ class Request(object):
 
         rawResponse = base64.b64encode(responseBuffer).decode('ascii')
         try:
-            await self._client.send('Network.continueInterceptedRequest', {
-                'interceptionId': self._interceptionId,
-                'rawResponse': rawResponse,
+            await self._client.send('Fetch.fulfillRequest', {
+                'requestId': self._interceptionId,
+                'responseCode':  statusCode if statusCode is not None else 200,
+                'responsePhrase': statusTexts[statusText] if statusText is not None else statusText[200],
+                'responseHeaders': responseHeaders,
+                'body': rawResponse
             })
         except Exception as e:
             debugError(logger, e)
