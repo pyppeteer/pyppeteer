@@ -8,7 +8,7 @@ import json
 import logging
 from typing import Awaitable, Callable, Dict, Union, TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import BaseEventEmitter
 import websockets
 
 from pyppeteer.errors import NetworkError
@@ -21,7 +21,7 @@ logger_connection = logging.getLogger(__name__ + '.Connection')
 logger_session = logging.getLogger(__name__ + '.CDPSession')
 
 
-class Connection(EventEmitter):
+class Connection(BaseException):
     """Connection management class."""
 
     def __init__(self, url: str, loop: asyncio.AbstractEventLoop,
@@ -181,7 +181,7 @@ class Connection(EventEmitter):
         return session
 
 
-class CDPSession(EventEmitter):
+class CDPSession(BaseEventEmitter):
     """Chrome Devtools Protocol Session.
 
     The :class:`CDPSession` instances are used to talk raw Chrome Devtools

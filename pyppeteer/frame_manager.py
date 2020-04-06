@@ -9,7 +9,7 @@ import logging
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, Generator, List, Optional, Set, Union
 
-from pyee import EventEmitter
+from pyee import BaseEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -22,7 +22,7 @@ from pyppeteer.util import merge_dict
 logger = logging.getLogger(__name__)
 
 
-class FrameManager(EventEmitter):
+class FrameManager(BaseEventEmitter):
     """FrameManager class."""
 
     Events = SimpleNamespace(

@@ -6,7 +6,7 @@
 import logging
 from typing import Any, Callable, Dict, List, TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import BaseEventEmitter
 
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.helper import debugError
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Worker(EventEmitter):
+class Worker(BaseEventEmitter):
     """The Worker class represents a WebWorker.
 
     The events `workercreated` and `workerdestroyed` are emitted on the page
