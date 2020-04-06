@@ -46,20 +46,23 @@ class NetworkManager(BaseEventEmitter):
         self._requestIdToResponseWillBeSent: Dict[Optional[str], Dict] = dict()
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
         self._offline: bool = False
+        self._handleAuthRequests: bool = False
         self._credentials: Optional[Dict[str, str]] = None
         self._attemptedAuthentications: Set[Optional[str]] = set()
         self._userRequestInterceptionEnabled = False
         self._protocolRequestInterceptionEnabled = False
         self._requestHashToRequestIds = Multimap()
         self._requestHashToInterceptionIds = Multimap()
+        self._requestIdToRequestWillBeSentEvent = Multimap()
 
+        self._client.on('Fetch.requestPaused', self._onRequestPaused)
+        self._client.on('Fetch.authRequired', self._onAuthRequired)
         self._client.on(
             'Network.requestWillBeSent',
             lambda event: self._client._loop.create_task(
                 self._onRequestWillBeSent(event)
             ),
         )
-        self._client.on('Network.requestIntercepted', self._onRequestIntercepted)  # noqa: E501
         self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)
         self._client.on('Network.loadingFinished', self._onLoadingFinished)
@@ -104,9 +107,10 @@ class NetworkManager(BaseEventEmitter):
         await self._client.send('Network.setUserAgentOverride',
                                 {'userAgent': userAgent})
 
-    async def setRequestInterception(self, value: bool) -> None:
+    async def setRequestInterception(self, value: bool, handleAuthRequests: bool = False) -> None:
         """Enable request interception."""
         self._userRequestInterceptionEnabled = value
+        self._handleAuthRequests = handleAuthRequests
         await self._updateProtocolRequestInterception()
 
     async def _updateProtocolRequestInterception(self) -> None:
@@ -122,10 +126,24 @@ class NetworkManager(BaseEventEmitter):
                 {'cacheDisabled': enabled},
             ),
             self._client.send(
-                'Network.setRequestInterception',
-                {'patterns': patterns},
+                'Fetch.enable',
+                {'patterns': patterns, 'handleAuthRequests': self._handleAuthRequests},
             )
         )
+
+    async def _onRequestPaused(self, event):
+        if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
+          await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
+
+        requestHash = generateRequestHash(event['request'])
+        requestId = self._requestHashToRequestIds.firstValue(requestHash)
+        if requestId:
+            requestWillBeSentEvent = self._requestIdToResponseWillBeSent[requestId]  # noqa: E501
+            self._onRequest(requestWillBeSentEvent, event.get('interceptionId'))  # noqa: E501
+            self._requestHashToRequestIds.delete(requestHash, requestId)
+            self._requestIdToResponseWillBeSent.pop(requestId, None)
+        else:
+            self._requestHashToInterceptionIds.set(requestHash, event['interceptionId'])  # noqa: E501
 
     async def _onRequestWillBeSent(self, event: Dict) -> None:
         if self._protocolRequestInterceptionEnabled:
@@ -145,47 +163,6 @@ class NetworkManager(BaseEventEmitter):
             await self._client.send(method, msg)
         except Exception as e:
             debugError(logger, e)
-
-    def _onRequestIntercepted(self, event: dict) -> None:  # noqa: C901
-        if event.get('authChallenge'):
-            response = 'Default'
-            if event['interceptionId'] in self._attemptedAuthentications:
-                response = 'CancelAuth'
-            elif self._credentials:
-                response = 'ProvideCredentials'
-                self._attemptedAuthentications.add(event['interceptionId'])
-            username = getattr(self, '_credentials', {}).get('username')
-            password = getattr(self, '_credentials', {}).get('password')
-
-            self._client._loop.create_task(self._send(
-                'Network.continueInterceptedRequest', {
-                    'interceptionId': event['interceptionId'],
-                    'authChallengeResponse': {
-                        'response': response,
-                        'username': username,
-                        'password': password,
-                    }
-                }
-            ))
-            return
-
-        if (not self._userRequestInterceptionEnabled and
-                self._protocolRequestInterceptionEnabled):
-            self._client._loop.create_task(self._send(
-                'Network.continueInterceptedRequest', {
-                    'interceptionId': event['interceptionId'],
-                }
-            ))
-
-        requestHash = generateRequestHash(event['request'])
-        requestId = self._requestHashToRequestIds.firstValue(requestHash)
-        if requestId:
-            requestWillBeSentEvent = self._requestIdToResponseWillBeSent[requestId]  # noqa: E501
-            self._onRequest(requestWillBeSentEvent, event.get('interceptionId'))  # noqa: E501
-            self._requestHashToRequestIds.delete(requestHash, requestId)
-            self._requestIdToResponseWillBeSent.pop(requestId, None)
-        else:
-            self._requestHashToInterceptionIds.set(requestHash, event['interceptionId'])  # noqa: E501
 
     def _onRequest(self, event: Dict, interceptionId: Optional[str]) -> None:
         redirectChain: List[Request] = list()
