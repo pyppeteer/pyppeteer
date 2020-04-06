@@ -120,16 +120,26 @@ class NetworkManager(BaseEventEmitter):
             return
         self._protocolRequestInterceptionEnabled = enabled
         patterns = [{'urlPattern': '*'}] if enabled else []
-        await asyncio.gather(
-            self._client.send(
-                'Network.setCacheDisabled',
-                {'cacheDisabled': enabled},
-            ),
-            self._client.send(
-                'Fetch.enable',
-                {'patterns': patterns, 'handleAuthRequests': self._handleAuthRequests},
+        if enabled:
+            await asyncio.gather(
+                self._client.send(
+                    'Network.setCacheDisabled',
+                    {'cacheDisabled': enabled},
+                ),
+                self._client.send(
+                    'Fetch.enable',
+                    {'patterns': patterns, 'handleAuthRequests': self._handleAuthRequests},
+                )
             )
-        )
+        else:
+            await asyncio.gather(
+                self._client.send(
+                    'Network.setCacheDisabled',
+                    {'cacheDisabled': False},
+                ),
+                self._client.send('Fetch.disable')
+            )
+
 
     async def _onRequestPaused(self, event):
         if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
