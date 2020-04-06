@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import asyncio
 import base64
 import functools
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Callable, Union, List, Type, Awaitable, Dict
+from typing import Callable, Any, Dict, Union, Awaitable, List, Type
 from urllib.parse import urlparse
 
 from tornado import web

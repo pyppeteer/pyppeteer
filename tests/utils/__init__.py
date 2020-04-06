@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import asyncio
 import ctypes
 import inspect
 import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
-from typing import Awaitable, List, Union, Optional, Any
+from typing import Awaitable, Any, Optional, List, Union
 
 from pyppeteer.frame import Frame
 from pyppeteer.page import Page
@@ -94,7 +91,7 @@ def isFavicon(req):
     return 'favicon.ico' in req.url
 
 
-def set_var_in_caller_frame(name):
+def var_setter(name, default_value=None):
     """
     Returns a function which takes one argument, value. The function returned takes one arg, value and sets the
     variable in the locals of the caller with the name of name to value. If name refers to a future,
@@ -102,13 +99,14 @@ def set_var_in_caller_frame(name):
 
     Args:
         name: name of value in callers locals to set
+        default_value: value to set variable too on calling the returned function
 
     Returns: Callable
         function taking one arg to set variable with the name of name in callers locals
     """
     stack_frame = inspect.stack()[1][0]
 
-    def _setter_func(value=None):
+    def _setter_func(value=default_value):
         var = stack_frame.f_locals[name]
         if asyncio.isfuture(var):
             stack_frame.f_locals[name].set_result(value)

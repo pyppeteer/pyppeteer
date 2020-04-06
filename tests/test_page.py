@@ -5,10 +5,11 @@ from typing import Optional, List
 import pytest
 from syncer import sync
 
+import tests.utils.server
 from pyppeteer import devices
 from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
 from pyppeteer.page import ConsoleMessage
-from tests.utils import waitEvent, gather_with_timeout, attachFrame, set_var_in_caller_frame
+from tests.utils import waitEvent, gather_with_timeout, attachFrame, var_setter
 
 
 @sync
@@ -277,12 +278,7 @@ class TestMetrics:
     async def test_metrics_event_fired_on_console_timestamp(self, event_loop, isolated_page):
         await isolated_page.goto('about:blank')
         metrics = event_loop.create_future()
-
-        def resolve_fut(res):
-            nonlocal metrics
-            metrics.set_result(res)
-
-        isolated_page.once('metrics', resolve_fut)
+        isolated_page.once('metrics', lambda event: metrics.set_result(event))
         await isolated_page.evaluate('() => console.timeStamp("test42")')
         metrics = await asyncio.wait_for(metrics, 5)
         assert metrics['title'] == 'test42'
@@ -436,11 +432,7 @@ class TestExposeFunction:
     async def test_callable_within_evaluateOnNewDocument(self, isolated_page):
         called = False
 
-        def set_called():
-            nonlocal called
-            called = True
-
-        await isolated_page.exposeFunction('woof', set_called)
+        await isolated_page.exposeFunction('woof', var_setter('called', True))
         await isolated_page.evaluateOnNewDocument('()=>woof()')
         await isolated_page.reload()
         assert called
@@ -501,7 +493,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
+            tests.utils.server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -510,7 +502,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
+            tests.utils.server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -546,7 +538,7 @@ class TestSetContent:
     async def test_respects_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_one_time_request_delay('/img.png', 1)
+        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
         with pytest.raises(TimeoutError):
             # note: timeout in ms
             await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
@@ -555,7 +547,7 @@ class TestSetContent:
     async def test_respects_default_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        server.app.add_one_time_request_delay('/img.png', 1)
+        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
         # note: timeout in ms
         isolated_page.setDefaultNavigationTimeout(1)
         with pytest.raises(TimeoutError):
@@ -605,7 +597,7 @@ class TestSetBypassCSP:
 
     @sync
     async def test_bypass_CSP_header(self, isolated_page, server):
-        server.app.add_one_time_header_for_request(
+        tests.utils.server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         # make sure CSP bypass is actually working
@@ -613,7 +605,7 @@ class TestSetBypassCSP:
         await isolated_page.addScriptTag(content='window.__injected = 42;')
         assert await isolated_page.evaluate('window.__injected') is None
 
-        server.app.add_one_time_header_for_request(
+        tests.utils.server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         await isolated_page.setBypassCSP(True)
@@ -808,13 +800,13 @@ class TestSetCacheEnabled:
     async def test_basic_usage(self, isolated_page, server):
         await isolated_page.goto(server / 'cached/one-style.html')
         cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert cached_req.headers.get('if-modified-since')
 
         await isolated_page.setCacheEnabled(False)
         non_cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 
@@ -826,7 +818,7 @@ class TestSetCacheEnabled:
 
         await isolated_page.goto(server / 'cached/one-style.html')
         non_cached_req, *_ = await gather_with_timeout(
-            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 
@@ -988,7 +980,7 @@ class TestEvents:
         @sync
         async def test_console_works(self, isolated_page):
             message = None
-            isolated_page.once('console', set_var_in_caller_frame('message'))
+            isolated_page.once('console', var_setter('message'))
             await gather_with_timeout(
                 isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
                 waitEvent(isolated_page, 'console'),
@@ -1033,12 +1025,7 @@ class TestEvents:
         @sync
         async def test_works_with_window_obj(self, isolated_page):
             message = None
-
-            def set_message(m):
-                nonlocal message
-                message = m
-
-            isolated_page.once('console', set_message)
+            isolated_page.once('console', var_setter('message'))
             await gather_with_timeout(
                 isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
             )
@@ -1117,12 +1104,7 @@ class TestEvents:
     @sync
     async def test_pageerror_fired(self, isolated_page, server):
         error = None
-
-        def set_error(e):
-            nonlocal error
-            error = e
-
-        isolated_page.once('pageerror', set_error)
+        isolated_page.once('pageerror', var_setter('error'))
         await gather_with_timeout(isolated_page.goto(server / 'error.html'), waitEvent(isolated_page, 'pageerror'))
         assert 'Fancy' in str(error)
 

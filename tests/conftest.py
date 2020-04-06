@@ -13,7 +13,7 @@ from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
-from tests.server import get_application, _Application
+from tests.utils.server import _Application, get_application
 
 # internal, conftest.py only variables
 _launch_options = {'args': ['--no-sandbox']}

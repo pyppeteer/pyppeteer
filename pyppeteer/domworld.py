@@ -457,7 +457,7 @@ class WaitTask(object):
         error = None
 
         try:
-            if self._domWorld.executionContext is None:
+            if await self._domWorld.executionContext is None:
                 raise PageError(f'No execution context for {self._domWorld}')
             context = await self._domWorld.executionContext
             success = await context.evaluateHandle(
