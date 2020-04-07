@@ -8,14 +8,13 @@ import base64
 import json
 import logging
 from http import HTTPStatus
-from typing import Awaitable, Dict, List, Optional, Set, TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
-
 
 if TYPE_CHECKING:
     from pyppeteer.frame import Frame, FrameManager

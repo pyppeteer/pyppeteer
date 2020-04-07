@@ -8,7 +8,7 @@ puppeteer equivalent: lib/Input.js
 """
 
 import asyncio
-from typing import Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PyppeteerError

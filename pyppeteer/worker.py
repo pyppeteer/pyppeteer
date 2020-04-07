@@ -4,12 +4,11 @@
 """Worker module."""
 
 import logging
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer.execution_context import ExecutionContext
-
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.models import JSFunctionArg
 

@@ -9,7 +9,7 @@ import logging
 import math
 import re
 from asyncio.futures import Future
-from typing import Any, Awaitable, Callable, Dict, List, Union, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from pyee import AsyncIOEventEmitter
 

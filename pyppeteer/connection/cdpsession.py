@@ -8,7 +8,7 @@ from typing import Awaitable, Dict, Union
 
 from pyee import AsyncIOEventEmitter
 
-from pyppeteer.connection import Connection, createProtocolError, Message, rewriteError
+from pyppeteer.connection import Connection, Message, createProtocolError, rewriteError
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 

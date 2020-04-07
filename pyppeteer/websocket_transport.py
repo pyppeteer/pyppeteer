@@ -1,8 +1,8 @@
 import asyncio
 import logging
-from typing import Iterable, Union, AsyncIterable, Callable, Any, Optional
+from typing import Any, AsyncIterable, Callable, Iterable, Optional, Union
 
-from websockets import connect, WebSocketClientProtocol, Data
+from websockets import Data, WebSocketClientProtocol, connect
 
 logger = logging.getLogger(__name__)
 

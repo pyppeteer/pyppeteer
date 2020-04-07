@@ -8,7 +8,7 @@ puppeteer equivalent: lib/Multimap.js
 """
 
 
-from typing import Any, List, Optional, Dict
+from typing import Any, Dict, List, Optional
 
 
 class Multimap(object):

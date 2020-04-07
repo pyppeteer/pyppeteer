@@ -3,7 +3,6 @@ from typing import Callable, Optional
 
 from pyppeteer import helpers
 
-
 logger = logging.getLogger(__name__)
 
 

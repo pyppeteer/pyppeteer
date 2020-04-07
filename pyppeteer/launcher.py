@@ -10,8 +10,8 @@ import tempfile
 import time
 from contextlib import suppress
 from pathlib import Path
-from signal import signal, SIGTERM, SIGINT, SIG_DFL
-from typing import Dict, Sequence, Union, List, Optional, Any, Tuple
+from signal import SIG_DFL, SIGINT, SIGTERM, signal
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -20,8 +20,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.browser_fetcher import BrowserFetcher
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
-
-from pyppeteer.models import LaunchOptions, Protocol, ChromeArgOptions, BrowserOptions
+from pyppeteer.models import BrowserOptions, ChromeArgOptions, LaunchOptions, Protocol
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 

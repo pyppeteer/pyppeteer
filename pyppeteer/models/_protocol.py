@@ -1,6 +1,5 @@
 import sys
-
-from typing import Any, Dict, List, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Union
 
 if sys.version_info < (3, 8):
     from typing_extensions import Literal, TypedDict

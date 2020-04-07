@@ -1,12 +1,12 @@
 import asyncio
 from asyncio import Future, Task
 from pathlib import Path
-from typing import Any, List, Optional, Dict, Union, TYPE_CHECKING, Awaitable, Callable, Generator, Set
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, Generator, List, Optional, Set, Union
 
 from pyppeteer import helpers
-from pyppeteer.errors import BrowserError, PageError, NetworkError
+from pyppeteer.errors import BrowserError, NetworkError, PageError
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
-from pyppeteer.models import MouseButton, JSFunctionArg
+from pyppeteer.models import JSFunctionArg, MouseButton
 from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:

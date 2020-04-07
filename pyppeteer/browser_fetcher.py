@@ -19,7 +19,7 @@ import sys
 from distutils.util import strtobool
 from io import BytesIO
 from pathlib import Path
-from typing import Union, List, Optional, Tuple, cast, Sequence, Any
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 from urllib import request
 from zipfile import ZipFile
 

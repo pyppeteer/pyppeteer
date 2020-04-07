@@ -1,4 +1,4 @@
-from typing import List, Dict, Union, Set, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Set, Union
 
 if TYPE_CHECKING:
     from pyppeteer.connection.cdpsession import CDPSession

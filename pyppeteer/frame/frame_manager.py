@@ -4,18 +4,16 @@
 import asyncio
 import logging
 import re
-from typing import Optional, Dict, Any, Set, List
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
-from pyppeteer.errors import BrowserError, PageError, ElementHandleError
+from pyppeteer.errors import BrowserError, ElementHandleError, PageError
 from pyppeteer.events import Events
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.frame import Frame
-
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response

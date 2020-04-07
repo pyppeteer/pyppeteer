@@ -4,7 +4,7 @@
 """Target module."""
 
 import asyncio
-from typing import Callable, Dict, Optional, Awaitable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, Optional
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.events import Events

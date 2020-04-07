@@ -2,11 +2,12 @@ import asyncio
 import json
 import logging
 import sys
-from typing import Awaitable, Dict, Any
+from typing import Any, Awaitable, Dict
 
 import websockets
 from pyee import AsyncIOEventEmitter
 
+from pyppeteer.connection.cdpsession import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport
@@ -238,6 +239,3 @@ def remove_none_items_inplace(o: Dict[str, Any]) -> None:
             none_keys.append(key)
     for key in none_keys:
         del o[key]
-
-
-from pyppeteer.connection.cdpsession import CDPSession

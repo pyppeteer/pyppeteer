@@ -14,8 +14,7 @@ import re
 import sys
 from copy import copy
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
 
 from pyee import AsyncIOEventEmitter
 
@@ -25,14 +24,12 @@ from pyppeteer.connection import CDPSession, Connection
 from pyppeteer.coverage import Coverage
 from pyppeteer.dialog import Dialog
 from pyppeteer.emulation_manager import EmulationManager
-from pyppeteer.errors import PageError, BrowserError
+from pyppeteer.errors import BrowserError, PageError
 from pyppeteer.events import Events
 from pyppeteer.frame import Frame, FrameManager
-
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
-from pyppeteer.jshandle import ElementHandle, createJSHandle, JSHandle
-from pyppeteer.models import Protocol, MouseButton, ScreenshotClip, JSFunctionArg
-from pyppeteer.models import WaitTargets
+from pyppeteer.jshandle import ElementHandle, JSHandle, createJSHandle
+from pyppeteer.models import JSFunctionArg, MouseButton, Protocol, ScreenshotClip, WaitTargets
 from pyppeteer.network_manager import Request, Response
 from pyppeteer.task_queue import TaskQueue
 from pyppeteer.timeout_settings import TimeoutSettings

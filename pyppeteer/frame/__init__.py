@@ -1,13 +1,14 @@
 import asyncio
 from pathlib import Path
-from typing import Optional, Set, List, Union, Any, Awaitable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, List, Optional, Set, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
-from pyppeteer.errors import PageError, BrowserError
+from pyppeteer.errors import BrowserError, PageError
+from pyppeteer.frame.frame_manager import FrameManager
 from pyppeteer.jshandle import ElementHandle, JSHandle
-from pyppeteer.models import WaitTargets, JSFunctionArg
+from pyppeteer.models import JSFunctionArg, WaitTargets
 from pyppeteer.network_manager import Response
 
 
@@ -285,6 +286,3 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
-
-
-from pyppeteer.frame.frame_manager import FrameManager

@@ -6,12 +6,12 @@
 import logging
 import math
 import re
-from typing import Any, Dict, Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
-from pyppeteer.jshandle import createJSHandle, JSHandle, ElementHandle
+from pyppeteer.jshandle import ElementHandle, JSHandle, createJSHandle
 from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:

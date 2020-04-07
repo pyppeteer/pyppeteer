@@ -9,10 +9,10 @@ puppeteer equivalent: lib/LifecycleWatcher.js
 
 import asyncio
 from functools import partial
-from typing import Awaitable, List, Union, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Awaitable, List, Optional, Union
 
 from pyppeteer import helpers
-from pyppeteer.errors import TimeoutError, BrowserError, PageError
+from pyppeteer.errors import BrowserError, PageError, TimeoutError
 from pyppeteer.events import Events
 from pyppeteer.helpers import safe_future_set_result
 from pyppeteer.models import WaitTargets

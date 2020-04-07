@@ -5,12 +5,12 @@ import math
 import os
 from idlelib.rpc import RemoteObject
 from pathlib import Path
-from typing import Dict, Optional, List, Any, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
-from pyppeteer.models import MouseButton, JSFunctionArg
+from pyppeteer.models import JSFunctionArg, MouseButton
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
