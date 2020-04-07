@@ -132,60 +132,40 @@ class ProtocolTypesGenerator:
         logger.info(f'Generating protocol spec')
         t_start = time.perf_counter()
 
-        self.code_gen.add_code('if TYPE_CHECKING:', lines_classification='inserted')
-        self.code_gen.add_newlines(num=1, lines_classification='inserted')
+        self.code_gen.add_code('class Protocol:')
         with self.code_gen.indent_manager:
-            self.code_gen.add_code('class Protocol:')
-            with self.code_gen.indent_manager:
-                for domain in self.domains:
-                    domain_name = domain['domain']
-                    self.code_gen.add_code(f'class {domain_name}:')
-                    self.all_known_types[domain_name] = {}
-                    with self.code_gen.indent_manager:
-                        self.code_gen.add_comment_from_info(domain)
-                        for type_info in domain.get('types', []):
-                            self.add_type_item(type_info, 'id', 'properties', domain_name)
-
-                        for payload in domain.get('events', []):
-                            payload["name"] = payload["name"] + 'Payload'
-                            self.add_type_item(
-                                payload, 'name', 'parameters', domain_name, type_conversion_fallback='None'
-                            )
-
-                        for command_info in domain.get('commands', []):
-                            for td_key, suffix in (('properties', 'Parameters'), ('returns', 'ReturnValues')):
-                                command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
-                                self.add_type_item(
-                                    command_info, 'name', td_key, domain_name, type_conversion_fallback='None'
-                                )
-                    self.code_gen.add_newlines(num=1)
-
-                self.generate_overview()
-                self.resolve_all_fw_refs()
-
-            self.expand_recursive_references()
-            self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
-            # all typed dicts are inserted prior to the main Protocol class
-            for index, td in enumerate(self.typed_dicts.values()):
-                td.add_newlines(num=1)
-                self.code_gen.add_code(lines=td.code_lines, lines_classification='inserted')
-
-        self.code_gen.add_code('else:')
-        with self.code_gen.indent_manager:
-            self.code_gen.add_newlines(num=1)
-            # only define dummy class for runtime (not TYPE_CHECKING)
-            self.code_gen.add_code('class DummyProtocol:')
-            with self.code_gen.indent_manager:
-                self.code_gen.add_code('"""')
-                self.code_gen.add_code('Dummy class for use at runtime')
-                self.code_gen.add_code('"""')
-                self.code_gen.add_newlines(num=1)
-                self.code_gen.add_code('def __getattr__(self, _):')
+            for domain in self.domains:
+                domain_name = domain['domain']
+                self.code_gen.add_code(f'class {domain_name}:')
+                self.all_known_types[domain_name] = {}
                 with self.code_gen.indent_manager:
-                    self.code_gen.add_code('return self')
-            self.code_gen.add_newlines(num=1)
-            self.code_gen.add_code('Protocol = DummyProtocol()')
-            self.code_gen.add_newlines(num=2)
+                    self.code_gen.add_comment_from_info(domain)
+                    for type_info in domain.get('types', []):
+                        self.add_type_item(type_info, 'id', 'properties', domain_name)
+
+                    for payload in domain.get('events', []):
+                        payload["name"] = payload["name"] + 'Payload'
+                        self.add_type_item(
+                            payload, 'name', 'parameters', domain_name, type_conversion_fallback='None'
+                        )
+
+                    for command_info in domain.get('commands', []):
+                        for td_key, suffix in (('properties', 'Parameters'), ('returns', 'ReturnValues')):
+                            command_info['name'] = re.subn(r'(Parameters$|$)', suffix, command_info['name'], 1)[0]
+                            self.add_type_item(
+                                command_info, 'name', td_key, domain_name, type_conversion_fallback='None'
+                            )
+                self.code_gen.add_newlines(num=1)
+
+            self.generate_overview()
+            self.resolve_all_fw_refs()
+
+        self.expand_recursive_references()
+        self.typed_dicts = {k: v for k, v in sorted(self.typed_dicts.items(), key=lambda x: x[0])}
+        # all typed dicts are inserted prior to the main Protocol class
+        for index, td in enumerate(self.typed_dicts.values()):
+            td.add_newlines(num=1)
+            self.code_gen.add_code(lines=td.code_lines, lines_classification='inserted')
 
         self.code_gen.add_code(lines=self._extern_code_gen.code_lines)
         logger.info(f'Generated protocol spec in {time.perf_counter() - t_start:.2f}s')
