@@ -17,18 +17,9 @@ if TYPE_CHECKING:
     from pyppeteer.jshandle import JSHandle
 
 
-class Viewport(TypedDict, total=False):
-    width: float
-    height: float
-    deviceScaleFactor: float
-    isMobile: bool
-    isLandscape: bool
-    hasTouch: bool
-
-
 class BrowserOptions(TypedDict, total=False):
     ignoreHTTPSErrors: bool
-    defaultViewport: Viewport
+    defaultViewport: Protocol.Page.Viewport
     slowMo: float
 
 
@@ -52,7 +43,7 @@ class LaunchOptions(TypedDict, total=False):
 
 class DeviceDetails(TypedDict):
     userAgent: str
-    viewport: Viewport
+    viewport: Protocol.Page.Viewport
 
 
 class ScreenshotClip(TypedDict, total=False):
