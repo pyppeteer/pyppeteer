@@ -317,10 +317,13 @@ class ProtocolTypesGenerator:
         """
         expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
         for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_references])):
-            any_recursive_ref = rf'(?:{"|".join(recursive_refs)})'
+            any_recursive_ref = "|".join(recursive_refs)
             for recursing_itm in recursive_refs:
                 self.typed_dicts[recursing_itm].filter_lines(
-                    (rf'(\s+)(\w+): [\w\[]*?\'({any_recursive_ref})\'\]?', rf'\1# actual: \3\n\1\2: {expansion}\n'),
+                    (
+                        rf'(\s+)(\w+): [\w\[]*?\'({any_recursive_ref})\'\]?',
+                        rf'\1# actual: \3\n\1\2: {expansion}'
+                    ),
                 )
 
     def write_generated_code(self, path: Path) -> None:
@@ -355,11 +358,31 @@ class ProtocolTypesGenerator:
         td_name = self._multi_fallback_get(type_info, 'id', 'name')
         is_total = any(1 for x in items if x.get('optional'))
         td = TypedDictGenerator(td_name, is_total)
-        with td.indent_manager:
+        doc_string = TypingCodeGenerator(init_imports=False)
+        with td.indent_manager, doc_string.indent_manager:
+            needs_closing_triple_q = False
+            if 'description' in type_info or any('description' in item for item in items):
+                doc_string.add_code('"""')
+                needs_closing_triple_q = True
+                if 'description' in type_info:
+                    doc_string.add_code(type_info['description'])
+                    doc_string.add_newlines(num=1)
+                if any('description' in item for item in items):
+                    doc_string.add_code('Attributes:')
+
             for item in items:
-                td.add_comment_from_info(item)
                 type_ = self.convert_js_to_py_type(item, domain_name)
+                if 'description' in item:
+                    lines = item['description'].split('\n')
+                    with doc_string.indent_manager:
+                        doc_string.add_code(f'{item["name"]}: {lines[0]}')
+                        if len(lines) > 1:
+                            with doc_string.indent_manager:
+                                doc_string.add_code(lines=lines[1:])
                 td.add_code(f'{item["name"]}: {type_}')
+            if needs_closing_triple_q:
+                doc_string.add_code('"""')
+        td.insert_code(lines=doc_string.code_lines)
 
         return {td_name: td}
 
@@ -556,13 +579,20 @@ class TypedDictGenerator(TypingCodeGenerator):
 
         Returns: None
         """
-        temp_code_lines = self.code_lines[:]
-        self.code_lines = [self.code_lines[0]]
-        for line in temp_code_lines[1:]:
-            with self.indent_manager:
-                for sub_p, sub_r in sub_pattern_replacements:
-                    line = re.sub(sub_p, sub_r, line)
-                self.add_code(code=line)
+        # temp_code_lines = self.code_lines[:]
+        # self.code_lines = [self.code_lines[0]]
+        filtered_lines = []
+        for index, line in enumerate(self.code_lines[1:]):
+            for sub_p, sub_r in sub_pattern_replacements:
+                line = re.sub(sub_p, sub_r, line)
+            filtered_lines.extend(line.split('\n'))
+        self.code_lines = self.code_lines[:1] + filtered_lines
+
+    def insert_code(self, code: str = None, lines: List[str] = None, lines_classification: str = None) -> None:
+        old_lines = self.code_lines[1:]
+        self.code_lines = self.code_lines[:1]
+        self.add_code(code, lines, lines_classification)
+        self.add_code(lines=old_lines)
 
 
 class IndentManager:
