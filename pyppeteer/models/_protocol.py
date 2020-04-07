@@ -5626,7 +5626,7 @@ class screenshotRequestedPayload(TypedDict):
     Fired when user asks to capture screenshot of some area on the page.
 
     Attributes:
-        viewport: Viewport to capture, in device independent pixels (dip).
+        viewport: Protocol.Page.Viewport to capture, in device independent pixels (dip).
     """
     viewport: 'Viewport'
 

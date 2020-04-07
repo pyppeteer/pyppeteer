@@ -9,7 +9,7 @@ from typing import Callable, Dict, Optional, Awaitable, TYPE_CHECKING
 from pyppeteer.connection import CDPSession
 from pyppeteer.events import Events
 from pyppeteer.helpers import safe_future_set_result
-from pyppeteer.models import Viewport
+from pyppeteer.models import Protocol
 from pyppeteer.page import Page
 from pyppeteer.task_queue import TaskQueue
 from pyppeteer.worker import Worker
@@ -27,7 +27,7 @@ class Target:
         browserContext: 'BrowserContext',
         sessionFactory: Callable[[], Awaitable[CDPSession]],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Viewport,
+        defaultViewport: Protocol.Page.Viewport,
         screenshotTaskQueue: TaskQueue,
         loop: asyncio.AbstractEventLoop,
     ) -> None:

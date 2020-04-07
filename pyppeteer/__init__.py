@@ -20,7 +20,7 @@ from pyppeteer.browser import Browser
 from pyppeteer.browser_fetcher import BrowserFetcher, Platform
 from pyppeteer.device_descriptors import devices
 from pyppeteer.launcher import launcher, ChromeLauncher, FirefoxLauncher
-from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Viewport, Devices
+from pyppeteer.models import LaunchOptions, ChromeArgOptions, BrowserOptions, Protocol, Devices
 from pyppeteer.websocket_transport import WebsocketTransport
 
 
@@ -60,7 +60,7 @@ class Pyppeteer:
         transport: WebsocketTransport = None,
         ignoreHTTPSErrors: bool = False,
         slowMo: float = 0,
-        defaultViewport: Viewport = None,
+        defaultViewport: Protocol.Page.Viewport = None,
     ) -> Browser:
         return await self._launcher.connect(
             browserWSEndpoint=browserWSEndpoint,
@@ -110,7 +110,7 @@ async def connect(
     transport: WebsocketTransport = None,
     ignoreHTTPSErrors: bool = False,
     slowMo: float = 0,
-    defaultViewport: Viewport = None,
+    defaultViewport: Protocol.Page.Viewport = None,
 ) -> Browser:
     return await Pyppeteer(projectRoot, preferredRevision).connect(
         browserWSEndpoint=browserWSEndpoint,

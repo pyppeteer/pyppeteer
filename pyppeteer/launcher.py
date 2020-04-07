@@ -21,7 +21,7 @@ from pyppeteer.browser_fetcher import BrowserFetcher
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 
-from pyppeteer.models import LaunchOptions, Viewport, ChromeArgOptions, BrowserOptions
+from pyppeteer.models import LaunchOptions, Protocol, ChromeArgOptions, BrowserOptions
 from pyppeteer.util import get_free_port
 from pyppeteer.websocket_transport import WebsocketTransport
 
@@ -179,7 +179,7 @@ class BaseBrowserLauncher:
         transport: WebsocketTransport = None,
         ignoreHTTPSErrors: bool = False,
         slowMo: float = 0,
-        defaultViewport: Viewport = None,
+        defaultViewport: Protocol.Page.Viewport = None,
     ) -> Browser:
         if defaultViewport is None:
             defaultViewport = {'width': 800, 'height': 600}

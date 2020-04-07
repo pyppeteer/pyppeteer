@@ -13,7 +13,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
-from pyppeteer.models import Viewport
+from pyppeteer.models import Protocol
 from pyppeteer.target import Target
 from pyppeteer.task_queue import TaskQueue
 
@@ -36,7 +36,7 @@ class Browser(AsyncIOEventEmitter):
         connection: Connection,
         contextIds: List[str],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Viewport,
+        defaultViewport: Protocol.Page.Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
     ) -> None:
@@ -127,7 +127,7 @@ class Browser(AsyncIOEventEmitter):
         connection: Connection,
         contextIds: List[str],
         ignoreHTTPSErrors: bool,
-        defaultViewport: Viewport,
+        defaultViewport: Protocol.Page.Viewport,
         process: Optional[Popen] = None,
         closeCallback: Callable[[], Awaitable[None]] = None,
     ) -> 'Browser':

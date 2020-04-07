@@ -31,7 +31,7 @@ from pyppeteer.frame import Frame, FrameManager
 
 from pyppeteer.input import Keyboard, Mouse, Touchscreen
 from pyppeteer.jshandle import ElementHandle, createJSHandle, JSHandle
-from pyppeteer.models import Viewport, MouseButton, ScreenshotClip, JSFunctionArg
+from pyppeteer.models import Protocol, MouseButton, ScreenshotClip, JSFunctionArg
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import Request, Response
 from pyppeteer.task_queue import TaskQueue
@@ -81,7 +81,7 @@ class Page(AsyncIOEventEmitter):
         client: CDPSession,
         target: 'Target',
         ignoreHTTPSErrors: bool,
-        defaultViewport: Viewport,
+        defaultViewport: Protocol.Page.Viewport,
         screenshotTaskQueue: TaskQueue = None,
     ) -> 'Page':
         """Async function which makes new page object."""
@@ -971,7 +971,7 @@ class Page(AsyncIOEventEmitter):
         """Bring page to front (activate tab)."""
         await self._client.send('Page.bringToFront')
 
-    async def emulate(self, viewport: Viewport, userAgent: str) -> None:
+    async def emulate(self, viewport: Protocol.Page.Viewport, userAgent: str) -> None:
         """Emulate given device metrics and user agent.
 
         This method is a shortcut for calling two methods:
@@ -1048,7 +1048,7 @@ class Page(AsyncIOEventEmitter):
                 raise PageError(f'Invalid timezone ID: {timezoneId}')
             raise e
 
-    async def setViewport(self, viewport: Viewport) -> None:
+    async def setViewport(self, viewport: Protocol.Page.Viewport) -> None:
         """Set viewport.
 
         Available options are:
@@ -1065,7 +1065,7 @@ class Page(AsyncIOEventEmitter):
             await self.reload()
 
     @property
-    def viewport(self) -> Optional[Viewport]:
+    def viewport(self) -> Optional[Protocol.Page.Viewport]:
         """Get viewport as a dictionary or None.
 
         Fields of returned dictionary is same as :meth:`setViewport`.
