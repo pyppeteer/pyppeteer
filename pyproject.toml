@@ -72,6 +72,7 @@ pylint = "^2.4.4"
 m2r = "^0.2.1"
 sphinx = "^2.4.0"
 sphinxcontrib-asyncio = "^0.2.0"
+networkx = "^2.4"
 
 [build-system]
 requires = ["poetry>=0.12"]
