@@ -155,7 +155,7 @@ class ProtocolTypesGenerator:
                             self.add_type_item(
                                 command_info, 'name', td_key, domain_name, type_conversion_fallback='None'
                             )
-                self.code_gen.add_newlines(num=1)
+                self.code_gen.add_newlines(num=2)
 
             self.generate_overview()
             self.resolve_all_fw_refs()

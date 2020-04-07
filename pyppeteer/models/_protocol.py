@@ -13,6 +13,8 @@ Attention! This file should *not* be modified directly! Instead, use the script 
 
 Last regeneration: 2020-04-07 18:44:29.689341
 """
+
+
 class AXNode(TypedDict, total=False):
     """
     A node in the accessibility tree.
@@ -29,6 +31,7 @@ class AXNode(TypedDict, total=False):
         childIds: IDs for each of this node's child nodes.
         backendDOMNodeId: The backend ID for the associated DOM node, if any.
     """
+
     nodeId: str
     ignored: bool
     ignoredReasons: List['AXProperty']
@@ -40,14 +43,57 @@ class AXNode(TypedDict, total=False):
     childIds: List[str]
     backendDOMNodeId: int
 
+
 class AXProperty(TypedDict):
     """
     Attributes:
         name: The name of this property.
         value: The value of this property.
     """
-    name: Literal['busy', 'disabled', 'editable', 'focusable', 'focused', 'hidden', 'hiddenRoot', 'invalid', 'keyshortcuts', 'settable', 'roledescription', 'live', 'atomic', 'relevant', 'root', 'autocomplete', 'hasPopup', 'level', 'multiselectable', 'orientation', 'multiline', 'readonly', 'required', 'valuemin', 'valuemax', 'valuetext', 'checked', 'expanded', 'modal', 'pressed', 'selected', 'activedescendant', 'controls', 'describedby', 'details', 'errormessage', 'flowto', 'labelledby', 'owns']
+
+    name: Literal[
+        'busy',
+        'disabled',
+        'editable',
+        'focusable',
+        'focused',
+        'hidden',
+        'hiddenRoot',
+        'invalid',
+        'keyshortcuts',
+        'settable',
+        'roledescription',
+        'live',
+        'atomic',
+        'relevant',
+        'root',
+        'autocomplete',
+        'hasPopup',
+        'level',
+        'multiselectable',
+        'orientation',
+        'multiline',
+        'readonly',
+        'required',
+        'valuemin',
+        'valuemax',
+        'valuetext',
+        'checked',
+        'expanded',
+        'modal',
+        'pressed',
+        'selected',
+        'activedescendant',
+        'controls',
+        'describedby',
+        'details',
+        'errormessage',
+        'flowto',
+        'labelledby',
+        'owns',
+    ]
     value: 'AXValue'
+
 
 class AXRelatedNode(TypedDict, total=False):
     """
@@ -56,9 +102,11 @@ class AXRelatedNode(TypedDict, total=False):
         idref: The IDRef value provided, if any.
         text: The text alternative of this node in the current context.
     """
+
     backendDOMNodeId: int
     idref: str
     text: str
+
 
 class AXValue(TypedDict, total=False):
     """
@@ -70,11 +118,31 @@ class AXValue(TypedDict, total=False):
         relatedNodes: One or more related nodes, if applicable.
         sources: The sources which contributed to the computation of this property.
     """
-    type: Literal['boolean', 'tristate', 'booleanOrUndefined', 'idref', 'idrefList', 'integer', 'node', 'nodeList', 'number', 'string', 'computedString', 'token', 'tokenList', 'domRelation', 'role', 'internalRole', 'valueUndefined']
+
+    type: Literal[
+        'boolean',
+        'tristate',
+        'booleanOrUndefined',
+        'idref',
+        'idrefList',
+        'integer',
+        'node',
+        'nodeList',
+        'number',
+        'string',
+        'computedString',
+        'token',
+        'tokenList',
+        'domRelation',
+        'role',
+        'internalRole',
+        'valueUndefined',
+    ]
     value: Any
     relatedNodes: List['AXRelatedNode']
     # actual: AXValueSource
     sources: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class AXValueSource(TypedDict, total=False):
     """
@@ -91,6 +159,7 @@ class AXValueSource(TypedDict, total=False):
         invalid: Whether the value for this property is invalid.
         invalidReason: Reason for the value being invalid, if it is.
     """
+
     type: Literal['attribute', 'implicit', 'style', 'contents', 'placeholder', 'relatedElement']
     # actual: AXValue
     value: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
@@ -103,6 +172,7 @@ class AXValueSource(TypedDict, total=False):
     nativeSourceValue: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     invalid: bool
     invalidReason: str
+
 
 class Animation(TypedDict, total=False):
     """
@@ -121,6 +191,7 @@ class Animation(TypedDict, total=False):
         cssId: A unique ID for `Animation` representing the sources that triggered this CSS
             animation/transition.
     """
+
     id: str
     name: str
     pausedState: bool
@@ -131,6 +202,7 @@ class Animation(TypedDict, total=False):
     type: Literal['CSSTransition', 'CSSAnimation', 'WebAnimation']
     source: 'AnimationEffect'
     cssId: str
+
 
 class AnimationEffect(TypedDict, total=False):
     """
@@ -148,6 +220,7 @@ class AnimationEffect(TypedDict, total=False):
         keyframesRule: `AnimationEffect`'s keyframes.
         easing: `AnimationEffect`'s timing function.
     """
+
     delay: float
     endDelay: float
     iterationStart: float
@@ -159,6 +232,7 @@ class AnimationEffect(TypedDict, total=False):
     keyframesRule: 'KeyframesRule'
     easing: str
 
+
 class AppManifestError(TypedDict):
     """
     Error while paring app manifest.
@@ -169,10 +243,12 @@ class AppManifestError(TypedDict):
         line: Error line.
         column: Error column.
     """
+
     message: str
     critical: int
     line: int
     column: int
+
 
 class ApplicationCache(TypedDict):
     """
@@ -185,11 +261,13 @@ class ApplicationCache(TypedDict):
         updateTime: Application cache update time.
         resources: Application cache resources.
     """
+
     manifestURL: str
     size: float
     creationTime: float
     updateTime: float
     resources: List['ApplicationCacheResource']
+
 
 class ApplicationCacheResource(TypedDict):
     """
@@ -200,23 +278,28 @@ class ApplicationCacheResource(TypedDict):
         size: Resource size.
         type: Resource type.
     """
+
     url: str
     size: int
     type: str
+
 
 class AudioListener(TypedDict):
     """
     Protocol object for AudioListner
 
     """
+
     listenerId: str
     contextId: str
+
 
 class AudioNode(TypedDict):
     """
     Protocol object for AudioNode
 
     """
+
     nodeId: str
     contextId: str
     nodeType: str
@@ -226,11 +309,13 @@ class AudioNode(TypedDict):
     channelCountMode: Literal['clamped-max', 'explicit', 'max']
     channelInterpretation: Literal['discrete', 'speakers']
 
+
 class AudioParam(TypedDict):
     """
     Protocol object for AudioParam
 
     """
+
     paramId: str
     nodeId: str
     contextId: str
@@ -239,6 +324,7 @@ class AudioParam(TypedDict):
     defaultValue: float
     minValue: float
     maxValue: float
+
 
 class AuthChallenge(TypedDict, total=False):
     """
@@ -250,10 +336,12 @@ class AuthChallenge(TypedDict, total=False):
         scheme: The authentication scheme used, such as basic or digest
         realm: The realm of the challenge. May be empty.
     """
+
     source: Literal['Server', 'Proxy']
     origin: str
     scheme: str
     realm: str
+
 
 class AuthChallengeResponse(TypedDict, total=False):
     """
@@ -268,9 +356,11 @@ class AuthChallengeResponse(TypedDict, total=False):
         password: The password to provide, possibly empty. Should only be set if response is
             ProvideCredentials.
     """
+
     response: Literal['Default', 'CancelAuth', 'ProvideCredentials']
     username: str
     password: str
+
 
 class BackendNode(TypedDict):
     """
@@ -280,9 +370,11 @@ class BackendNode(TypedDict):
         nodeType: `Node`'s nodeType.
         nodeName: `Node`'s nodeName.
     """
+
     nodeType: int
     nodeName: str
     backendNodeId: int
+
 
 class BackgroundServiceEvent(TypedDict):
     """
@@ -295,13 +387,22 @@ class BackgroundServiceEvent(TypedDict):
         instanceId: An identifier that groups related events together.
         eventMetadata: A list of event-specific information.
     """
+
     timestamp: float
     origin: str
     serviceWorkerRegistrationId: str
-    service: Literal['backgroundFetch', 'backgroundSync', 'pushMessaging', 'notifications', 'paymentHandler', 'periodicBackgroundSync']
+    service: Literal[
+        'backgroundFetch',
+        'backgroundSync',
+        'pushMessaging',
+        'notifications',
+        'paymentHandler',
+        'periodicBackgroundSync',
+    ]
     eventName: str
     instanceId: str
     eventMetadata: List['EventMetadata']
+
 
 class BaseAudioContext(TypedDict, total=False):
     """
@@ -312,6 +413,7 @@ class BaseAudioContext(TypedDict, total=False):
         maxOutputChannelCount: Number of output channels supported by audio hardware in use.
         sampleRate: Context sample rate.
     """
+
     contextId: str
     contextType: Literal['realtime', 'offline']
     contextState: Literal['suspended', 'running', 'closed']
@@ -319,6 +421,7 @@ class BaseAudioContext(TypedDict, total=False):
     callbackBufferSize: float
     maxOutputChannelCount: float
     sampleRate: float
+
 
 class BlockedCookieWithReason(TypedDict):
     """
@@ -328,8 +431,22 @@ class BlockedCookieWithReason(TypedDict):
         blockedReasons: The reason(s) the cookie was blocked.
         cookie: The cookie object representing the cookie which was not sent.
     """
-    blockedReasons: List[Literal['SecureOnly', 'NotOnPath', 'DomainMismatch', 'SameSiteStrict', 'SameSiteLax', 'SameSiteUnspecifiedTreatedAsLax', 'SameSiteNoneInsecure', 'UserPreferences', 'UnknownError']]
+
+    blockedReasons: List[
+        Literal[
+            'SecureOnly',
+            'NotOnPath',
+            'DomainMismatch',
+            'SameSiteStrict',
+            'SameSiteLax',
+            'SameSiteUnspecifiedTreatedAsLax',
+            'SameSiteNoneInsecure',
+            'UserPreferences',
+            'UnknownError',
+        ]
+    ]
     cookie: 'Cookie'
+
 
 class BlockedSetCookieWithReason(TypedDict, total=False):
     """
@@ -343,9 +460,26 @@ class BlockedSetCookieWithReason(TypedDict, total=False):
             sometimes complete cookie information is not available, such as in the case of parsing
             errors.
     """
-    blockedReasons: List[Literal['SecureOnly', 'SameSiteStrict', 'SameSiteLax', 'SameSiteUnspecifiedTreatedAsLax', 'SameSiteNoneInsecure', 'UserPreferences', 'SyntaxError', 'SchemeNotSupported', 'OverwriteSecure', 'InvalidDomain', 'InvalidPrefix', 'UnknownError']]
+
+    blockedReasons: List[
+        Literal[
+            'SecureOnly',
+            'SameSiteStrict',
+            'SameSiteLax',
+            'SameSiteUnspecifiedTreatedAsLax',
+            'SameSiteNoneInsecure',
+            'UserPreferences',
+            'SyntaxError',
+            'SchemeNotSupported',
+            'OverwriteSecure',
+            'InvalidDomain',
+            'InvalidPrefix',
+            'UnknownError',
+        ]
+    ]
     cookieLine: str
     cookie: 'Cookie'
+
 
 class Bounds(TypedDict, total=False):
     """
@@ -358,11 +492,13 @@ class Bounds(TypedDict, total=False):
         height: The window height in pixels.
         windowState: The window state. Default to normal.
     """
+
     left: int
     top: int
     width: int
     height: int
     windowState: Literal['normal', 'minimized', 'maximized', 'fullscreen']
+
 
 class BoxModel(TypedDict, total=False):
     """
@@ -377,6 +513,7 @@ class BoxModel(TypedDict, total=False):
         height: Node height
         shapeOutside: Shape outside coordinates
     """
+
     content: List[float]
     padding: List[float]
     border: List[float]
@@ -385,6 +522,7 @@ class BoxModel(TypedDict, total=False):
     height: int
     shapeOutside: 'ShapeOutsideInfo'
 
+
 class BreakLocation(TypedDict, total=False):
     """
     Attributes:
@@ -392,10 +530,12 @@ class BreakLocation(TypedDict, total=False):
         lineNumber: Line number in the script (0-based).
         columnNumber: Column number in the script (0-based).
     """
+
     scriptId: str
     lineNumber: int
     columnNumber: int
     type: Literal['debuggerStatement', 'call', 'return']
+
 
 class Bucket(TypedDict):
     """
@@ -406,9 +546,11 @@ class Bucket(TypedDict):
         high: Maximum value (exclusive).
         count: Number of samples.
     """
+
     low: int
     high: int
     count: int
+
 
 class CSSComputedStyleProperty(TypedDict):
     """
@@ -416,8 +558,10 @@ class CSSComputedStyleProperty(TypedDict):
         name: Computed style property name.
         value: Computed style property value.
     """
+
     name: str
     value: str
+
 
 class CSSKeyframeRule(TypedDict, total=False):
     """
@@ -430,10 +574,12 @@ class CSSKeyframeRule(TypedDict, total=False):
         keyText: Associated key text.
         style: Associated style declaration.
     """
+
     styleSheetId: str
     origin: Literal['injected', 'user-agent', 'inspector', 'regular']
     keyText: 'Value'
     style: 'CSSStyle'
+
 
 class CSSKeyframesRule(TypedDict):
     """
@@ -443,8 +589,10 @@ class CSSKeyframesRule(TypedDict):
         animationName: Animation name.
         keyframes: List of keyframes.
     """
+
     animationName: 'Value'
     keyframes: List['CSSKeyframeRule']
+
 
 class CSSMedia(TypedDict, total=False):
     """
@@ -462,12 +610,14 @@ class CSSMedia(TypedDict, total=False):
         styleSheetId: Identifier of the stylesheet containing this object (if exists).
         mediaList: Array of media queries.
     """
+
     text: str
     source: Literal['mediaRule', 'importRule', 'linkedSheet', 'inlineSheet']
     sourceURL: str
     range: 'SourceRange'
     styleSheetId: str
     mediaList: List['MediaQuery']
+
 
 class CSSProperty(TypedDict, total=False):
     """
@@ -483,6 +633,7 @@ class CSSProperty(TypedDict, total=False):
         disabled: Whether the property is disabled by the user (present for source-based properties only).
         range: The entire property range in the enclosing style declaration (if available).
     """
+
     name: str
     value: str
     important: bool
@@ -491,6 +642,7 @@ class CSSProperty(TypedDict, total=False):
     parsedOk: bool
     disabled: bool
     range: 'SourceRange'
+
 
 class CSSRule(TypedDict, total=False):
     """
@@ -505,11 +657,13 @@ class CSSRule(TypedDict, total=False):
         media: Media list array (for rules involving media queries). The array enumerates media queries
             starting with the innermost one, going outwards.
     """
+
     styleSheetId: str
     selectorList: 'SelectorList'
     origin: Literal['injected', 'user-agent', 'inspector', 'regular']
     style: 'CSSStyle'
     media: List['CSSMedia']
+
 
 class CSSStyle(TypedDict, total=False):
     """
@@ -523,11 +677,13 @@ class CSSStyle(TypedDict, total=False):
         cssText: Style declaration text (if available).
         range: Style declaration range in the enclosing stylesheet (if available).
     """
+
     styleSheetId: str
     cssProperties: List['CSSProperty']
     shorthandEntries: List['ShorthandEntry']
     cssText: str
     range: 'SourceRange'
+
 
 class CSSStyleSheetHeader(TypedDict, total=False):
     """
@@ -551,6 +707,7 @@ class CSSStyleSheetHeader(TypedDict, total=False):
         endLine: Line offset of the end of the stylesheet within the resource (zero based).
         endColumn: Column offset of the end of the stylesheet within the resource (zero based).
     """
+
     styleSheetId: str
     frameId: str
     sourceURL: str
@@ -567,6 +724,7 @@ class CSSStyleSheetHeader(TypedDict, total=False):
     endLine: float
     endColumn: float
 
+
 class Cache(TypedDict):
     """
     Cache identifier.
@@ -576,9 +734,11 @@ class Cache(TypedDict):
         securityOrigin: Security origin of the cache.
         cacheName: The name of the cache.
     """
+
     cacheId: str
     securityOrigin: str
     cacheName: str
+
 
 class CachedResource(TypedDict, total=False):
     """
@@ -590,10 +750,29 @@ class CachedResource(TypedDict, total=False):
         response: Cached response data.
         bodySize: Cached response body size.
     """
+
     url: str
-    type: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    type: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     response: 'Response'
     bodySize: float
+
 
 class CachedResponse(TypedDict):
     """
@@ -602,7 +781,9 @@ class CachedResponse(TypedDict):
     Attributes:
         body: Entry content, base64-encoded.
     """
+
     body: bytes
+
 
 class CallArgument(TypedDict, total=False):
     """
@@ -614,9 +795,11 @@ class CallArgument(TypedDict, total=False):
         unserializableValue: Primitive value which can not be JSON-stringified.
         objectId: Remote object handle.
     """
+
     value: Any
     unserializableValue: str
     objectId: str
+
 
 class CallFrame(TypedDict):
     """
@@ -629,11 +812,13 @@ class CallFrame(TypedDict):
         lineNumber: JavaScript script line number (0-based).
         columnNumber: JavaScript script column number (0-based).
     """
+
     functionName: str
     scriptId: str
     url: str
     lineNumber: int
     columnNumber: int
+
 
 class CertificateSecurityState(TypedDict, total=False):
     """
@@ -659,6 +844,7 @@ class CertificateSecurityState(TypedDict, total=False):
         obsoleteSslCipher: True if the connection is using an obsolete SSL cipher.
         obsoleteSslSignature: True if the connection is using an obsolete SSL signature.
     """
+
     protocol: str
     keyExchange: str
     keyExchangeGroup: str
@@ -678,6 +864,7 @@ class CertificateSecurityState(TypedDict, total=False):
     obsoleteSslCipher: bool
     obsoleteSslSignature: bool
 
+
 class ComputedStyle(TypedDict):
     """
     A subset of the full ComputedStyle as defined by the request whitelist.
@@ -685,7 +872,9 @@ class ComputedStyle(TypedDict):
     Attributes:
         properties: Name/value pairs of computed style properties.
     """
+
     properties: List['NameValue']
+
 
 class ConsoleMessage(TypedDict, total=False):
     """
@@ -699,12 +888,26 @@ class ConsoleMessage(TypedDict, total=False):
         line: Line number in the resource that generated this message (1-based).
         column: Column number in the resource that generated this message (1-based).
     """
-    source: Literal['xml', 'javascript', 'network', 'console-api', 'storage', 'appcache', 'rendering', 'security', 'other', 'deprecation', 'worker']
+
+    source: Literal[
+        'xml',
+        'javascript',
+        'network',
+        'console-api',
+        'storage',
+        'appcache',
+        'rendering',
+        'security',
+        'other',
+        'deprecation',
+        'worker',
+    ]
     level: Literal['log', 'warning', 'error', 'debug', 'info']
     text: str
     url: str
     line: int
     column: int
+
 
 class ContextRealtimeData(TypedDict):
     """
@@ -718,10 +921,12 @@ class ContextRealtimeData(TypedDict):
         callbackIntervalMean: A running mean of callback interval.
         callbackIntervalVariance: A running variance of callback interval.
     """
+
     currentTime: float
     renderCapacity: float
     callbackIntervalMean: float
     callbackIntervalVariance: float
+
 
 class Cookie(TypedDict, total=False):
     """
@@ -739,6 +944,7 @@ class Cookie(TypedDict, total=False):
         session: True in case of session cookie.
         sameSite: Cookie SameSite type.
     """
+
     name: str
     value: str
     domain: str
@@ -749,6 +955,7 @@ class Cookie(TypedDict, total=False):
     secure: bool
     session: bool
     sameSite: Literal['Strict', 'Lax', 'None']
+
 
 class CookieParam(TypedDict, total=False):
     """
@@ -766,6 +973,7 @@ class CookieParam(TypedDict, total=False):
         sameSite: Cookie SameSite type.
         expires: Cookie expiration date, session cookie if not set
     """
+
     name: str
     value: str
     url: str
@@ -776,6 +984,7 @@ class CookieParam(TypedDict, total=False):
     sameSite: Literal['Strict', 'Lax', 'None']
     expires: float
 
+
 class CounterInfo(TypedDict):
     """
     Collected counter information.
@@ -784,8 +993,10 @@ class CounterInfo(TypedDict):
         name: Counter name.
         value: Counter value.
     """
+
     name: str
     value: int
+
 
 class CoverageRange(TypedDict):
     """
@@ -796,9 +1007,11 @@ class CoverageRange(TypedDict):
         endOffset: JavaScript script source offset for the range end.
         count: Collected execution count of the source range.
     """
+
     startOffset: int
     endOffset: int
     count: int
+
 
 class Credential(TypedDict, total=False):
     """
@@ -812,12 +1025,14 @@ class Credential(TypedDict, total=False):
             assertion.
             See https://w3c.github.io/webauthn/#signature-counter
     """
+
     credentialId: bytes
     isResidentCredential: bool
     rpId: str
     privateKey: bytes
     userHandle: bytes
     signCount: int
+
 
 class CustomPreview(TypedDict, total=False):
     """
@@ -828,8 +1043,10 @@ class CustomPreview(TypedDict, total=False):
             contain RemoteObjectId for the function that returns result of formatter.body(object, config) call.
             The result value is json ML array.
     """
+
     header: str
     bodyGetterId: str
+
 
 class DOMNode(TypedDict, total=False):
     """
@@ -870,6 +1087,7 @@ class DOMNode(TypedDict, total=False):
         originURL: The url of the script (if any) that generates this node.
         scrollOffsetX: Scroll offsets, set when this node is a Document.
     """
+
     nodeType: int
     nodeName: str
     nodeValue: str
@@ -890,7 +1108,23 @@ class DOMNode(TypedDict, total=False):
     systemId: str
     frameId: str
     contentDocumentIndex: int
-    pseudoType: Literal['first-line', 'first-letter', 'before', 'after', 'backdrop', 'selection', 'first-line-inherited', 'scrollbar', 'scrollbar-thumb', 'scrollbar-button', 'scrollbar-track', 'scrollbar-track-piece', 'scrollbar-corner', 'resizer', 'input-list-button']
+    pseudoType: Literal[
+        'first-line',
+        'first-letter',
+        'before',
+        'after',
+        'backdrop',
+        'selection',
+        'first-line-inherited',
+        'scrollbar',
+        'scrollbar-thumb',
+        'scrollbar-button',
+        'scrollbar-track',
+        'scrollbar-track-piece',
+        'scrollbar-corner',
+        'resizer',
+        'input-list-button',
+    ]
     shadowRootType: Literal['user-agent', 'open', 'closed']
     isClickable: bool
     eventListeners: List['EventListener']
@@ -898,6 +1132,7 @@ class DOMNode(TypedDict, total=False):
     originURL: str
     scrollOffsetX: float
     scrollOffsetY: float
+
 
 class DataEntry(TypedDict):
     """
@@ -908,9 +1143,11 @@ class DataEntry(TypedDict):
         primaryKey: Primary key object.
         value: Value object.
     """
+
     key: 'RemoteObject'
     primaryKey: 'RemoteObject'
     value: 'RemoteObject'
+
 
 class Database(TypedDict):
     """
@@ -922,10 +1159,12 @@ class Database(TypedDict):
         name: Database name.
         version: Database version.
     """
+
     id: str
     domain: str
     name: str
     version: str
+
 
 class DatabaseWithObjectStores(TypedDict):
     """
@@ -937,9 +1176,11 @@ class DatabaseWithObjectStores(TypedDict):
             requires the version number to be 'unsigned long long')
         objectStores: Object stores in this database.
     """
+
     name: str
     version: float
     objectStores: List['ObjectStore']
+
 
 class DocumentSnapshot(TypedDict, total=False):
     """
@@ -962,6 +1203,7 @@ class DocumentSnapshot(TypedDict, total=False):
         contentWidth: Document content width.
         contentHeight: Document content height.
     """
+
     documentURL: int
     title: int
     baseURL: int
@@ -978,6 +1220,7 @@ class DocumentSnapshot(TypedDict, total=False):
     contentWidth: float
     contentHeight: float
 
+
 class Domain(TypedDict):
     """
     Description of the protocol domain.
@@ -986,8 +1229,10 @@ class Domain(TypedDict):
         name: Domain name.
         version: Domain version.
     """
+
     name: str
     version: str
+
 
 class EntryPreview(TypedDict, total=False):
     """
@@ -995,10 +1240,12 @@ class EntryPreview(TypedDict, total=False):
         key: Preview of the key. Specified for map-like collection entries.
         value: Preview of the value.
     """
+
     # actual: ObjectPreview
     key: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     # actual: ObjectPreview
     value: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class Error(TypedDict):
     """
@@ -1008,8 +1255,10 @@ class Error(TypedDict):
         message: Error message.
         code: Error code.
     """
+
     message: str
     code: int
+
 
 class EventListener(TypedDict, total=False):
     """
@@ -1027,6 +1276,7 @@ class EventListener(TypedDict, total=False):
         originalHandler: Event original handler function value.
         backendNodeId: Node the listener is added to (if any).
     """
+
     type: str
     useCapture: bool
     passive: bool
@@ -1038,13 +1288,16 @@ class EventListener(TypedDict, total=False):
     originalHandler: 'RemoteObject'
     backendNodeId: int
 
+
 class EventMetadata(TypedDict):
     """
     A key-value pair for additional event information to pass along.
 
     """
+
     key: str
     value: str
+
 
 class ExceptionDetails(TypedDict, total=False):
     """
@@ -1062,6 +1315,7 @@ class ExceptionDetails(TypedDict, total=False):
         exception: Exception object if available.
         executionContextId: Identifier of the context where exception happened.
     """
+
     exceptionId: int
     text: str
     lineNumber: int
@@ -1071,6 +1325,7 @@ class ExceptionDetails(TypedDict, total=False):
     stackTrace: 'StackTrace'
     exception: 'RemoteObject'
     executionContextId: int
+
 
 class ExecutionContextDescription(TypedDict, total=False):
     """
@@ -1083,10 +1338,12 @@ class ExecutionContextDescription(TypedDict, total=False):
         name: Human readable name describing given context.
         auxData: Embedder-specific auxiliary data.
     """
+
     id: int
     origin: str
     name: str
     auxData: Dict[str, str]
+
 
 class FontFace(TypedDict):
     """
@@ -1102,6 +1359,7 @@ class FontFace(TypedDict):
         src: The src.
         platformFontFamily: The resolved platform font family
     """
+
     fontFamily: str
     fontStyle: str
     fontVariant: str
@@ -1110,6 +1368,7 @@ class FontFace(TypedDict):
     unicodeRange: str
     src: str
     platformFontFamily: str
+
 
 class FontFamilies(TypedDict, total=False):
     """
@@ -1124,6 +1383,7 @@ class FontFamilies(TypedDict, total=False):
         fantasy: The fantasy font-family.
         pictograph: The pictograph font-family.
     """
+
     standard: str
     fixed: str
     serif: str
@@ -1131,6 +1391,7 @@ class FontFamilies(TypedDict, total=False):
     cursive: str
     fantasy: str
     pictograph: str
+
 
 class FontSizes(TypedDict, total=False):
     """
@@ -1140,8 +1401,10 @@ class FontSizes(TypedDict, total=False):
         standard: Default standard font size.
         fixed: Default fixed font size.
     """
+
     standard: int
     fixed: int
+
 
 class Frame(TypedDict, total=False):
     """
@@ -1158,6 +1421,7 @@ class Frame(TypedDict, total=False):
         mimeType: Frame document's mimeType as determined by the browser.
         unreachableUrl: If the frame failed to load, this contains the URL that could not be loaded. Note that unlike url above, this URL may contain a fragment.
     """
+
     id: str
     parentId: str
     loaderId: str
@@ -1167,6 +1431,7 @@ class Frame(TypedDict, total=False):
     securityOrigin: str
     mimeType: str
     unreachableUrl: str
+
 
 class FrameResource(TypedDict, total=False):
     """
@@ -1181,13 +1446,32 @@ class FrameResource(TypedDict, total=False):
         failed: True if the resource failed to load.
         canceled: True if the resource was canceled during loading.
     """
+
     url: str
-    type: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    type: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     mimeType: str
     lastModified: float
     contentSize: float
     failed: bool
     canceled: bool
+
 
 class FrameResourceTree(TypedDict, total=False):
     """
@@ -1198,10 +1482,12 @@ class FrameResourceTree(TypedDict, total=False):
         childFrames: Child frames.
         resources: Information about frame resources.
     """
+
     frame: 'Frame'
     # actual: FrameResourceTree
     childFrames: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     resources: List['FrameResource']
+
 
 class FrameTree(TypedDict, total=False):
     """
@@ -1211,9 +1497,11 @@ class FrameTree(TypedDict, total=False):
         frame: Frame information for this tree item.
         childFrames: Child frames.
     """
+
     frame: 'Frame'
     # actual: FrameTree
     childFrames: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class FrameWithManifest(TypedDict):
     """
@@ -1224,9 +1512,11 @@ class FrameWithManifest(TypedDict):
         manifestURL: Manifest URL.
         status: Application cache status.
     """
+
     frameId: str
     manifestURL: str
     status: int
+
 
 class FunctionCoverage(TypedDict):
     """
@@ -1237,9 +1527,11 @@ class FunctionCoverage(TypedDict):
         ranges: Source ranges inside the function with coverage data.
         isBlockCoverage: Whether coverage data for this function has block granularity.
     """
+
     functionName: str
     ranges: List['CoverageRange']
     isBlockCoverage: bool
+
 
 class GPUDevice(TypedDict, total=False):
     """
@@ -1255,6 +1547,7 @@ class GPUDevice(TypedDict, total=False):
         driverVendor: String description of the GPU driver vendor.
         driverVersion: String description of the GPU driver version.
     """
+
     vendorId: float
     deviceId: float
     subSysId: float
@@ -1263,6 +1556,7 @@ class GPUDevice(TypedDict, total=False):
     deviceString: str
     driverVendor: str
     driverVersion: str
+
 
 class GPUInfo(TypedDict, total=False):
     """
@@ -1277,6 +1571,7 @@ class GPUInfo(TypedDict, total=False):
         videoEncoding: Supported accelerated video encoding capabilities.
         imageDecoding: Supported accelerated image decoding capabilities.
     """
+
     devices: List['GPUDevice']
     auxAttributes: Dict[str, str]
     featureStatus: Dict[str, str]
@@ -1285,17 +1580,21 @@ class GPUInfo(TypedDict, total=False):
     videoEncoding: List['VideoEncodeAcceleratorCapability']
     imageDecoding: List['ImageDecodeAcceleratorCapability']
 
+
 class Header(TypedDict):
     name: str
     value: str
+
 
 class HeaderEntry(TypedDict):
     """
     Response HTTP header entry
 
     """
+
     name: str
     value: str
+
 
 class HighlightConfig(TypedDict, total=False):
     """
@@ -1315,6 +1614,7 @@ class HighlightConfig(TypedDict, total=False):
         shapeMarginColor: The shape margin fill color (default: transparent).
         cssGridColor: The grid layout color (default: transparent).
     """
+
     showInfo: bool
     showStyles: bool
     showRulers: bool
@@ -1328,6 +1628,7 @@ class HighlightConfig(TypedDict, total=False):
     shapeMarginColor: 'RGBA'
     cssGridColor: 'RGBA'
 
+
 class Histogram(TypedDict):
     """
     Chrome histogram.
@@ -1338,10 +1639,12 @@ class Histogram(TypedDict):
         count: Total number of samples.
         buckets: Buckets.
     """
+
     name: str
     sum: int
     count: int
     buckets: List['Bucket']
+
 
 class ImageDecodeAcceleratorCapability(TypedDict):
     """
@@ -1354,10 +1657,12 @@ class ImageDecodeAcceleratorCapability(TypedDict):
         minDimensions: Minimum supported dimensions of the image in pixels.
         subsamplings: Optional array of supported subsampling formats, e.g. 4:2:0, if known.
     """
+
     imageType: Literal['jpeg', 'webp', 'unknown']
     maxDimensions: 'Size'
     minDimensions: 'Size'
     subsamplings: List[Literal['yuv420', 'yuv422', 'yuv444']]
+
 
 class InheritedStyleEntry(TypedDict, total=False):
     """
@@ -1367,8 +1672,10 @@ class InheritedStyleEntry(TypedDict, total=False):
         inlineStyle: The ancestor node's inline style, if any, in the style inheritance chain.
         matchedCSSRules: Matches of CSS rules matching the ancestor node in the style inheritance chain.
     """
+
     inlineStyle: 'CSSStyle'
     matchedCSSRules: List['RuleMatch']
+
 
 class Initiator(TypedDict, total=False):
     """
@@ -1381,10 +1688,12 @@ class Initiator(TypedDict, total=False):
         lineNumber: Initiator line number, set for Parser type or for Script type (when script is importing
             module) (0-based).
     """
+
     type: Literal['parser', 'script', 'preload', 'SignedExchange', 'other']
     stack: 'StackTrace'
     url: str
     lineNumber: float
+
 
 class InlineTextBox(TypedDict):
     """
@@ -1398,9 +1707,11 @@ class InlineTextBox(TypedDict):
         numCharacters: The number of characters in this post layout textbox substring. Characters that would be
             represented as a surrogate pair in UTF-16 have length 2.
     """
+
     boundingBox: 'Rect'
     startCharacterIndex: int
     numCharacters: int
+
 
 class InsecureContentStatus(TypedDict):
     """
@@ -1415,6 +1726,7 @@ class InsecureContentStatus(TypedDict):
         ranInsecureContentStyle: Always set to unknown.
         displayedInsecureContentStyle: Always set to unknown.
     """
+
     ranMixedContent: bool
     displayedMixedContent: bool
     containedMixedForm: bool
@@ -1422,6 +1734,7 @@ class InsecureContentStatus(TypedDict):
     displayedContentWithCertErrors: bool
     ranInsecureContentStyle: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
     displayedInsecureContentStyle: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
+
 
 class InternalPropertyDescriptor(TypedDict, total=False):
     """
@@ -1431,8 +1744,10 @@ class InternalPropertyDescriptor(TypedDict, total=False):
         name: Conventional property name.
         value: The value associated with the property.
     """
+
     name: str
     value: 'RemoteObject'
+
 
 class Key(TypedDict, total=False):
     """
@@ -1445,12 +1760,14 @@ class Key(TypedDict, total=False):
         date: Date value.
         array: Array value.
     """
+
     type: Literal['number', 'string', 'date', 'array']
     number: float
     string: str
     date: float
     # actual: Key
     array: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class KeyPath(TypedDict, total=False):
     """
@@ -1461,9 +1778,11 @@ class KeyPath(TypedDict, total=False):
         string: String value.
         array: Array value.
     """
+
     type: Literal['null', 'string', 'array']
     string: str
     array: List[str]
+
 
 class KeyRange(TypedDict, total=False):
     """
@@ -1475,10 +1794,12 @@ class KeyRange(TypedDict, total=False):
         lowerOpen: If true lower bound is open.
         upperOpen: If true upper bound is open.
     """
+
     lower: 'Key'
     upper: 'Key'
     lowerOpen: bool
     upperOpen: bool
+
 
 class KeyframeStyle(TypedDict):
     """
@@ -1488,8 +1809,10 @@ class KeyframeStyle(TypedDict):
         offset: Keyframe's time offset.
         easing: `AnimationEffect`'s timing function.
     """
+
     offset: str
     easing: str
+
 
 class KeyframesRule(TypedDict, total=False):
     """
@@ -1499,8 +1822,10 @@ class KeyframesRule(TypedDict, total=False):
         name: CSS keyframed animation's name.
         keyframes: List of animation keyframes.
     """
+
     name: str
     keyframes: List['KeyframeStyle']
+
 
 class Layer(TypedDict, total=False):
     """
@@ -1525,6 +1850,7 @@ class Layer(TypedDict, total=False):
         scrollRects: Rectangles scrolling on main thread only.
         stickyPositionConstraint: Sticky position constraint information
     """
+
     layerId: str
     parentLayerId: str
     backendNodeId: int
@@ -1542,6 +1868,7 @@ class Layer(TypedDict, total=False):
     scrollRects: List['ScrollRect']
     stickyPositionConstraint: 'StickyPositionConstraint'
 
+
 class LayoutTreeNode(TypedDict, total=False):
     """
     Details of an element in the DOM tree with a LayoutObject.
@@ -1557,6 +1884,7 @@ class LayoutTreeNode(TypedDict, total=False):
             getSnapshot was true.
         isStackingContext: Set to true to indicate the element begins a new stacking context.
     """
+
     domNodeIndex: int
     boundingBox: 'Rect'
     layoutText: str
@@ -1564,6 +1892,7 @@ class LayoutTreeNode(TypedDict, total=False):
     styleIndex: int
     paintOrder: int
     isStackingContext: bool
+
 
 class LayoutTreeSnapshot(TypedDict, total=False):
     """
@@ -1582,6 +1911,7 @@ class LayoutTreeSnapshot(TypedDict, total=False):
         scrollRects: The scroll rect of nodes. Only available when includeDOMRects is set to true
         clientRects: The client rect of nodes. Only available when includeDOMRects is set to true
     """
+
     nodeIndex: List[int]
     styles: List[List[int]]
     bounds: List[List[float]]
@@ -1591,6 +1921,7 @@ class LayoutTreeSnapshot(TypedDict, total=False):
     offsetRects: List[List[float]]
     scrollRects: List[List[float]]
     clientRects: List[List[float]]
+
 
 class LayoutViewport(TypedDict):
     """
@@ -1602,10 +1933,12 @@ class LayoutViewport(TypedDict):
         clientWidth: Width (CSS pixels), excludes scrollbar if present.
         clientHeight: Height (CSS pixels), excludes scrollbar if present.
     """
+
     pageX: int
     pageY: int
     clientWidth: int
     clientHeight: int
+
 
 class Location(TypedDict, total=False):
     """
@@ -1616,9 +1949,11 @@ class Location(TypedDict, total=False):
         lineNumber: Line number in the script (0-based).
         columnNumber: Column number in the script (0-based).
     """
+
     scriptId: str
     lineNumber: int
     columnNumber: int
+
 
 class LogEntry(TypedDict, total=False):
     """
@@ -1636,7 +1971,22 @@ class LogEntry(TypedDict, total=False):
         workerId: Identifier of the worker associated with this entry.
         args: Call arguments.
     """
-    source: Literal['xml', 'javascript', 'network', 'storage', 'appcache', 'rendering', 'security', 'deprecation', 'worker', 'violation', 'intervention', 'recommendation', 'other']
+
+    source: Literal[
+        'xml',
+        'javascript',
+        'network',
+        'storage',
+        'appcache',
+        'rendering',
+        'security',
+        'deprecation',
+        'worker',
+        'violation',
+        'intervention',
+        'recommendation',
+        'other',
+    ]
     level: Literal['verbose', 'info', 'warning', 'error']
     text: str
     timestamp: float
@@ -1647,9 +1997,11 @@ class LogEntry(TypedDict, total=False):
     workerId: str
     args: List['RemoteObject']
 
+
 class MediaFeature(TypedDict):
     name: str
     value: str
+
 
 class MediaQuery(TypedDict):
     """
@@ -1659,8 +2011,10 @@ class MediaQuery(TypedDict):
         expressions: Array of media query expressions.
         active: Whether the media query condition is satisfied.
     """
+
     expressions: List['MediaQueryExpression']
     active: bool
+
 
 class MediaQueryExpression(TypedDict, total=False):
     """
@@ -1673,11 +2027,13 @@ class MediaQueryExpression(TypedDict, total=False):
         valueRange: The associated range of the value text in the enclosing stylesheet (if available).
         computedLength: Computed length of media query expression (if applicable).
     """
+
     value: float
     unit: str
     feature: str
     valueRange: 'SourceRange'
     computedLength: float
+
 
 class Metric(TypedDict):
     """
@@ -1687,8 +2043,10 @@ class Metric(TypedDict):
         name: Metric name.
         value: Metric value.
     """
+
     name: str
     value: float
+
 
 class Module(TypedDict):
     """
@@ -1701,10 +2059,12 @@ class Module(TypedDict):
             or hexadecimal (0x prefixed) string.
         size: Size of the module in bytes.
     """
+
     name: str
     uuid: str
     baseAddress: str
     size: float
+
 
 class NameValue(TypedDict):
     """
@@ -1714,8 +2074,10 @@ class NameValue(TypedDict):
         name: Attribute/property name.
         value: Attribute/property value.
     """
+
     name: str
     value: str
+
 
 class NavigationEntry(TypedDict):
     """
@@ -1728,11 +2090,27 @@ class NavigationEntry(TypedDict):
         title: Title of the navigation history entry.
         transitionType: Transition type.
     """
+
     id: int
     url: str
     userTypedURL: str
     title: str
-    transitionType: Literal['link', 'typed', 'address_bar', 'auto_bookmark', 'auto_subframe', 'manual_subframe', 'generated', 'auto_toplevel', 'form_submit', 'reload', 'keyword', 'keyword_generated', 'other']
+    transitionType: Literal[
+        'link',
+        'typed',
+        'address_bar',
+        'auto_bookmark',
+        'auto_subframe',
+        'manual_subframe',
+        'generated',
+        'auto_toplevel',
+        'form_submit',
+        'reload',
+        'keyword',
+        'keyword_generated',
+        'other',
+    ]
+
 
 class Node(TypedDict, total=False):
     """
@@ -1771,6 +2149,7 @@ class Node(TypedDict, total=False):
         distributedNodes: Distributed nodes for given insertion point.
         isSVG: Whether the node is SVG.
     """
+
     nodeId: int
     parentId: int
     backendNodeId: int
@@ -1790,7 +2169,23 @@ class Node(TypedDict, total=False):
     xmlVersion: str
     name: str
     value: str
-    pseudoType: Literal['first-line', 'first-letter', 'before', 'after', 'backdrop', 'selection', 'first-line-inherited', 'scrollbar', 'scrollbar-thumb', 'scrollbar-button', 'scrollbar-track', 'scrollbar-track-piece', 'scrollbar-corner', 'resizer', 'input-list-button']
+    pseudoType: Literal[
+        'first-line',
+        'first-letter',
+        'before',
+        'after',
+        'backdrop',
+        'selection',
+        'first-line-inherited',
+        'scrollbar',
+        'scrollbar-thumb',
+        'scrollbar-button',
+        'scrollbar-track',
+        'scrollbar-track-piece',
+        'scrollbar-corner',
+        'resizer',
+        'input-list-button',
+    ]
     shadowRootType: Literal['user-agent', 'open', 'closed']
     frameId: str
     # actual: Node
@@ -1805,6 +2200,7 @@ class Node(TypedDict, total=False):
     importedDocument: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     distributedNodes: List['BackendNode']
     isSVG: bool
+
 
 class NodeTreeSnapshot(TypedDict, total=False):
     """
@@ -1829,6 +2225,7 @@ class NodeTreeSnapshot(TypedDict, total=False):
         currentSourceURL: The selected url for nodes with a srcset attribute.
         originURL: The url of the script (if any) that generates this node.
     """
+
     parentIndex: List[int]
     nodeType: List[int]
     nodeName: List[int]
@@ -1845,6 +2242,7 @@ class NodeTreeSnapshot(TypedDict, total=False):
     currentSourceURL: 'RareStringData'
     originURL: 'RareStringData'
 
+
 class ObjectPreview(TypedDict, total=False):
     """
     Object containing abbreviated remote object value.
@@ -1857,14 +2255,18 @@ class ObjectPreview(TypedDict, total=False):
         properties: List of the properties.
         entries: List of the entries. Specified for `map` and `set` subtype values only.
     """
+
     type: Literal['object', 'function', 'undefined', 'string', 'number', 'boolean', 'symbol', 'bigint']
-    subtype: Literal['array', 'null', 'node', 'regexp', 'date', 'map', 'set', 'weakmap', 'weakset', 'iterator', 'generator', 'error']
+    subtype: Literal[
+        'array', 'null', 'node', 'regexp', 'date', 'map', 'set', 'weakmap', 'weakset', 'iterator', 'generator', 'error'
+    ]
     description: str
     overflow: bool
     # actual: PropertyPreview
     properties: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     # actual: EntryPreview
     entries: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class ObjectStore(TypedDict):
     """
@@ -1876,10 +2278,12 @@ class ObjectStore(TypedDict):
         autoIncrement: If true, object store has auto increment flag set.
         indexes: Indexes in this object store.
     """
+
     name: str
     keyPath: 'KeyPath'
     autoIncrement: bool
     indexes: List['ObjectStoreIndex']
+
 
 class ObjectStoreIndex(TypedDict):
     """
@@ -1891,10 +2295,12 @@ class ObjectStoreIndex(TypedDict):
         unique: If true, index is unique.
         multiEntry: If true, index allows multiple entries for a key.
     """
+
     name: str
     keyPath: 'KeyPath'
     unique: bool
     multiEntry: bool
+
 
 class PermissionDescriptor(TypedDict, total=False):
     """
@@ -1909,10 +2315,12 @@ class PermissionDescriptor(TypedDict, total=False):
             Note that userVisibleOnly = true is the only currently supported type.
         type: For "wake-lock" permission, must specify type as either "screen" or "system".
     """
+
     name: str
     sysex: bool
     userVisibleOnly: bool
     type: str
+
 
 class PictureTile(TypedDict):
     """
@@ -1923,9 +2331,11 @@ class PictureTile(TypedDict):
         y: Offset from owning layer top boundary
         picture: Base64-encoded snapshot data.
     """
+
     x: float
     y: float
     picture: bytes
+
 
 class PlatformFontUsage(TypedDict):
     """
@@ -1936,9 +2346,11 @@ class PlatformFontUsage(TypedDict):
         isCustomFont: Indicates if the font was downloaded or resolved locally.
         glyphCount: Amount of glyphs that were rendered with this font.
     """
+
     familyName: str
     isCustomFont: bool
     glyphCount: float
+
 
 class PlayerEvent(TypedDict):
     """
@@ -1946,18 +2358,22 @@ class PlayerEvent(TypedDict):
         timestamp: Events are timestamped relative to the start of the player creation
             not relative to the start of playback.
     """
+
     type: Literal['playbackEvent', 'systemEvent', 'messageEvent']
     timestamp: float
     name: str
     value: str
+
 
 class PlayerProperty(TypedDict, total=False):
     """
     Player Property type
 
     """
+
     name: str
     value: str
+
 
 class PositionTickInfo(TypedDict):
     """
@@ -1967,8 +2383,10 @@ class PositionTickInfo(TypedDict):
         line: Source line number (1-based).
         ticks: Number of samples attributed to the source line.
     """
+
     line: int
     ticks: int
+
 
 class PrivatePropertyDescriptor(TypedDict):
     """
@@ -1978,8 +2396,10 @@ class PrivatePropertyDescriptor(TypedDict):
         name: Private property name.
         value: The value associated with the private property.
     """
+
     name: str
     value: 'RemoteObject'
+
 
 class ProcessInfo(TypedDict):
     """
@@ -1991,9 +2411,11 @@ class ProcessInfo(TypedDict):
         cpuTime: Specifies cumulative CPU usage in seconds across all threads of the
             process since the process start.
     """
+
     type: str
     id: int
     cpuTime: float
+
 
 class Profile(TypedDict, total=False):
     """
@@ -2007,11 +2429,13 @@ class Profile(TypedDict, total=False):
         timeDeltas: Time intervals between adjacent samples in microseconds. The first delta is relative to the
             profile startTime.
     """
+
     nodes: List['ProfileNode']
     startTime: float
     endTime: float
     samples: List[int]
     timeDeltas: List[int]
+
 
 class ProfileNode(TypedDict, total=False):
     """
@@ -2026,12 +2450,14 @@ class ProfileNode(TypedDict, total=False):
             optimize.
         positionTicks: An array of source position ticks.
     """
+
     id: int
     callFrame: 'CallFrame'
     hitCount: int
     children: List[int]
     deoptReason: str
     positionTicks: List['PositionTickInfo']
+
 
 class PropertyDescriptor(TypedDict, total=False):
     """
@@ -2053,6 +2479,7 @@ class PropertyDescriptor(TypedDict, total=False):
         isOwn: True if the property is owned for the object.
         symbol: Property symbol object, if the property is of the `symbol` type.
     """
+
     name: str
     value: 'RemoteObject'
     writable: bool
@@ -2064,6 +2491,7 @@ class PropertyDescriptor(TypedDict, total=False):
     isOwn: bool
     symbol: 'RemoteObject'
 
+
 class PropertyPreview(TypedDict, total=False):
     """
     Attributes:
@@ -2073,12 +2501,16 @@ class PropertyPreview(TypedDict, total=False):
         valuePreview: Nested value preview.
         subtype: Object subtype hint. Specified for `object` type values only.
     """
+
     name: str
     type: Literal['object', 'function', 'undefined', 'string', 'number', 'boolean', 'symbol', 'accessor', 'bigint']
     value: str
     # actual: ObjectPreview
     valuePreview: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
-    subtype: Literal['array', 'null', 'node', 'regexp', 'date', 'map', 'set', 'weakmap', 'weakset', 'iterator', 'generator', 'error']
+    subtype: Literal[
+        'array', 'null', 'node', 'regexp', 'date', 'map', 'set', 'weakmap', 'weakset', 'iterator', 'generator', 'error'
+    ]
+
 
 class PseudoElementMatches(TypedDict):
     """
@@ -2088,8 +2520,26 @@ class PseudoElementMatches(TypedDict):
         pseudoType: Pseudo element type.
         matches: Matches of CSS rules applicable to the pseudo style.
     """
-    pseudoType: Literal['first-line', 'first-letter', 'before', 'after', 'backdrop', 'selection', 'first-line-inherited', 'scrollbar', 'scrollbar-thumb', 'scrollbar-button', 'scrollbar-track', 'scrollbar-track-piece', 'scrollbar-corner', 'resizer', 'input-list-button']
+
+    pseudoType: Literal[
+        'first-line',
+        'first-letter',
+        'before',
+        'after',
+        'backdrop',
+        'selection',
+        'first-line-inherited',
+        'scrollbar',
+        'scrollbar-thumb',
+        'scrollbar-button',
+        'scrollbar-track',
+        'scrollbar-track-piece',
+        'scrollbar-corner',
+        'resizer',
+        'input-list-button',
+    ]
     matches: List['RuleMatch']
+
 
 class RGBA(TypedDict, total=False):
     """
@@ -2101,25 +2551,31 @@ class RGBA(TypedDict, total=False):
         b: The blue component, in the [0-255] range.
         a: The alpha component, in the [0-1] range (default: 1).
     """
+
     r: int
     g: int
     b: int
     a: float
 
+
 class RareBooleanData(TypedDict):
     index: List[int]
+
 
 class RareIntegerData(TypedDict):
     index: List[int]
     value: List[int]
+
 
 class RareStringData(TypedDict):
     """
     Data that is only present on rare nodes.
 
     """
+
     index: List[int]
     value: List[int]
+
 
 class Rect(TypedDict):
     """
@@ -2131,14 +2587,17 @@ class Rect(TypedDict):
         width: Rectangle width
         height: Rectangle height
     """
+
     x: float
     y: float
     width: float
     height: float
 
+
 class RemoteLocation(TypedDict):
     host: str
     port: int
+
 
 class RemoteObject(TypedDict, total=False):
     """
@@ -2155,8 +2614,27 @@ class RemoteObject(TypedDict, total=False):
         objectId: Unique object identifier (for non-primitive values).
         preview: Preview containing abbreviated property values. Specified for `object` type values only.
     """
+
     type: Literal['object', 'function', 'undefined', 'string', 'number', 'boolean', 'symbol', 'bigint']
-    subtype: Literal['array', 'null', 'node', 'regexp', 'date', 'map', 'set', 'weakmap', 'weakset', 'iterator', 'generator', 'error', 'proxy', 'promise', 'typedarray', 'arraybuffer', 'dataview']
+    subtype: Literal[
+        'array',
+        'null',
+        'node',
+        'regexp',
+        'date',
+        'map',
+        'set',
+        'weakmap',
+        'weakset',
+        'iterator',
+        'generator',
+        'error',
+        'proxy',
+        'promise',
+        'typedarray',
+        'arraybuffer',
+        'dataview',
+    ]
     className: str
     value: Any
     unserializableValue: str
@@ -2164,6 +2642,7 @@ class RemoteObject(TypedDict, total=False):
     objectId: str
     preview: 'ObjectPreview'
     customPreview: 'CustomPreview'
+
 
 class Request(TypedDict, total=False):
     """
@@ -2181,6 +2660,7 @@ class Request(TypedDict, total=False):
         referrerPolicy: The referrer policy of the request, as defined in https://www.w3.org/TR/referrer-policy/
         isLinkPreload: Whether is loaded via link preload.
     """
+
     url: str
     urlFragment: str
     method: str
@@ -2189,8 +2669,18 @@ class Request(TypedDict, total=False):
     hasPostData: bool
     mixedContentType: Literal['blockable', 'optionally-blockable', 'none']
     initialPriority: Literal['VeryLow', 'Low', 'Medium', 'High', 'VeryHigh']
-    referrerPolicy: Literal['unsafe-url', 'no-referrer-when-downgrade', 'no-referrer', 'origin', 'origin-when-cross-origin', 'same-origin', 'strict-origin', 'strict-origin-when-cross-origin']
+    referrerPolicy: Literal[
+        'unsafe-url',
+        'no-referrer-when-downgrade',
+        'no-referrer',
+        'origin',
+        'origin-when-cross-origin',
+        'same-origin',
+        'strict-origin',
+        'strict-origin-when-cross-origin',
+    ]
     isLinkPreload: bool
+
 
 class RequestPattern(TypedDict, total=False):
     """
@@ -2200,9 +2690,28 @@ class RequestPattern(TypedDict, total=False):
         resourceType: If set, only requests for matching resource types will be intercepted.
         requestStage: Stage at wich to begin intercepting requests. Default is Request.
     """
+
     urlPattern: str
-    resourceType: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    resourceType: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     requestStage: Literal['Request', 'Response']
+
 
 class ResourceTiming(TypedDict):
     """
@@ -2227,6 +2736,7 @@ class ResourceTiming(TypedDict):
         pushEnd: Time the server finished pushing request.
         receiveHeadersEnd: Finished receiving response headers.
     """
+
     requestTime: float
     proxyStart: float
     proxyEnd: float
@@ -2243,6 +2753,7 @@ class ResourceTiming(TypedDict):
     pushStart: float
     pushEnd: float
     receiveHeadersEnd: float
+
 
 class Response(TypedDict, total=False):
     """
@@ -2270,6 +2781,7 @@ class Response(TypedDict, total=False):
         securityState: Security state of the request resource.
         securityDetails: Security details for the request.
     """
+
     url: str
     status: int
     statusText: str
@@ -2291,6 +2803,7 @@ class Response(TypedDict, total=False):
     securityState: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
     securityDetails: 'SecurityDetails'
 
+
 class RuleMatch(TypedDict):
     """
     Match data for a CSS rule.
@@ -2299,8 +2812,10 @@ class RuleMatch(TypedDict):
         rule: CSS rule in the match.
         matchingSelectors: Matching selector indices in the rule's selectorList selectors (0-based).
     """
+
     rule: 'CSSRule'
     matchingSelectors: List[int]
+
 
 class RuleUsage(TypedDict):
     """
@@ -2313,10 +2828,12 @@ class RuleUsage(TypedDict):
         endOffset: Offset of the end of the rule body from the beginning of the stylesheet.
         used: Indicates whether the rule was actually used by some element in the page.
     """
+
     styleSheetId: str
     startOffset: float
     endOffset: float
     used: bool
+
 
 class SafetyTipInfo(TypedDict, total=False):
     """
@@ -2324,16 +2841,20 @@ class SafetyTipInfo(TypedDict, total=False):
         safetyTipStatus: Describes whether the page triggers any safety tips or reputation warnings. Default is unknown.
         safeUrl: The URL the safety tip suggested ("Did you mean?"). Only filled in for lookalike matches.
     """
+
     safetyTipStatus: Literal['badReputation', 'lookalike']
     safeUrl: str
+
 
 class SamplingHeapProfile(TypedDict):
     """
     Sampling profile.
 
     """
+
     head: 'SamplingHeapProfileNode'
     samples: List['SamplingHeapProfileSample']
+
 
 class SamplingHeapProfileNode(TypedDict):
     """
@@ -2345,11 +2866,13 @@ class SamplingHeapProfileNode(TypedDict):
         id: Node id. Ids are unique across all profiles collected between startSampling and stopSampling.
         children: Child nodes.
     """
+
     callFrame: 'CallFrame'
     selfSize: float
     id: int
     # actual: SamplingHeapProfileNode
     children: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
+
 
 class SamplingHeapProfileSample(TypedDict):
     """
@@ -2361,17 +2884,21 @@ class SamplingHeapProfileSample(TypedDict):
         ordinal: Time-ordered sample ordinal number. It is unique across all profiles retrieved
             between startSampling and stopSampling.
     """
+
     size: float
     nodeId: int
     ordinal: float
+
 
 class SamplingProfile(TypedDict):
     """
     Array of heap profile samples.
 
     """
+
     samples: List['SamplingProfileNode']
     modules: List['Module']
+
 
 class SamplingProfileNode(TypedDict):
     """
@@ -2382,9 +2909,11 @@ class SamplingProfileNode(TypedDict):
         total: Total bytes attributed to this sample.
         stack: Execution stack at the point of allocation.
     """
+
     size: float
     total: float
     stack: List[str]
+
 
 class Scope(TypedDict, total=False):
     """
@@ -2398,11 +2927,13 @@ class Scope(TypedDict, total=False):
         startLocation: Location in the source code where scope starts
         endLocation: Location in the source code where scope ends
     """
+
     type: Literal['global', 'local', 'with', 'closure', 'catch', 'block', 'script', 'eval', 'module']
     object: 'RemoteObject'
     name: str
     startLocation: 'Location'
     endLocation: 'Location'
+
 
 class ScreenOrientation(TypedDict):
     """
@@ -2412,8 +2943,10 @@ class ScreenOrientation(TypedDict):
         type: Orientation type.
         angle: Orientation angle.
     """
+
     type: Literal['portraitPrimary', 'portraitSecondary', 'landscapePrimary', 'landscapeSecondary']
     angle: int
+
 
 class ScreencastFrameMetadata(TypedDict, total=False):
     """
@@ -2428,6 +2961,7 @@ class ScreencastFrameMetadata(TypedDict, total=False):
         scrollOffsetY: Position of vertical scroll in CSS pixels.
         timestamp: Frame swap timestamp.
     """
+
     offsetTop: float
     pageScaleFactor: float
     deviceWidth: float
@@ -2435,6 +2969,7 @@ class ScreencastFrameMetadata(TypedDict, total=False):
     scrollOffsetX: float
     scrollOffsetY: float
     timestamp: float
+
 
 class ScreenshotParams(TypedDict, total=False):
     """
@@ -2444,8 +2979,10 @@ class ScreenshotParams(TypedDict, total=False):
         format: Image compression format (defaults to png).
         quality: Compression quality from range [0..100] (jpeg only).
     """
+
     format: Literal['jpeg', 'png']
     quality: int
+
 
 class ScriptCoverage(TypedDict):
     """
@@ -2456,17 +2993,21 @@ class ScriptCoverage(TypedDict):
         url: JavaScript script name or url.
         functions: Functions contained in the script that has coverage data.
     """
+
     scriptId: str
     url: str
     functions: List['FunctionCoverage']
+
 
 class ScriptPosition(TypedDict):
     """
     Location in the source code.
 
     """
+
     lineNumber: int
     columnNumber: int
+
 
 class ScriptTypeProfile(TypedDict):
     """
@@ -2477,9 +3018,11 @@ class ScriptTypeProfile(TypedDict):
         url: JavaScript script name or url.
         entries: Type profile entries for parameters and return values of the functions in the script.
     """
+
     scriptId: str
     url: str
     entries: List['TypeProfileEntry']
+
 
 class ScrollRect(TypedDict):
     """
@@ -2489,8 +3032,10 @@ class ScrollRect(TypedDict):
         rect: Rectangle itself.
         type: Reason for rectangle to force scrolling on the main thread
     """
+
     rect: 'Rect'
     type: Literal['RepaintsOnScroll', 'TouchEventHandler', 'WheelEventHandler']
+
 
 class SearchMatch(TypedDict):
     """
@@ -2500,8 +3045,10 @@ class SearchMatch(TypedDict):
         lineNumber: Line number in resource content.
         lineContent: Line with match content.
     """
+
     lineNumber: float
     lineContent: str
+
 
 class SecurityDetails(TypedDict, total=False):
     """
@@ -2522,6 +3069,7 @@ class SecurityDetails(TypedDict, total=False):
         signedCertificateTimestampList: List of signed certificate timestamps (SCTs).
         certificateTransparencyCompliance: Whether the request complied with Certificate Transparency policy
     """
+
     protocol: str
     keyExchange: str
     keyExchangeGroup: str
@@ -2536,6 +3084,7 @@ class SecurityDetails(TypedDict, total=False):
     signedCertificateTimestampList: List['SignedCertificateTimestamp']
     certificateTransparencyCompliance: Literal['unknown', 'not-compliant', 'compliant']
 
+
 class SecurityStateExplanation(TypedDict, total=False):
     """
     An explanation of an factor contributing to the security state.
@@ -2549,6 +3098,7 @@ class SecurityStateExplanation(TypedDict, total=False):
         certificate: Page certificate.
         recommendations: Recommendations to fix any issues.
     """
+
     securityState: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
     title: str
     summary: str
@@ -2556,6 +3106,7 @@ class SecurityStateExplanation(TypedDict, total=False):
     mixedContentType: Literal['blockable', 'optionally-blockable', 'none']
     certificate: List[str]
     recommendations: List[str]
+
 
 class SelectorList(TypedDict):
     """
@@ -2565,14 +3116,17 @@ class SelectorList(TypedDict):
         selectors: Selectors in the list.
         text: Rule selector text.
     """
+
     selectors: List['Value']
     text: str
+
 
 class ServiceWorkerErrorMessage(TypedDict):
     """
     ServiceWorker error message.
 
     """
+
     errorMessage: str
     registrationId: str
     versionId: str
@@ -2580,14 +3134,17 @@ class ServiceWorkerErrorMessage(TypedDict):
     lineNumber: int
     columnNumber: int
 
+
 class ServiceWorkerRegistration(TypedDict):
     """
     ServiceWorker registration.
 
     """
+
     registrationId: str
     scopeURL: str
     isDeleted: bool
+
 
 class ServiceWorkerVersion(TypedDict, total=False):
     """
@@ -2598,6 +3155,7 @@ class ServiceWorkerVersion(TypedDict, total=False):
         scriptResponseTime: The time at which the response headers of the main script were received from the server.
             For cached script it is the last time the cache entry was validated.
     """
+
     versionId: str
     registrationId: str
     scriptURL: str
@@ -2608,6 +3166,7 @@ class ServiceWorkerVersion(TypedDict, total=False):
     controlledClients: List[str]
     targetId: str
 
+
 class ShapeOutsideInfo(TypedDict):
     """
     CSS Shape Outside details.
@@ -2617,9 +3176,11 @@ class ShapeOutsideInfo(TypedDict):
         shape: Shape coordinate details
         marginShape: Margin shape bounds
     """
+
     bounds: List[float]
     shape: List[Any]
     marginShape: List[Any]
+
 
 class ShorthandEntry(TypedDict, total=False):
     """
@@ -2628,9 +3189,11 @@ class ShorthandEntry(TypedDict, total=False):
         value: Shorthand value.
         important: Whether the property has "!important" annotation (implies `false` if absent).
     """
+
     name: str
     value: str
     important: bool
+
 
 class SignedCertificateTimestamp(TypedDict):
     """
@@ -2646,6 +3209,7 @@ class SignedCertificateTimestamp(TypedDict):
         signatureAlgorithm: Signature algorithm.
         signatureData: Signature data.
     """
+
     status: str
     origin: str
     logDescription: str
@@ -2654,6 +3218,7 @@ class SignedCertificateTimestamp(TypedDict):
     hashAlgorithm: str
     signatureAlgorithm: str
     signatureData: str
+
 
 class SignedExchangeError(TypedDict, total=False):
     """
@@ -2664,9 +3229,18 @@ class SignedExchangeError(TypedDict, total=False):
         signatureIndex: The index of the signature which caused the error.
         errorField: The field which caused the error.
     """
+
     message: str
     signatureIndex: int
-    errorField: Literal['signatureSig', 'signatureIntegrity', 'signatureCertUrl', 'signatureCertSha256', 'signatureValidityUrl', 'signatureTimestamps']
+    errorField: Literal[
+        'signatureSig',
+        'signatureIntegrity',
+        'signatureCertUrl',
+        'signatureCertSha256',
+        'signatureValidityUrl',
+        'signatureTimestamps',
+    ]
+
 
 class SignedExchangeHeader(TypedDict):
     """
@@ -2680,11 +3254,13 @@ class SignedExchangeHeader(TypedDict):
         signatures: Signed exchange response signature.
         headerIntegrity: Signed exchange header integrity hash in the form of "sha256-<base64-hash-value>".
     """
+
     requestUrl: str
     responseCode: int
     responseHeaders: Dict[str, str]
     signatures: List['SignedExchangeSignature']
     headerIntegrity: str
+
 
 class SignedExchangeInfo(TypedDict, total=False):
     """
@@ -2696,10 +3272,12 @@ class SignedExchangeInfo(TypedDict, total=False):
         securityDetails: Security details for the signed exchange header.
         errors: Errors occurred while handling the signed exchagne.
     """
+
     outerResponse: 'Response'
     header: 'SignedExchangeHeader'
     securityDetails: 'SecurityDetails'
     errors: List['SignedExchangeError']
+
 
 class SignedExchangeSignature(TypedDict, total=False):
     """
@@ -2717,6 +3295,7 @@ class SignedExchangeSignature(TypedDict, total=False):
         expires: Signed exchange signature expires.
         certificates: The encoded certificates.
     """
+
     label: str
     signature: str
     integrity: str
@@ -2727,15 +3306,18 @@ class SignedExchangeSignature(TypedDict, total=False):
     expires: int
     certificates: List[str]
 
+
 class Sink(TypedDict, total=False):
     """
     Attributes:
         session: Text describing the current session. Present only if there is an active
             session on the sink.
     """
+
     name: str
     id: str
     session: str
+
 
 class Size(TypedDict):
     """
@@ -2745,8 +3327,10 @@ class Size(TypedDict):
         width: Width in pixels.
         height: Height in pixels.
     """
+
     width: int
     height: int
+
 
 class SourceRange(TypedDict):
     """
@@ -2758,10 +3342,12 @@ class SourceRange(TypedDict):
         endLine: End line of range
         endColumn: End column of range (exclusive).
     """
+
     startLine: int
     startColumn: int
     endLine: int
     endColumn: int
+
 
 class StackTrace(TypedDict, total=False):
     """
@@ -2774,11 +3360,13 @@ class StackTrace(TypedDict, total=False):
         parent: Asynchronous JavaScript stack trace that preceded this stack, if available.
         parentId: Asynchronous JavaScript stack trace that preceded this stack, if available.
     """
+
     description: str
     callFrames: List['CallFrame']
     # actual: StackTrace
     parent: Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]
     parentId: 'StackTraceId'
+
 
 class StackTraceId(TypedDict, total=False):
     """
@@ -2786,8 +3374,10 @@ class StackTraceId(TypedDict, total=False):
     allows to track cross-debugger calls. See `Runtime.StackTrace` and `Debugger.paused` for usages.
 
     """
+
     id: str
     debuggerId: str
+
 
 class StickyPositionConstraint(TypedDict, total=False):
     """
@@ -2799,10 +3389,12 @@ class StickyPositionConstraint(TypedDict, total=False):
         nearestLayerShiftingStickyBox: The nearest sticky layer that shifts the sticky box
         nearestLayerShiftingContainingBlock: The nearest sticky layer that shifts the containing block
     """
+
     stickyBoxRect: 'Rect'
     containingBlockRect: 'Rect'
     nearestLayerShiftingStickyBox: str
     nearestLayerShiftingContainingBlock: str
+
 
 class StorageId(TypedDict):
     """
@@ -2812,8 +3404,10 @@ class StorageId(TypedDict):
         securityOrigin: Security origin for the storage.
         isLocalStorage: Whether the storage is local storage (not session storage).
     """
+
     securityOrigin: str
     isLocalStorage: bool
+
 
 class StyleDeclarationEdit(TypedDict):
     """
@@ -2824,9 +3418,11 @@ class StyleDeclarationEdit(TypedDict):
         range: The range of the style text in the enclosing stylesheet.
         text: New style text.
     """
+
     styleSheetId: str
     range: 'SourceRange'
     text: str
+
 
 class TargetInfo(TypedDict, total=False):
     """
@@ -2834,6 +3430,7 @@ class TargetInfo(TypedDict, total=False):
         attached: Whether the target has an attached client.
         openerId: Opener target Id
     """
+
     targetId: str
     type: str
     title: str
@@ -2841,6 +3438,7 @@ class TargetInfo(TypedDict, total=False):
     attached: bool
     openerId: str
     browserContextId: str
+
 
 class TextBoxSnapshot(TypedDict):
     """
@@ -2855,10 +3453,12 @@ class TextBoxSnapshot(TypedDict):
         length: The number of characters in this post layout textbox substring. Characters that would be
             represented as a surrogate pair in UTF-16 have length 2.
     """
+
     layoutIndex: List[int]
     bounds: List[List[float]]
     start: List[int]
     length: List[int]
+
 
 class TouchPoint(TypedDict, total=False):
     """
@@ -2872,6 +3472,7 @@ class TouchPoint(TypedDict, total=False):
         force: Force (default: 1.0).
         id: Identifier used to track touch sources between events, must be unique within an event.
     """
+
     x: float
     y: float
     radiusX: float
@@ -2879,6 +3480,7 @@ class TouchPoint(TypedDict, total=False):
     rotationAngle: float
     force: float
     id: float
+
 
 class TraceConfig(TypedDict, total=False):
     """
@@ -2892,6 +3494,7 @@ class TraceConfig(TypedDict, total=False):
         syntheticDelays: Configuration to synthesize the delays in tracing.
         memoryDumpConfig: Configuration for memory dump triggers. Used only when "memory-infra" category is enabled.
     """
+
     recordMode: Literal['recordUntilFull', 'recordContinuously', 'recordAsMuchAsPossible', 'echoToConsole']
     enableSampling: bool
     enableSystrace: bool
@@ -2901,6 +3504,7 @@ class TraceConfig(TypedDict, total=False):
     syntheticDelays: List[str]
     memoryDumpConfig: Dict[str, str]
 
+
 class TypeObject(TypedDict):
     """
     Describes a type collected during runtime.
@@ -2908,7 +3512,9 @@ class TypeObject(TypedDict):
     Attributes:
         name: Name of a type collected with type profiling.
     """
+
     name: str
+
 
 class TypeProfileEntry(TypedDict):
     """
@@ -2918,8 +3524,10 @@ class TypeProfileEntry(TypedDict):
         offset: Source offset of the parameter or end of function for return values.
         types: The types for this parameter or return value.
     """
+
     offset: int
     types: List['TypeObject']
+
 
 class UsageForType(TypedDict):
     """
@@ -2929,8 +3537,22 @@ class UsageForType(TypedDict):
         storageType: Name of storage type.
         usage: Storage usage (bytes).
     """
-    storageType: Literal['appcache', 'cookies', 'file_systems', 'indexeddb', 'local_storage', 'shader_cache', 'websql', 'service_workers', 'cache_storage', 'all', 'other']
+
+    storageType: Literal[
+        'appcache',
+        'cookies',
+        'file_systems',
+        'indexeddb',
+        'local_storage',
+        'shader_cache',
+        'websql',
+        'service_workers',
+        'cache_storage',
+        'all',
+        'other',
+    ]
     usage: float
+
 
 class Value(TypedDict, total=False):
     """
@@ -2940,8 +3562,10 @@ class Value(TypedDict, total=False):
         text: Value text.
         range: Value range in the underlying resource (if available).
     """
+
     text: str
     range: 'SourceRange'
+
 
 class VideoDecodeAcceleratorCapability(TypedDict):
     """
@@ -2953,9 +3577,11 @@ class VideoDecodeAcceleratorCapability(TypedDict):
         maxResolution: Maximum video dimensions in pixels supported for this |profile|.
         minResolution: Minimum video dimensions in pixels supported for this |profile|.
     """
+
     profile: str
     maxResolution: 'Size'
     minResolution: 'Size'
+
 
 class VideoEncodeAcceleratorCapability(TypedDict):
     """
@@ -2969,10 +3595,12 @@ class VideoEncodeAcceleratorCapability(TypedDict):
             |profile|, as fraction's numerator and denominator, e.g. 24/1 fps,
             24000/1001 fps, etc.
     """
+
     profile: str
     maxResolution: 'Size'
     maxFramerateNumerator: int
     maxFramerateDenominator: int
+
 
 class Viewport(TypedDict):
     """
@@ -2985,11 +3613,13 @@ class Viewport(TypedDict):
         height: Rectangle height in device independent pixels (dip).
         scale: Page scale factor.
     """
+
     x: float
     y: float
     width: float
     height: float
     scale: float
+
 
 class ViolationSetting(TypedDict):
     """
@@ -2999,8 +3629,12 @@ class ViolationSetting(TypedDict):
         name: Violation type.
         threshold: Time threshold to trigger upon.
     """
-    name: Literal['longTask', 'longLayout', 'blockedEvent', 'blockedParser', 'discouragedAPIUse', 'handler', 'recurringHandler']
+
+    name: Literal[
+        'longTask', 'longLayout', 'blockedEvent', 'blockedParser', 'discouragedAPIUse', 'handler', 'recurringHandler'
+    ]
     threshold: float
+
 
 class VirtualAuthenticatorOptions(TypedDict, total=False):
     """
@@ -3012,12 +3646,14 @@ class VirtualAuthenticatorOptions(TypedDict, total=False):
         isUserVerified: Sets whether User Verification succeeds or fails for an authenticator.
             Defaults to false.
     """
+
     protocol: Literal['u2f', 'ctap2']
     transport: Literal['usb', 'nfc', 'ble', 'cable', 'internal']
     hasResidentKey: bool
     hasUserVerification: bool
     automaticPresenceSimulation: bool
     isUserVerified: bool
+
 
 class VisibleSecurityState(TypedDict, total=False):
     """
@@ -3029,10 +3665,12 @@ class VisibleSecurityState(TypedDict, total=False):
         safetyTipInfo: The type of Safety Tip triggered on the page. Note that this field will be set even if the Safety Tip UI was not actually shown.
         securityStateIssueIds: Array of security state issues ids.
     """
+
     securityState: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
     certificateSecurityState: 'CertificateSecurityState'
     safetyTipInfo: 'SafetyTipInfo'
     securityStateIssueIds: List[str]
+
 
 class VisualViewport(TypedDict, total=False):
     """
@@ -3048,6 +3686,7 @@ class VisualViewport(TypedDict, total=False):
         scale: Scale relative to the ideal viewport (size at width=device-width).
         zoom: Page zoom factor (CSS to device independent pixels ratio).
     """
+
     offsetX: float
     offsetY: float
     pageX: float
@@ -3056,6 +3695,7 @@ class VisualViewport(TypedDict, total=False):
     clientHeight: float
     scale: float
     zoom: float
+
 
 class WebSocketFrame(TypedDict):
     """
@@ -3068,9 +3708,11 @@ class WebSocketFrame(TypedDict):
             If the opcode is 1, this is a text message and payloadData is a UTF-8 string.
             If the opcode isn't 1, then payloadData is a base64 encoded string representing binary data.
     """
+
     opcode: float
     mask: bool
     payloadData: str
+
 
 class WebSocketRequest(TypedDict):
     """
@@ -3079,7 +3721,9 @@ class WebSocketRequest(TypedDict):
     Attributes:
         headers: HTTP request headers.
     """
+
     headers: Dict[str, str]
+
 
 class WebSocketResponse(TypedDict, total=False):
     """
@@ -3093,12 +3737,14 @@ class WebSocketResponse(TypedDict, total=False):
         requestHeaders: HTTP request headers.
         requestHeadersText: HTTP request headers text.
     """
+
     status: int
     statusText: str
     headers: Dict[str, str]
     headersText: str
     requestHeaders: Dict[str, str]
     requestHeadersText: str
+
 
 class acceptedPayload(TypedDict):
     """
@@ -3108,14 +3754,18 @@ class acceptedPayload(TypedDict):
         port: Port number that was successfully bound.
         connectionId: Connection id to be used.
     """
+
     port: int
     connectionId: str
+
 
 class addDatabasePayload(TypedDict):
     database: 'Database'
 
+
 class addHeapSnapshotChunkPayload(TypedDict):
     chunk: str
+
 
 class addRuleReturnValues(TypedDict):
     """
@@ -3125,7 +3775,9 @@ class addRuleReturnValues(TypedDict):
     Attributes:
         rule: The newly created rule.
     """
+
     rule: 'CSSRule'
+
 
 class addScriptToEvaluateOnLoadReturnValues(TypedDict):
     """
@@ -3134,7 +3786,9 @@ class addScriptToEvaluateOnLoadReturnValues(TypedDict):
     Attributes:
         identifier: Identifier of the added script.
     """
+
     identifier: str
+
 
 class addScriptToEvaluateOnNewDocumentReturnValues(TypedDict):
     """
@@ -3143,14 +3797,18 @@ class addScriptToEvaluateOnNewDocumentReturnValues(TypedDict):
     Attributes:
         identifier: Identifier of the added script.
     """
+
     identifier: str
+
 
 class addVirtualAuthenticatorReturnValues(TypedDict):
     """
     Creates and adds a virtual authenticator.
 
     """
+
     authenticatorId: str
+
 
 class animationCanceledPayload(TypedDict):
     """
@@ -3159,7 +3817,9 @@ class animationCanceledPayload(TypedDict):
     Attributes:
         id: Id of the animation that was cancelled.
     """
+
     id: str
+
 
 class animationCreatedPayload(TypedDict):
     """
@@ -3168,7 +3828,9 @@ class animationCreatedPayload(TypedDict):
     Attributes:
         id: Id of the animation that was created.
     """
+
     id: str
+
 
 class animationStartedPayload(TypedDict):
     """
@@ -3177,7 +3839,9 @@ class animationStartedPayload(TypedDict):
     Attributes:
         animation: Animation that was started.
     """
+
     animation: 'Animation'
+
 
 class applicationCacheStatusUpdatedPayload(TypedDict):
     """
@@ -3186,9 +3850,11 @@ class applicationCacheStatusUpdatedPayload(TypedDict):
         manifestURL: Manifest URL.
         status: Updated application cache status.
     """
+
     frameId: str
     manifestURL: str
     status: int
+
 
 class attachToBrowserTargetReturnValues(TypedDict):
     """
@@ -3197,7 +3863,9 @@ class attachToBrowserTargetReturnValues(TypedDict):
     Attributes:
         sessionId: Id assigned to the session.
     """
+
     sessionId: str
+
 
 class attachToTargetReturnValues(TypedDict):
     """
@@ -3206,7 +3874,9 @@ class attachToTargetReturnValues(TypedDict):
     Attributes:
         sessionId: Id assigned to the session.
     """
+
     sessionId: str
+
 
 class attachedToTargetPayload(TypedDict):
     """
@@ -3215,9 +3885,11 @@ class attachedToTargetPayload(TypedDict):
     Attributes:
         sessionId: Identifier assigned to the session used to send/receive messages.
     """
+
     sessionId: str
     targetInfo: 'TargetInfo'
     waitingForDebugger: bool
+
 
 class attributeModifiedPayload(TypedDict):
     """
@@ -3228,9 +3900,11 @@ class attributeModifiedPayload(TypedDict):
         name: Attribute name.
         value: Attribute value.
     """
+
     nodeId: int
     name: str
     value: str
+
 
 class attributeRemovedPayload(TypedDict):
     """
@@ -3240,54 +3914,68 @@ class attributeRemovedPayload(TypedDict):
         nodeId: Id of the node that has changed.
         name: A ttribute name.
     """
+
     nodeId: int
     name: str
+
 
 class audioListenerCreatedPayload(TypedDict):
     """
     Notifies that the construction of an AudioListener has finished.
 
     """
+
     listener: 'AudioListener'
+
 
 class audioListenerWillBeDestroyedPayload(TypedDict):
     """
     Notifies that a new AudioListener has been created.
 
     """
+
     contextId: str
     listenerId: str
+
 
 class audioNodeCreatedPayload(TypedDict):
     """
     Notifies that a new AudioNode has been created.
 
     """
+
     node: 'AudioNode'
+
 
 class audioNodeWillBeDestroyedPayload(TypedDict):
     """
     Notifies that an existing AudioNode has been destroyed.
 
     """
+
     contextId: str
     nodeId: str
+
 
 class audioParamCreatedPayload(TypedDict):
     """
     Notifies that a new AudioParam has been created.
 
     """
+
     param: 'AudioParam'
+
 
 class audioParamWillBeDestroyedPayload(TypedDict):
     """
     Notifies that an existing AudioParam has been destroyed.
 
     """
+
     contextId: str
     nodeId: str
     paramId: str
+
 
 class authRequiredPayload(TypedDict):
     """
@@ -3303,11 +3991,30 @@ class authRequiredPayload(TypedDict):
             If this is set, client should respond with continueRequest that
             contains AuthChallengeResponse.
     """
+
     requestId: str
     request: 'Request'
     frameId: str
-    resourceType: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    resourceType: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     authChallenge: 'AuthChallenge'
+
 
 class awaitPromiseReturnValues(TypedDict, total=False):
     """
@@ -3317,8 +4024,10 @@ class awaitPromiseReturnValues(TypedDict, total=False):
         result: Promise result. Will contain rejected value if promise was rejected.
         exceptionDetails: Exception details if stack strace is available.
     """
+
     result: 'RemoteObject'
     exceptionDetails: 'ExceptionDetails'
+
 
 class backgroundServiceEventReceivedPayload(TypedDict):
     """
@@ -3326,7 +4035,9 @@ class backgroundServiceEventReceivedPayload(TypedDict):
     events afterwards if enabled and recording.
 
     """
+
     backgroundServiceEvent: 'BackgroundServiceEvent'
+
 
 class beginFrameReturnValues(TypedDict, total=False):
     """
@@ -3340,8 +4051,10 @@ class beginFrameReturnValues(TypedDict, total=False):
             display. Reported for diagnostic uses, may be removed in the future.
         screenshotData: Base64-encoded image data of the screenshot, if one was requested and successfully taken.
     """
+
     hasDamage: bool
     screenshotData: bytes
+
 
 class bindingCalledPayload(TypedDict):
     """
@@ -3350,9 +4063,11 @@ class bindingCalledPayload(TypedDict):
     Attributes:
         executionContextId: Identifier of the context where the call was made.
     """
+
     name: str
     payload: str
     executionContextId: int
+
 
 class breakpointResolvedPayload(TypedDict):
     """
@@ -3362,8 +4077,10 @@ class breakpointResolvedPayload(TypedDict):
         breakpointId: Breakpoint unique identifier.
         location: Actual breakpoint location.
     """
+
     breakpointId: str
     location: 'Location'
+
 
 class bufferUsagePayload(TypedDict, total=False):
     """
@@ -3374,9 +4091,11 @@ class bufferUsagePayload(TypedDict, total=False):
         value: A number in range [0..1] that indicates the used size of event buffer as a fraction of its
             total size.
     """
+
     percentFull: float
     eventCount: float
     value: float
+
 
 class cacheStorageContentUpdatedPayload(TypedDict):
     """
@@ -3386,8 +4105,10 @@ class cacheStorageContentUpdatedPayload(TypedDict):
         origin: Origin to update.
         cacheName: Name of cache in origin.
     """
+
     origin: str
     cacheName: str
+
 
 class cacheStorageListUpdatedPayload(TypedDict):
     """
@@ -3396,7 +4117,9 @@ class cacheStorageListUpdatedPayload(TypedDict):
     Attributes:
         origin: Origin to update.
     """
+
     origin: str
+
 
 class callFunctionOnReturnValues(TypedDict, total=False):
     """
@@ -3407,8 +4130,10 @@ class callFunctionOnReturnValues(TypedDict, total=False):
         result: Call result.
         exceptionDetails: Exception details.
     """
+
     result: 'RemoteObject'
     exceptionDetails: 'ExceptionDetails'
+
 
 class canClearBrowserCacheReturnValues(TypedDict):
     """
@@ -3417,7 +4142,9 @@ class canClearBrowserCacheReturnValues(TypedDict):
     Attributes:
         result: True if browser cache can be cleared.
     """
+
     result: bool
+
 
 class canClearBrowserCookiesReturnValues(TypedDict):
     """
@@ -3426,7 +4153,9 @@ class canClearBrowserCookiesReturnValues(TypedDict):
     Attributes:
         result: True if browser cookies can be cleared.
     """
+
     result: bool
+
 
 class canEmulateNetworkConditionsReturnValues(TypedDict):
     """
@@ -3435,7 +4164,9 @@ class canEmulateNetworkConditionsReturnValues(TypedDict):
     Attributes:
         result: True if emulation of network conditions is supported.
     """
+
     result: bool
+
 
 class canEmulateReturnValues(TypedDict):
     """
@@ -3444,7 +4175,9 @@ class canEmulateReturnValues(TypedDict):
     Attributes:
         result: True if emulation is supported.
     """
+
     result: bool
+
 
 class captureScreenshotReturnValues(TypedDict):
     """
@@ -3453,7 +4186,9 @@ class captureScreenshotReturnValues(TypedDict):
     Attributes:
         data: Base64-encoded image data.
     """
+
     data: bytes
+
 
 class captureSnapshotReturnValues(TypedDict):
     """
@@ -3463,7 +4198,9 @@ class captureSnapshotReturnValues(TypedDict):
     Attributes:
         data: Serialized page data.
     """
+
     data: str
+
 
 class certificateErrorPayload(TypedDict):
     """
@@ -3477,9 +4214,11 @@ class certificateErrorPayload(TypedDict):
         errorType: The type of the error.
         requestURL: The url that was requested.
     """
+
     eventId: int
     errorType: str
     requestURL: str
+
 
 class characterDataModifiedPayload(TypedDict):
     """
@@ -3489,8 +4228,10 @@ class characterDataModifiedPayload(TypedDict):
         nodeId: Id of the node that has changed.
         characterData: New text value.
     """
+
     nodeId: int
     characterData: str
+
 
 class childNodeCountUpdatedPayload(TypedDict):
     """
@@ -3500,8 +4241,10 @@ class childNodeCountUpdatedPayload(TypedDict):
         nodeId: Id of the node that has changed.
         childNodeCount: New node count.
     """
+
     nodeId: int
     childNodeCount: int
+
 
 class childNodeInsertedPayload(TypedDict):
     """
@@ -3512,9 +4255,11 @@ class childNodeInsertedPayload(TypedDict):
         previousNodeId: If of the previous siblint.
         node: Inserted node data.
     """
+
     parentNodeId: int
     previousNodeId: int
     node: 'Node'
+
 
 class childNodeRemovedPayload(TypedDict):
     """
@@ -3524,15 +4269,19 @@ class childNodeRemovedPayload(TypedDict):
         parentNodeId: Parent id.
         nodeId: Id of the node that has been removed.
     """
+
     parentNodeId: int
     nodeId: int
+
 
 class closeTargetReturnValues(TypedDict):
     """
     Closes the target. If the target is a page that gets closed too.
 
     """
+
     success: bool
+
 
 class collectClassNamesFromSubtreeReturnValues(TypedDict):
     """
@@ -3541,7 +4290,9 @@ class collectClassNamesFromSubtreeReturnValues(TypedDict):
     Attributes:
         classNames: Class name list.
     """
+
     classNames: List[str]
+
 
 class collectClassNamesReturnValues(TypedDict):
     """
@@ -3550,7 +4301,9 @@ class collectClassNamesReturnValues(TypedDict):
     Attributes:
         classNames: Class name list.
     """
+
     classNames: List[str]
+
 
 class compilationCacheProducedPayload(TypedDict):
     """
@@ -3560,8 +4313,10 @@ class compilationCacheProducedPayload(TypedDict):
     Attributes:
         data: Base64-encoded data
     """
+
     url: str
     data: bytes
+
 
 class compileScriptReturnValues(TypedDict, total=False):
     """
@@ -3571,8 +4326,10 @@ class compileScriptReturnValues(TypedDict, total=False):
         scriptId: Id of the script.
         exceptionDetails: Exception details.
     """
+
     scriptId: str
     exceptionDetails: 'ExceptionDetails'
+
 
 class compositingReasonsReturnValues(TypedDict):
     """
@@ -3581,7 +4338,9 @@ class compositingReasonsReturnValues(TypedDict):
     Attributes:
         compositingReasons: A list of strings specifying reasons for the given layer to become composited.
     """
+
     compositingReasons: List[str]
+
 
 class consoleAPICalledPayload(TypedDict, total=False):
     """
@@ -3599,12 +4358,33 @@ class consoleAPICalledPayload(TypedDict, total=False):
             'anonymous#unique-logger-id' for call on unnamed context, 'name#unique-logger-id' for call
             on named context.
     """
-    type: Literal['log', 'debug', 'info', 'error', 'warning', 'dir', 'dirxml', 'table', 'trace', 'clear', 'startGroup', 'startGroupCollapsed', 'endGroup', 'assert', 'profile', 'profileEnd', 'count', 'timeEnd']
+
+    type: Literal[
+        'log',
+        'debug',
+        'info',
+        'error',
+        'warning',
+        'dir',
+        'dirxml',
+        'table',
+        'trace',
+        'clear',
+        'startGroup',
+        'startGroupCollapsed',
+        'endGroup',
+        'assert',
+        'profile',
+        'profileEnd',
+        'count',
+        'timeEnd',
+    ]
     args: List['RemoteObject']
     executionContextId: int
     timestamp: float
     stackTrace: 'StackTrace'
     context: str
+
 
 class consoleProfileFinishedPayload(TypedDict, total=False):
     """
@@ -3612,10 +4392,12 @@ class consoleProfileFinishedPayload(TypedDict, total=False):
         location: Location of console.profileEnd().
         title: Profile title passed as an argument to console.profile().
     """
+
     id: str
     location: 'Location'
     profile: 'Profile'
     title: str
+
 
 class consoleProfileStartedPayload(TypedDict, total=False):
     """
@@ -3625,30 +4407,38 @@ class consoleProfileStartedPayload(TypedDict, total=False):
         location: Location of console.profile().
         title: Profile title passed as an argument to console.profile().
     """
+
     id: str
     location: 'Location'
     title: str
+
 
 class contextChangedPayload(TypedDict):
     """
     Notifies that existing BaseAudioContext has changed some properties (id stays the same)..
 
     """
+
     context: 'BaseAudioContext'
+
 
 class contextCreatedPayload(TypedDict):
     """
     Notifies that a new BaseAudioContext has been created.
 
     """
+
     context: 'BaseAudioContext'
+
 
 class contextWillBeDestroyedPayload(TypedDict):
     """
     Notifies that an existing BaseAudioContext will be destroyed.
 
     """
+
     contextId: str
+
 
 class copyToReturnValues(TypedDict):
     """
@@ -3658,7 +4448,9 @@ class copyToReturnValues(TypedDict):
     Attributes:
         nodeId: Id of the node clone.
     """
+
     nodeId: int
+
 
 class createBrowserContextReturnValues(TypedDict):
     """
@@ -3668,7 +4460,9 @@ class createBrowserContextReturnValues(TypedDict):
     Attributes:
         browserContextId: The id of the context created.
     """
+
     browserContextId: str
+
 
 class createIsolatedWorldReturnValues(TypedDict):
     """
@@ -3677,7 +4471,9 @@ class createIsolatedWorldReturnValues(TypedDict):
     Attributes:
         executionContextId: Execution context of the isolated world.
     """
+
     executionContextId: int
+
 
 class createStyleSheetReturnValues(TypedDict):
     """
@@ -3686,7 +4482,9 @@ class createStyleSheetReturnValues(TypedDict):
     Attributes:
         styleSheetId: Identifier of the created "via-inspector" stylesheet.
     """
+
     styleSheetId: str
+
 
 class createTargetReturnValues(TypedDict):
     """
@@ -3695,7 +4493,9 @@ class createTargetReturnValues(TypedDict):
     Attributes:
         targetId: The id of the page opened.
     """
+
     targetId: str
+
 
 class dataCollectedPayload(TypedDict):
     """
@@ -3703,7 +4503,9 @@ class dataCollectedPayload(TypedDict):
     send as a sequence of dataCollected events followed by tracingComplete event.
 
     """
+
     value: List[Dict[str, str]]
+
 
 class dataReceivedPayload(TypedDict):
     """
@@ -3715,10 +4517,12 @@ class dataReceivedPayload(TypedDict):
         dataLength: Data chunk length.
         encodedDataLength: Actual bytes received (might be less than dataLength for compressed encodings).
     """
+
     requestId: str
     timestamp: float
     dataLength: int
     encodedDataLength: int
+
 
 class describeNodeReturnValues(TypedDict):
     """
@@ -3728,7 +4532,9 @@ class describeNodeReturnValues(TypedDict):
     Attributes:
         node: Node description.
     """
+
     node: 'Node'
+
 
 class detachedFromTargetPayload(TypedDict, total=False):
     """
@@ -3739,8 +4545,10 @@ class detachedFromTargetPayload(TypedDict, total=False):
         sessionId: Detached session identifier.
         targetId: Deprecated.
     """
+
     sessionId: str
     targetId: str
+
 
 class detachedPayload(TypedDict):
     """
@@ -3749,7 +4557,9 @@ class detachedPayload(TypedDict):
     Attributes:
         reason: The reason why connection has been terminated.
     """
+
     reason: str
+
 
 class distributedNodesUpdatedPayload(TypedDict):
     """
@@ -3759,20 +4569,25 @@ class distributedNodesUpdatedPayload(TypedDict):
         insertionPointId: Insertion point where distrubuted nodes were updated.
         distributedNodes: Distributed nodes for given insertion point.
     """
+
     insertionPointId: int
     distributedNodes: List['BackendNode']
 
+
 class domContentEventFiredPayload(TypedDict):
     timestamp: float
+
 
 class domStorageItemAddedPayload(TypedDict):
     storageId: 'StorageId'
     key: str
     newValue: str
 
+
 class domStorageItemRemovedPayload(TypedDict):
     storageId: 'StorageId'
     key: str
+
 
 class domStorageItemUpdatedPayload(TypedDict):
     storageId: 'StorageId'
@@ -3780,8 +4595,10 @@ class domStorageItemUpdatedPayload(TypedDict):
     oldValue: str
     newValue: str
 
+
 class domStorageItemsClearedPayload(TypedDict):
     storageId: 'StorageId'
+
 
 class downloadWillBeginPayload(TypedDict):
     """
@@ -3791,8 +4608,10 @@ class downloadWillBeginPayload(TypedDict):
         frameId: Id of the frame that caused download to begin.
         url: URL of the resource being downloaded.
     """
+
     frameId: str
     url: str
+
 
 class enableReturnValues(TypedDict):
     """
@@ -3802,7 +4621,9 @@ class enableReturnValues(TypedDict):
     Attributes:
         debuggerId: Unique identifier of the debugger.
     """
+
     debuggerId: str
+
 
 class entryAddedPayload(TypedDict):
     """
@@ -3811,7 +4632,9 @@ class entryAddedPayload(TypedDict):
     Attributes:
         entry: The entry.
     """
+
     entry: 'LogEntry'
+
 
 class evaluateOnCallFrameReturnValues(TypedDict, total=False):
     """
@@ -3821,8 +4644,10 @@ class evaluateOnCallFrameReturnValues(TypedDict, total=False):
         result: Object wrapper for the evaluation result.
         exceptionDetails: Exception details.
     """
+
     result: 'RemoteObject'
     exceptionDetails: 'ExceptionDetails'
+
 
 class evaluateReturnValues(TypedDict, total=False):
     """
@@ -3832,8 +4657,10 @@ class evaluateReturnValues(TypedDict, total=False):
         result: Evaluation result.
         exceptionDetails: Exception details.
     """
+
     result: 'RemoteObject'
     exceptionDetails: 'ExceptionDetails'
+
 
 class eventSourceMessageReceivedPayload(TypedDict):
     """
@@ -3846,11 +4673,13 @@ class eventSourceMessageReceivedPayload(TypedDict):
         eventId: Message identifier.
         data: Message content.
     """
+
     requestId: str
     timestamp: float
     eventName: str
     eventId: str
     data: str
+
 
 class exceptionRevokedPayload(TypedDict):
     """
@@ -3860,8 +4689,10 @@ class exceptionRevokedPayload(TypedDict):
         reason: Reason describing why exception was revoked.
         exceptionId: The id of revoked exception, as reported in `exceptionThrown`.
     """
+
     reason: str
     exceptionId: int
+
 
 class exceptionThrownPayload(TypedDict):
     """
@@ -3870,13 +4701,16 @@ class exceptionThrownPayload(TypedDict):
     Attributes:
         timestamp: Timestamp of the exception.
     """
+
     timestamp: float
     exceptionDetails: 'ExceptionDetails'
+
 
 class executeSQLReturnValues(TypedDict, total=False):
     columnNames: List[str]
     values: List[Any]
     sqlError: 'Error'
+
 
 class executionContextCreatedPayload(TypedDict):
     """
@@ -3885,7 +4719,9 @@ class executionContextCreatedPayload(TypedDict):
     Attributes:
         context: A newly created execution context.
     """
+
     context: 'ExecutionContextDescription'
+
 
 class executionContextDestroyedPayload(TypedDict):
     """
@@ -3894,7 +4730,9 @@ class executionContextDestroyedPayload(TypedDict):
     Attributes:
         executionContextId: Id of the destroyed context
     """
+
     executionContextId: int
+
 
 class fileChooserOpenedPayload(TypedDict):
     """
@@ -3905,9 +4743,11 @@ class fileChooserOpenedPayload(TypedDict):
         backendNodeId: Input node id.
         mode: Input mode.
     """
+
     frameId: str
     backendNodeId: int
     mode: Literal['selectSingle', 'selectMultiple']
+
 
 class fontsUpdatedPayload(TypedDict, total=False):
     """
@@ -3917,7 +4757,9 @@ class fontsUpdatedPayload(TypedDict, total=False):
     Attributes:
         font: The web font that has loaded.
     """
+
     font: 'FontFace'
+
 
 class frameAttachedPayload(TypedDict, total=False):
     """
@@ -3928,9 +4770,11 @@ class frameAttachedPayload(TypedDict, total=False):
         parentFrameId: Parent frame identifier.
         stack: JavaScript stack trace of when frame was attached, only set if frame initiated from script.
     """
+
     frameId: str
     parentFrameId: str
     stack: 'StackTrace'
+
 
 class frameClearedScheduledNavigationPayload(TypedDict):
     """
@@ -3939,7 +4783,9 @@ class frameClearedScheduledNavigationPayload(TypedDict):
     Attributes:
         frameId: Id of the frame that has cleared its scheduled navigation.
     """
+
     frameId: str
+
 
 class frameDetachedPayload(TypedDict):
     """
@@ -3948,7 +4794,9 @@ class frameDetachedPayload(TypedDict):
     Attributes:
         frameId: Id of the frame that has been detached.
     """
+
     frameId: str
+
 
 class frameNavigatedPayload(TypedDict):
     """
@@ -3957,7 +4805,9 @@ class frameNavigatedPayload(TypedDict):
     Attributes:
         frame: Frame object.
     """
+
     frame: 'Frame'
+
 
 class frameRequestedNavigationPayload(TypedDict):
     """
@@ -3969,9 +4819,19 @@ class frameRequestedNavigationPayload(TypedDict):
         reason: The reason for the navigation.
         url: The destination URL for the requested navigation.
     """
+
     frameId: str
-    reason: Literal['formSubmissionGet', 'formSubmissionPost', 'httpHeaderRefresh', 'scriptInitiated', 'metaTagRefresh', 'pageBlockInterstitial', 'reload']
+    reason: Literal[
+        'formSubmissionGet',
+        'formSubmissionPost',
+        'httpHeaderRefresh',
+        'scriptInitiated',
+        'metaTagRefresh',
+        'pageBlockInterstitial',
+        'reload',
+    ]
     url: str
+
 
 class frameScheduledNavigationPayload(TypedDict):
     """
@@ -3984,10 +4844,20 @@ class frameScheduledNavigationPayload(TypedDict):
         reason: The reason for the navigation.
         url: The destination URL for the scheduled navigation.
     """
+
     frameId: str
     delay: float
-    reason: Literal['formSubmissionGet', 'formSubmissionPost', 'httpHeaderRefresh', 'scriptInitiated', 'metaTagRefresh', 'pageBlockInterstitial', 'reload']
+    reason: Literal[
+        'formSubmissionGet',
+        'formSubmissionPost',
+        'httpHeaderRefresh',
+        'scriptInitiated',
+        'metaTagRefresh',
+        'pageBlockInterstitial',
+        'reload',
+    ]
     url: str
+
 
 class frameStartedLoadingPayload(TypedDict):
     """
@@ -3996,7 +4866,9 @@ class frameStartedLoadingPayload(TypedDict):
     Attributes:
         frameId: Id of the frame that has started loading.
     """
+
     frameId: str
+
 
 class frameStoppedLoadingPayload(TypedDict):
     """
@@ -4005,7 +4877,9 @@ class frameStoppedLoadingPayload(TypedDict):
     Attributes:
         frameId: Id of the frame that has stopped loading.
     """
+
     frameId: str
+
 
 class getAllCookiesReturnValues(TypedDict):
     """
@@ -4015,7 +4889,9 @@ class getAllCookiesReturnValues(TypedDict):
     Attributes:
         cookies: Array of cookie objects.
     """
+
     cookies: List['Cookie']
+
 
 class getAllTimeSamplingProfileReturnValues(TypedDict):
     """
@@ -4023,7 +4899,9 @@ class getAllTimeSamplingProfileReturnValues(TypedDict):
     collected since renderer process startup.
 
     """
+
     profile: 'SamplingProfile'
+
 
 class getAppManifestReturnValues(TypedDict, total=False):
     """
@@ -4031,9 +4909,11 @@ class getAppManifestReturnValues(TypedDict, total=False):
         url: Manifest location.
         data: Manifest content.
     """
+
     url: str
     errors: List['AppManifestError']
     data: str
+
 
 class getApplicationCacheForFrameReturnValues(TypedDict):
     """
@@ -4042,7 +4922,9 @@ class getApplicationCacheForFrameReturnValues(TypedDict):
     Attributes:
         applicationCache: Relevant application cache data for the document in given frame.
     """
+
     applicationCache: 'ApplicationCache'
+
 
 class getAttributesReturnValues(TypedDict):
     """
@@ -4051,7 +4933,9 @@ class getAttributesReturnValues(TypedDict):
     Attributes:
         attributes: An interleaved array of node attribute names and values.
     """
+
     attributes: List[str]
+
 
 class getBackgroundColorsReturnValues(TypedDict, total=False):
     """
@@ -4065,9 +4949,11 @@ class getBackgroundColorsReturnValues(TypedDict, total=False):
         computedFontWeight: The computed font weight for this node, as a CSS computed value string (e.g. 'normal' or
             '100').
     """
+
     backgroundColors: List[str]
     computedFontSize: str
     computedFontWeight: str
+
 
 class getBestEffortCoverageReturnValues(TypedDict):
     """
@@ -4077,7 +4963,9 @@ class getBestEffortCoverageReturnValues(TypedDict):
     Attributes:
         result: Coverage data for the current isolate.
     """
+
     result: List['ScriptCoverage']
+
 
 class getBoxModelReturnValues(TypedDict):
     """
@@ -4086,7 +4974,9 @@ class getBoxModelReturnValues(TypedDict):
     Attributes:
         model: Box model for the node.
     """
+
     model: 'BoxModel'
+
 
 class getBrowserCommandLineReturnValues(TypedDict):
     """
@@ -4096,7 +4986,9 @@ class getBrowserCommandLineReturnValues(TypedDict):
     Attributes:
         arguments: Commandline parameters
     """
+
     arguments: List[str]
+
 
 class getBrowserContextsReturnValues(TypedDict):
     """
@@ -4105,7 +4997,9 @@ class getBrowserContextsReturnValues(TypedDict):
     Attributes:
         browserContextIds: An array of browser context ids.
     """
+
     browserContextIds: List[str]
+
 
 class getBrowserSamplingProfileReturnValues(TypedDict):
     """
@@ -4113,7 +5007,9 @@ class getBrowserSamplingProfileReturnValues(TypedDict):
     collected since browser process startup.
 
     """
+
     profile: 'SamplingProfile'
+
 
 class getCategoriesReturnValues(TypedDict):
     """
@@ -4122,14 +5018,18 @@ class getCategoriesReturnValues(TypedDict):
     Attributes:
         categories: A list of supported tracing categories.
     """
+
     categories: List[str]
+
 
 class getCertificateReturnValues(TypedDict):
     """
     Returns the DER-encoded certificate.
 
     """
+
     tableNames: List[str]
+
 
 class getComputedStyleForNodeReturnValues(TypedDict):
     """
@@ -4138,7 +5038,9 @@ class getComputedStyleForNodeReturnValues(TypedDict):
     Attributes:
         computedStyle: Computed style for the specified DOM node.
     """
+
     computedStyle: List['CSSComputedStyleProperty']
+
 
 class getContentQuadsReturnValues(TypedDict):
     """
@@ -4148,7 +5050,9 @@ class getContentQuadsReturnValues(TypedDict):
     Attributes:
         quads: Quads that describe node layout relative to viewport.
     """
+
     quads: List[List[float]]
+
 
 class getCookiesReturnValues(TypedDict):
     """
@@ -4157,7 +5061,9 @@ class getCookiesReturnValues(TypedDict):
     Attributes:
         cookies: Array of cookie objects.
     """
+
     cookies: List['Cookie']
+
 
 class getCredentialReturnValues(TypedDict):
     """
@@ -4165,14 +5071,18 @@ class getCredentialReturnValues(TypedDict):
     matches the credential ID.
 
     """
+
     credential: 'Credential'
+
 
 class getCredentialsReturnValues(TypedDict):
     """
     Returns all the credentials stored in the given virtual authenticator.
 
     """
+
     credentials: List['Credential']
+
 
 class getCurrentTimeReturnValues(TypedDict):
     """
@@ -4181,18 +5091,23 @@ class getCurrentTimeReturnValues(TypedDict):
     Attributes:
         currentTime: Current time of the page.
     """
+
     currentTime: float
+
 
 class getDOMCountersReturnValues(TypedDict):
     documents: int
     nodes: int
     jsEventListeners: int
 
+
 class getDOMStorageItemsReturnValues(TypedDict):
     entries: List[List[str]]
 
+
 class getDatabaseTableNamesReturnValues(TypedDict):
     tableNames: List[str]
+
 
 class getDocumentReturnValues(TypedDict):
     """
@@ -4201,7 +5116,9 @@ class getDocumentReturnValues(TypedDict):
     Attributes:
         root: Resulting node.
     """
+
     root: 'Node'
+
 
 class getDomainsReturnValues(TypedDict):
     """
@@ -4210,7 +5127,9 @@ class getDomainsReturnValues(TypedDict):
     Attributes:
         domains: List of supported domains.
     """
+
     domains: List['Domain']
+
 
 class getEncodedResponseReturnValues(TypedDict, total=False):
     """
@@ -4222,9 +5141,11 @@ class getEncodedResponseReturnValues(TypedDict, total=False):
         originalSize: Size before re-encoding.
         encodedSize: Size after re-encoding.
     """
+
     body: bytes
     originalSize: int
     encodedSize: int
+
 
 class getEventListenersReturnValues(TypedDict):
     """
@@ -4233,7 +5154,9 @@ class getEventListenersReturnValues(TypedDict):
     Attributes:
         listeners: Array of relevant listeners.
     """
+
     listeners: List['EventListener']
+
 
 class getFileInfoReturnValues(TypedDict):
     """
@@ -4241,7 +5164,9 @@ class getFileInfoReturnValues(TypedDict):
     File wrapper.
 
     """
+
     path: str
+
 
 class getFlattenedDocumentReturnValues(TypedDict):
     """
@@ -4250,7 +5175,9 @@ class getFlattenedDocumentReturnValues(TypedDict):
     Attributes:
         nodes: Resulting node.
     """
+
     nodes: List['Node']
+
 
 class getFrameOwnerReturnValues(TypedDict, total=False):
     """
@@ -4260,8 +5187,10 @@ class getFrameOwnerReturnValues(TypedDict, total=False):
         backendNodeId: Resulting node.
         nodeId: Id of the node at given coordinates, only when enabled and requested document.
     """
+
     backendNodeId: int
     nodeId: int
+
 
 class getFrameTreeReturnValues(TypedDict):
     """
@@ -4270,7 +5199,9 @@ class getFrameTreeReturnValues(TypedDict):
     Attributes:
         frameTree: Present frame tree structure.
     """
+
     frameTree: 'FrameTree'
+
 
 class getFramesWithManifestsReturnValues(TypedDict):
     """
@@ -4281,21 +5212,27 @@ class getFramesWithManifestsReturnValues(TypedDict):
         frameIds: Array of frame identifiers with manifest urls for each frame containing a document
             associated with some application cache.
     """
+
     frameIds: List['FrameWithManifest']
+
 
 class getFullAXTreeReturnValues(TypedDict):
     """
     Fetches the entire accessibility tree
 
     """
+
     nodes: List['AXNode']
+
 
 class getHeapObjectIdReturnValues(TypedDict):
     """
     Attributes:
         heapSnapshotObjectId: Id of the heap snapshot object corresponding to the passed remote object id.
     """
+
     heapSnapshotObjectId: str
+
 
 class getHeapUsageReturnValues(TypedDict):
     """
@@ -4306,8 +5243,10 @@ class getHeapUsageReturnValues(TypedDict):
         usedSize: Used heap size in bytes.
         totalSize: Allocated heap size in bytes.
     """
+
     usedSize: float
     totalSize: float
+
 
 class getHighlightObjectForTestReturnValues(TypedDict):
     """
@@ -4316,7 +5255,9 @@ class getHighlightObjectForTestReturnValues(TypedDict):
     Attributes:
         highlight: Highlight data for the node.
     """
+
     highlight: Dict[str, str]
+
 
 class getHistogramReturnValues(TypedDict):
     """
@@ -4325,7 +5266,9 @@ class getHistogramReturnValues(TypedDict):
     Attributes:
         histogram: Histogram.
     """
+
     histogram: 'Histogram'
+
 
 class getHistogramsReturnValues(TypedDict):
     """
@@ -4334,7 +5277,9 @@ class getHistogramsReturnValues(TypedDict):
     Attributes:
         histograms: Histograms.
     """
+
     histograms: List['Histogram']
+
 
 class getInfoReturnValues(TypedDict):
     """
@@ -4349,10 +5294,12 @@ class getInfoReturnValues(TypedDict):
         commandLine: The command line string used to launch the browser. Will be the empty string if not
             supported.
     """
+
     gpu: 'GPUInfo'
     modelName: str
     modelVersion: str
     commandLine: str
+
 
 class getInlineStylesForNodeReturnValues(TypedDict, total=False):
     """
@@ -4363,11 +5310,14 @@ class getInlineStylesForNodeReturnValues(TypedDict, total=False):
         inlineStyle: Inline style for the specified DOM node.
         attributesStyle: Attribute-defined element style (e.g. resulting from "width=20 height=100%").
     """
+
     inlineStyle: 'CSSStyle'
     attributesStyle: 'CSSStyle'
 
+
 class getInstallabilityErrorsReturnValues(TypedDict):
     errors: List[str]
+
 
 class getIsolateIdReturnValues(TypedDict):
     """
@@ -4376,7 +5326,9 @@ class getIsolateIdReturnValues(TypedDict):
     Attributes:
         id: The isolate id.
     """
+
     id: str
+
 
 class getLayoutMetricsReturnValues(TypedDict):
     """
@@ -4387,9 +5339,11 @@ class getLayoutMetricsReturnValues(TypedDict):
         visualViewport: Metrics relating to the visual viewport.
         contentSize: Size of scrollable area.
     """
+
     layoutViewport: 'LayoutViewport'
     visualViewport: 'VisualViewport'
     contentSize: 'Rect'
+
 
 class getManifestForFrameReturnValues(TypedDict):
     """
@@ -4398,7 +5352,9 @@ class getManifestForFrameReturnValues(TypedDict):
     Attributes:
         manifestURL: Manifest URL for document in the given frame.
     """
+
     manifestURL: str
+
 
 class getMatchedStylesForNodeReturnValues(TypedDict, total=False):
     """
@@ -4412,6 +5368,7 @@ class getMatchedStylesForNodeReturnValues(TypedDict, total=False):
         inherited: A chain of inherited styles (from the immediate node parent up to the DOM tree root).
         cssKeyframesRules: A list of CSS keyframed animations matching this node.
     """
+
     inlineStyle: 'CSSStyle'
     attributesStyle: 'CSSStyle'
     matchedCSSRules: List['RuleMatch']
@@ -4419,12 +5376,15 @@ class getMatchedStylesForNodeReturnValues(TypedDict, total=False):
     inherited: List['InheritedStyleEntry']
     cssKeyframesRules: List['CSSKeyframesRule']
 
+
 class getMediaQueriesReturnValues(TypedDict):
     """
     Returns all media queries parsed by the rendering engine.
 
     """
+
     medias: List['CSSMedia']
+
 
 class getMetadataReturnValues(TypedDict):
     """
@@ -4436,8 +5396,10 @@ class getMetadataReturnValues(TypedDict):
             key into the object store. Valid if objectStore.autoIncrement
             is true.
     """
+
     entriesCount: float
     keyGeneratorValue: float
+
 
 class getMetricsReturnValues(TypedDict):
     """
@@ -4446,7 +5408,9 @@ class getMetricsReturnValues(TypedDict):
     Attributes:
         metrics: Current values for run-time metrics.
     """
+
     metrics: List['Metric']
+
 
 class getNavigationHistoryReturnValues(TypedDict):
     """
@@ -4456,8 +5420,10 @@ class getNavigationHistoryReturnValues(TypedDict):
         currentIndex: Index of the current navigation history entry.
         entries: Array of navigation history entries.
     """
+
     currentIndex: int
     entries: List['NavigationEntry']
+
 
 class getNodeForLocationReturnValues(TypedDict, total=False):
     """
@@ -4469,9 +5435,11 @@ class getNodeForLocationReturnValues(TypedDict, total=False):
         frameId: Frame this node belongs to.
         nodeId: Id of the node at given coordinates, only when enabled and requested document.
     """
+
     backendNodeId: int
     frameId: str
     nodeId: int
+
 
 class getNodeStackTracesReturnValues(TypedDict, total=False):
     """
@@ -4480,14 +5448,18 @@ class getNodeStackTracesReturnValues(TypedDict, total=False):
     Attributes:
         creation: Creation stack trace, if available.
     """
+
     creation: 'StackTrace'
+
 
 class getObjectByHeapObjectIdReturnValues(TypedDict):
     """
     Attributes:
         result: Evaluation result.
     """
+
     result: 'RemoteObject'
+
 
 class getOuterHTMLReturnValues(TypedDict):
     """
@@ -4496,7 +5468,9 @@ class getOuterHTMLReturnValues(TypedDict):
     Attributes:
         outerHTML: Outer HTML markup.
     """
+
     outerHTML: str
+
 
 class getPartialAXTreeReturnValues(TypedDict):
     """
@@ -4506,7 +5480,9 @@ class getPartialAXTreeReturnValues(TypedDict):
         nodes: The `Accessibility.AXNode` for this DOM node, if it exists, plus its ancestors, siblings and
             children, if requested.
     """
+
     nodes: List['AXNode']
+
 
 class getPlatformFontsForNodeReturnValues(TypedDict):
     """
@@ -4516,7 +5492,9 @@ class getPlatformFontsForNodeReturnValues(TypedDict):
     Attributes:
         fonts: Usage statistics for every employed platform font.
     """
+
     fonts: List['PlatformFontUsage']
+
 
 class getPlaybackRateReturnValues(TypedDict):
     """
@@ -4525,7 +5503,9 @@ class getPlaybackRateReturnValues(TypedDict):
     Attributes:
         playbackRate: Playback rate for animations on page.
     """
+
     playbackRate: float
+
 
 class getPossibleBreakpointsReturnValues(TypedDict):
     """
@@ -4535,7 +5515,9 @@ class getPossibleBreakpointsReturnValues(TypedDict):
     Attributes:
         locations: List of the possible breakpoint locations.
     """
+
     locations: List['BreakLocation']
+
 
 class getProcessInfoReturnValues(TypedDict):
     """
@@ -4544,7 +5526,9 @@ class getProcessInfoReturnValues(TypedDict):
     Attributes:
         processInfo: An array of process info blocks.
     """
+
     processInfo: List['ProcessInfo']
+
 
 class getPropertiesReturnValues(TypedDict, total=False):
     """
@@ -4557,17 +5541,21 @@ class getPropertiesReturnValues(TypedDict, total=False):
         privateProperties: Object private properties.
         exceptionDetails: Exception details.
     """
+
     result: List['PropertyDescriptor']
     internalProperties: List['InternalPropertyDescriptor']
     privateProperties: List['PrivatePropertyDescriptor']
     exceptionDetails: 'ExceptionDetails'
+
 
 class getRealtimeDataReturnValues(TypedDict):
     """
     Fetch the realtime data from the registered contexts.
 
     """
+
     realtimeData: 'ContextRealtimeData'
+
 
 class getRelayoutBoundaryReturnValues(TypedDict):
     """
@@ -4576,7 +5564,9 @@ class getRelayoutBoundaryReturnValues(TypedDict):
     Attributes:
         nodeId: Relayout boundary node id for the given node.
     """
+
     nodeId: int
+
 
 class getRequestPostDataReturnValues(TypedDict):
     """
@@ -4585,7 +5575,9 @@ class getRequestPostDataReturnValues(TypedDict):
     Attributes:
         postData: Request body string, omitting files from multipart requests
     """
+
     postData: str
+
 
 class getResourceContentReturnValues(TypedDict):
     """
@@ -4595,8 +5587,10 @@ class getResourceContentReturnValues(TypedDict):
         content: Resource content.
         base64Encoded: True, if content was served as base64.
     """
+
     content: str
     base64Encoded: bool
+
 
 class getResourceTreeReturnValues(TypedDict):
     """
@@ -4605,7 +5599,9 @@ class getResourceTreeReturnValues(TypedDict):
     Attributes:
         frameTree: Present frame / resource tree structure.
     """
+
     frameTree: 'FrameResourceTree'
+
 
 class getResponseBodyForInterceptionReturnValues(TypedDict):
     """
@@ -4615,8 +5611,10 @@ class getResponseBodyForInterceptionReturnValues(TypedDict):
         body: Response body.
         base64Encoded: True, if content was sent as base64.
     """
+
     body: str
     base64Encoded: bool
+
 
 class getResponseBodyReturnValues(TypedDict):
     """
@@ -4631,8 +5629,10 @@ class getResponseBodyReturnValues(TypedDict):
         body: Response body.
         base64Encoded: True, if content was sent as base64.
     """
+
     body: str
     base64Encoded: bool
+
 
 class getRuntimeCallStatsReturnValues(TypedDict):
     """
@@ -4641,14 +5641,18 @@ class getRuntimeCallStatsReturnValues(TypedDict):
     Attributes:
         result: Collected counter information.
     """
+
     result: List['CounterInfo']
+
 
 class getSamplingProfileReturnValues(TypedDict):
     """
     Attributes:
         profile: Return the sampling profile being collected.
     """
+
     profile: 'SamplingHeapProfile'
+
 
 class getScriptSourceReturnValues(TypedDict, total=False):
     """
@@ -4658,8 +5662,10 @@ class getScriptSourceReturnValues(TypedDict, total=False):
         scriptSource: Script source (empty in case of Wasm bytecode).
         bytecode: Wasm bytecode.
     """
+
     scriptSource: str
     bytecode: bytes
+
 
 class getSearchResultsReturnValues(TypedDict):
     """
@@ -4669,7 +5675,9 @@ class getSearchResultsReturnValues(TypedDict):
     Attributes:
         nodeIds: Ids of the search result nodes.
     """
+
     nodeIds: List[int]
+
 
 class getSnapshotReturnValues(TypedDict):
     """
@@ -4683,16 +5691,20 @@ class getSnapshotReturnValues(TypedDict):
         layoutTreeNodes: The nodes in the layout tree.
         computedStyles: Whitelisted ComputedStyle properties for each node in the layout tree.
     """
+
     domNodes: List['DOMNode']
     layoutTreeNodes: List['LayoutTreeNode']
     computedStyles: List['ComputedStyle']
+
 
 class getStackTraceReturnValues(TypedDict):
     """
     Returns stack trace with given `stackTraceId`.
 
     """
+
     stackTrace: 'StackTrace'
+
 
 class getStyleSheetTextReturnValues(TypedDict):
     """
@@ -4701,14 +5713,18 @@ class getStyleSheetTextReturnValues(TypedDict):
     Attributes:
         text: The stylesheet text.
     """
+
     text: str
+
 
 class getTargetInfoReturnValues(TypedDict):
     """
     Returns information about a target.
 
     """
+
     targetInfo: 'TargetInfo'
+
 
 class getTargetsReturnValues(TypedDict):
     """
@@ -4717,7 +5733,9 @@ class getTargetsReturnValues(TypedDict):
     Attributes:
         targetInfos: The list of targets.
     """
+
     targetInfos: List['TargetInfo']
+
 
 class getUsageAndQuotaReturnValues(TypedDict):
     """
@@ -4728,9 +5746,11 @@ class getUsageAndQuotaReturnValues(TypedDict):
         quota: Storage quota (bytes).
         usageBreakdown: Storage usage per type (bytes).
     """
+
     usage: float
     quota: float
     usageBreakdown: List['UsageForType']
+
 
 class getVersionReturnValues(TypedDict):
     """
@@ -4743,11 +5763,13 @@ class getVersionReturnValues(TypedDict):
         userAgent: User-Agent.
         jsVersion: V8 version.
     """
+
     protocolVersion: str
     product: str
     revision: str
     userAgent: str
     jsVersion: str
+
 
 class getWasmBytecodeReturnValues(TypedDict):
     """
@@ -4756,7 +5778,9 @@ class getWasmBytecodeReturnValues(TypedDict):
     Attributes:
         bytecode: Script source.
     """
+
     bytecode: bytes
+
 
 class getWindowBoundsReturnValues(TypedDict):
     """
@@ -4766,7 +5790,9 @@ class getWindowBoundsReturnValues(TypedDict):
         bounds: Bounds information of the window. When window state is 'minimized', the restored window
             position and size are returned.
     """
+
     bounds: 'Bounds'
+
 
 class getWindowForTargetReturnValues(TypedDict):
     """
@@ -4777,15 +5803,19 @@ class getWindowForTargetReturnValues(TypedDict):
         bounds: Bounds information of the window. When window state is 'minimized', the restored window
             position and size are returned.
     """
+
     windowId: int
     bounds: 'Bounds'
+
 
 class globalLexicalScopeNamesReturnValues(TypedDict):
     """
     Returns all let, const and class variables from global scope.
 
     """
+
     names: List[str]
+
 
 class heapStatsUpdatePayload(TypedDict):
     """
@@ -4796,7 +5826,9 @@ class heapStatsUpdatePayload(TypedDict):
             index, the second integer is a total count of objects for the fragment, the third integer is
             a total size of the objects for the fragment.
     """
+
     statsUpdate: List[int]
+
 
 class indexedDBContentUpdatedPayload(TypedDict):
     """
@@ -4807,9 +5839,11 @@ class indexedDBContentUpdatedPayload(TypedDict):
         databaseName: Database to update.
         objectStoreName: ObjectStore to update.
     """
+
     origin: str
     databaseName: str
     objectStoreName: str
+
 
 class indexedDBListUpdatedPayload(TypedDict):
     """
@@ -4818,7 +5852,9 @@ class indexedDBListUpdatedPayload(TypedDict):
     Attributes:
         origin: Origin to update.
     """
+
     origin: str
+
 
 class inlineStyleInvalidatedPayload(TypedDict):
     """
@@ -4827,7 +5863,9 @@ class inlineStyleInvalidatedPayload(TypedDict):
     Attributes:
         nodeIds: Ids of the nodes for which the inline styles have been invalidated.
     """
+
     nodeIds: List[int]
+
 
 class inspectNodeRequestedPayload(TypedDict):
     """
@@ -4837,7 +5875,9 @@ class inspectNodeRequestedPayload(TypedDict):
     Attributes:
         backendNodeId: Id of the node to inspect.
     """
+
     backendNodeId: int
+
 
 class inspectRequestedPayload(TypedDict):
     """
@@ -4845,8 +5885,10 @@ class inspectRequestedPayload(TypedDict):
     call).
 
     """
+
     object: 'RemoteObject'
     hints: Dict[str, str]
+
 
 class issueUpdatedPayload(TypedDict):
     """
@@ -4854,7 +5896,9 @@ class issueUpdatedPayload(TypedDict):
     |issueMessage| is empty if there is no issue.
 
     """
+
     issueMessage: str
+
 
 class javascriptDialogClosedPayload(TypedDict):
     """
@@ -4865,8 +5909,10 @@ class javascriptDialogClosedPayload(TypedDict):
         result: Whether dialog was confirmed.
         userInput: User input in case of prompt.
     """
+
     result: bool
     userInput: str
+
 
 class javascriptDialogOpeningPayload(TypedDict, total=False):
     """
@@ -4882,11 +5928,13 @@ class javascriptDialogOpeningPayload(TypedDict, total=False):
             the page execution. Execution can be resumed via calling Page.handleJavaScriptDialog.
         defaultPrompt: Default dialog prompt.
     """
+
     url: str
     message: str
     type: Literal['alert', 'confirm', 'prompt', 'beforeunload']
     hasBrowserHandler: bool
     defaultPrompt: str
+
 
 class lastSeenObjectIdPayload(TypedDict):
     """
@@ -4895,8 +5943,10 @@ class lastSeenObjectIdPayload(TypedDict):
     then one or more heapStatsUpdate events will be sent before a new lastSeenObjectId event.
 
     """
+
     lastSeenObjectId: int
     timestamp: float
+
 
 class layerPaintedPayload(TypedDict):
     """
@@ -4904,15 +5954,19 @@ class layerPaintedPayload(TypedDict):
         layerId: The id of the painted layer.
         clip: Clip rectangle.
     """
+
     layerId: str
     clip: 'Rect'
+
 
 class layerTreeDidChangePayload(TypedDict, total=False):
     """
     Attributes:
         layers: Layer tree, absent if not in the comspositing mode.
     """
+
     layers: List['Layer']
+
 
 class lifecycleEventPayload(TypedDict):
     """
@@ -4922,13 +5976,16 @@ class lifecycleEventPayload(TypedDict):
         frameId: Id of the frame.
         loaderId: Loader identifier. Empty string if the request is fetched from worker.
     """
+
     frameId: str
     loaderId: str
     name: str
     timestamp: float
 
+
 class loadEventFiredPayload(TypedDict):
     timestamp: float
+
 
 class loadSnapshotReturnValues(TypedDict):
     """
@@ -4937,7 +5994,9 @@ class loadSnapshotReturnValues(TypedDict):
     Attributes:
         snapshotId: The id of the snapshot.
     """
+
     snapshotId: str
+
 
 class loadingFailedPayload(TypedDict, total=False):
     """
@@ -4951,12 +6010,40 @@ class loadingFailedPayload(TypedDict, total=False):
         canceled: True if loading was canceled.
         blockedReason: The reason why loading was blocked, if any.
     """
+
     requestId: str
     timestamp: float
-    type: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    type: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     errorText: str
     canceled: bool
-    blockedReason: Literal['other', 'csp', 'mixed-content', 'origin', 'inspector', 'subresource-filter', 'content-type', 'collapsed-by-client']
+    blockedReason: Literal[
+        'other',
+        'csp',
+        'mixed-content',
+        'origin',
+        'inspector',
+        'subresource-filter',
+        'content-type',
+        'collapsed-by-client',
+    ]
+
 
 class loadingFinishedPayload(TypedDict, total=False):
     """
@@ -4969,10 +6056,12 @@ class loadingFinishedPayload(TypedDict, total=False):
         shouldReportCorbBlocking: Set when 1) response was blocked by Cross-Origin Read Blocking and also
             2) this needs to be reported to the DevTools console.
     """
+
     requestId: str
     timestamp: float
     encodedDataLength: float
     shouldReportCorbBlocking: bool
+
 
 class makeSnapshotReturnValues(TypedDict):
     """
@@ -4981,7 +6070,9 @@ class makeSnapshotReturnValues(TypedDict):
     Attributes:
         snapshotId: The id of the layer snapshot.
     """
+
     snapshotId: str
+
 
 class messageAddedPayload(TypedDict):
     """
@@ -4990,7 +6081,9 @@ class messageAddedPayload(TypedDict):
     Attributes:
         message: Console message that has been added.
     """
+
     message: 'ConsoleMessage'
+
 
 class metricsPayload(TypedDict):
     """
@@ -5000,8 +6093,10 @@ class metricsPayload(TypedDict):
         metrics: Current values of the metrics.
         title: Timestamp title.
     """
+
     metrics: List['Metric']
     title: str
+
 
 class moveToReturnValues(TypedDict):
     """
@@ -5010,7 +6105,9 @@ class moveToReturnValues(TypedDict):
     Attributes:
         nodeId: New id of the moved node.
     """
+
     nodeId: int
+
 
 class navigateReturnValues(TypedDict, total=False):
     """
@@ -5021,9 +6118,11 @@ class navigateReturnValues(TypedDict, total=False):
         loaderId: Loader identifier.
         errorText: User friendly error message, present if and only if navigation has failed.
     """
+
     frameId: str
     loaderId: str
     errorText: str
+
 
 class navigatedWithinDocumentPayload(TypedDict):
     """
@@ -5033,8 +6132,10 @@ class navigatedWithinDocumentPayload(TypedDict):
         frameId: Id of the frame.
         url: Frame's new url.
     """
+
     frameId: str
     url: str
+
 
 class needsBeginFramesChangedPayload(TypedDict):
     """
@@ -5045,59 +6146,72 @@ class needsBeginFramesChangedPayload(TypedDict):
     Attributes:
         needsBeginFrames: True if BeginFrames are needed, false otherwise.
     """
+
     needsBeginFrames: bool
+
 
 class networkStateUpdatedPayload(TypedDict):
     isNowOnline: bool
+
 
 class nodeHighlightRequestedPayload(TypedDict):
     """
     Fired when the node should be highlighted. This happens after call to `setInspectMode`.
 
     """
+
     nodeId: int
+
 
 class nodeParamConnectedPayload(TypedDict, total=False):
     """
     Notifies that an AudioNode is connected to an AudioParam.
 
     """
+
     contextId: str
     sourceId: str
     destinationId: str
     sourceOutputIndex: float
+
 
 class nodeParamDisconnectedPayload(TypedDict, total=False):
     """
     Notifies that an AudioNode is disconnected to an AudioParam.
 
     """
+
     contextId: str
     sourceId: str
     destinationId: str
     sourceOutputIndex: float
+
 
 class nodesConnectedPayload(TypedDict, total=False):
     """
     Notifies that two AudioNodes are connected.
 
     """
+
     contextId: str
     sourceId: str
     destinationId: str
     sourceOutputIndex: float
     destinationInputIndex: float
+
 
 class nodesDisconnectedPayload(TypedDict, total=False):
     """
     Notifies that AudioNodes are disconnected. The destination can be null, and it means all the outgoing connections from the source are disconnected.
 
     """
+
     contextId: str
     sourceId: str
     destinationId: str
     sourceOutputIndex: float
     destinationInputIndex: float
+
 
 class pausedPayload(TypedDict, total=False):
     """
@@ -5112,13 +6226,27 @@ class pausedPayload(TypedDict, total=False):
         asyncStackTraceId: Async stack trace, if any.
         asyncCallStackTraceId: Never present, will be removed.
     """
+
     callFrames: List['CallFrame']
-    reason: Literal['ambiguous', 'assert', 'debugCommand', 'DOM', 'EventListener', 'exception', 'instrumentation', 'OOM', 'other', 'promiseRejection', 'XHR']
+    reason: Literal[
+        'ambiguous',
+        'assert',
+        'debugCommand',
+        'DOM',
+        'EventListener',
+        'exception',
+        'instrumentation',
+        'OOM',
+        'other',
+        'promiseRejection',
+        'XHR',
+    ]
     data: Dict[str, str]
     hitBreakpoints: List[str]
     asyncStackTrace: 'StackTrace'
     asyncStackTraceId: 'StackTraceId'
     asyncCallStackTraceId: 'StackTraceId'
+
 
 class performSearchReturnValues(TypedDict):
     """
@@ -5129,8 +6257,10 @@ class performSearchReturnValues(TypedDict):
         searchId: Unique search session identifier.
         resultCount: Number of search results.
     """
+
     searchId: str
     resultCount: int
+
 
 class playerEventsAddedPayload(TypedDict):
     """
@@ -5138,8 +6268,10 @@ class playerEventsAddedPayload(TypedDict):
     congestion. If batched, events must ALWAYS be in chronological order.
 
     """
+
     playerId: str
     events: List['PlayerEvent']
+
 
 class playerPropertiesChangedPayload(TypedDict):
     """
@@ -5147,8 +6279,10 @@ class playerPropertiesChangedPayload(TypedDict):
     remove player properties. A null propValue indicates removal.
 
     """
+
     playerId: str
     properties: List['PlayerProperty']
+
 
 class playersCreatedPayload(TypedDict):
     """
@@ -5157,7 +6291,9 @@ class playersCreatedPayload(TypedDict):
     list of player ids and all events again.
 
     """
+
     players: List[str]
+
 
 class printToPDFReturnValues(TypedDict, total=False):
     """
@@ -5167,15 +6303,19 @@ class printToPDFReturnValues(TypedDict, total=False):
         data: Base64-encoded pdf data. Empty if |returnAsStream| is specified.
         stream: A handle of the stream that holds resulting PDF data.
     """
+
     data: bytes
     stream: str
+
 
 class profileSnapshotReturnValues(TypedDict):
     """
     Attributes:
         timings: The array of paint profiles, one per run.
     """
+
     timings: List[List[float]]
+
 
 class pseudoElementAddedPayload(TypedDict):
     """
@@ -5185,8 +6325,10 @@ class pseudoElementAddedPayload(TypedDict):
         parentId: Pseudo element's parent element id.
         pseudoElement: The added pseudo element.
     """
+
     parentId: int
     pseudoElement: 'Node'
+
 
 class pseudoElementRemovedPayload(TypedDict):
     """
@@ -5196,8 +6338,10 @@ class pseudoElementRemovedPayload(TypedDict):
         parentId: Pseudo element's parent element id.
         pseudoElementId: The removed pseudo element id.
     """
+
     parentId: int
     pseudoElementId: int
+
 
 class pushNodeByPathToFrontendReturnValues(TypedDict):
     """
@@ -5206,7 +6350,9 @@ class pushNodeByPathToFrontendReturnValues(TypedDict):
     Attributes:
         nodeId: Id of the node for given path.
     """
+
     nodeId: int
+
 
 class pushNodesByBackendIdsToFrontendReturnValues(TypedDict):
     """
@@ -5216,14 +6362,18 @@ class pushNodesByBackendIdsToFrontendReturnValues(TypedDict):
         nodeIds: The array of ids of pushed nodes that correspond to the backend ids specified in
             backendNodeIds.
     """
+
     nodeIds: List[int]
+
 
 class queryObjectsReturnValues(TypedDict):
     """
     Attributes:
         objects: Array with objects.
     """
+
     objects: 'RemoteObject'
+
 
 class querySelectorAllReturnValues(TypedDict):
     """
@@ -5232,7 +6382,9 @@ class querySelectorAllReturnValues(TypedDict):
     Attributes:
         nodeIds: Query selector result.
     """
+
     nodeIds: List[int]
+
 
 class querySelectorReturnValues(TypedDict):
     """
@@ -5241,7 +6393,9 @@ class querySelectorReturnValues(TypedDict):
     Attributes:
         nodeId: Query selector result.
     """
+
     nodeId: int
+
 
 class readReturnValues(TypedDict, total=False):
     """
@@ -5252,9 +6406,11 @@ class readReturnValues(TypedDict, total=False):
         data: Data that were read.
         eof: Set if the end-of-file condition occured while reading.
     """
+
     base64Encoded: bool
     data: str
     eof: bool
+
 
 class receivedMessageFromTargetPayload(TypedDict, total=False):
     """
@@ -5265,17 +6421,28 @@ class receivedMessageFromTargetPayload(TypedDict, total=False):
         sessionId: Identifier of a session which sends a message.
         targetId: Deprecated.
     """
+
     sessionId: str
     message: str
     targetId: str
+
 
 class recordingStateChangedPayload(TypedDict):
     """
     Called when the recording state for the service has been updated.
 
     """
+
     isRecording: bool
-    service: Literal['backgroundFetch', 'backgroundSync', 'pushMessaging', 'notifications', 'paymentHandler', 'periodicBackgroundSync']
+    service: Literal[
+        'backgroundFetch',
+        'backgroundSync',
+        'pushMessaging',
+        'notifications',
+        'paymentHandler',
+        'periodicBackgroundSync',
+    ]
+
 
 class replaySnapshotReturnValues(TypedDict):
     """
@@ -5284,12 +6451,15 @@ class replaySnapshotReturnValues(TypedDict):
     Attributes:
         dataURL: A data: URL for resulting image.
     """
+
     dataURL: str
+
 
 class reportHeapSnapshotProgressPayload(TypedDict, total=False):
     done: int
     total: int
     finished: bool
+
 
 class requestCacheNamesReturnValues(TypedDict):
     """
@@ -5298,7 +6468,9 @@ class requestCacheNamesReturnValues(TypedDict):
     Attributes:
         caches: Caches for the security origin.
     """
+
     caches: List['Cache']
+
 
 class requestCachedResponseReturnValues(TypedDict):
     """
@@ -5307,7 +6479,9 @@ class requestCachedResponseReturnValues(TypedDict):
     Attributes:
         response: Response read from the cache.
     """
+
     response: 'CachedResponse'
+
 
 class requestDataReturnValues(TypedDict):
     """
@@ -5317,8 +6491,10 @@ class requestDataReturnValues(TypedDict):
         objectStoreDataEntries: Array of object store data entries.
         hasMore: If true, there are more entries to fetch in the given range.
     """
+
     objectStoreDataEntries: List['DataEntry']
     hasMore: bool
+
 
 class requestDatabaseNamesReturnValues(TypedDict):
     """
@@ -5327,7 +6503,9 @@ class requestDatabaseNamesReturnValues(TypedDict):
     Attributes:
         databaseNames: Database names for origin.
     """
+
     databaseNames: List[str]
+
 
 class requestDatabaseReturnValues(TypedDict):
     """
@@ -5336,7 +6514,9 @@ class requestDatabaseReturnValues(TypedDict):
     Attributes:
         databaseWithObjectStores: Database with an array of object stores.
     """
+
     databaseWithObjectStores: 'DatabaseWithObjectStores'
+
 
 class requestEntriesReturnValues(TypedDict):
     """
@@ -5347,8 +6527,10 @@ class requestEntriesReturnValues(TypedDict):
         returnCount: Count of returned entries from this storage. If pathFilter is empty, it
             is the count of all entries from this storage.
     """
+
     cacheDataEntries: List['DataEntry']
     returnCount: float
+
 
 class requestInterceptedPayload(TypedDict, total=False):
     """
@@ -5377,18 +6559,52 @@ class requestInterceptedPayload(TypedDict, total=False):
         requestId: If the intercepted request had a corresponding requestWillBeSent event fired for it, then
             this requestId will be the same as the requestId present in the requestWillBeSent event.
     """
+
     interceptionId: str
     request: 'Request'
     frameId: str
-    resourceType: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    resourceType: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     isNavigationRequest: bool
     isDownload: bool
     redirectUrl: str
     authChallenge: 'AuthChallenge'
-    responseErrorReason: Literal['Failed', 'Aborted', 'TimedOut', 'AccessDenied', 'ConnectionClosed', 'ConnectionReset', 'ConnectionRefused', 'ConnectionAborted', 'ConnectionFailed', 'NameNotResolved', 'InternetDisconnected', 'AddressUnreachable', 'BlockedByClient', 'BlockedByResponse']
+    responseErrorReason: Literal[
+        'Failed',
+        'Aborted',
+        'TimedOut',
+        'AccessDenied',
+        'ConnectionClosed',
+        'ConnectionReset',
+        'ConnectionRefused',
+        'ConnectionAborted',
+        'ConnectionFailed',
+        'NameNotResolved',
+        'InternetDisconnected',
+        'AddressUnreachable',
+        'BlockedByClient',
+        'BlockedByResponse',
+    ]
     responseStatusCode: int
     responseHeaders: Dict[str, str]
     requestId: str
+
 
 class requestMemoryDumpReturnValues(TypedDict):
     """
@@ -5398,8 +6614,10 @@ class requestMemoryDumpReturnValues(TypedDict):
         dumpGuid: GUID of the resulting global memory dump.
         success: True iff the global memory dump succeeded.
     """
+
     dumpGuid: str
     success: bool
+
 
 class requestNodeReturnValues(TypedDict):
     """
@@ -5410,7 +6628,9 @@ class requestNodeReturnValues(TypedDict):
     Attributes:
         nodeId: Node id for given object.
     """
+
     nodeId: int
+
 
 class requestPausedPayload(TypedDict, total=False):
     """
@@ -5432,14 +6652,48 @@ class requestPausedPayload(TypedDict, total=False):
         networkId: If the intercepted request had a corresponding Network.requestWillBeSent event fired for it,
             then this networkId will be the same as the requestId present in the requestWillBeSent event.
     """
+
     requestId: str
     request: 'Request'
     frameId: str
-    resourceType: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
-    responseErrorReason: Literal['Failed', 'Aborted', 'TimedOut', 'AccessDenied', 'ConnectionClosed', 'ConnectionReset', 'ConnectionRefused', 'ConnectionAborted', 'ConnectionFailed', 'NameNotResolved', 'InternetDisconnected', 'AddressUnreachable', 'BlockedByClient', 'BlockedByResponse']
+    resourceType: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
+    responseErrorReason: Literal[
+        'Failed',
+        'Aborted',
+        'TimedOut',
+        'AccessDenied',
+        'ConnectionClosed',
+        'ConnectionReset',
+        'ConnectionRefused',
+        'ConnectionAborted',
+        'ConnectionFailed',
+        'NameNotResolved',
+        'InternetDisconnected',
+        'AddressUnreachable',
+        'BlockedByClient',
+        'BlockedByResponse',
+    ]
     responseStatusCode: int
     responseHeaders: List['HeaderEntry']
     networkId: str
+
 
 class requestServedFromCachePayload(TypedDict):
     """
@@ -5448,7 +6702,9 @@ class requestServedFromCachePayload(TypedDict):
     Attributes:
         requestId: Request identifier.
     """
+
     requestId: str
+
 
 class requestWillBeSentExtraInfoPayload(TypedDict):
     """
@@ -5463,9 +6719,11 @@ class requestWillBeSentExtraInfoPayload(TypedDict):
             for blocking.
         headers: Raw request headers as they will be sent over the wire.
     """
+
     requestId: str
     blockedCookies: List['BlockedCookieWithReason']
     headers: Dict[str, str]
+
 
 class requestWillBeSentPayload(TypedDict, total=False):
     """
@@ -5484,6 +6742,7 @@ class requestWillBeSentPayload(TypedDict, total=False):
         frameId: Frame identifier.
         hasUserGesture: Whether the request is initiated by a user gesture. Defaults to false.
     """
+
     requestId: str
     loaderId: str
     documentURL: str
@@ -5492,9 +6751,27 @@ class requestWillBeSentPayload(TypedDict, total=False):
     wallTime: float
     initiator: 'Initiator'
     redirectResponse: 'Response'
-    type: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    type: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     frameId: str
     hasUserGesture: bool
+
 
 class resolveAnimationReturnValues(TypedDict):
     """
@@ -5503,7 +6780,9 @@ class resolveAnimationReturnValues(TypedDict):
     Attributes:
         remoteObject: Corresponding remote object.
     """
+
     remoteObject: 'RemoteObject'
+
 
 class resolveBlobReturnValues(TypedDict):
     """
@@ -5512,7 +6791,9 @@ class resolveBlobReturnValues(TypedDict):
     Attributes:
         uuid: UUID of the specified Blob.
     """
+
     uuid: str
+
 
 class resolveNodeReturnValues(TypedDict):
     """
@@ -5521,7 +6802,9 @@ class resolveNodeReturnValues(TypedDict):
     Attributes:
         object: JavaScript object wrapper for given node.
     """
+
     object: 'RemoteObject'
+
 
 class resourceChangedPriorityPayload(TypedDict):
     """
@@ -5532,9 +6815,11 @@ class resourceChangedPriorityPayload(TypedDict):
         newPriority: New priority
         timestamp: Timestamp.
     """
+
     requestId: str
     newPriority: Literal['VeryLow', 'Low', 'Medium', 'High', 'VeryHigh']
     timestamp: float
+
 
 class responseReceivedExtraInfoPayload(TypedDict, total=False):
     """
@@ -5551,10 +6836,12 @@ class responseReceivedExtraInfoPayload(TypedDict, total=False):
         headersText: Raw response header text as it was received over the wire. The raw text may not always be
             available, such as in the case of HTTP/2 or QUIC.
     """
+
     requestId: str
     blockedCookies: List['BlockedSetCookieWithReason']
     headers: Dict[str, str]
     headersText: str
+
 
 class responseReceivedPayload(TypedDict, total=False):
     """
@@ -5568,12 +6855,31 @@ class responseReceivedPayload(TypedDict, total=False):
         response: Response data.
         frameId: Frame identifier.
     """
+
     requestId: str
     loaderId: str
     timestamp: float
-    type: Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+    type: Literal[
+        'Document',
+        'Stylesheet',
+        'Image',
+        'Media',
+        'Font',
+        'Script',
+        'TextTrack',
+        'XHR',
+        'Fetch',
+        'EventSource',
+        'WebSocket',
+        'Manifest',
+        'SignedExchange',
+        'Ping',
+        'CSPViolationReport',
+        'Other',
+    ]
     response: 'Response'
     frameId: str
+
 
 class restartFrameReturnValues(TypedDict, total=False):
     """
@@ -5584,9 +6890,11 @@ class restartFrameReturnValues(TypedDict, total=False):
         asyncStackTrace: Async stack trace, if any.
         asyncStackTraceId: Async stack trace, if any.
     """
+
     callFrames: List['CallFrame']
     asyncStackTrace: 'StackTrace'
     asyncStackTraceId: 'StackTraceId'
+
 
 class runScriptReturnValues(TypedDict, total=False):
     """
@@ -5596,8 +6904,10 @@ class runScriptReturnValues(TypedDict, total=False):
         result: Run result.
         exceptionDetails: Exception details.
     """
+
     result: 'RemoteObject'
     exceptionDetails: 'ExceptionDetails'
+
 
 class screencastFramePayload(TypedDict):
     """
@@ -5608,9 +6918,11 @@ class screencastFramePayload(TypedDict):
         metadata: Screencast frame metadata.
         sessionId: Frame number.
     """
+
     data: bytes
     metadata: 'ScreencastFrameMetadata'
     sessionId: int
+
 
 class screencastVisibilityChangedPayload(TypedDict):
     """
@@ -5619,7 +6931,9 @@ class screencastVisibilityChangedPayload(TypedDict):
     Attributes:
         visible: True if the page is visible.
     """
+
     visible: bool
+
 
 class screenshotRequestedPayload(TypedDict):
     """
@@ -5628,7 +6942,9 @@ class screenshotRequestedPayload(TypedDict):
     Attributes:
         viewport: Protocol.Page.Viewport to capture, in device independent pixels (dip).
     """
+
     viewport: 'Viewport'
+
 
 class scriptFailedToParsePayload(TypedDict, total=False):
     """
@@ -5650,6 +6966,7 @@ class scriptFailedToParsePayload(TypedDict, total=False):
         length: This script length.
         stackTrace: JavaScript top stack frame of where the script parsed event was triggered if available.
     """
+
     scriptId: str
     url: str
     startLine: int
@@ -5664,6 +6981,7 @@ class scriptFailedToParsePayload(TypedDict, total=False):
     isModule: bool
     length: int
     stackTrace: 'StackTrace'
+
 
 class scriptParsedPayload(TypedDict, total=False):
     """
@@ -5687,6 +7005,7 @@ class scriptParsedPayload(TypedDict, total=False):
         length: This script length.
         stackTrace: JavaScript top stack frame of where the script parsed event was triggered if available.
     """
+
     scriptId: str
     url: str
     startLine: int
@@ -5703,6 +7022,7 @@ class scriptParsedPayload(TypedDict, total=False):
     length: int
     stackTrace: 'StackTrace'
 
+
 class searchInContentReturnValues(TypedDict):
     """
     Searches for given string in script content.
@@ -5710,7 +7030,9 @@ class searchInContentReturnValues(TypedDict):
     Attributes:
         result: List of search matches.
     """
+
     result: List['SearchMatch']
+
 
 class searchInResourceReturnValues(TypedDict):
     """
@@ -5719,7 +7041,9 @@ class searchInResourceReturnValues(TypedDict):
     Attributes:
         result: List of search matches.
     """
+
     result: List['SearchMatch']
+
 
 class searchInResponseBodyReturnValues(TypedDict):
     """
@@ -5728,7 +7052,9 @@ class searchInResponseBodyReturnValues(TypedDict):
     Attributes:
         result: List of search matches.
     """
+
     result: List['SearchMatch']
+
 
 class securityStateChangedPayload(TypedDict, total=False):
     """
@@ -5742,11 +7068,13 @@ class securityStateChangedPayload(TypedDict, total=False):
         insecureContentStatus: Information about insecure content on the page.
         summary: Overrides user-visible description of the state.
     """
+
     securityState: Literal['unknown', 'neutral', 'insecure', 'secure', 'info', 'insecure-broken']
     schemeIsCryptographic: bool
     explanations: List['SecurityStateExplanation']
     insecureContentStatus: 'InsecureContentStatus'
     summary: str
+
 
 class setBreakpointByUrlReturnValues(TypedDict):
     """
@@ -5759,8 +7087,10 @@ class setBreakpointByUrlReturnValues(TypedDict):
         breakpointId: Id of the created breakpoint for further reference.
         locations: List of the locations this breakpoint resolved into upon addition.
     """
+
     breakpointId: str
     locations: List['Location']
+
 
 class setBreakpointOnFunctionCallReturnValues(TypedDict):
     """
@@ -5771,7 +7101,9 @@ class setBreakpointOnFunctionCallReturnValues(TypedDict):
     Attributes:
         breakpointId: Id of the created breakpoint for further reference.
     """
+
     breakpointId: str
+
 
 class setBreakpointReturnValues(TypedDict):
     """
@@ -5781,8 +7113,10 @@ class setBreakpointReturnValues(TypedDict):
         breakpointId: Id of the created breakpoint for further reference.
         actualLocation: Location this breakpoint resolved into.
     """
+
     breakpointId: str
     actualLocation: 'Location'
+
 
 class setChildNodesPayload(TypedDict):
     """
@@ -5793,8 +7127,10 @@ class setChildNodesPayload(TypedDict):
         parentId: Parent node id to populate with children.
         nodes: Child nodes array.
     """
+
     parentId: int
     nodes: List['Node']
+
 
 class setCookieReturnValues(TypedDict):
     """
@@ -5803,7 +7139,9 @@ class setCookieReturnValues(TypedDict):
     Attributes:
         success: True if successfully set cookie.
     """
+
     success: bool
+
 
 class setInstrumentationBreakpointReturnValues(TypedDict):
     """
@@ -5812,7 +7150,9 @@ class setInstrumentationBreakpointReturnValues(TypedDict):
     Attributes:
         breakpointId: Id of the created breakpoint for further reference.
     """
+
     breakpointId: str
+
 
 class setKeyframeKeyReturnValues(TypedDict):
     """
@@ -5821,7 +7161,9 @@ class setKeyframeKeyReturnValues(TypedDict):
     Attributes:
         keyText: The resulting key text after modification.
     """
+
     keyText: 'Value'
+
 
 class setMediaTextReturnValues(TypedDict):
     """
@@ -5830,7 +7172,9 @@ class setMediaTextReturnValues(TypedDict):
     Attributes:
         media: The resulting CSS media rule after modification.
     """
+
     media: 'CSSMedia'
+
 
 class setNodeNameReturnValues(TypedDict):
     """
@@ -5839,7 +7183,9 @@ class setNodeNameReturnValues(TypedDict):
     Attributes:
         nodeId: New node's id.
     """
+
     nodeId: int
+
 
 class setRuleSelectorReturnValues(TypedDict):
     """
@@ -5848,7 +7194,9 @@ class setRuleSelectorReturnValues(TypedDict):
     Attributes:
         selectorList: The resulting selector list after modification.
     """
+
     selectorList: 'SelectorList'
+
 
 class setScriptSourceReturnValues(TypedDict, total=False):
     """
@@ -5861,11 +7209,13 @@ class setScriptSourceReturnValues(TypedDict, total=False):
         asyncStackTraceId: Async stack trace, if any.
         exceptionDetails: Exception details if any.
     """
+
     callFrames: List['CallFrame']
     stackChanged: bool
     asyncStackTrace: 'StackTrace'
     asyncStackTraceId: 'StackTraceId'
     exceptionDetails: 'ExceptionDetails'
+
 
 class setStyleSheetTextReturnValues(TypedDict, total=False):
     """
@@ -5874,7 +7224,9 @@ class setStyleSheetTextReturnValues(TypedDict, total=False):
     Attributes:
         sourceMapURL: URL of source map associated with script (if any).
     """
+
     sourceMapURL: str
+
 
 class setStyleTextsReturnValues(TypedDict):
     """
@@ -5883,7 +7235,9 @@ class setStyleTextsReturnValues(TypedDict):
     Attributes:
         styles: The resulting styles after modification.
     """
+
     styles: List['CSSStyle']
+
 
 class setVirtualTimePolicyReturnValues(TypedDict):
     """
@@ -5893,7 +7247,9 @@ class setVirtualTimePolicyReturnValues(TypedDict):
     Attributes:
         virtualTimeTicksBase: Absolute timestamp at which virtual time was first enabled (up time in milliseconds).
     """
+
     virtualTimeTicksBase: float
+
 
 class shadowRootPoppedPayload(TypedDict):
     """
@@ -5903,8 +7259,10 @@ class shadowRootPoppedPayload(TypedDict):
         hostId: Host element id.
         rootId: Shadow root id.
     """
+
     hostId: int
     rootId: int
+
 
 class shadowRootPushedPayload(TypedDict):
     """
@@ -5914,8 +7272,10 @@ class shadowRootPushedPayload(TypedDict):
         hostId: Host element id.
         root: Shadow root.
     """
+
     hostId: int
     root: 'Node'
+
 
 class signedExchangeReceivedPayload(TypedDict):
     """
@@ -5925,8 +7285,10 @@ class signedExchangeReceivedPayload(TypedDict):
         requestId: Request identifier.
         info: Information about the signed exchange response.
     """
+
     requestId: str
     info: 'SignedExchangeInfo'
+
 
 class sinksUpdatedPayload(TypedDict):
     """
@@ -5934,7 +7296,9 @@ class sinksUpdatedPayload(TypedDict):
     device or a software surface that you can cast to.
 
     """
+
     sinks: List['Sink']
+
 
 class snapshotCommandLogReturnValues(TypedDict):
     """
@@ -5943,14 +7307,18 @@ class snapshotCommandLogReturnValues(TypedDict):
     Attributes:
         commandLog: The array of canvas function calls.
     """
+
     commandLog: List[Dict[str, str]]
+
 
 class stopReturnValues(TypedDict):
     """
     Attributes:
         profile: Recorded profile.
     """
+
     profile: 'Profile'
+
 
 class stopRuleUsageTrackingReturnValues(TypedDict):
     """
@@ -5958,14 +7326,18 @@ class stopRuleUsageTrackingReturnValues(TypedDict):
     `takeCoverageDelta` (or since start of coverage instrumentation)
 
     """
+
     ruleUsage: List['RuleUsage']
+
 
 class stopSamplingReturnValues(TypedDict):
     """
     Attributes:
         profile: Recorded sampling heap profile.
     """
+
     profile: 'SamplingHeapProfile'
+
 
 class styleSheetAddedPayload(TypedDict):
     """
@@ -5974,14 +7346,18 @@ class styleSheetAddedPayload(TypedDict):
     Attributes:
         header: Added stylesheet metainfo.
     """
+
     header: 'CSSStyleSheetHeader'
+
 
 class styleSheetChangedPayload(TypedDict):
     """
     Fired whenever a stylesheet is changed as a result of the client operation.
 
     """
+
     styleSheetId: str
+
 
 class styleSheetRemovedPayload(TypedDict):
     """
@@ -5990,7 +7366,9 @@ class styleSheetRemovedPayload(TypedDict):
     Attributes:
         styleSheetId: Identifier of the removed stylesheet.
     """
+
     styleSheetId: str
+
 
 class takeCoverageDeltaReturnValues(TypedDict):
     """
@@ -5998,7 +7376,9 @@ class takeCoverageDeltaReturnValues(TypedDict):
     instrumentation)
 
     """
+
     coverage: List['RuleUsage']
+
 
 class takePreciseCoverageReturnValues(TypedDict):
     """
@@ -6008,7 +7388,9 @@ class takePreciseCoverageReturnValues(TypedDict):
     Attributes:
         result: Coverage data for the current isolate.
     """
+
     result: List['ScriptCoverage']
+
 
 class takeResponseBodyAsStreamReturnValues(TypedDict):
     """
@@ -6024,7 +7406,9 @@ class takeResponseBodyAsStreamReturnValues(TypedDict):
     domain before body is received results in an undefined behavior.
 
     """
+
     stream: str
+
 
 class takeResponseBodyForInterceptionAsStreamReturnValues(TypedDict):
     """
@@ -6034,7 +7418,9 @@ class takeResponseBodyForInterceptionAsStreamReturnValues(TypedDict):
     is specified.
 
     """
+
     stream: str
+
 
 class takeTypeProfileReturnValues(TypedDict):
     """
@@ -6043,7 +7429,9 @@ class takeTypeProfileReturnValues(TypedDict):
     Attributes:
         result: Type profile for all scripts since startTypeProfile() was turned on.
     """
+
     result: List['ScriptTypeProfile']
+
 
 class targetCrashedPayload(TypedDict):
     """
@@ -6053,23 +7441,29 @@ class targetCrashedPayload(TypedDict):
         status: Termination status type.
         errorCode: Termination error code.
     """
+
     targetId: str
     status: str
     errorCode: int
+
 
 class targetCreatedPayload(TypedDict):
     """
     Issued when a possible inspection target is created.
 
     """
+
     targetInfo: 'TargetInfo'
+
 
 class targetDestroyedPayload(TypedDict):
     """
     Issued when a target is destroyed.
 
     """
+
     targetId: str
+
 
 class targetInfoChangedPayload(TypedDict):
     """
@@ -6077,7 +7471,9 @@ class targetInfoChangedPayload(TypedDict):
     `targetCreated` and `targetDestroyed`.
 
     """
+
     targetInfo: 'TargetInfo'
+
 
 class tracingCompletePayload(TypedDict, total=False):
     """
@@ -6091,10 +7487,12 @@ class tracingCompletePayload(TypedDict, total=False):
         traceFormat: Trace data format of returned stream.
         streamCompression: Compression format of returned stream.
     """
+
     dataLossOccurred: bool
     stream: str
     traceFormat: Literal['json', 'proto']
     streamCompression: Literal['none', 'gzip']
+
 
 class visibleSecurityStateChangedPayload(TypedDict):
     """
@@ -6103,7 +7501,9 @@ class visibleSecurityStateChangedPayload(TypedDict):
     Attributes:
         visibleSecurityState: Security state information about the page.
     """
+
     visibleSecurityState: 'VisibleSecurityState'
+
 
 class webSocketClosedPayload(TypedDict):
     """
@@ -6113,8 +7513,10 @@ class webSocketClosedPayload(TypedDict):
         requestId: Request identifier.
         timestamp: Timestamp.
     """
+
     requestId: str
     timestamp: float
+
 
 class webSocketCreatedPayload(TypedDict, total=False):
     """
@@ -6125,9 +7527,11 @@ class webSocketCreatedPayload(TypedDict, total=False):
         url: WebSocket request URL.
         initiator: Request initiator.
     """
+
     requestId: str
     url: str
     initiator: 'Initiator'
+
 
 class webSocketFrameErrorPayload(TypedDict):
     """
@@ -6138,9 +7542,11 @@ class webSocketFrameErrorPayload(TypedDict):
         timestamp: Timestamp.
         errorMessage: WebSocket error message.
     """
+
     requestId: str
     timestamp: float
     errorMessage: str
+
 
 class webSocketFrameReceivedPayload(TypedDict):
     """
@@ -6151,9 +7557,11 @@ class webSocketFrameReceivedPayload(TypedDict):
         timestamp: Timestamp.
         response: WebSocket response data.
     """
+
     requestId: str
     timestamp: float
     response: 'WebSocketFrame'
+
 
 class webSocketFrameSentPayload(TypedDict):
     """
@@ -6164,9 +7572,11 @@ class webSocketFrameSentPayload(TypedDict):
         timestamp: Timestamp.
         response: WebSocket response data.
     """
+
     requestId: str
     timestamp: float
     response: 'WebSocketFrame'
+
 
 class webSocketHandshakeResponseReceivedPayload(TypedDict):
     """
@@ -6177,9 +7587,11 @@ class webSocketHandshakeResponseReceivedPayload(TypedDict):
         timestamp: Timestamp.
         response: WebSocket response data.
     """
+
     requestId: str
     timestamp: float
     response: 'WebSocketResponse'
+
 
 class webSocketWillSendHandshakeRequestPayload(TypedDict):
     """
@@ -6191,10 +7603,12 @@ class webSocketWillSendHandshakeRequestPayload(TypedDict):
         wallTime: UTC Timestamp.
         request: WebSocket request data.
     """
+
     requestId: str
     timestamp: float
     wallTime: float
     request: 'WebSocketRequest'
+
 
 class windowOpenPayload(TypedDict):
     """
@@ -6207,30 +7621,55 @@ class windowOpenPayload(TypedDict):
         windowFeatures: An array of enabled window features.
         userGesture: Whether or not it was triggered by user gesture.
     """
+
     url: str
     windowName: str
     windowFeatures: List[str]
     userGesture: bool
 
+
 class workerErrorReportedPayload(TypedDict):
     errorMessage: 'ServiceWorkerErrorMessage'
+
 
 class workerRegistrationUpdatedPayload(TypedDict):
     registrations: List['ServiceWorkerRegistration']
 
+
 class workerVersionUpdatedPayload(TypedDict):
     versions: List['ServiceWorkerVersion']
+
 
 class Protocol:
     class Accessibility:
         # Unique accessibility node identifier.
         AXNodeId = str
         # Enum of possible property types.
-        AXValueType = Literal['boolean', 'tristate', 'booleanOrUndefined', 'idref', 'idrefList', 'integer', 'node', 'nodeList', 'number', 'string', 'computedString', 'token', 'tokenList', 'domRelation', 'role', 'internalRole', 'valueUndefined']
+        AXValueType = Literal[
+            'boolean',
+            'tristate',
+            'booleanOrUndefined',
+            'idref',
+            'idrefList',
+            'integer',
+            'node',
+            'nodeList',
+            'number',
+            'string',
+            'computedString',
+            'token',
+            'tokenList',
+            'domRelation',
+            'role',
+            'internalRole',
+            'valueUndefined',
+        ]
         # Enum of possible property sources.
         AXValueSourceType = Literal['attribute', 'implicit', 'style', 'contents', 'placeholder', 'relatedElement']
         # Enum of possible native property sources (as a subtype of a particular AXValueSourceType).
-        AXValueNativeSourceType = Literal['figcaption', 'label', 'labelfor', 'labelwrapped', 'legend', 'tablecaption', 'title', 'other']
+        AXValueNativeSourceType = Literal[
+            'figcaption', 'label', 'labelfor', 'labelwrapped', 'legend', 'tablecaption', 'title', 'other'
+        ]
         # A single source for a computed AX property.
         AXValueSource = Union[AXValueSource]
         AXRelatedNode = Union[AXRelatedNode]
@@ -6238,7 +7677,47 @@ class Protocol:
         # A single computed AX property.
         AXValue = Union[AXValue]
         # Values of AXProperty name: - from 'busy' to 'roledescription': states which apply to every AX node - from 'live' to 'root': attributes which apply to nodes in live regions - from 'autocomplete' to 'valuetext': attributes which apply to widgets - from 'checked' to 'selected': states which apply to widgets - from 'activedescendant' to 'owns' - relationships between elements other than parent/child/sibling.
-        AXPropertyName = Literal['busy', 'disabled', 'editable', 'focusable', 'focused', 'hidden', 'hiddenRoot', 'invalid', 'keyshortcuts', 'settable', 'roledescription', 'live', 'atomic', 'relevant', 'root', 'autocomplete', 'hasPopup', 'level', 'multiselectable', 'orientation', 'multiline', 'readonly', 'required', 'valuemin', 'valuemax', 'valuetext', 'checked', 'expanded', 'modal', 'pressed', 'selected', 'activedescendant', 'controls', 'describedby', 'details', 'errormessage', 'flowto', 'labelledby', 'owns']
+        AXPropertyName = Literal[
+            'busy',
+            'disabled',
+            'editable',
+            'focusable',
+            'focused',
+            'hidden',
+            'hiddenRoot',
+            'invalid',
+            'keyshortcuts',
+            'settable',
+            'roledescription',
+            'live',
+            'atomic',
+            'relevant',
+            'root',
+            'autocomplete',
+            'hasPopup',
+            'level',
+            'multiselectable',
+            'orientation',
+            'multiline',
+            'readonly',
+            'required',
+            'valuemin',
+            'valuemax',
+            'valuetext',
+            'checked',
+            'expanded',
+            'modal',
+            'pressed',
+            'selected',
+            'activedescendant',
+            'controls',
+            'describedby',
+            'details',
+            'errormessage',
+            'flowto',
+            'labelledby',
+            'owns',
+        ]
         # A node in the accessibility tree.
         AXNode = Union[AXNode]
         # Disables the accessibility domain.
@@ -6350,7 +7829,14 @@ class Protocol:
     class BackgroundService:
         # Defines events for background web platform features.
         # The Background Service that will be associated with the commands/events. Every Background Service operates independently, but they share the same API.
-        ServiceName = Literal['backgroundFetch', 'backgroundSync', 'pushMessaging', 'notifications', 'paymentHandler', 'periodicBackgroundSync']
+        ServiceName = Literal[
+            'backgroundFetch',
+            'backgroundSync',
+            'pushMessaging',
+            'notifications',
+            'paymentHandler',
+            'periodicBackgroundSync',
+        ]
         # A key-value pair for additional event information to pass along.
         EventMetadata = Union[EventMetadata]
         BackgroundServiceEvent = Union[BackgroundServiceEvent]
@@ -6383,7 +7869,29 @@ class Protocol:
         WindowState = Literal['normal', 'minimized', 'maximized', 'fullscreen']
         # Browser window bounds information
         Bounds = Union[Bounds]
-        PermissionType = Literal['accessibilityEvents', 'audioCapture', 'backgroundSync', 'backgroundFetch', 'clipboardRead', 'clipboardWrite', 'durableStorage', 'flash', 'geolocation', 'midi', 'midiSysex', 'nfc', 'notifications', 'paymentHandler', 'periodicBackgroundSync', 'protectedMediaIdentifier', 'sensors', 'videoCapture', 'idleDetection', 'wakeLockScreen', 'wakeLockSystem']
+        PermissionType = Literal[
+            'accessibilityEvents',
+            'audioCapture',
+            'backgroundSync',
+            'backgroundFetch',
+            'clipboardRead',
+            'clipboardWrite',
+            'durableStorage',
+            'flash',
+            'geolocation',
+            'midi',
+            'midiSysex',
+            'nfc',
+            'notifications',
+            'paymentHandler',
+            'periodicBackgroundSync',
+            'protectedMediaIdentifier',
+            'sensors',
+            'videoCapture',
+            'idleDetection',
+            'wakeLockScreen',
+            'wakeLockSystem',
+        ]
         PermissionSetting = Literal['granted', 'denied', 'prompt']
         # Definition of PermissionDescriptor defined in the Permissions API: https://w3c.github.io/permissions/#dictdef-permissiondescriptor.
         PermissionDescriptor = Union[PermissionDescriptor]
@@ -6660,7 +8168,23 @@ class Protocol:
         # Backend node with a friendly name.
         BackendNode = Union[BackendNode]
         # Pseudo element type.
-        PseudoType = Literal['first-line', 'first-letter', 'before', 'after', 'backdrop', 'selection', 'first-line-inherited', 'scrollbar', 'scrollbar-thumb', 'scrollbar-button', 'scrollbar-track', 'scrollbar-track-piece', 'scrollbar-corner', 'resizer', 'input-list-button']
+        PseudoType = Literal[
+            'first-line',
+            'first-letter',
+            'before',
+            'after',
+            'backdrop',
+            'selection',
+            'first-line-inherited',
+            'scrollbar',
+            'scrollbar-thumb',
+            'scrollbar-button',
+            'scrollbar-track',
+            'scrollbar-track-piece',
+            'scrollbar-corner',
+            'resizer',
+            'input-list-button',
+        ]
         # Shadow root type.
         ShadowRootType = Literal['user-agent', 'open', 'closed']
         # DOM interaction is implemented in terms of mirror objects that represent the actual DOM nodes. DOMNode is a base node mirror type.
@@ -7391,7 +8915,24 @@ class Protocol:
     class Network:
         # Network domain allows tracking network activities of the page. It exposes information about http, file, data and other requests and responses, their headers, bodies, timing, etc.
         # Resource type as it was perceived by the rendering engine.
-        ResourceType = Literal['Document', 'Stylesheet', 'Image', 'Media', 'Font', 'Script', 'TextTrack', 'XHR', 'Fetch', 'EventSource', 'WebSocket', 'Manifest', 'SignedExchange', 'Ping', 'CSPViolationReport', 'Other']
+        ResourceType = Literal[
+            'Document',
+            'Stylesheet',
+            'Image',
+            'Media',
+            'Font',
+            'Script',
+            'TextTrack',
+            'XHR',
+            'Fetch',
+            'EventSource',
+            'WebSocket',
+            'Manifest',
+            'SignedExchange',
+            'Ping',
+            'CSPViolationReport',
+            'Other',
+        ]
         # Unique loader identifier.
         LoaderId = str
         # Unique request identifier.
@@ -7399,7 +8940,22 @@ class Protocol:
         # Unique intercepted request identifier.
         InterceptionId = str
         # Network level fetch failure reason.
-        ErrorReason = Literal['Failed', 'Aborted', 'TimedOut', 'AccessDenied', 'ConnectionClosed', 'ConnectionReset', 'ConnectionRefused', 'ConnectionAborted', 'ConnectionFailed', 'NameNotResolved', 'InternetDisconnected', 'AddressUnreachable', 'BlockedByClient', 'BlockedByResponse']
+        ErrorReason = Literal[
+            'Failed',
+            'Aborted',
+            'TimedOut',
+            'AccessDenied',
+            'ConnectionClosed',
+            'ConnectionReset',
+            'ConnectionRefused',
+            'ConnectionAborted',
+            'ConnectionFailed',
+            'NameNotResolved',
+            'InternetDisconnected',
+            'AddressUnreachable',
+            'BlockedByClient',
+            'BlockedByResponse',
+        ]
         # UTC time in seconds, counted from January 1, 1970.
         TimeSinceEpoch = float
         # Monotonically increasing time in seconds since an arbitrary point in the past.
@@ -7407,7 +8963,9 @@ class Protocol:
         # Request / response headers as keys / values of JSON object.
         Headers = Dict[str, str]
         # The underlying connection technology that the browser is supposedly using.
-        ConnectionType = Literal['none', 'cellular2g', 'cellular3g', 'cellular4g', 'bluetooth', 'ethernet', 'wifi', 'wimax', 'other']
+        ConnectionType = Literal[
+            'none', 'cellular2g', 'cellular3g', 'cellular4g', 'bluetooth', 'ethernet', 'wifi', 'wimax', 'other'
+        ]
         # Represents the cookie's 'SameSite' status: https://tools.ietf.org/html/draft-west-first-party-cookies
         CookieSameSite = Literal['Strict', 'Lax', 'None']
         # Timing information for the request.
@@ -7423,7 +8981,16 @@ class Protocol:
         # Whether the request complied with Certificate Transparency policy.
         CertificateTransparencyCompliance = Literal['unknown', 'not-compliant', 'compliant']
         # The reason why request was blocked.
-        BlockedReason = Literal['other', 'csp', 'mixed-content', 'origin', 'inspector', 'subresource-filter', 'content-type', 'collapsed-by-client']
+        BlockedReason = Literal[
+            'other',
+            'csp',
+            'mixed-content',
+            'origin',
+            'inspector',
+            'subresource-filter',
+            'content-type',
+            'collapsed-by-client',
+        ]
         # HTTP response data.
         Response = Union[Response]
         # WebSocket request data.
@@ -7439,9 +9006,32 @@ class Protocol:
         # Cookie object
         Cookie = Union[Cookie]
         # Types of reasons why a cookie may not be stored from a response.
-        SetCookieBlockedReason = Literal['SecureOnly', 'SameSiteStrict', 'SameSiteLax', 'SameSiteUnspecifiedTreatedAsLax', 'SameSiteNoneInsecure', 'UserPreferences', 'SyntaxError', 'SchemeNotSupported', 'OverwriteSecure', 'InvalidDomain', 'InvalidPrefix', 'UnknownError']
+        SetCookieBlockedReason = Literal[
+            'SecureOnly',
+            'SameSiteStrict',
+            'SameSiteLax',
+            'SameSiteUnspecifiedTreatedAsLax',
+            'SameSiteNoneInsecure',
+            'UserPreferences',
+            'SyntaxError',
+            'SchemeNotSupported',
+            'OverwriteSecure',
+            'InvalidDomain',
+            'InvalidPrefix',
+            'UnknownError',
+        ]
         # Types of reasons why a cookie may not be sent with a request.
-        CookieBlockedReason = Literal['SecureOnly', 'NotOnPath', 'DomainMismatch', 'SameSiteStrict', 'SameSiteLax', 'SameSiteUnspecifiedTreatedAsLax', 'SameSiteNoneInsecure', 'UserPreferences', 'UnknownError']
+        CookieBlockedReason = Literal[
+            'SecureOnly',
+            'NotOnPath',
+            'DomainMismatch',
+            'SameSiteStrict',
+            'SameSiteLax',
+            'SameSiteUnspecifiedTreatedAsLax',
+            'SameSiteNoneInsecure',
+            'UserPreferences',
+            'UnknownError',
+        ]
         # A cookie which was not stored from a response with the corresponding reason.
         BlockedSetCookieWithReason = Union[BlockedSetCookieWithReason]
         # A cookie with was not sent with a request with the corresponding reason.
@@ -7461,7 +9051,14 @@ class Protocol:
         # Information about a signed exchange header. https://wicg.github.io/webpackage/draft-yasskin-httpbis-origin-signed-exchanges-impl.html#cbor-representation
         SignedExchangeHeader = Union[SignedExchangeHeader]
         # Field type for a signed exchange related error.
-        SignedExchangeErrorField = Literal['signatureSig', 'signatureIntegrity', 'signatureCertUrl', 'signatureCertSha256', 'signatureValidityUrl', 'signatureTimestamps']
+        SignedExchangeErrorField = Literal[
+            'signatureSig',
+            'signatureIntegrity',
+            'signatureCertUrl',
+            'signatureCertSha256',
+            'signatureValidityUrl',
+            'signatureTimestamps',
+        ]
         # Information about a signed exchange response.
         SignedExchangeError = Union[SignedExchangeError]
         # Information about a signed exchange response.
@@ -7716,7 +9313,21 @@ class Protocol:
         # Unique script identifier.
         ScriptIdentifier = str
         # Transition type.
-        TransitionType = Literal['link', 'typed', 'address_bar', 'auto_bookmark', 'auto_subframe', 'manual_subframe', 'generated', 'auto_toplevel', 'form_submit', 'reload', 'keyword', 'keyword_generated', 'other']
+        TransitionType = Literal[
+            'link',
+            'typed',
+            'address_bar',
+            'auto_bookmark',
+            'auto_subframe',
+            'manual_subframe',
+            'generated',
+            'auto_toplevel',
+            'form_submit',
+            'reload',
+            'keyword',
+            'keyword_generated',
+            'other',
+        ]
         # Navigation history entry.
         NavigationEntry = Union[NavigationEntry]
         # Screencast frame metadata.
@@ -7735,7 +9346,15 @@ class Protocol:
         FontFamilies = Union[FontFamilies]
         # Default font sizes.
         FontSizes = Union[FontSizes]
-        ClientNavigationReason = Literal['formSubmissionGet', 'formSubmissionPost', 'httpHeaderRefresh', 'scriptInitiated', 'metaTagRefresh', 'pageBlockInterstitial', 'reload']
+        ClientNavigationReason = Literal[
+            'formSubmissionGet',
+            'formSubmissionPost',
+            'httpHeaderRefresh',
+            'scriptInitiated',
+            'metaTagRefresh',
+            'pageBlockInterstitial',
+            'reload',
+        ]
         domContentEventFiredPayload = Union[domContentEventFiredPayload]
         # Emitted only when `page.interceptFileChooser` is enabled.
         fileChooserOpenedPayload = Union[fileChooserOpenedPayload]
@@ -8099,7 +9718,19 @@ class Protocol:
 
     class Storage:
         # Enum of possible storage types.
-        StorageType = Literal['appcache', 'cookies', 'file_systems', 'indexeddb', 'local_storage', 'shader_cache', 'websql', 'service_workers', 'cache_storage', 'all', 'other']
+        StorageType = Literal[
+            'appcache',
+            'cookies',
+            'file_systems',
+            'indexeddb',
+            'local_storage',
+            'shader_cache',
+            'websql',
+            'service_workers',
+            'cache_storage',
+            'all',
+            'other',
+        ]
         # Usage for a storage type.
         UsageForType = Union[UsageForType]
         # A cache's contents have been modified.
@@ -9493,7 +11124,6 @@ class Protocol:
 
         class Schema:
             getDomainsReturnValues = getDomainsReturnValues
-
 
     class CommandReturnValues:
         class Accessibility:
