@@ -7,6 +7,13 @@ from typing import Any, List, Sequence, Union
 
 from appdirs import AppDirs
 
+__author__ = 'Hiroyuki Takagi, Bernardas Ališauskas, Matt Marcus'
+__email__ = 'pyppeteer@protonmail.com'
+__version__ = '0.2.2'
+__chromium_revision__ = '722234'
+__base_puppeteer_version__ = 'v2.1.1'
+__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
+
 from pyppeteer.browser import Browser
 from pyppeteer.browser_fetcher import BrowserFetcher, Platform
 from pyppeteer.device_descriptors import devices
@@ -14,12 +21,6 @@ from pyppeteer.launcher import ChromeLauncher, FirefoxLauncher, launcher
 from pyppeteer.models import BrowserOptions, ChromeArgOptions, Devices, LaunchOptions, Protocol
 from pyppeteer.websocket_transport import WebsocketTransport
 
-__author__ = 'Hiroyuki Takagi, Bernardas Ališauskas, Matt Marcus'
-__email__ = 'pyppeteer@protonmail.com'
-__version__ = '0.2.2'
-__chromium_revision__ = '722234'
-__base_puppeteer_version__ = 'v2.1.1'
-__pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
 
 # Setup root logger

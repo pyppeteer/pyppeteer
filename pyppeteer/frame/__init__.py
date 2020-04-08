@@ -6,7 +6,6 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.errors import BrowserError, PageError
-from pyppeteer.frame.frame_manager import FrameManager
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.models import JSFunctionArg, WaitTargets
 from pyppeteer.network_manager import Response
@@ -286,3 +285,6 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
         self._parentFrame = None
+
+
+from pyppeteer.frame.frame_manager import FrameManager  # isort:skip
