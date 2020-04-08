@@ -1796,15 +1796,3 @@ class ConsoleMessage(object):
     def args(self) -> List[JSHandle]:
         """Return list of args (JSHandle) of this message."""
         return self._args
-
-
-async def craete(*args: Any, **kwargs: Any) -> Page:
-    """[Deprecated] miss-spelled function.
-
-    This function is undocumented and will be removed in future release.
-    """
-    logger.warning(
-        '`craete` function is deprecated and will be removed in future. '
-        'Use `Page.create` instead.'
-    )
-    return await Page.create(*args, **kwargs)

@@ -147,7 +147,7 @@ class NetworkManager(BaseEventEmitter):
 
     async def _onRequestPaused(self, event):
         if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
-          await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
+            await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
 
         requestHash = generateRequestHash(event['request'])
         requestId = self._requestHashToRequestIds.firstValue(requestHash)
