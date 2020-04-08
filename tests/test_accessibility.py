@@ -7,25 +7,25 @@ from tests.conftest import chrome_only
 async def test_accessibility_properties(shared_browser, isolated_page, firefox):
     await isolated_page.setContent(
         """
-    <head>
-        <title>Accessibility Test</title>
-      </head>
-      <body>
-        <div>Hello World</div>
-        <h1>Inputs</h1>
-        <input placeholder="Empty input" autofocus />
-        <input placeholder="readonly input" readonly />
-        <input placeholder="disabled input" disabled />
-        <input aria-label="Input with whitespace" value="  " />
-        <input value="value only" />
-        <input aria-placeholder="placeholder" value="and a value" />
-        <div aria-hidden="true" id="desc">This is a description!</div>
-        <input aria-placeholder="placeholder" value="and a value" aria-describedby="desc" />
-        <select>
-          <option>First Option</option>
-          <option>Second Option</option>
-        </select>
-      </body>`
+<head>
+<title>Accessibility Test</title>
+</head>
+<body>
+<div>Hello World</div>
+<h1>Inputs</h1>
+<input placeholder="Empty input" autofocus />
+<input placeholder="readonly input" readonly />
+<input placeholder="disabled input" disabled />
+<input aria-label="Input with whitespace" value="  " />
+<input value="value only" />
+<input aria-placeholder="placeholder" value="and a value" />
+<div aria-hidden="true" id="desc">This is a description!</div>
+<input aria-placeholder="placeholder" value="and a value" aria-describedby="desc" />
+<select>
+<option>First Option</option>
+<option>Second Option</option>
+</select>
+</body>
     """
     )
     await isolated_page.focus('[placeholder="Empty input"]')
