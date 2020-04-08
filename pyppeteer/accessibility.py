@@ -9,7 +9,7 @@ class Accessibility:
     def __init__(self, client: 'CDPSession'):
         self._client = client
 
-    async def snapshot(self, interestingOnly: bool = False, root: 'ElementHandle' = None):
+    async def snapshot(self, interestingOnly: bool = True, root: 'ElementHandle' = None):
         nodes = (await self._client.send('Accessibility.getFullAXTree'))['nodes']
         backendNodeId = None
         if root:
@@ -18,7 +18,7 @@ class Accessibility:
         defaultRoot = AXNode.createTree(nodes)
         needle = defaultRoot
         if backendNodeId:
-            needle = [node for node in defaultRoot.find(lambda node: node._payload.backendDOMNodeId == backendNodeId)]
+            needle = [node for node in defaultRoot.find(lambda _node: _node._payload.backendDOMNodeId == backendNodeId)]
             if not needle:
                 return
             needle = needle[0]
@@ -92,8 +92,9 @@ class AXNode(object):
                 return result
 
     def isLeafNode(self):
-        if self._children:
+        if not self._children:
             return True
+
         # These types of objects may have children that we use as internal
         # implementation details, but we want to expose them as leaves to platform
         # accessibility APIs because screen readers might be confused if they find
