@@ -55,13 +55,14 @@ class NetworkManager(BaseEventEmitter):
         self._requestHashToInterceptionIds = Multimap()
         self._requestIdToRequestWillBeSentEvent = Multimap()
 
-        self._client.on('Fetch.requestPaused', self._onRequestPaused)
-        self._client.on('Fetch.authRequired', self._onAuthRequired)
-        self._client.on(
-            'Network.requestWillBeSent',
-            lambda event: self._client._loop.create_task(
-                self._onRequestWillBeSent(event)
-            ),
+        self._client.on('Fetch.requestPaused',
+                        lambda event: self._client._loop.create_task(self._onRequestPaused(event))
+        )
+        self._client.on('Fetch.requestPaused',
+                        lambda event: self._client._loop.create_task(self._onAuthRequired(event))
+        )
+        self._client.on('Network.requestWillBeSent',
+                        lambda event: self._client._loop.create_task(self._onRequestWillBeSent(event))
         )
         self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)
