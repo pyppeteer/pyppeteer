@@ -156,7 +156,6 @@ class NetworkManager(BaseEventEmitter):
             {'cacheDisabled': self._userCacheDisabled or self._protocolRequestInterceptionEnabled}
         )
 
-
     async def _onAuthRequired(self, event):
         response = 'Default'
         if event.get('requestId') in self._attemptedAuthentications:
@@ -327,7 +326,6 @@ class NetworkManager(BaseEventEmitter):
         self.emit(NetworkManager.Events.RequestFailed, request)
 
 
-
 class Request(object):
     """Request class.
 
@@ -481,7 +479,7 @@ class Request(object):
         opt = {'interceptionId': self._interceptionId}
         opt.update(overrides)
         try:
-            await self._client.send('Network.continueInterceptedRequest', opt)
+            await self._client.send('Fetch.continueRequest', opt)
         except Exception as e:
             debugError(logger, e)
 
@@ -523,7 +521,7 @@ class Request(object):
             responseHeaders['content-length'] = len(responseBody)
 
         statusCode = response.get('status', 200)
-        statusText = statusTexts.get(statusCode, '')
+        statusText = statusTexts.get(statusCode)
         statusLine = f'HTTP/1.1 {statusCode} {statusText}'
 
         CRLF = '\r\n'
@@ -540,8 +538,8 @@ class Request(object):
             await self._client.send('Fetch.fulfillRequest', {
                 'requestId': self._interceptionId,
                 'responseCode':  statusCode if statusCode is not None else 200,
-                'responsePhrase': statusTexts[statusText] if statusText is not None else statusText[200],
-                'responseHeaders': responseHeaders,
+                'responsePhrase': statusText if statusText is not None else statusTexts['200'],
+                'responseHeaders': headersArray(responseHeaders),
                 'body': rawResponse
             })
         except Exception as e:
@@ -794,6 +792,14 @@ class SecurityDetails(object):
     def protocol(self) -> str:
         """Return string of with the security protocol, e.g. "TLS1.2"."""
         return self._protocol
+
+
+def headersArray(headers: dict) -> List[Dict[str, str]]:
+    """Convert headers to array."""
+    result = []
+    for name in headers:
+        result.append({'name': name, 'value': f"{headers[name]} "})
+    return result
 
 
 statusTexts = {
