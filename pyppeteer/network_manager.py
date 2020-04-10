@@ -10,7 +10,7 @@ import copy
 import json
 import logging
 from types import SimpleNamespace
-from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Awaitable, Dict, List, Optional, Union, TYPE_CHECKING, Any
 from urllib.parse import unquote
 
 from pyee import BaseEventEmitter
@@ -19,7 +19,6 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.frame_manager import FrameManager, Frame
 from pyppeteer.helper import debugError
-from pyppeteer.multimap import Multimap
 
 if TYPE_CHECKING:
     from typing import Set  # noqa: F401
@@ -43,26 +42,28 @@ class NetworkManager(BaseEventEmitter):
         self._client = client
         self._frameManager = frameManager
         self._requestIdToRequest: Dict[Optional[str], Request] = dict()
-        self._requestIdToResponseWillBeSent: Dict[Optional[str], Dict] = dict()
+        self._requestIdToRequestWillBeSentEvent: Dict[Optional[str], Dict] = dict()
+
         self._extraHTTPHeaders: OrderedDict[str, str] = OrderedDict()
         self._offline: bool = False
-        self._handleAuthRequests: bool = False
+
         self._credentials: Optional[Dict[str, str]] = None
         self._attemptedAuthentications: Set[Optional[str]] = set()
         self._userRequestInterceptionEnabled = False
         self._protocolRequestInterceptionEnabled = False
-        self._requestHashToRequestIds = Multimap()
-        self._requestHashToInterceptionIds = Multimap()
-        self._requestIdToRequestWillBeSentEvent = Multimap()
+        self._userCacheDisabled = False
+
+        self._requestIdToInterceptionId: Dict[Optional[str], str] = dict()
 
         self._client.on('Fetch.requestPaused',
                         lambda event: self._client._loop.create_task(self._onRequestPaused(event))
         )
-        self._client.on('Fetch.requestPaused',
-                        lambda event: self._client._loop.create_task(self._onAuthRequired(event))
-        )
-        self._client.on('Network.requestWillBeSent',
-                        lambda event: self._client._loop.create_task(self._onRequestWillBeSent(event))
+        self._client.on('Fetch.authRequired', self._onAuthRequired)
+        self._client.on(
+            'Network.requestWillBeSent',
+            lambda event: self._client._loop.create_task(
+                self._onRequestWillBeSent(event)
+            ),
         )
         self._client.on('Network.requestServedFromCache', self._onRequestServedFromCache)  # noqa: #501
         self._client.on('Network.responseReceived', self._onResponseReceived)
@@ -108,13 +109,16 @@ class NetworkManager(BaseEventEmitter):
         await self._client.send('Network.setUserAgentOverride',
                                 {'userAgent': userAgent})
 
-    async def setRequestInterception(self, value: bool, handleAuthRequests: bool = False) -> None:
+    async def setCacheEnabled(self, enabled):
+        self._userCacheDisabled = not enabled
+        await self._updateProtocolCacheDisabled()
+
+    async def setRequestInterception(self, value: bool, pattern="*") -> None:
         """Enable request interception."""
         self._userRequestInterceptionEnabled = value
-        self._handleAuthRequests = handleAuthRequests
-        await self._updateProtocolRequestInterception()
+        await self._updateProtocolRequestInterception(pattern)
 
-    async def _updateProtocolRequestInterception(self) -> None:
+    async def _updateProtocolRequestInterception(self, pattern="*") -> None:
         """Enables issuing of requestPaused events.
         A request will be paused until client calls one of failRequest, fulfillRequest or
         continueRequest/continueWithAuth.
@@ -125,7 +129,7 @@ class NetworkManager(BaseEventEmitter):
         if enabled == self._protocolRequestInterceptionEnabled:
             return
         self._protocolRequestInterceptionEnabled = enabled
-        patterns = [{'urlPattern': '*'}] if enabled else []
+        patterns = [{'urlPattern': pattern}] if enabled else []
         if enabled:
             await asyncio.gather(
                 self._client.send(
@@ -134,7 +138,7 @@ class NetworkManager(BaseEventEmitter):
                 ),
                 self._client.send(
                     'Fetch.enable',
-                    {'patterns': patterns, 'handleAuthRequests': self._handleAuthRequests},
+                    {'patterns': patterns, 'handleAuthRequests': True},
                 )
             )
         else:
@@ -146,32 +150,63 @@ class NetworkManager(BaseEventEmitter):
                 self._client.send('Fetch.disable')
             )
 
-    async def _onRequestPaused(self, event):
-        if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
-            await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
+    async def _updateProtocolCacheDisabled(self):
+        await self._client.send(
+            'Network.setCacheDisabled',
+            {'cacheDisabled': self._userCacheDisabled or self._protocolRequestInterceptionEnabled}
+        )
 
-        requestHash = generateRequestHash(event['request'])
-        requestId = self._requestHashToRequestIds.firstValue(requestHash)
-        if requestId:
-            requestWillBeSentEvent = self._requestIdToResponseWillBeSent[requestId]  # noqa: E501
-            self._onRequest(requestWillBeSentEvent, event.get('interceptionId'))  # noqa: E501
-            self._requestHashToRequestIds.delete(requestHash, requestId)
-            self._requestIdToResponseWillBeSent.pop(requestId, None)
-        else:
-            self._requestHashToInterceptionIds.set(requestHash, event['interceptionId'])  # noqa: E501
+
+    async def _onAuthRequired(self, event):
+        response = 'Default'
+        if event.get('requestId') in self._attemptedAuthentications:
+            response = 'CancelAuth'
+        elif self._credentials:
+            response = 'ProvideCredentials'
+            self._attemptedAuthentications.add(event.requestId)
+
+        username, password = 'undefined', 'undefined'
+        if self._credentials:
+            username, password = self._credentials.get('username'), self._credentials.get('password')
+
+        await self._send('Fetch.continueWithAuth', {
+            'requestId': event.get('requestId'),
+            'authChallengeResponse': {response, username, password},
+        })
 
     async def _onRequestWillBeSent(self, event: Dict) -> None:
+        print("_onRequestWillBeSent")
         if self._protocolRequestInterceptionEnabled:
-            requestHash = generateRequestHash(event.get('request', {}))
-            interceptionId = self._requestHashToInterceptionIds.firstValue(requestHash)  # noqa: E501
+            requestId = event.get('requestId')
+            interceptionId = self._requestIdToInterceptionId.get(requestId)  # noqa: E501
+
+            if event['request']['url'] == "https://chromeskillup.herokuapp.com/getjson":
+                print("found")
             if interceptionId:
+                print("if interceptionId: before onRequest")
                 self._onRequest(event, interceptionId)
-                self._requestHashToInterceptionIds.delete(requestHash, interceptionId)  # noqa: E501
+                print("if interceptionId: after onRequest")
+                self._requestIdToInterceptionId.pop(requestId)  # noqa: E501
             else:
-                self._requestHashToRequestIds.set(requestHash, event.get('requestId'))  # noqa: E501
-                self._requestIdToResponseWillBeSent[event.get('requestId')] = event  # noqa: E501
+                self._requestIdToRequestWillBeSentEvent[requestId] = event  # noqa: E501
             return
         self._onRequest(event, None)
+
+    async def _onRequestPaused(self, event):
+        print("_onRequestPaused")
+        if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
+            await self._send('Fetch.continueRequest', {'requestId': event.get('requestId')})
+
+        requestId = event['networkId']
+        interceptionId = event['requestId']
+        requestWillBeSentEvent = self._requestIdToRequestWillBeSentEvent.get(requestId)
+        if requestId and requestWillBeSentEvent:
+            print("Before on request")
+            self._onRequest(requestWillBeSentEvent, interceptionId)  # noqa: E501
+            print("After on request")
+            self._requestIdToRequestWillBeSentEvent.pop(requestId)
+        else:
+            self._requestIdToInterceptionId[requestId] = interceptionId  # noqa: E501
 
     async def _send(self, method: str, msg: dict) -> None:
         try:
@@ -209,23 +244,6 @@ class NetworkManager(BaseEventEmitter):
             event.get('frameId'),
             redirectChain,
         )
-
-    async def _onAuthRequired(self, event):
-        response = 'Default'
-        if event.get('requestId') in self._attemptedAuthentications:
-            response = 'CancelAuth'
-        elif self._credentials:
-            response = 'ProvideCredentials'
-            self._attemptedAuthentications.add(event.requestId)
-
-        username, password = 'undefined', 'undefined'
-        if self._credentials:
-            username, password = self._credentials.get('username'), self._credentials.get('password')
-
-        await self._client.send('Fetch.continueWithAuth', {
-            'requestId': event.get('requestId'),
-            'authChallengeResponse': {response, username, password},
-        })
 
     def _onRequestServedFromCache(self, event: Dict) -> None:
         request = self._requestIdToRequest.get(event.get('requestId'))
@@ -307,6 +325,7 @@ class NetworkManager(BaseEventEmitter):
         self._requestIdToRequest.pop(request._requestId, None)
         self._attemptedAuthentications.discard(request._interceptionId)
         self.emit(NetworkManager.Events.RequestFailed, request)
+
 
 
 class Request(object):
