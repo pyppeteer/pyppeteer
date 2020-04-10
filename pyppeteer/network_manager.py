@@ -795,7 +795,9 @@ class SecurityDetails(object):
 
 
 def headersArray(headers: dict) -> List[Dict[str, str]]:
-    """Convert headers to array."""
+    """Convert headers dict to array.
+    Returns the array of JSON objects with structure [{'name: headers_key, 'value': headers}, ]
+    """
     result = []
     for name in headers:
         result.append({'name': name, 'value': f"{headers[name]} "})
