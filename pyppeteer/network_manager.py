@@ -596,8 +596,8 @@ class Request(object):
             raise NetworkError('Request is already handled.')
         self._interceptionHandled = True
         try:
-            await self._client.send('Network.continueInterceptedRequest', dict(
-                interceptionId=self._interceptionId,
+            await self._client.send('Fetch.failRequest', dict(
+                requestId=self._interceptionId,
                 errorReason=errorReason,
             ))
         except Exception as e:
