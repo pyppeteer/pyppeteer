@@ -476,10 +476,19 @@ class Request(object):
             raise NetworkError('Request is already handled.')
 
         self._interceptionHandled = True
-        opt = {'interceptionId': self._interceptionId}
-        opt.update(overrides)
+        url = overrides.get('url')
+        method = overrides.get('method')
+        postData = overrides.get('postData')
+        headers = overrides.get('headers')
         try:
-            await self._client.send('Fetch.continueRequest', opt)
+            await self._client.send('Fetch.continueRequest',
+                                    {'requestId': self._interceptionId,
+                                     'url': url,
+                                     'method': method,
+                                     'postData': postData,
+                                     'headers': headersArray(headers) if headers else None
+                                     }
+                                    )
         except Exception as e:
             debugError(logger, e)
 
