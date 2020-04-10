@@ -13,15 +13,14 @@ class Accessibility:
         nodes = (await self._client.send('Accessibility.getFullAXTree'))['nodes']
         backendNodeId = None
         if root:
-            node = (await self._client.send('DOM.describeNode', {'objectId': 'root._remoteObject.objectId',}))['node']
+            node = (await self._client.send('DOM.describeNode', {'objectId': root._remoteObject['objectId']}))['node']
             backendNodeId = node['backendNodeId']
         defaultRoot = AXNode.createTree(nodes)
         needle = defaultRoot
         if backendNodeId:
-            needle = [node for node in defaultRoot.find(lambda _node: _node._payload.backendDOMNodeId == backendNodeId)]
+            needle = defaultRoot.find(lambda _node: _node._payload['backendDOMNodeId'] == backendNodeId)
             if not needle:
                 return
-            needle = needle[0]
         if not interestingOnly:
             return serializeTree(needle)[0]
 
@@ -44,7 +43,7 @@ class AXNode(object):
         self._focusable = False
         self._expanded = False
         self._hidden = False
-        self._name = payload.get('name', {}).get('value', 'Unknown')
+        self._name = payload.get('name', {}).get('value', '')
         self._role = payload.get('role', {}).get('value', 'Unknown')
         self._cacheHasFocusableChild = None
 
@@ -147,23 +146,25 @@ class AXNode(object):
             'spinbutton',
             'switch',
             'tab',
-            'texbox',
+            'textbox',
             'tree',
         ]
 
-    def isInteresting(self, insideControl: bool):
+    def isInteresting(self, insideControl: bool) -> bool:
         role = self._role
         if role == 'Ignored' or self._hidden:
             return False
         if self._focusable or self._richlyEditable:
             return True
-        # If it 's not focusable but has a control role, then it' s interesting.
+
+        # If it's not focusable but has a control role, then it's interesting.
         if self.isControl:
             return True
+
         # A non focusable child of a control is not interesting
         if insideControl:
             return False
-        return self.isLeafNode() and self._name
+        return self.isLeafNode() and bool(self._name)
 
     def serialize(self):  # noqa C901
         properties: Dict[str, Union[str, float, bool]] = {}

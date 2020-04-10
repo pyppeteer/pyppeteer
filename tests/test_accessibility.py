@@ -7,25 +7,25 @@ from tests.conftest import chrome_only
 async def test_accessibility_properties(shared_browser, isolated_page, firefox):
     await isolated_page.setContent(
         """
-<head>
-<title>Accessibility Test</title>
-</head>
-<body>
-<div>Hello World</div>
-<h1>Inputs</h1>
-<input placeholder="Empty input" autofocus />
-<input placeholder="readonly input" readonly />
-<input placeholder="disabled input" disabled />
-<input aria-label="Input with whitespace" value="  " />
-<input value="value only" />
-<input aria-placeholder="placeholder" value="and a value" />
-<div aria-hidden="true" id="desc">This is a description!</div>
-<input aria-placeholder="placeholder" value="and a value" aria-describedby="desc" />
-<select>
-<option>First Option</option>
-<option>Second Option</option>
-</select>
-</body>
+    <head>
+        <title>Accessibility Test</title>
+    </head>
+    <body>
+        <div>Hello World</div>
+        <h1>Inputs</h1>
+        <input placeholder="Empty input" autofocus />
+        <input placeholder="readonly input" readonly />
+        <input placeholder="disabled input" disabled />
+        <input aria-label="Input with whitespace" value="  " />
+        <input value="value only" />
+        <input aria-placeholder="placeholder" value="and a value" />
+        <div aria-hidden="true" id="desc">This is a description!</div>
+        <input aria-placeholder="placeholder" value="and a value" aria-describedby="desc" />
+        <select>
+            <option>First Option</option>
+            <option>Second Option</option>
+        </select>
+    </body>
     """
     )
     await isolated_page.focus('[placeholder="Empty input"]')
@@ -92,14 +92,14 @@ async def test_accessibility_properties(shared_browser, isolated_page, firefox):
 @sync
 async def test_report_uninteresting_nodes(isolated_page, firefox):
     def findFocusedNode(node):
-        if node['focused']:
+        if node.get('focused'):
             return node
         for child in node['children']:
             focusedChild = findFocusedNode(child)
             if focusedChild:
                 return focusedChild
 
-    await isolated_page.setContent('<textarea>Hi</textarea>')
+    await isolated_page.setContent('<textarea>hi</textarea>')
     await isolated_page.focus('textarea')
     accessibility_snapshot = await isolated_page.accessibility.snapshot(interestingOnly=False)
     if firefox:
@@ -184,7 +184,7 @@ class TestFilteringOfLeafNodes:
                 'name': '',
                 'children': [{'role': 'tab', 'name': 'Tab1', 'selected': True}, {'role': 'tab', 'name': 'Tab2'}],
             }
-        snapshot = isolated_page.accessibility.snapshot()
+        snapshot = await isolated_page.accessibility.snapshot()
         assert snapshot == expected
 
     @sync
@@ -246,10 +246,7 @@ class TestFilteringOfLeafNodes:
         @sync
         async def test_field_with_role_no_children(self, isolated_page):
             await isolated_page.setContent(
-                """
-            <div contenteditable="plaintext-only" role='textbox'>
-                Edit this image:<img src="fakeimage.png" alt="my fake image">
-            </div>"""
+                '<div contenteditable="plaintext-only" role="textbox">Edit this image:<img src="fakeimage.png" alt="my fake image"></div>'
             )
             snapshot = await isolated_page.accessibility.snapshot()
             assert snapshot['children'][0] == {'role': 'textbox', 'name': '', 'value': 'Edit this image:'}
@@ -257,11 +254,7 @@ class TestFilteringOfLeafNodes:
         @sync
         async def test_field_without_role_no_content(self, isolated_page):
             await isolated_page.setContent(
-                """
-                <div contenteditable="plaintext-only">
-                    Edit this image:<img src="fakeimage.png" alt="my fake image">
-                </div>
-            """
+                '<div contenteditable="plaintext-only">Edit this image:<img src="fakeimage.png" alt="my fake image"></div>'
             )
             snapshot = await isolated_page.accessibility.snapshot()
             assert snapshot['children'][0] == {'role': 'generic', 'name': ''}
@@ -333,14 +326,14 @@ class TestFilteringOfLeafNodes:
         async def test_work_a_button(self, isolated_page):
             await isolated_page.setContent('<button>My Button</button>')
             button = await isolated_page.J('button')
-            snapshot = isolated_page.accessibility.snapshot(root=button)
+            snapshot = await isolated_page.accessibility.snapshot(root=button)
             assert snapshot == {'role': 'button', 'name': 'My Button'}
 
         @sync
         async def test_work_an_input(self, isolated_page):
             await isolated_page.setContent('<input title="My Input" value="My Value">')
             input_elem = await isolated_page.J('input')
-            snapshot = isolated_page.accessibility.snapshot(root=input_elem)
+            snapshot = await isolated_page.accessibility.snapshot(root=input_elem)
             assert snapshot == {'role': 'textbox', 'name': 'My Input', 'value': 'My Value'}
 
         @sync
