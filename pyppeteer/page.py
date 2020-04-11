@@ -1074,11 +1074,7 @@ class Page(AsyncIOEventEmitter):
 
         :arg str pageFunction: String of js-function/expression to be executed
                                on the browser.
-        :arg bool force_expr: If True, evaluate `pageFunction` as expression.
-                              If False (default), try to automatically detect
-                              function or expression.
 
-        note: ``force_expr`` option is a keyword only argument.
         """
         return await self.mainFrame.evaluate(pageFunction, *args)
 

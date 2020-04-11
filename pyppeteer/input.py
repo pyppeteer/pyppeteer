@@ -124,7 +124,7 @@ class Keyboard(object):
 
         definition: Dict = keyDefinitions.get(keyString)  # type: ignore
         if not definition:
-            raise PyppeteerError(f'Unknown key: {keyString}')
+            raise PyppeteerError(f'Unknown key: "{keyString}"')
 
         if definition.get('key'):
             description['key'] = definition['key']
