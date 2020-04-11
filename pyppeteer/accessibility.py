@@ -98,7 +98,7 @@ class AXNode(object):
         # implementation details, but we want to expose them as leaves to platform
         # accessibility APIs because screen readers might be confused if they find
         # any children.
-        if self._isPlainTextField and self._isTextOnlyObject:
+        if self._isPlainTextField or self._isTextOnlyObject:
             return True
         # Roles whose children are only presentational according to the ARIA and
         # HTML5 Specs should be hidden from screen readers.
