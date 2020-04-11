@@ -18,6 +18,6 @@ async def test_taps_button(emulated_mobile_page, server):
 
 @sync
 async def test_reports_touches(emulated_mobile_page, server):
-    await emulated_mobile_page.goto(server / 'input/button.html')
+    await emulated_mobile_page.goto(server / 'input/touches.html')
     await emulated_mobile_page.tap('button')
     assert await emulated_mobile_page.evaluate('getResult()') == ['Touchstart: 0', 'Touchend: 0']
