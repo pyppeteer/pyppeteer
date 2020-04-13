@@ -12,7 +12,7 @@ async def test_click_button(isolated_page, server):
     """shoud click the button"""
     await isolated_page.goto(server / 'input/button.html')
     await isolated_page.click('button')
-    assert await isolated_page.evaluate('() => result') == 'Clicked'
+    assert await isolated_page.evaluate('result') == 'Clicked'
 
 
 @sync
@@ -25,16 +25,16 @@ async def test_click_svg(isolated_page, server):
         </svg>
     """)
     await page.click('circle')
-    assert await page.evaluate('() => window.CLICKED') == 42
+    assert await page.evaluate('window.CLICKED') == 42
 
 
 @sync
 async def test_click_button_window_node(isolated_page, server):
     p = isolated_page
     await p.goto(server / 'input/button.html')
-    await p.evaluate('() => delete window.Node')
+    await p.evaluate('delete window.Node')
     await p.click('button')
-    assert await p.evaluate('() => result') == 'Clicked'
+    assert await p.evaluate('result') == 'Clicked'
 
 
 @sync
@@ -49,7 +49,7 @@ async def test_click_inline_span(isolated_page, server):
         <span onclick='javascript:window.CLICKED=42'></span>
     """)
     await p.click('span')
-    assert await p.evaluate('() => window.CLICKED') == 42
+    assert await p.evaluate('window.CLICKED') == 42
 
 
 @sync
@@ -67,11 +67,11 @@ async def test_click_page_close(isolated_page, server):
 async def test_click_after_nav(isolated_page, server):
     """click after navigation"""
     p = isolated_page
-    await p.goto(server / '/input/button.html')
+    await p.goto(server / 'input/button.html')
     await p.click('button')
-    await p.goto(server / '/input/button.html')
+    await p.goto(server / 'input/button.html')
     await p.click('button')
-    assert await p.evaluate('() => result') == 'Clicked'
+    assert await p.evaluate('result') == 'Clicked'
 
 
 @sync
@@ -79,12 +79,12 @@ async def test_click_no_js(isolated_page, server):
     """click when js is disabled"""
     p = isolated_page
     await p.setJavaScriptEnabled(False)
-    await p.goto(server / '/wrappedlink.html')
+    await p.goto(server / 'wrappedlink.html')
     await gather(
         p.click('a'),
         p.waitForNavigation()
     )
-    assert p.url == server / '/wrappedlink.html#clicked'
+    assert p.url == server / 'wrappedlink.html#clicked'
 
 
 @sync
@@ -103,20 +103,20 @@ async def test_click_outside(isolated_page, server):
         """
     )
     await p.click('span')
-    assert await p.evaluate('() => window.CLICKED') == 42
+    assert await p.evaluate('window.CLICKED') == 42
 
 
 @sync
 async def test_triple_click(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/textarea.html')
+    await p.goto(server / 'input/textarea.html')
     await p.focus('textarea')
     text = 'This is the text that we are going to try to select. Let\'s see how it goes.'
     await p.keyboard.type(text)
     await p.click('textarea')
     await p.click('textarea', clickCount=2)
     await p.click('textarea', clickCount=3)
-    assert await p.evaluate("""() => {
+    assert await p.evaluate("""{
     const textarea = document.querySelector('textarea');
     return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
     }""") == text
@@ -136,7 +136,7 @@ async def test_offscreen_button(isolated_page, server):
 
     p.on('console', append_msg)
     for i in range(11):
-        await p.evaluate('() => window.scrollTo(0, 0)')
+        await p.evaluate('window.scrollTo(0, 0)')
         await p.click(f'#btn{i}')
     assert [m.text for m in messages] == [f'button #{i} clicked' for i in range(11)]
 
@@ -144,11 +144,11 @@ async def test_offscreen_button(isolated_page, server):
 @sync
 async def test_click_checkbox(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/checkbox.html')
-    assert await p.evaluate('() => result.check') is None
+    await p.goto(server / 'input/checkbox.html')
+    assert await p.evaluate('result.check') is None
     await p.click('input#agree')
-    assert await p.evaluate('() => result.check') is True
-    assert await p.evaluate('() => result.events') == [
+    assert await p.evaluate('result.check') is True
+    assert await p.evaluate('result.events') == [
         'mouseover',
         'mouseenter',
         'mousemove',
@@ -159,26 +159,26 @@ async def test_click_checkbox(isolated_page, server):
         'change',
     ]
     await p.click('input#agree')
-    assert await p.evaluate('() => result.check') is False
+    assert await p.evaluate('result.check') is False
 
 
 @sync
 async def test_click_checkbox_label_toggle(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/checkbox.html')
-    assert await p.evaluate('() => result.check') is None
+    await p.goto(server / 'input/checkbox.html')
+    assert await p.evaluate('result.check') is None
     await p.click('label[for="agree"]')
-    assert await p.evaluate('() => result.check') is True
-    assert await p.evaluate('() => result.events') == ['click', 'input', 'change']
+    assert await p.evaluate('result.check') is True
+    assert await p.evaluate('result.events') == ['click', 'input', 'change']
     await p.click('label[for="agree"]')
-    assert await p.evaluate('() => result.check') is False
+    assert await p.evaluate('result.check') is False
 
 
 @sync
 async def test_click_fail_missing_button(isolated_page, server):
     """should fail if button is missing"""
     p = isolated_page
-    await p.goto(server / '/input/button.html')
+    await p.goto(server / 'input/button.html')
     error = None
     with pytest.raises(BrowserError) as e:
         await p.click('button.does-not-exist')
@@ -198,15 +198,15 @@ async def test_click_no_hang_with_touch_enabled(isolated_page, server):
 @sync
 async def test_scroll_and_click(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/scrollable.html')
+    await p.goto(server / 'input/scrollable.html')
     await p.click('#button-5')
-    assert await p.evaluate('() => document.querySelector("#button-5").textContent') == 'clicked'
+    assert await p.evaluate('document.querySelector("#button-5").textContent') == 'clicked'
 
 
 @sync
 async def test_double_click(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/button.html')
+    await p.goto(server / 'input/button.html')
     await p.evaluate("""
         window.double = false;
         const button = document.querySelector('button');
@@ -224,9 +224,9 @@ async def test_double_click(isolated_page, server):
 @sync
 async def test_click_partially_obscured_button(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/button.html')
+    await p.goto(server / 'input/button.html')
     await p.evaluate("""
-    () => {
+    {
         const button = document.querySelector('button');
         button.textContent = 'Some really long text that will go offscreen';
         button.style.position = 'absolute';
@@ -234,24 +234,24 @@ async def test_click_partially_obscured_button(isolated_page, server):
     }
     """)
     await p.click('button')
-    assert await p.evaluate('() => window.result') == 'Clicked'
+    assert await p.evaluate('window.result') == 'Clicked'
 
 
 @sync
 async def test_click_rotated_button(isolated_page, server):  # line 215 in pup
     p = isolated_page
-    await p.goto(server / '/input/rotatedButton.html')
+    await p.goto(server / 'input/rotatedButton.html')
     await p.click('button')
-    assert await p.evaluate('() => result') == 'Clicked'
+    assert await p.evaluate('result') == 'Clicked'
 
 
 @sync
 async def test_right_click_contextmenu_event(isolated_page, server):
     p = isolated_page
-    await p.goto(server / '/input/scrollable.html')
+    await p.goto(server / 'input/scrollable.html')
     await p.click('#button-8', button='right')
     assert await p.evaluate(
-        "() => document.querySelector('#button-8').textContent"
+        "document.querySelector('#button-8').textContent"
     ) == 'context menu'
 
 
@@ -270,11 +270,11 @@ async def test_click_button_inside_iframe(isolated_page, server):
     p = isolated_page
     await p.goto(server.empty_page)
     await p.setContent('<div style="width:100px;height:100px">spacer</div>')
-    await attachFrame(p, server / '/input/button.html', 'button-test')
+    await attachFrame(p, server / 'input/button.html', 'button-test')
     frame = p.frames[1]
     button = await frame.J('button')
     await button.click()
-    assert await frame.evaluate("() => window.result") == 'Clicked'
+    assert await frame.evaluate("window.result") == 'Clicked'
 
 
 @sync
@@ -284,24 +284,24 @@ async def test_fixed_button_inside_iframe(isolated_page, server):
     await p.goto(server.empty_page)
     await p.setViewport(dict(width=500, height=500))
     await p.setContent('<div style="width:100px;height:2000px">spacer</div>')
-    await attachFrame(p, server.cross_process_server / '/input/button.html', 'button-test')
+    await attachFrame(p, server.cross_process_server / 'input/button.html', 'button-test')
     frame = p.frames[1]
     await frame.evaluate(
         'button',
         "button => button.style.setProperty('position', 'fixed')"
     )
     await frame.click('button')
-    assert await frame.evaluate("() => window.result") == 'Clicked'
+    assert await frame.evaluate("window.result") == 'Clicked'
 
 
 @sync
 async def test_click_button_devicescalefactor(isolated_page, server):
     p = isolated_page
     await p.setViewport({'width': 500, 'height': 500, 'deviceScaleFactor': 5})
-    assert await p.evaluate("() => window.devicePixelRatio") == 5
+    assert await p.evaluate("window.devicePixelRatio") == 5
     await p.setContent('<div style="width:100px;height:100px">spacer</div>')
-    await attachFrame(p, server / '/input/button.html', 'button-test')
+    await attachFrame(p, server / 'input/button.html', 'button-test')
     frame = p.frames[1]
     button = await frame.J('button')
     await button.click()
-    assert await frame.evaluate("() => window.result") == 'Clicked'
+    assert await frame.evaluate("window.result") == 'Clicked'
