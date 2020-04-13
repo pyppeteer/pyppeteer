@@ -79,12 +79,14 @@ async def navigateFrame(page: Page, frameId: str, url: str) -> None:
     await page.evaluate(func, frameId, url)
 
 
-def dumpFrames(frame: Frame, indentation: str = '') -> str:
-    results = []
-    results.append(indentation + frame.url)
+def dumpFrames(frame: Frame, indentation: str = '') -> List[str]:
+    description = frame.url
+    if frame.name:
+        description += f' ({frame.name})'
+    results = [indentation + description]
     for child in frame.childFrames:
-        results.append(dumpFrames(child, '    ' + indentation))
-    return '\n'.join(results)
+        results.extend(dumpFrames(child, '    ' + indentation))
+    return results
 
 
 def isFavicon(req):
