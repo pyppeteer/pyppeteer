@@ -59,13 +59,12 @@ class TestJSHandle(BaseTestCase):
     @sync
     async def test_json_circular_object_error(self):
         windowHandle = await self.page.evaluateHandle('window')
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='Object reference chain is too long') as cm:
             await windowHandle.jsonValue()
-        assert 'Object reference chain is too long' in cm.exception.args[0]
 
     @sync
     async def test_get_properties(self):
-        handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
+        handle1 = await self.page.evaluateHandle('{foo: "bar"}')
         properties = await handle1.getProperties()
         foo = properties.get('foo')
         assert foo

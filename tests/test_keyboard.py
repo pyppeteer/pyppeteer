@@ -227,9 +227,8 @@ async def test_types_all_kinds_of_chars(isolated_page, server):
 @sync
 async def test_raises_on_unknown_keys(isolated_page, server):
     for key in ['NotARealKey', 'ё', '😊']:
-        with pytest.raises(PyppeteerError) as excpt:
+        with pytest.raises(PyppeteerError, match=f'Unknown key: "{key}"') as excpt:
             await isolated_page.keyboard.press(key)
-        assert f'Unknown key: "{key}"' in str(excpt)
 
 
 @sync

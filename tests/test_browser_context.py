@@ -18,9 +18,8 @@ async def test_default_context(shared_browser):
     assert len(shared_browser.browserContexts) == 1
     defaultContext = shared_browser.browserContexts[0]
     assert not defaultContext.isIncognito()
-    with pytest.raises(BrowserError) as cm:
+    with pytest.raises(BrowserError, match='cannot be closed') as cm:
         await defaultContext.close()
-    assert 'cannot be closed' in str(cm)
 
 
 @sync

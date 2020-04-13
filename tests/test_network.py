@@ -139,9 +139,8 @@ class TestNetworkEvent(BaseTestCase):
         assert len(redirectChain) == 1
         redirected = redirectChain[0].response
         assert redirected.status == 302
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='Response body is unavailable for redirect response') as cm:
             await redirected.text()
-        assert 'Response body is unavailable for redirect response' in cm.exception.args[0]
 
     @unittest.skip('This test hangs')
     @sync
@@ -445,9 +444,8 @@ class TestRequestInterception(BaseTestCase):
             await req.abort()
 
         self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
-        with pytest.raises(PageError) as cm:
+        with pytest.raises(PageError, match='net::ERR_FAILED') as cm:
             await self.page.goto('data:text/html,No way!')
-        assert 'net::ERR_FAILED' in cm.exception.args[0]
 
     @sync
     async def test_request_interception_with_hash(self):

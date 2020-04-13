@@ -12,9 +12,8 @@ import pytest
 class TestConnection(BaseTestCase):
     @sync
     async def test_error_msg(self):
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='ThisCommand.DoesNotExists') as cm:
             await self.page._client.send('ThisCommand.DoesNotExists')
-        assert 'ThisCommand.DoesNotExists' in cm.exception.args[0]
 
 
 class TestCDPSession(BaseTestCase):

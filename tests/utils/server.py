@@ -32,94 +32,6 @@ class BaseHandler(web.RequestHandler):
         )
 
 
-class MainHandler(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.write(BASE_HTML)
-
-
-class EmptyHandler(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.set_status(204)
-        self.write('')
-
-
-class LongHandler(BaseHandler):
-    async def get(self) -> None:
-        super().get()
-        await asyncio.sleep(0.5)
-        self.write('')
-
-
-class LinkHandler1(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.set_status(200)
-        self.write(
-            '''
-<head><title>link1</title></head>
-<h1 id="link1">Link1</h1>
-<a id="back1" href="./">back1</a>
-        '''
-        )
-
-
-class RedirectHandler1(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.redirect('/redirect2')
-
-
-class RedirectHandler2(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.write('<h1 id="red2">redirect2</h1>')
-
-
-class RedirectHandler3(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.redirect('/assets/one-frame.html')
-
-
-class ResourceRedirectHandler(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.write('<link rel="stylesheet" href="/one-style.css"><div>hello, world!</div>')
-
-
-class CSSRedirectHandler1(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.redirect('/two-style.css')
-
-
-class CSSRedirectHandler2(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.redirect('/three-style.css')
-
-
-class CSSRedirectHandler3(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.redirect('/four-style.css')
-
-
-class CSSRedirectHandler4(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.write('body {box-sizing: border-box;}')
-
-
-class CSPHandler(BaseHandler):
-    def get(self) -> None:
-        super().get()
-        self.set_header('Content-Security-Policy', 'script-src \'self\'')
-        self.write('')
-
-
 def auth_api(username: str, password: str) -> bool:
     if username == 'user' and password == 'pass':
         return True
@@ -162,13 +74,6 @@ class AuthHandler(BaseHandler):
     def get(self) -> None:
         super().get()
         self.write('ok')
-
-
-def log_handler(handler: Any) -> None:
-    """Override tornado's logging."""
-    # log only errors (status >= 500)
-    if handler.get_status() >= 500:
-        access_log.error('{} {}'.format(handler.get_status(), handler._request_summary()))
 
 
 class _StaticFileHandler(web.StaticFileHandler):
@@ -232,6 +137,7 @@ class _Application(web.Application):
         **settings: Any,
     ) -> None:
         self._handlers = handlers
+        self._static_handler_instance = self._handlers[0][1]
         super().__init__(handlers, default_host, transforms, **settings)
 
     def add_one_time_request_delay(self, path: str, delay: float):
@@ -241,16 +147,16 @@ class _Application(web.Application):
         self.add_one_time_request_precondition(path, precondition=_delay)
 
     def add_one_time_request_resp(self, path: str, resp: bytes):
-        self._handlers[0][1].add_one_time_request_resp(urlparse(path), resp)
+        self._static_handler_instance.add_one_time_request_resp(urlparse(path), resp)
 
     def add_one_time_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        self._handlers[0][1].add_one_time_request_precondition(urlparse(path).path, precondition)
+        self._static_handler_instance.add_one_time_request_precondition(urlparse(path).path, precondition)
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._handlers[0][1].set_request_header(urlparse(path).path, headers, True)
+        self._static_handler_instance.set_request_header(urlparse(path).path, headers, True)
 
     def add_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._handlers[0][1].set_request_header(urlparse(path).path, headers, False)
+        self._static_handler_instance.set_request_header(urlparse(path).path, headers, False)
 
     def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
         fut = asyncio.get_event_loop().create_future()
@@ -258,16 +164,17 @@ class _Application(web.Application):
         def resolve_fut(req):
             fut.set_result(req)
 
-        self._handlers[0][1].add_one_time_callback(urlparse(path).path, resolve_fut)
+        self._static_handler_instance.add_one_time_callback(urlparse(path).path, resolve_fut)
         return fut
 
 
 def get_application() -> _Application:
     static_path = Path(__file__).parent / 'assets'
     handlers = [
+        # required that the _StaticFileHandler is the first handler
         (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
     ]
-    return _Application(handlers, log_function=log_handler, static_path=static_path,)
+    return _Application(handlers, static_path=static_path,)
 
 
 if __name__ == '__main__':
