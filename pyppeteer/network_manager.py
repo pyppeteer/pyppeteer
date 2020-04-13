@@ -403,7 +403,6 @@ class Request:
             overrides['headers'] = headersArray(overrides['headers'])
 
         self._interceptionHandled = True
-        # todo: verify whether undefined == not specifying at all
         try:
             await self._client.send('Fetch.continueRequest', {'requestId': self._interceptionId, **overrides})
         except Exception as e:
@@ -452,10 +451,9 @@ class Request:
                 },
             )
         except Exception as e:
-            # todo: find out what error is raised from here
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred fulfilling a response: {e}')
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.

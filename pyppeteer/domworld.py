@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 
 
 async def readFileAsync(path, encoding):
-    # TODO implement this async if need
-    with open(path, 'r', encoding=encoding) as f:
-        return f.read()
+    return Path(path).read_text(encoding=encoding)
 
 
 class DOMWorld(object):

@@ -11,7 +11,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.models import CoverageResult
+from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem
 
 logger = logging.getLogger(__name__)
 
@@ -292,8 +292,7 @@ class CSSCoverage:
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
-    # todo (mattwmaster58): typeddict for this
+def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[NestedRangeItem]:
     """
     Convert ranges.
     NestedRange members support keys:

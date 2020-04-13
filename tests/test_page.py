@@ -202,7 +202,6 @@ class TestExecutionContextQueryObjects:
         await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
         proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
         objs_handle = await isolated_page.queryObjects(proto_handle)
-        # todo (Mattwmaster58): correct typing
         assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
         assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
             'hello',

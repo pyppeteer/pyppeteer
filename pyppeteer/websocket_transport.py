@@ -19,6 +19,7 @@ class WebsocketTransport:
             await connect(
                 uri=uri,
                 # chrome doesn't respond to pings
+                # todo: remove note after websockets release
                 # waiting on websockets to release new version where ping_interval is typed correctly
                 ping_interval=None,  # type: ignore
                 max_size=256 * 1024 * 1024,  # 256Mb

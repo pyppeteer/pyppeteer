@@ -13,7 +13,7 @@ from pyee import AsyncIOEventEmitter
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
-from pyppeteer.models import Protocol
+from pyppeteer.models import Protocol, WebPermission
 from pyppeteer.target import Target
 from pyppeteer.task_queue import TaskQueue
 
@@ -347,8 +347,7 @@ class BrowserContext(AsyncIOEventEmitter):
         """
         return bool(self._id)
 
-    # todo (Mattwmaster58): Literal type for this
-    async def overridePermissions(self, origin: str, permissions: Sequence[str]) -> None:
+    async def overridePermissions(self, origin: str, permissions: Sequence[WebPermission]) -> None:
         web_perm_to_protocol = {
             'geolocation': 'geolocation',
             'midi': 'midi',

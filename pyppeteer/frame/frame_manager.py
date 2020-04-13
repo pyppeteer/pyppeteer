@@ -255,7 +255,6 @@ class FrameManager(AsyncIOEventEmitter):
         if frame:
             self._removeFramesRecursively(frame)
 
-    # todo (mattwmaster58): type contextPayload w/ TypedDict
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         auxData = contextPayload.get('auxData')
         frameId = auxData.get('frameId')
