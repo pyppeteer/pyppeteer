@@ -297,7 +297,7 @@ async def test_fixed_button_inside_iframe(isolated_page, server):
 @sync
 async def test_click_button_devicescalefactor(isolated_page, server):
     p = isolated_page
-    await p.setViewport(dict(width=500, height=500, deviceScaleFactor=5))
+    await p.setViewport({'width': 500, 'height': 500, 'deviceScaleFactor': 5})
     assert await p.evaluate("() => window.devicePixelRatio") == 5
     await p.setContent('<div style="width:100px;height:100px">spacer</div>')
     await attachFrame(p, server / '/input/button.html', 'button-test')
