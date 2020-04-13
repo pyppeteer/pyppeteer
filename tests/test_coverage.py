@@ -3,10 +3,10 @@
 
 from syncer import sync
 
-from .base import BaseTestCase
 
 
-class TestJSCoverage(BaseTestCase):
+
+class TestJSCoverage:
     @sync
     async def test_js_coverage(self):
         await self.page.coverage.startJSCoverage()
@@ -131,7 +131,7 @@ class TestJSCoverage(BaseTestCase):
         assert len(coverage) == 0
 
 
-class TestCSSCoverage(BaseTestCase):
+class TestCSSCoverage:
     @sync
     async def test_css_coverage(self):
         await self.page.coverage.startCSSCoverage()

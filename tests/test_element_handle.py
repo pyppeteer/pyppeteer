@@ -9,12 +9,12 @@ from syncer import sync
 import pyppeteer
 from pyppeteer.errors import ElementHandleError
 
-from .base import BaseTestCase
-from .frame_utils import attachFrame
+
+from .utils import attachFrame
 import pytest
 
 
-class TestBoundingBox(BaseTestCase):
+class TestBoundingBox:
     @sync
     async def test_bounding_box(self):
         await self.page.setViewport({'width': 500, 'height': 500})
@@ -83,7 +83,7 @@ class TestBoundingBox(BaseTestCase):
         assert pptrBoundingBox == webBoundingBox
 
 
-class TestBoxModel(BaseTestCase):
+class TestBoxModel:
     def setUp(self):
         self._old_debug = pyppeteer.DEBUG
         super().setUp()
@@ -173,7 +173,7 @@ class TestBoxModel(BaseTestCase):
                 assert await element.boxModel() is None
 
 
-class TestContentFrame(BaseTestCase):
+class TestContentFrame:
     @sync
     async def test_content_frame(self):
         await self.page.goto(self.url + 'empty')
@@ -183,7 +183,7 @@ class TestContentFrame(BaseTestCase):
         assert frame == self.page.frames[1]
 
 
-class TestClick(BaseTestCase):
+class TestClick:
     @sync
     async def test_clik(self):
         await self.page.goto(self.url + 'assets/button.html')
@@ -242,7 +242,7 @@ class TestClick(BaseTestCase):
         assert 'Node is either not visible or not an HTMLElement' == cm.exception.args[0]
 
 
-class TestHover(BaseTestCase):
+class TestHover:
     @sync
     async def test_hover(self):
         await self.page.goto(self.url + 'assets/scrollable.html')
@@ -251,7 +251,7 @@ class TestHover(BaseTestCase):
         assert await self.page.evaluate('document.querySelector("button:hover").id') == 'button-6'
 
 
-class TestIsIntersectingViewport(BaseTestCase):
+class TestIsIntersectingViewport:
     @sync
     async def test_is_intersecting_viewport(self):
         await self.page.goto(self.url + 'assets/offscreenbuttons.html')
@@ -261,7 +261,7 @@ class TestIsIntersectingViewport(BaseTestCase):
             assert await button.isIntersectingViewport() == visible
 
 
-class TestScreenshot(BaseTestCase):
+class TestScreenshot:
     @sync
     async def test_screenshot_larger_than_viewport(self):
         await self.page.setViewport({'width': 500, 'height': 500})
@@ -290,7 +290,7 @@ div.to-screenshot {
         assert {'w': 500, 'h': 500} == size
 
 
-class TestQuerySelector(BaseTestCase):
+class TestQuerySelector:
     @sync
     async def test_J(self):
         await self.page.setContent(

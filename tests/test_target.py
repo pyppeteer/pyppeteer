@@ -6,10 +6,10 @@ import unittest
 
 from syncer import sync
 
-from .base import BaseTestCase
 
 
-class TestTarget(BaseTestCase):
+
+class TestTarget:
     @sync
     async def test_targets(self):
         targets = self.browser.targets()

@@ -69,7 +69,7 @@ def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
     return wrapper
 
 
-class AuthHandler(BaseHandler):
+class AuthHandler:
     @basic_auth(auth_api)
     def get(self) -> None:
         super().get()

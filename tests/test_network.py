@@ -10,11 +10,11 @@ from syncer import sync
 
 from pyppeteer.errors import NetworkError, PageError
 
-from .base import BaseTestCase
+
 import pytest
 
 
-class TestNetworkEvent(BaseTestCase):
+class TestNetworkEvent:
     @sync
     async def test_request(self):
         requests = []
@@ -35,7 +35,7 @@ class TestNetworkEvent(BaseTestCase):
 
         from tornado.web import RequestHandler
 
-        class PostHandler(RequestHandler):
+        class PostHandler:
             def post(self):
                 self.write('')
 
@@ -150,7 +150,7 @@ class TestNetworkEvent(BaseTestCase):
 
         from tornado.web import RequestHandler
 
-        class GetHandler(RequestHandler):
+        class GetHandler:
             def get(self):
                 serverResponses.append(self)
                 self.write('hello ')
@@ -240,7 +240,7 @@ class TestNetworkEvent(BaseTestCase):
         assert 'redirect1' in redirectChain[0].url
 
 
-class TestRequestInterception(BaseTestCase):
+class TestRequestInterception:
     @sync
     async def test_request_interception(self):
         await self.page.setRequestInterception(True)
@@ -550,7 +550,7 @@ class TestRequestInterception(BaseTestCase):
         pass
 
 
-class TestNavigationRequest(BaseTestCase):
+class TestNavigationRequest:
     @sync
     async def test_navigation_request(self):
         requests = {}

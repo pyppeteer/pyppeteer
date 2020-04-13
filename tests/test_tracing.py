@@ -9,10 +9,10 @@ from syncer import sync
 
 from pyppeteer.errors import NetworkError
 
-from .base import BaseTestCase
 
 
-class TestTracing(BaseTestCase):
+
+class TestTracing:
     def setUp(self):
         self.outfile = Path(__file__).parent / 'trace.json'
         if self.outfile.is_file():

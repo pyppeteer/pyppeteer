@@ -10,12 +10,12 @@ from syncer import sync
 
 from pyppeteer.errors import PageError, PyppeteerError
 
-from .base import BaseTestCase
-from .frame_utils import attachFrame
+
+from .utils import attachFrame
 import pytest
 
 
-class TestClick(BaseTestCase):
+class TestClick:
     get_dimensions = '''
         function () {
             const rect = document.querySelector('textarea').getBoundingClientRect();
@@ -320,7 +320,7 @@ class TestClick(BaseTestCase):
         assert await frame.evaluate('result') == 'Clicked'
 
 
-class TestFileUpload(BaseTestCase):
+class TestFileUpload:
     @unittest.skipIf(
         sys.platform.startswith('cyg') or sys.platform.startswith('msys'), 'Hangs on cygwin/msys',
     )
@@ -345,7 +345,7 @@ class TestFileUpload(BaseTestCase):
         )
 
 
-class TestType(BaseTestCase):
+class TestType:
     @sync
     async def test_key_type(self):
         await self.page.goto(self.url + 'assets/textarea.html')

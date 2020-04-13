@@ -5,11 +5,11 @@ from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, NetworkError
 
-from .base import BaseTestCase
+
 import pytest
 
 
-class TestQueryObject(BaseTestCase):
+class TestQueryObject:
     @sync
     async def test_query_objects(self):
         await self.page.goto(self.url + 'empty')
@@ -37,7 +37,7 @@ class TestQueryObject(BaseTestCase):
             await self.page.queryObjects(prototypeHandle)
 
 
-class TestJSHandle(BaseTestCase):
+class TestJSHandle:
     @sync
     async def test_get_property(self):
         handle1 = await self.page.evaluateHandle('() => ({one: 1, two: 2, three: 3})')
