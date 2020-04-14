@@ -13,12 +13,10 @@ async def test_handle(isolated_page, server):
 
 
 @sync
-@pytest.mark.skip('NotImplemented - evaluate functions do not support obj references')
 async def test_handle_with_arg(isolated_page, server):
     """test getting handle"""
     p = isolated_page
     navigatorHandle = await p.evaluateHandle("navigator")
-    # this should be able to take local reference
     text = await p.evaluate('e => e.userAgent', navigatorHandle)
     assert 'Mozilla' in text
 
@@ -209,4 +207,3 @@ async def test_toString(isolated_page, server):
     for value, expected in input_to_expected.items():
         handle = await p.evaluateHandle(value)
         assert handle.toString() == expected
-
