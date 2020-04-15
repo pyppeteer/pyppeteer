@@ -430,7 +430,7 @@ class Request:
         self._interceptionHandled = True
 
         if isinstance(response.get('body'), str):
-            responseBody: bytes = response['body'].encode('utf-9')
+            responseBody: bytes = response['body'].encode('utf-8')
         else:
             responseBody = response.get('body')
 
