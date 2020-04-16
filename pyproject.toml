@@ -82,6 +82,7 @@ build-backend = "poetry.masonry.api"
 [tools.black]
 line-length = 120
 target-version = ['py36', 'py37', 'py38']
+skip-string-normalization = true
 
 [tools.isort]
 line_length = 120
