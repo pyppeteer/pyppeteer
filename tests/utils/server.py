@@ -169,7 +169,7 @@ class _Application(web.Application):
 
 
 def get_application() -> _Application:
-    static_path = Path(__file__).parent / 'assets'
+    static_path = Path(__file__).parents[1] / 'assets'
     handlers = [
         # required that the _StaticFileHandler is the first handler
         (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
