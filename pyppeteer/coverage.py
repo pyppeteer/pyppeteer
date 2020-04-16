@@ -11,7 +11,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem
+from pyppeteer.models import CoverageResult, NestedRangeItem, NestedRangeItemInput
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,9 @@ class Coverage:
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
+    async def startJSCoverage(
+        self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,
+    ) -> None:
         """Start JS coverage measurement.
 
         :param resetOnNavigation: Whether to reset coverage on every
@@ -65,7 +67,8 @@ class Coverage:
             ``__pyppeteer_evaluation_script__`` as their url.
         """
         await self._jsCoverage.start(
-            resetOnNavigation=resetOnNavigation, reportAnonymousScripts=reportAnonymousScripts,
+            resetOnNavigation=resetOnNavigation,
+            reportAnonymousScripts=reportAnonymousScripts,
         )
 
     async def stopJSCoverage(self) -> List:
@@ -128,10 +131,12 @@ class JSCoverage:
         self._eventListeners: List = []
         self._resetOnNavigation = False
 
-    async def start(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
+    async def start(
+        self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,
+    ) -> None:
         """Start coverage measurement."""
         if self._enabled:
-            raise PageError('JSCoverage is always enabled.')
+            raise PageError("JSCoverage is always enabled.")
         self._resetOnNavigation = resetOnNavigation
         self._reportAnonymousScript = reportAnonymousScripts
         self._enabled = True
@@ -139,17 +144,23 @@ class JSCoverage:
         self._scriptSources.clear()
         self._eventListeners = [
             helpers.addEventListener(
-                self._client, 'Debugger.scriptParsed', lambda e: self._client.loop.create_task(self._onScriptParsed(e))
+                self._client,
+                "Debugger.scriptParsed",
+                lambda e: self._client.loop.create_task(self._onScriptParsed(e)),
             ),
             helpers.addEventListener(
-                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+                self._client,
+                "Runtime.executionContextsCleared",
+                self._onExecutionContextsCleared,
             ),
         ]
         await asyncio.gather(
-            self._client.send('Profiler.enable'),
-            self._client.send('Profiler.startPreciseCoverage', {'callCount': False, 'detailed': True}),
-            self._client.send('Debugger.enable'),
-            self._client.send('Debugger.setSkipAllPauses', {'skip': True}),
+            self._client.send("Profiler.enable"),
+            self._client.send(
+                "Profiler.startPreciseCoverage", {"callCount": False, "detailed": True}
+            ),
+            self._client.send("Debugger.enable"),
+            self._client.send("Debugger.setSkipAllPauses", {"skip": True}),
         )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
@@ -160,49 +171,51 @@ class JSCoverage:
 
     async def _onScriptParsed(self, event: Dict) -> None:
         # Ignore pyppeteer-injected scripts
-        if event.get('url') == EVALUATION_SCRIPT_URL:
+        if event.get("url") == EVALUATION_SCRIPT_URL:
             return
         # Ignore other anonymous scripts unless the reportAnonymousScript
         # option is True
-        if not event.get('url') and not self._reportAnonymousScript:
+        if not event.get("url") and not self._reportAnonymousScript:
             return
 
-        scriptId = event.get('scriptId')
-        url = event.get('url')
+        scriptId = event.get("scriptId")
+        url = event.get("url")
         try:
-            response = await self._client.send('Debugger.getScriptSource', {'scriptId': scriptId})
+            response = await self._client.send(
+                "Debugger.getScriptSource", {"scriptId": scriptId}
+            )
             self._scriptURLs[scriptId] = url
-            self._scriptSources[scriptId] = response.get('scriptSource')
+            self._scriptSources[scriptId] = response.get("scriptSource")
         except Exception as e:
             # This might happen if the page has already navigated away.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f"An exception occurred: {e}")
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
         if not self._enabled:
-            raise PageError('JSCoverage is not enabled.')
+            raise PageError("JSCoverage is not enabled.")
         self._enabled = False
 
         result = await asyncio.gather(
-            self._client.send('Profiler.takePreciseCoverage'),
-            self._client.send('Profiler.stopPreciseCoverage'),
-            self._client.send('Profiler.disable'),
-            self._client.send('Debugger.disable'),
+            self._client.send("Profiler.takePreciseCoverage"),
+            self._client.send("Profiler.stopPreciseCoverage"),
+            self._client.send("Profiler.disable"),
+            self._client.send("Debugger.disable"),
         )
         helpers.removeEventListeners(self._eventListeners)
 
         coverage = []
-        for entry in result.get('result', []):
-            scriptId = entry.get('scriptId')
+        for entry in result.get("result", []):
+            scriptId = entry.get("scriptId")
             url = self._scriptURLs.get(scriptId)
             text = self._scriptSources.get(scriptId)
             if text is None or url is None:
                 continue
             flattenRanges: List = []
-            for func in entry.get('functions', []):
-                flattenRanges.extend(func.get('ranges', []))
+            for func in entry.get("functions", []):
+                flattenRanges.extend(func.get("ranges", []))
             ranges = convertToDisjointRanges(flattenRanges)
-            coverage.append({'url': url, 'ranges': ranges, 'text': text})
+            coverage.append({"url": url, "ranges": ranges, "text": text})
         return coverage
 
 
@@ -220,23 +233,27 @@ class CSSCoverage:
     async def start(self, resetOnNavigation: bool = True) -> None:
         """Start coverage measurement."""
         if self._enabled:
-            raise PageError('CSSCoverage is already enabled.')
+            raise PageError("CSSCoverage is already enabled.")
         self._resetOnNavigation = resetOnNavigation
         self._enabled = True
         self._stylesheetURLs.clear()
         self._stylesheetSources.clear()
         self._eventListeners = [
             helpers.addEventListener(
-                self._client, 'CSS.styleSheetAdded', lambda e: self._client.loop.create_task(self._onStyleSheet(e))
+                self._client,
+                "CSS.styleSheetAdded",
+                lambda e: self._client.loop.create_task(self._onStyleSheet(e)),
             ),
             helpers.addEventListener(
-                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+                self._client,
+                "Runtime.executionContextsCleared",
+                self._onExecutionContextsCleared,
             ),
         ]
         await asyncio.gather(
-            self._client.send('DOM.enable'),
-            self._client.send('CSS.enable'),
-            self._client.send('CSS.startRuleUsageTracking'),
+            self._client.send("DOM.enable"),
+            self._client.send("CSS.enable"),
+            self._client.send("CSS.startRuleUsageTracking"),
         )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
@@ -246,39 +263,43 @@ class CSSCoverage:
         self._stylesheetSources.clear()
 
     async def _onStyleSheet(self, event: Dict) -> None:
-        header = event.get('header', {})
+        header = event.get("header", {})
         # Ignore anonymous scripts
-        if not header.get('sourceURL'):
+        if not header.get("sourceURL"):
             return
         try:
-            response = await self._client.send('CSS.getStyleSheetText', {'styleSheetId': header['styleSheetId']})
-            self._stylesheetURLs[header['styleSheetId']] = header['sourceURL']
-            self._stylesheetSources[header['styleSheetId']] = response['text']
+            response = await self._client.send(
+                "CSS.getStyleSheetText", {"styleSheetId": header["styleSheetId"]}
+            )
+            self._stylesheetURLs[header["styleSheetId"]] = header["sourceURL"]
+            self._stylesheetSources[header["styleSheetId"]] = response["text"]
         except Exception as e:
             # This might happen if the page has already navigated away.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f"An exception occurred: {e}")
 
     async def stop(self) -> List[CoverageResult]:
         """Stop coverage measurement and return results."""
         if not self._enabled:
-            raise PageError('CSSCoverage is not enabled.')
+            raise PageError("CSSCoverage is not enabled.")
         self._enabled = False
-        ruleTrackingResponse = await self._client.send('CSS.stopRuleUsageTracking')
-        await asyncio.gather(self._client.send('CSS.disable'), self._client.send('DOM.disable'))
+        ruleTrackingResponse = await self._client.send("CSS.stopRuleUsageTracking")
+        await asyncio.gather(
+            self._client.send("CSS.disable"), self._client.send("DOM.disable")
+        )
         helpers.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
         styleSheetIdToCoverage: Dict[str, List[Dict[str, str]]] = {}
-        for entry in ruleTrackingResponse['ruleUsage']:
-            ranges = styleSheetIdToCoverage.get(entry['styleSheetId'])
+        for entry in ruleTrackingResponse["ruleUsage"]:
+            ranges = styleSheetIdToCoverage.get(entry["styleSheetId"])
             if not ranges:
                 ranges = []
-                styleSheetIdToCoverage[entry['styleSheetId']] = ranges
+                styleSheetIdToCoverage[entry["styleSheetId"]] = ranges
             ranges.append(
                 {
-                    'startOffset': entry['startOffset'],
-                    'endOffset': entry['endOffset'],
-                    'count': 1 if entry['used'] else 0,
+                    "startOffset": entry["startOffset"],
+                    "endOffset": entry["endOffset"],
+                    "count": 1 if entry["used"] else 0,
                 }
             )
 
@@ -286,13 +307,17 @@ class CSSCoverage:
         for styleSheetId in self._stylesheetURLs:
             url = self._stylesheetURLs.get(styleSheetId)
             text = self._stylesheetSources.get(styleSheetId)
-            ranges = convertToDisjointRanges(styleSheetIdToCoverage.get(styleSheetId, []))
-            coverage.append({'url': url, 'ranges': ranges, 'text': text})
+            ranges = convertToDisjointRanges(
+                styleSheetIdToCoverage.get(styleSheetId, [])
+            )
+            coverage.append({"url": url, "ranges": ranges, "text": text})
 
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[NestedRangeItem]:
+def convertToDisjointRanges(
+    nestedRanges: List[NestedRangeItemInput],
+) -> List[NestedRangeItem]:
     """
     Convert ranges.
     NestedRange members support keys:
@@ -302,21 +327,25 @@ def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[Ne
     """
     points: List = []
     for nested_range in nestedRanges:
-        points.append({'offset': nested_range['startOffset'], 'type': 0, 'range': nested_range})
-        points.append({'offset': nested_range['endOffset'], 'type': 1, 'range': nested_range})
+        points.append(
+            {"offset": nested_range["startOffset"], "type": 0, "range": nested_range}
+        )
+        points.append(
+            {"offset": nested_range["endOffset"], "type": 1, "range": nested_range}
+        )
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:
         # Sort with increasing offsets.
-        if a['offset'] != b['offset']:
-            return a['offset'] - b['offset']
+        if a["offset"] != b["offset"]:
+            return a["offset"] - b["offset"]
         # All "end" points should go before "start" points.
-        if a['type'] != b['type']:
-            return b['type'] - a['type']
-        aLength = a['range']['endOffset'] - a['range']['startOffset']
-        bLength = b['range']['endOffset'] - b['range']['startOffset']
+        if a["type"] != b["type"]:
+            return b["type"] - a["type"]
+        aLength = a["range"]["endOffset"] - a["range"]["startOffset"]
+        bLength = b["range"]["endOffset"] - b["range"]["startOffset"]
         # For two "start" points, the one with longer range goes first.
-        if a['type'] == 0:
+        if a["type"] == 0:
             return bLength - aLength
         # For two "end" points, the one with shorter range goes first.
         return aLength - bLength
@@ -328,16 +357,20 @@ def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[Ne
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:
-        if hitCountStack and lastOffset < point['offset'] and hitCountStack[len(hitCountStack) - 1] > 0:
+        if (
+            hitCountStack
+            and lastOffset < point["offset"]
+            and hitCountStack[len(hitCountStack) - 1] > 0
+        ):
             lastResult = results[-1] if results else None
-            if lastResult and lastResult['end'] == lastOffset:
-                lastResult['end'] = point['offset']
+            if lastResult and lastResult["end"] == lastOffset:
+                lastResult["end"] = point["offset"]
             else:
-                results.append({'start': lastOffset, 'end': point['offset']})
-        lastOffset = point['offset']
-        if point['type'] == 0:
-            hitCountStack.append(point['range']['count'])
+                results.append({"start": lastOffset, "end": point["offset"]})
+        lastOffset = point["offset"]
+        if point["type"] == 0:
+            hitCountStack.append(point["range"]["count"])
         else:
             hitCountStack.pop()
     # Filter out empty ranges.
-    return [range for range in results if range['end'] - range['start'] > 1]
+    return [range for range in results if range["end"] - range["start"] > 1]
