@@ -296,6 +296,7 @@ class ProtocolTypesGenerator:
         Returns: None
         """
         expansion = 'Dict[str, Union[Dict[str, Any], str, bool, int, float, List]]'
+        # todo: networkx will soon support sets: https://github.com/networkx/networkx/pull/3907
         for recursive_refs in nx.simple_cycles(nx.DiGraph([*self.td_references])):
             any_recursive_ref = "|".join(recursive_refs)
             for recursing_itm in recursive_refs:
