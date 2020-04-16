@@ -7,7 +7,6 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.models import JSFunctionArg
@@ -31,7 +30,7 @@ class Worker(AsyncIOEventEmitter):
 
     def __init__(
         self,
-        client: 'CDPSession',
+        client: "CDPSession",
         url: str,
         consoleAPICalled: Callable[[str, List[JSHandle], Any], None],
         exceptionThrown: Callable[[Dict], None],
@@ -52,26 +51,27 @@ class Worker(AsyncIOEventEmitter):
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 return JSHandle(executionContext, client, remoteObject)
 
-            executionContext = ExecutionContext(client, event['context'], None)
+            executionContext = ExecutionContext(client, event["context"], None)
             self._executionContextCallback(executionContext)
 
-        self._client.once('Runtime.executionContextCreated', onExecutionContentCreated)
+        self._client.once("Runtime.executionContextCreated", onExecutionContentCreated)
         try:
             # This might fail if the target is closed before we receive all
             # execution contexts.
-            self._client.send('Runtime.enable', {})
+            self._client.send("Runtime.enable", {})
         except Exception as e:
-            logger.error(f'An exception occured: {e}')
+            logger.error(f"An exception occurred: {e}")
 
         def onConsoleAPICalled(event: Dict[str, Any]) -> None:
             args: List[JSHandle] = []
-            for arg in event.get('args', []):
+            for arg in event.get("args", []):
                 args.append(jsHandleFactory(arg))
-            consoleAPICalled(event['type'], args, event['stackTrace'])
+            consoleAPICalled(event["type"], args, event["stackTrace"])
 
-        self._client.on('Runtime.consoleAPICalled', onConsoleAPICalled)
+        self._client.on("Runtime.consoleAPICalled", onConsoleAPICalled)
         self._client.on(
-            'Runtime.exceptionThrown', lambda exception: exceptionThrown(exception['exceptionDetails']),
+            "Runtime.exceptionThrown",
+            lambda exception: exceptionThrown(exception["exceptionDetails"]),
         )
 
     def _executionContextCallback(self, value: ExecutionContext) -> None:
@@ -99,4 +99,6 @@ class Worker(AsyncIOEventEmitter):
 
         Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.
         """  # noqa: E501
-        return await (await self._executionContextPromise).evaluateHandle(pageFunction, *args)
+        return await (await self._executionContextPromise).evaluateHandle(
+            pageFunction, *args
+        )
