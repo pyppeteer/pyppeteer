@@ -79,12 +79,12 @@ pre-commit = "^2.2.0"
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
-[tools.black]
+[tool.black]
 line-length = 120
 target-version = ['py36', 'py37', 'py38']
 skip-string-normalization = true
 
-[tools.isort]
+[tool.isort]
 line_length = 120
 multi_line_output = 3
 include_trailing_comma = true
