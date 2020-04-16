@@ -6,6 +6,7 @@ repos:
       - id: end-of-file-fixer
       - id: check-yaml
       - id: check-toml
+      - id: check-builtin-literals
       - id: debug-statements
       - id: check-added-large-files
   - repo: https://github.com/asottile/seed-isort-config
@@ -16,6 +17,7 @@ repos:
     rev: 4.3.21
     hooks:
       - id: isort
+        additional_dependencies: [toml]
   - repo: https://github.com/psf/black
     rev: stable
     hooks:
