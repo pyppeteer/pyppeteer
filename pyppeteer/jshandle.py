@@ -3,14 +3,13 @@ import copy
 import logging
 import math
 import os
-from idlelib.rpc import RemoteObject
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
-from pyppeteer.models import JSFunctionArg, MouseButton
+from pyppeteer.models import JSFunctionArg, MouseButton, Protocol
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
@@ -36,7 +35,7 @@ class JSHandle:
     with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.
     """
 
-    def __init__(self, context: 'ExecutionContext', client: 'CDPSession', remoteObject: 'RemoteObject'):
+    def __init__(self, context: 'ExecutionContext', client: 'CDPSession', remoteObject: Protocol.Runtime.RemoteObject):
         self._context = context
         self._client = client
         self._remoteObject = remoteObject
@@ -120,7 +119,7 @@ class ElementHandle(JSHandle):
         self,
         context: 'ExecutionContext',
         client: CDPSession,
-        remoteObject: RemoteObject,
+        remoteObject: Protocol.Runtime.RemoteObject,
         page: 'Page',
         frameManager: 'FrameManager',
     ):
