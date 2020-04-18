@@ -16,38 +16,37 @@ def dimensions():
     #   height: rect.height
 
 
-def test_click_document(isolated_page, server):
+@sync
+async def test_click_document(isolated_page, server):
     """should click the document"""
-    #   await page.evaluate(() => {
-    #     window.clickPromise = new Promise(resolve => {
-    #       document.addEventListener('click', event => {
-    #         resolve({
-    #           type: event.type,
-    #           detail: event.detail,
-    #           clientX: event.clientX,
-    #           clientY: event.clientY,
-    #           isTrusted: event.isTrusted,
-    #           button: event.button
-    #         });
-    #       });
-    #     });
-    #   });
-    #   await page.mouse.click(50, 60);
-    #   const event = await page.evaluate(() => window.clickPromise);
-    #   expect(event.type).toBe('click');
-    #   expect(event.detail).toBe(1);
-    #   expect(event.clientX).toBe(50);
-    #   expect(event.clientY).toBe(60);
-    #   expect(event.isTrusted).toBe(true);
-    #   expect(event.button).toBe(0);
-    # });
+    await isolated_page.evaluate("""
+    () => {
+      window.clickPromise = new Promise(resolve => {
+        document.addEventListener('click', event => {
+          resolve({
+            type: event.type,
+            detail: event.detail,
+            clientX: event.clientX,
+            clientY: event.clientY,
+            isTrusted: event.isTrusted,
+            button: event.button
+          });
+        });
+      });
+    }
+    """)
+    await isolated_page.mouse.click(50, 60)
+    event = await isolated_page.evaluate("window.clickPromise")
+    assert event['type'] == 'click'
+    assert event['detail'] == 1
+    assert event['clientX'] == 50
+    assert event['clientY'] == 60
+    assert event['isTrusted']
+    assert event['button'] == 0
 
 @chrome_only
-def test_resize_textarea():
+def test_resize_textarea(isolated_page, server):
     """should resize the textarea"""
-    # , async() => {
-    # const { page, server } = getTestState();
-    #
     # await page.goto(server.PREFIX + '/input/textarea.html');
     # const {x, y, width, height} = await page.evaluate(dimensions);
     # const mouse = page.mouse;
