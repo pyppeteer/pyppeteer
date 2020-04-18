@@ -1,4 +1,5 @@
 from asyncio import gather
+from collections import namedtuple
 
 from tests.conftest import chrome_only
 
@@ -6,18 +7,28 @@ import pytest
 from syncer import sync
 
 
-def dimensions():
-    pass
-    # const rect = document.querySelector('textarea').getBoundingClientRect();
-    # return {
-    #   x: rect.left,
-    #   y: rect.top,
-    #   width: rect.width,
-    #   height: rect.height
+dimensions = """() =>
+    {
+      const rect = document.querySelector('textarea').getBoundingClientRect();
+      return {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+"""
+
+
+async def evaluate_dimensions(isolated_page):
+    """Execute `dimensions` script and parse value to namedTuple with x, y, width and height fields."""
+    result = await isolated_page.evaluate(dimensions)
+    rectTuple = namedtuple("rect", "x y width height")
+    return rectTuple(x=result['x'], y=result['y'], width=result['width'], height=result['height'])
 
 
 @sync
-async def test_click_document(isolated_page, server):
+async def test_click_document(isolated_page):
     """should click the document"""
     await isolated_page.evaluate("""
     () => {
@@ -44,23 +55,29 @@ async def test_click_document(isolated_page, server):
     assert event['isTrusted']
     assert event['button'] == 0
 
-@chrome_only
-def test_resize_textarea(isolated_page, server):
-    """should resize the textarea"""
-    # await page.goto(server.PREFIX + '/input/textarea.html');
-    # const {x, y, width, height} = await page.evaluate(dimensions);
-    # const mouse = page.mouse;
-    # await mouse.move(x + width - 4, y + height - 4);
-    # await mouse.down();
-    # await mouse.move(x + width + 100, y + height + 100);
-    # await mouse.up();
-    # const newDimensions = await page.evaluate(dimensions);
-    # expect(newDimensions.width).toBe(Math.round(width + 104));
-    # expect(newDimensions.height).toBe(Math.round(height + 104));
 
+@sync
 @chrome_only
-def test_select_text_with_mouse():
+async def test_resize_textarea(isolated_page, server):
+    """should resize the textarea"""
+    page = isolated_page
+    await page.goto(server / 'input/textarea.html')
+    x, y, width, height = await evaluate_dimensions(page)
+    mouse = page.mouse
+    await mouse.move(x + width - 4, y + height - 4)
+    await mouse.down()
+    await mouse.move(x + width + 100, y + height + 100)
+    await mouse.up()
+    newDimensions = await evaluate_dimensions(page)
+    assert newDimensions.width == round(width + 104)
+    assert newDimensions.height == round(height + 104)
+
+
+@sync
+@chrome_only
+async def test_select_text_with_mouse():
     """should select the text with mouse"""
+    assert True
     # const { page, server } = getTestState();
     #
     # await page.goto(server.PREFIX + '/input/textarea.html');
