@@ -138,39 +138,39 @@ async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
     # In Firefox, the Meta modifier only exists on Mac
     if firefox and platform.system() != 'darwin':
         del modifiers['Meta']
-    for modifier in modifiers:
-        await page.keyboard.down(modifier)
+    for modifier_key, modifier_value in modifiers.items():
+        await page.keyboard.down(modifier_key)
         await page.click('#button-3')
-        if not await page.evaluate("mod => window.lastEvent[mod], modifiers[modifier]"):
-            raise Exception(f"{modifiers[modifier]} should be true")
-        await page.keyboard.up(modifier)
+        eval_modifier = await page.evaluate(f"mod => window.lastEvent[mod], \"{modifier_value}\"")
+        assert eval_modifier, f"{modifier_key, modifier_value} should be true"
+        await page.keyboard.up(modifier_key)
 
     await page.click('#button-3')
-    for modifier in modifiers:
-        if await page.evaluate("mod => window.lastEvent[mod], modifiers[modifier]"):
-            raise Exception(f"{modifiers[modifier]} should be false")
+    for modifier_key, modifier_value in modifiers.items():
+        assert not await page.evaluate(f"mod => window.lastEvent[mod], '{modifier_value}'"),  \
+            f"{modifier_key, modifier_value} should be false"
 
 
+@sync
 @chrome_only
-def test_tween_mouse_movement():
+async def test_tween_mouse_movement(isolated_page):
     """should tween mouse movement"""
-    # const { page } = getTestState();
-    #
-    # await page.mouse.move(100, 100);
-    # await page.evaluate(() => {
-    #   window.result = [];
-    #   document.addEventListener('mousemove', event => {
-    #     window.result.push([event.clientX, event.clientY]);
-    #   });
-    # });
-    # await page.mouse.move(200, 300, {steps: 5});
-    # expect(await page.evaluate('result')).toEqual([
-    #   [120, 140],
-    #   [140, 180],
-    #   [160, 220],
-    #   [180, 260],
-    #   [200, 300]
-    # ]);
+    page = isolated_page
+    await page.mouse.move(100, 100)
+    await page.evaluate("""() => {
+      window.result = [];
+      document.addEventListener('mousemove', event => {
+        window.result.push([event.clientX, event.clientY]);
+      });
+    }""")
+    await page.mouse.move(200, 300, steps=5)
+    assert await page.evaluate('result') == [
+      [120, 140],
+      [140, 180],
+      [160, 220],
+      [180, 260],
+      [200, 300]
+    ]
 
 
 # @see https://crbug.com/929806
