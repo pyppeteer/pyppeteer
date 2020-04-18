@@ -81,7 +81,6 @@ class Connection(AsyncIOEventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        exception = None
         try:
             self._connected = True
             self.connection = self._transport
@@ -96,9 +95,9 @@ class Connection(AsyncIOEventEmitter):
                 # wait 1 async loop frame, no other data will be accessible in between frames
                 await asyncio.sleep(0)
         except Exception as excpt:
-            exception = str(excpt)
-        finally:
-            self.loop.create_task(self.dispose(reason=exception))
+            await self.dispose(reason=str(excpt))
+            raise excpt
+        await self.dispose(reason=None)
 
     async def _async_send(self, msg: Message) -> None:
         while not self._connected:

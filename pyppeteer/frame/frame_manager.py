@@ -17,9 +17,9 @@ from pyppeteer.frame import Frame
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response
+from pyppeteer.execution_context import ExecutionContext
 
 if TYPE_CHECKING:
-    from pyppeteer.execution_context import ExecutionContext
     from pyppeteer.page import Page
 
 logger = logging.getLogger(__name__)

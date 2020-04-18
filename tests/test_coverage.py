@@ -86,7 +86,7 @@ class TestJSCoverage:
         coverage = await isolated_page.coverage.stopJSCoverage()
         assert len(coverage) == 1
         entry = coverage[0]
-        assert 'assets/jscoverage/unused.html' in entry['url']
+        assert '/jscoverage/unused.html' in entry['url']
         assert len(entry['ranges']) == 0
 
     @sync
