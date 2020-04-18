@@ -126,15 +126,16 @@ async def test_trigger_hover_removed_window_node(isolated_page, server):
     assert await page.evaluate("() => document.querySelector('button:hover').id") == 'button-6'
 
 
-@pytest.mark.skip("pyppeteer.errors.NetworkError: Protocol error (Runtime.callFunctionOn): "
-             "Given expression does not evaluate to a function")
 @sync
 async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
     """should set modifier keys on click"""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.evaluate("""
-        () => document.querySelector('#button-3').addEventListener('mousedown', e => window.lastEvent = e, true)
+        () => {
+            const btn = document.querySelector('#button-3');
+            btn.addEventListener('mousedown', e => window.lastEvent = e, true);
+        }
     """)
     modifiers = {'Shift': 'shiftKey', 'Control': 'ctrlKey', 'Alt': 'altKey', 'Meta': 'metaKey'}
     # In Firefox, the Meta modifier only exists on Mac
@@ -143,13 +144,13 @@ async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
     for modifier_key, modifier_value in modifiers.items():
         await page.keyboard.down(modifier_key)
         await page.click('#button-3')
-        eval_modifier = await page.evaluate(f"mod => window.lastEvent[mod], \"{modifier_value}\"")
+        eval_modifier = await page.evaluate("mod => window.lastEvent[mod]", modifier_value)
         assert eval_modifier, f"{modifier_key, modifier_value} should be true"
         await page.keyboard.up(modifier_key)
 
     await page.click('#button-3')
     for modifier_key, modifier_value in modifiers.items():
-        assert not await page.evaluate(f"mod => window.lastEvent[mod], '{modifier_value}'"),  \
+        assert not await page.evaluate("mod => window.lastEvent[mod]", modifier_value),  \
             f"{modifier_key, modifier_value} should be false"
 
 
