@@ -174,8 +174,8 @@ class JSCoverage:
             self._scriptURLs[scriptId] = url
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
-            # This might happen if the page has already navigated away.
-            logger.error(f'An exception occurred: {e}')
+            logger.error(f'An exception occurred during _onScriptParsed handling: {e}'
+                         f'\nThis might happen if the page has already navigated away.')
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
@@ -195,6 +195,8 @@ class JSCoverage:
         for entry in result.get('result', []):
             scriptId = entry.get('scriptId')
             url = self._scriptURLs.get(scriptId)
+            if not url and self._reportAnonymousScript:
+                url = f'debugger://VM{scriptId}'
             text = self._scriptSources.get(scriptId)
             if text is None or url is None:
                 continue
