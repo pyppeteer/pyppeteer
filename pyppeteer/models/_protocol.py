@@ -6403,7 +6403,7 @@ class readReturnValues(TypedDict, total=False):
     Attributes:
         base64Encoded: Set if the data is base64-encoded
         data: Data that were read.
-        eof: Set if the end-of-file condition occured while reading.
+        eof: Set if the end-of-file condition occurred while reading.
     """
 
     base64Encoded: bool
