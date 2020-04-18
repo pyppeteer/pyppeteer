@@ -100,17 +100,20 @@ async def test_select_text_with_mouse(isolated_page, server):
 
 @sync
 @chrome_only
-async def test_trigger_hover_state():
+async def test_trigger_hover_state(isolated_page, server):
     """should trigger hover state"""
-    # const { page, server } = getTestState();
-    #
-    # await page.goto(server.PREFIX + '/input/scrollable.html');
-    # await page.hover('#button-6');
-    # expect(await page.evaluate(() => document.querySelector('button:hover').id)).toBe('button-6');
-    # await page.hover('#button-2');
-    # expect(await page.evaluate(() => document.querySelector('button:hover').id)).toBe('button-2');
-    # await page.hover('#button-91');
-    # expect(await page.evaluate(() => document.querySelector('button:hover').id)).toBe('button-91');
+    page = isolated_page
+    await page.goto(server / 'input/scrollable.html')
+    await page.hover('#button-6')
+    button6_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    assert button6_id == 'button-6'
+    await page.hover('#button-2')
+    button2_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    assert button2_id == 'button-2'
+    await page.hover('#button-91')
+    button91_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    assert button91_id == 'button-91'
+
 
 @chrome_only
 def test_trigger_hover_removed_window_node():
