@@ -174,20 +174,18 @@ async def test_tween_mouse_movement(isolated_page):
 
 
 # @see https://crbug.com/929806
+@sync
 @chrome_only
-def test_mobile_viewport():
+async def test_mobile_viewport(isolated_page, server):
     """should work with mobile viewports and cross process navigations"""
-    # const { page, server } = getTestState();
-    #
-    # await page.goto(server.EMPTY_PAGE);
-    # await page.setViewport({width: 360, height: 640, isMobile: true});
-    # await page.goto(server.CROSS_PROCESS_PREFIX + '/mobile.html');
-    # await page.evaluate(() => {
-    #   document.addEventListener('click', event => {
-    #     window.result = {x: event.clientX, y: event.clientY};
-    #   });
-    # });
-    #
-    # await page.mouse.click(30, 40);
-    #
-    # expect(await page.evaluate('result')).toEqual({x: 30, y: 40});
+    page = isolated_page
+    await page.goto(server / "empty.html")
+    await page.setViewport({'width': 360, 'height': 640, 'isMobile': True})
+    await page.goto(server / 'mobile.html')
+    await page.evaluate("""() => {
+      document.addEventListener('click', event => {
+        window.result = {x: event.clientX, y: event.clientY};
+      });
+    }""")
+    await page.mouse.click(30, 40)
+    assert await page.evaluate('result') == {'x': 30, 'y': 40}
