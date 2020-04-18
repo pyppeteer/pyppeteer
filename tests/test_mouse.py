@@ -1,4 +1,4 @@
-from asyncio import gather
+import platform
 from collections import namedtuple
 
 from tests.conftest import chrome_only
@@ -115,38 +115,40 @@ async def test_trigger_hover_state(isolated_page, server):
     assert button91_id == 'button-91'
 
 
+@sync
 @chrome_only
-def test_trigger_hover_removed_window_node():
+async def test_trigger_hover_removed_window_node(isolated_page, server):
     """should trigger hover state with removed window.Node"""
-    # const { page, server } = getTestState();
-    #
-    # await page.goto(server.PREFIX + '/input/scrollable.html');
-    # await page.evaluate(() => delete window.Node);
-    # await page.hover('#button-6');
-    # expect(await page.evaluate(() => document.querySelector('button:hover').id)).toBe('button-6');
+    page = isolated_page
+    await page.goto(server / 'input/scrollable.html')
+    await page.evaluate("() => delete window.Node")
+    await page.hover('#button-6')
+    assert await page.evaluate("() => document.querySelector('button:hover').id") == 'button-6'
 
 
-def test_set_modifier_keys_onclick():
+@sync
+async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
     """should set modifier keys on click"""
-    # const { page, server, isFirefox } = getTestState();
-    #
-    # await page.goto(server.PREFIX + '/input/scrollable.html');
-    # await page.evaluate(() => document.querySelector('#button-3').addEventListener('mousedown', e => window.lastEvent = e, true));
-    # const modifiers = {'Shift': 'shiftKey', 'Control': 'ctrlKey', 'Alt': 'altKey', 'Meta': 'metaKey'};
-    # // In Firefox, the Meta modifier only exists on Mac
-    # if (isFirefox && os.platform() !== 'darwin')
-    #   delete modifiers['Meta'];
-    # for (const modifier in modifiers) {
-    #   await page.keyboard.down(modifier);
-    #   await page.click('#button-3');
-    #   if (!(await page.evaluate(mod => window.lastEvent[mod], modifiers[modifier])))
-    #     throw new Error(modifiers[modifier] + ' should be true');
-    #   await page.keyboard.up(modifier);
-    # }
-    # await page.click('#button-3');
-    # for (const modifier in modifiers) {
-    #   if ((await page.evaluate(mod => window.lastEvent[mod], modifiers[modifier])))
-    #     throw new Error(modifiers[modifier] + ' should be false');
+    page = isolated_page
+    await page.goto(server / 'input/scrollable.html')
+    await page.evaluate("""
+        () => document.querySelector('#button-3').addEventListener('mousedown', e => window.lastEvent = e, true)
+    """)
+    modifiers = {'Shift': 'shiftKey', 'Control': 'ctrlKey', 'Alt': 'altKey', 'Meta': 'metaKey'}
+    # In Firefox, the Meta modifier only exists on Mac
+    if firefox and platform.system() != 'darwin':
+        del modifiers['Meta']
+    for modifier in modifiers:
+        await page.keyboard.down(modifier)
+        await page.click('#button-3')
+        if not await page.evaluate("mod => window.lastEvent[mod], modifiers[modifier]"):
+            raise Exception(f"{modifiers[modifier]} should be true")
+        await page.keyboard.up(modifier)
+
+    await page.click('#button-3')
+    for modifier in modifiers:
+        if await page.evaluate("mod => window.lastEvent[mod], modifiers[modifier]"):
+            raise Exception(f"{modifiers[modifier]} should be false")
 
 
 @chrome_only
