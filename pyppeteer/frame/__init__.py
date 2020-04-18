@@ -6,6 +6,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.errors import BrowserError, PageError
+from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.models import JSFunctionArg, WaitTargets
 from pyppeteer.network_manager import Response
@@ -31,11 +32,11 @@ class Frame:
         self._lifecycleEvents: Set[str] = set()
         self._mainWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
         self._secondaryWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
-        self._childFrames: Set[Frame] = set()  # maybe list
+        self._childFrames: Set[Frame] = set()
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-        self._waitTasks: Set[WaitTask] = set()  # maybe list
+        self._waitTasks: Set[WaitTask] = set()
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
@@ -59,15 +60,15 @@ class Frame:
         self.tap = self.secondaryWorld.tap
 
     @property
-    async def executionContext(self):
+    async def executionContext(self) -> Optional['ExecutionContext']:
         return await self.mainWorld.executionContext
 
     @property
-    async def content(self):
+    async def content(self) -> str:
         return await self.secondaryWorld.content
 
     @property
-    async def title(self):
+    async def title(self) -> str:
         return await self.secondaryWorld.title
 
     async def goto(
@@ -121,12 +122,18 @@ class Frame:
         """
         return self._detached
 
-    async def addScriptTag(self, url=None, path=None, content=None, type='') -> ElementHandle:
+    async def addScriptTag(
+        self,
+        url: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        content: Optional[str] = None,
+        type_: str = '',
+    ) -> ElementHandle:
         """Add script tag to this frame.
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, _type=type)
+        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, type_=type_)
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[str, Path]] = None, content: Optional[str] = None

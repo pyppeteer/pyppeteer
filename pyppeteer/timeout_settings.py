@@ -10,7 +10,7 @@ puppeteer equivalent: TimeoutSettings.js
 DEFAULT_TIMEOUT = 30_000  # 30 seconds
 
 
-class TimeoutSettings(object):
+class TimeoutSettings:
     def __init__(self):
         self._defaultTimeout = None
         self._defaultNavigationTimeout = None

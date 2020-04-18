@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from typing import Set
 
 
-class Keyboard(object):
+class Keyboard:
     """Keyboard class provides as api for managing a virtual keyboard.
 
     The high level api is :meth:`type`, which takes raw characters and
@@ -240,7 +240,7 @@ class Keyboard(object):
         await self.up(key)
 
 
-class Mouse(object):
+class Mouse:
     """Mouse class.
 
     The :class:`Mouse` operates in main-frame CSS pixels relative to the
@@ -337,7 +337,7 @@ class Mouse(object):
         )
 
 
-class Touchscreen(object):
+class Touchscreen:
     """Touchscreen class."""
 
     def __init__(self, client: CDPSession, keyboard: Keyboard) -> None:

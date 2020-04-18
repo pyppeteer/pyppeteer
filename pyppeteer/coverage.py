@@ -323,8 +323,8 @@ def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[Ne
 
     points.sort(key=cmp_to_key(_sort_func))
 
-    hitCountStack: List[int] = []
-    results: List[Dict] = []
+    hitCountStack = []
+    results = []
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:

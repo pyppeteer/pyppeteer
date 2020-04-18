@@ -9,7 +9,7 @@ from typing import Sequence
 from pyppeteer.connection import CDPSession
 
 
-class Tracing(object):
+class Tracing:
     """Tracing class.
 
     You can use :meth:`start` and :meth:`stop` to create a trace file which can

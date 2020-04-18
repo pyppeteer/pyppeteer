@@ -24,7 +24,7 @@ EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
 
 
-class ExecutionContext(object):
+class ExecutionContext:
     """Execution Context class."""
 
     def __init__(self, client: CDPSession, contextPayload: Dict, world: Optional['DOMWorld']) -> None:

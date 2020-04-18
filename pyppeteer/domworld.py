@@ -19,7 +19,7 @@ async def readFileAsync(path, encoding):
     return Path(path).read_text(encoding=encoding)
 
 
-class DOMWorld(object):
+class DOMWorld:
     def __init__(
         self, frameManager: 'FrameManager', frame: 'Frame', timeoutSettings: TimeoutSettings,
     ):
@@ -128,7 +128,7 @@ class DOMWorld(object):
         return value
 
     @property
-    async def content(self):
+    async def content(self) -> str:
         return await self.evaluate(
             """
             () => {
@@ -170,7 +170,7 @@ class DOMWorld(object):
         url: Optional[str] = None,
         path: Optional[Union[str, Path]] = None,
         content: Optional[str] = None,
-        _type: str = '',
+        type_: str = '',
     ) -> Union['ElementHandle', 'JSHandle']:
         addScriptUrl = """
         async function addScriptUrl(url, type) {
@@ -203,7 +203,7 @@ class DOMWorld(object):
         context = await self.executionContext
         if url:
             try:
-                return await context.evaluateHandle(addScriptUrl, url, _type)
+                return await context.evaluateHandle(addScriptUrl, url, type_)
             except Exception as e:
                 raise BrowserError(f'Loading script from {url} failed: {e}')
         if path:
@@ -214,16 +214,16 @@ class DOMWorld(object):
                 raise ValueError(f'The specified path, {path.name}, is not a file')
             contents = await readFileAsync(path, 'utf8')
             contents += '//# sourceURL' + path.name
-            f = context.evaluateHandle(addScriptContent, contents, _type)
+            f = context.evaluateHandle(addScriptContent, contents, type_)
             return (await f).asElement()
         if content:
-            f = context.evaluateHandle(addScriptContent, content, _type)
+            f = context.evaluateHandle(addScriptContent, content, type_)
             return (await f).asElement()
         raise BrowserError('provide a url, path or content argument')
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
-    ) -> Optional['ElementHandle']:
+    ) -> 'ElementHandle':
         addStyleUrl = """
         async function addStyleUrl(url) {
           const link = document.createElement('link');
@@ -262,7 +262,7 @@ class DOMWorld(object):
         if path:
             path = Path(path)
             contents = await readFileAsync(path, 'utf8')
-            contents += '/*# sourceURL=' + path.name + '*/'
+            contents += f'/*# sourceURL={path.name}*/'
             return (await context.evaluateHandle(addStyleContent, contents)).asElement()
 
         if content:
@@ -334,7 +334,7 @@ class DOMWorld(object):
 
     @property
     async def title(self) -> str:
-        return await self.evaluate('() => document.title')
+        return await self.evaluate('document.title')
 
     async def _waitForSelectorOrXpath(
         self,
@@ -384,7 +384,7 @@ class DOMWorld(object):
         return handle.asElement()
 
 
-class WaitTask(object):
+class WaitTask:
     """WaitTask class.
 
     Instance of this class is awaitable.

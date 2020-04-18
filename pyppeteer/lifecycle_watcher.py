@@ -37,18 +37,16 @@ class LifecycleWatcher:
         self, frameManager: 'FrameManager', frame: 'Frame', timeout: Optional[float], waitUntil: WaitTargets = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
-        self._expectedLifecycle: List[str] = []
+        self._expectedLifecycle = []
         if isinstance(waitUntil, str):
             waitUntil = [waitUntil]
         for value in waitUntil:
             try:
-                protocolEvent = pyppeteerToProtocolLifecycle[value]
+                self._expectedLifecycle.append(pyppeteerToProtocolLifecycle[value])
             except KeyError:
                 raise KeyError(
                     f'Unknown value for waitUntil: "{value}", it\'s possible "{value}" is no longer supported'
                 )
-            else:
-                self._expectedLifecycle.append(protocolEvent)
 
         self._futures = []
         self._frameManager = frameManager

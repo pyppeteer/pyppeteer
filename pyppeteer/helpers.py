@@ -9,12 +9,15 @@ import logging
 import math
 import re
 from asyncio.futures import Future
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, TYPE_CHECKING
 
 from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, TimeoutError
+
+if TYPE_CHECKING:
+    from pyppeteer.models import Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +90,7 @@ unserializableValueMap = {
 }
 
 
-def valueFromRemoteObject(remoteObject: Dict) -> Any:
+def valueFromRemoteObject(remoteObject: 'Protocol.Runtime.RemoteObject') -> Any:
     """Serialize value of remote object."""
     if remoteObject.get('objectId'):
         raise ElementHandleError('Cannot extract value when objectId is given')

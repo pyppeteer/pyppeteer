@@ -108,7 +108,7 @@ class Page(AsyncIOEventEmitter):
         self._pageBindings: Dict[str, Callable[..., Any]] = {}
         self._coverage = Coverage(client)
         self._javascriptEnabled = True
-        self._viewport: Optional[Viewport] = None
+        self._viewport: Optional[Protocol.Page.Viewport] = None
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = TaskQueue()
@@ -188,6 +188,8 @@ class Page(AsyncIOEventEmitter):
             return
         frame = self._frameManager.frame(event['frameId'])
         context = await frame.executionContext
+        if context is None:
+            raise BrowserError(f'Frame {frame} execution\'s context is not defined')
         element = await context._adoptBackednNodeId(event['backendNodeId'])
         interceptors = copy(self._fileChooserInterceptors)
         self._fileChooserInterceptors.clear()
@@ -250,7 +252,7 @@ class Page(AsyncIOEventEmitter):
             helpers.releaseObject(self._client, arg)
 
         if source != 'worker':
-            self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
+            self.emit(Events.Page.Console, ConsoleMessage(level, text, location={'url': url, 'lineNumber': lineNumber}))
 
     @property
     def mainFrame(self) -> Frame:
@@ -521,7 +523,7 @@ class Page(AsyncIOEventEmitter):
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
         """
-        return await self.mainFrame.addScriptTag(url=url, path=path, content=content, _type=_type)
+        return await self.mainFrame.addScriptTag(url=url, path=path, content=content, type_=_type)
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
@@ -703,7 +705,7 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             logger.error(f'An exception occurred: {e}')
 
-    def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace=None) -> None:
+    def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace: Protocol.Runtime.StackTrace=None) -> None:
         if not self.listeners(Events.Page.Console):
             for arg in args:
                 self._client.loop.create_task(arg.dispose())
@@ -818,7 +820,7 @@ class Page(AsyncIOEventEmitter):
         )[0]
 
     async def waitForNavigation(
-        self, timeout: float = None, waitUntil: Union[str, List[str]] = None,
+        self, timeout: float = None, waitUntil: WaitTargets = None,
     ) -> Optional[Response]:
         """Wait for navigation.
 
@@ -1590,7 +1592,7 @@ class Page(AsyncIOEventEmitter):
         return self.mainFrame.waitForXPath(xpath, visible=visible, hidden=hidden, timeout=timeout)
 
     def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: Sequence[Any]
+        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
     ) -> Awaitable[JSHandle]:
         """Wait until the function completes and returns a truthy value.
 
@@ -1669,15 +1671,15 @@ class ConsoleMessage:
     """
 
     def __init__(
-        self, type: str, text: str, args: List[JSHandle] = None, location: Dict[str, Union[str, int]] = None
+        self, type: str, text: str, args: Optional[List[JSHandle]] = None, location: Dict[str, Union[str, int]] = None
     ) -> None:
         self._args = args
         self._type = type
-        self._text = text or []
+        self._text = text
         self._location = location or {}
 
     @property
-    def args(self) -> List[JSHandle]:
+    def args(self) -> Optional[List[JSHandle]]:
         return self._args
 
     @property

@@ -11,7 +11,7 @@ puppeteer equivalent: lib/Multimap.js
 from typing import Any, Dict, List, Optional
 
 
-class Multimap(object):
+class Multimap:
     """Multimap class."""
 
     def __init__(self) -> None:

@@ -7,6 +7,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
+from pyppeteer.timeout_settings import TimeoutSettings
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
@@ -19,7 +20,7 @@ from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response
 
 if TYPE_CHECKING:
-    pass
+    from pyppeteer.page import Page
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
-        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
+        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: TimeoutSettings
     ) -> None:
         """Make new frame manager."""
         super().__init__()
