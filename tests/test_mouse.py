@@ -1,7 +1,6 @@
 import platform
 from collections import namedtuple
 
-import pytest
 from syncer import sync
 
 from tests.conftest import chrome_only
