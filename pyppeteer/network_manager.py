@@ -585,7 +585,7 @@ class Response:
         return self._securityDetails
 
     def buffer(self) -> Awaitable[bytes]:
-        """Return awaitable which resolves to bytes with response body."""
+        """Return awaitable which resolves to str with response body."""
         if self._contentFuture is None:
 
             async def buffer_read():
@@ -594,8 +594,8 @@ class Response:
                 body = response.get('body', '')
                 if response.get('base64Encoded'):
                     return base64.b64decode(body)
-                # b64decode returns bytes, and body is str. We encode body so that this fn always returns bytes
-                return body.encode('utf-8')
+                # b64decode gives us bytes, we encode this so that this fn always returns a bytes
+                return body
 
             self._contentFuture = self._client.loop.create_task(buffer_read())
             return self._contentFuture
@@ -603,7 +603,7 @@ class Response:
     @property
     async def text(self) -> str:
         """Text representation of response body."""
-        return (await self.buffer()).decode('utf-8')
+        return (await self.buffer()).decode('utf-8', errors='replace')
 
     @property
     async def json(self) -> Dict[str, Any]:
