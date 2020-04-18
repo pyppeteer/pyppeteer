@@ -13,15 +13,13 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError
 from pyppeteer.jshandle import ElementHandle, JSHandle, createJSHandle
 from pyppeteer.models import JSFunctionArg
+from pyppeteer.frame import Frame
+from pyppeteer.frame.frame_manager import EVALUATION_SCRIPT_URL, SOURCE_URL_REGEX
 
 if TYPE_CHECKING:
     from pyppeteer.domworld import DOMWorld
-    from pyppeteer.frame import Frame
 
 logger = logging.getLogger(__name__)
-
-EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
 
 
 class ExecutionContext:

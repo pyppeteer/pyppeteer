@@ -5,13 +5,13 @@
 import asyncio
 import logging
 from functools import cmp_to_key
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem
+from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class Coverage:
 
         :param resetOnNavigation: Whether to reset coverage on every
           navigation.
-        :param reportAnonymousScript: Whether anonymous script generated
+        :param reportAnonymousScripts: Whether anonymous script generated
           by the page should be reported.
 
         .. note::
@@ -123,15 +123,15 @@ class JSCoverage:
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._scriptURLs: Dict = {}
-        self._scriptSources: Dict = {}
-        self._eventListeners: List = []
+        self._scriptURLs = {}
+        self._scriptSources = {}
+        self._eventListeners = []
         self._resetOnNavigation = False
 
     async def start(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
         """Start coverage measurement."""
         if self._enabled:
-            raise PageError('JSCoverage is always enabled.')
+            raise PageError('JSCoverage is already enabled.')
         self._resetOnNavigation = resetOnNavigation
         self._reportAnonymousScript = reportAnonymousScripts
         self._enabled = True
@@ -139,7 +139,7 @@ class JSCoverage:
         self._scriptSources.clear()
         self._eventListeners = [
             helpers.addEventListener(
-                self._client, 'Debugger.scriptParsed', lambda e: self._client.loop.create_task(self._onScriptParsed(e))
+                self._client, 'Debugger.scriptParsed', lambda e: self._onScriptParsed(e)
             ),
             helpers.addEventListener(
                 self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
@@ -158,7 +158,7 @@ class JSCoverage:
         self._scriptURLs.clear()
         self._scriptSources.clear()
 
-    async def _onScriptParsed(self, event: Dict) -> None:
+    async def _onScriptParsed(self, event: Protocol.Debugger.scriptParsedPayload) -> None:
         # Ignore pyppeteer-injected scripts
         if event.get('url') == EVALUATION_SCRIPT_URL:
             return
@@ -180,10 +180,10 @@ class JSCoverage:
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
         if not self._enabled:
-            raise PageError('JSCoverage is not enabled.')
+            raise PageError('JSCoverage is not enabled')
         self._enabled = False
 
-        result = await asyncio.gather(
+        result, *_ = await asyncio.gather(
             self._client.send('Profiler.takePreciseCoverage'),
             self._client.send('Profiler.stopPreciseCoverage'),
             self._client.send('Profiler.disable'),
@@ -198,7 +198,7 @@ class JSCoverage:
             text = self._scriptSources.get(scriptId)
             if text is None or url is None:
                 continue
-            flattenRanges: List = []
+            flattenRanges = []
             for func in entry.get('functions', []):
                 flattenRanges.extend(func.get('ranges', []))
             ranges = convertToDisjointRanges(flattenRanges)

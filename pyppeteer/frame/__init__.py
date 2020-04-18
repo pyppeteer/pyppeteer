@@ -6,10 +6,12 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.errors import BrowserError, PageError
-from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.models import JSFunctionArg, WaitTargets
 from pyppeteer.network_manager import Response
+
+if TYPE_CHECKING:
+    from pyppeteer.execution_context import ExecutionContext
 
 
 class Frame:

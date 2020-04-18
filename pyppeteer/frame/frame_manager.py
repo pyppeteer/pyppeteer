@@ -13,19 +13,19 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError, PageError
 from pyppeteer.events import Events
-from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.frame import Frame
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response
 
 if TYPE_CHECKING:
+    from pyppeteer.execution_context import ExecutionContext
     from pyppeteer.page import Page
 
 logger = logging.getLogger(__name__)
 
-UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
-EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
+UTILITY_WORLD_NAME = '__pyppeteer_utility_world__'
+EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
@@ -291,7 +291,7 @@ class FrameManager(AsyncIOEventEmitter):
                 context._world._setContext(None)
         self._contextIdToContext.clear()
 
-    def executionContextById(self, contextId: int) -> ExecutionContext:
+    def executionContextById(self, contextId: int) -> 'ExecutionContext':
         """Get stored ``ExecutionContext`` by ``id``."""
         context = self._contextIdToContext.get(contextId)
         if not context:
