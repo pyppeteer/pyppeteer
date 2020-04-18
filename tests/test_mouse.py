@@ -75,31 +75,32 @@ async def test_resize_textarea(isolated_page, server):
 
 @sync
 @chrome_only
-async def test_select_text_with_mouse():
+async def test_select_text_with_mouse(isolated_page, server):
     """should select the text with mouse"""
-    assert True
-    # const { page, server } = getTestState();
-    #
-    # await page.goto(server.PREFIX + '/input/textarea.html');
-    # await page.focus('textarea');
-    # const text = 'This is the text that we are going to try to select. Let\'s see how it goes.';
-    # await page.keyboard.type(text);
-    # // Firefox needs an extra frame here after typing or it will fail to set the scrollTop
-    # await page.evaluate(() => new Promise(requestAnimationFrame));
-    # await page.evaluate(() => document.querySelector('textarea').scrollTop = 0);
-    # const {x, y} = await page.evaluate(dimensions);
-    # await page.mouse.move(x + 2,y + 2);
-    # await page.mouse.down();
-    # await page.mouse.move(100,100);
-    # await page.mouse.up();
-    # expect(await page.evaluate(() => {
-    #   const textarea = document.querySelector('textarea');
-    #   return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-    # })).toBe(text);
+    page = isolated_page
+    await page.goto(server / 'input/textarea.html')
+    await page.focus('textarea')
+    text = "This is the text that we are going to try to select. Let\'s see how it goes."
+    await page.keyboard.type(text)
+    # Firefox needs an extra frame here after typing or it will fail to set the scrollTop
+    await page.evaluate("() => new Promise(requestAnimationFrame)")
+    await page.evaluate("() => document.querySelector('textarea').scrollTop = 0")
+    x, y, _, _ = await evaluate_dimensions(page)
+    await page.mouse.move(x + 2, y + 2)
+    await page.mouse.down()
+    await page.mouse.move(100,100)
+    await page.mouse.up()
+    result = await page.evaluate("""
+        () => {
+            const textarea = document.querySelector('textarea');
+            return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+    }""")
+    assert result == text
 
 
+@sync
 @chrome_only
-def test_trigger_hover_state():
+async def test_trigger_hover_state():
     """should trigger hover state"""
     # const { page, server } = getTestState();
     #
