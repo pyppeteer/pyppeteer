@@ -124,7 +124,7 @@ class Page(AsyncIOEventEmitter):
                 try:
                     client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    logger.error(f'An exception occured: {e}')
+                    logger.error(f'An exception occurred: {e}')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
@@ -579,7 +579,7 @@ class Page(AsyncIOEventEmitter):
             try:
                 await frame.evaluate(expression)
             except Exception as e:
-                logger.error(f'An exception occured: {e}')
+                logger.error(f'An exception occurred: {e}')
 
         await asyncio.gather(*(_evaluate(frame) for frame in self.frames))
 

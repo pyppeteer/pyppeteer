@@ -115,7 +115,7 @@ def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
     except Exception as e:
         # Exceptions might happen in case of a page been navigated or closed.
         # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
-        logger.error(f'An exception occured: {e}')
+        logger.error(f'An exception occurred: {e}')
     return fut_none
 
 

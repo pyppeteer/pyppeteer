@@ -408,7 +408,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     async def respond(self, response: Dict[str, Any]) -> None:
         """Fulfills request with given response.
@@ -503,7 +503,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     @property
     def _actionable_request(self) -> bool:
