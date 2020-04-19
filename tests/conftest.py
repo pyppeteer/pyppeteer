@@ -24,6 +24,8 @@ _port = get_free_port()
 if _firefox:
     _launch_options['product'] = 'firefox'
 
+CHROME = not _firefox
+
 
 def pytest_configure(config):
     # shim for running in pycharm - see https://youtrack.jetbrains.com/issue/PY-41295
