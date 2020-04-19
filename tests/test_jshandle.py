@@ -35,7 +35,7 @@ async def test_warn_nested_handles(isolated_page, server):
     handle = await p.evaluateHandle('document.body')
     await p.evaluateHandle(
         "opts => opts.elem.querySelector('p')",
-        handle,  # todo translate {elem: handle}
+        handle,  # todo translate {elem: handle} right now this hangs
     )
 
 
@@ -160,11 +160,11 @@ async def test_asElement(isolated_page, server):
     )
     element = handle.asElement()
     assert element
-    # python doesn't support object passover
-    # assert await p.evaluate(
-    #     'e => e.nodeType === HTMLElement.TEXT_NODE, arg',
-    #     element
-    # )
+    assert await p.evaluate(
+        'e => e.nodeType === HTMLElement.TEXT_NODE',
+        element
+    )
+
 
     # should work with nulified None
     await p.setContent('<section>test</section>')
