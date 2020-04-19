@@ -34,7 +34,7 @@ async def test_executionContext(isolated_page, server):
     assert a2 == 2
 
 @sync
-async def test_evaluate(isolated_page, server):
+async def test_test_evaluate_raises_on_detaches_frames(isolated_page, server):
     p = isolated_page
     # should throw for detached frames
     frame1 = await attachFrame(p, server.empty_page, 'frame1')
@@ -102,7 +102,6 @@ async def test_attaching(isolated_page, server):
     assert len(attachedFrames) == 4
     assert len(detachedFrames) == 0
     assert len(navigatedFrames) == 5
-
     # should detach child frames on navigation
     attachedFrames = []
     detachedFrames = []
@@ -173,7 +172,7 @@ async def test_frame_reattach(isolated_page, server):
         }
         """
     )
-    assert frame1.isDetached is True
+    assert frame1.isDetached
     frame2 = (await gather(
         waitEvent(p, 'frameattached'),
         p.evaluate('document.body.appendChild(window.frame)')

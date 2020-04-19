@@ -1,4 +1,5 @@
 import asyncio
+from orderedset import OrderedSet
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, List, Optional, Set, Union
 
@@ -31,7 +32,7 @@ class Frame:
         self._lifecycleEvents: Set[str] = set()
         self._mainWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
         self._secondaryWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
-        self._childFrames: Set[Frame] = set()  # maybe list
+        self._childFrames: OrderedSet[Frame] = OrderedSet()
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
