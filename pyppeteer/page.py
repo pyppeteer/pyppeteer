@@ -1506,7 +1506,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    async def waitFor(
+    def waitFor(
         self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs
     ) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
