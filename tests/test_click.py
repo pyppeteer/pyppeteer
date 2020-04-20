@@ -9,7 +9,7 @@ from tests.utils import attachFrame
 
 @sync
 async def test_click_button(isolated_page, server):
-    """shoud click the button"""
+    """should click the button"""
     await isolated_page.goto(server / 'input/button.html')
     await isolated_page.click('button')
     assert await isolated_page.evaluate('result') == 'Clicked'
