@@ -187,6 +187,8 @@ def is_js_func(func: str) -> bool:
     and here: http://mothereff.in/js-variables to identify valid JS identifiers. (Unicode surrogates have been removed
     from the regex as they aren't supported in strs in Python)
     """
+    if not isinstance(func, str):
+        return False
     func = func.strip()
     if func.startswith('function ') or func.startswith('async '):
         return True
