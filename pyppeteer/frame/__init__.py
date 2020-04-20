@@ -223,6 +223,8 @@ class Frame:
         Details see :meth:`pyppeteer.page.Page.waitFor`.
         """
         xPathPattern = '//'
+        if helpers.is_js_func(selectorOrFunctionOrTimeout):
+            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, str):
             string = selectorOrFunctionOrTimeout
             if string.startswith(xPathPattern):
@@ -230,8 +232,6 @@ class Frame:
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             return self._client.loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
-        if helpers.is_js_func(selectorOrFunctionOrTimeout):
-            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client.loop.create_future()
         f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))
         return f
