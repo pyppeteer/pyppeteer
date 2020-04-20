@@ -27,8 +27,8 @@ async def evaluate_dimensions(isolated_page):
 
 
 @sync
-async def test_click_document(isolated_page):
-    """should click the document"""
+async def test_mouse_clicks_document(isolated_page):
+    """It should be possible to click the document with the mouse."""
     await isolated_page.evaluate("""
     () => {
       window.clickPromise = new Promise(resolve => {
@@ -57,8 +57,8 @@ async def test_click_document(isolated_page):
 
 @sync
 @chrome_only
-async def test_resize_textarea(isolated_page, server):
-    """should resize the textarea"""
+async def test_mouse_resizes_textarea(isolated_page, server):
+    """It should be possible to resize the textarea with the mouse."""
     page = isolated_page
     await page.goto(server / 'input/textarea.html')
     x, y, width, height = await evaluate_dimensions(page)
@@ -74,8 +74,8 @@ async def test_resize_textarea(isolated_page, server):
 
 @sync
 @chrome_only
-async def test_select_text_with_mouse(isolated_page, server):
-    """should select the text with mouse"""
+async def test_mouse_selects_text(isolated_page, server):
+    """It should be possible to select the text with mouse."""
     page = isolated_page
     await page.goto(server / 'input/textarea.html')
     await page.focus('textarea')
@@ -99,8 +99,8 @@ async def test_select_text_with_mouse(isolated_page, server):
 
 @sync
 @chrome_only
-async def test_trigger_hover_state(isolated_page, server):
-    """should trigger hover state"""
+async def test_mouse_triggers_hover_state(isolated_page, server):
+    """It should be possible to trigger hover state with the mouse."""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.hover('#button-6')
@@ -116,8 +116,8 @@ async def test_trigger_hover_state(isolated_page, server):
 
 @sync
 @chrome_only
-async def test_trigger_hover_removed_window_node(isolated_page, server):
-    """should trigger hover state with removed window.Node"""
+async def test_removing_window_node_triggers_hover(isolated_page, server):
+    """It should be possible to trigger hover state with removed window.Node."""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.evaluate("() => delete window.Node")
@@ -126,8 +126,8 @@ async def test_trigger_hover_removed_window_node(isolated_page, server):
 
 
 @sync
-async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
-    """should set modifier keys on click"""
+async def test_setting_modifier_keys_onclick(isolated_page, server, firefox):
+    """It should be possible to set modifier keys on click."""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.evaluate("""
@@ -155,8 +155,8 @@ async def test_set_modifier_keys_onclick(isolated_page, server, firefox):
 
 @sync
 @chrome_only
-async def test_tween_mouse_movement(isolated_page):
-    """should tween mouse movement"""
+async def test_mouse_fires_events_between_movement(isolated_page):
+    """Mouse fires the events with x, y position on mouse movement."""
     page = isolated_page
     await page.mouse.move(100, 100)
     await page.evaluate("""() => {
@@ -179,7 +179,7 @@ async def test_tween_mouse_movement(isolated_page):
 @sync
 @chrome_only
 async def test_mobile_viewport(isolated_page, server):
-    """should work with mobile viewports and cross process navigations"""
+    """It should be possible to work with mobile viewports and cross process navigations."""
     page = isolated_page
     await page.goto(server / "empty.html")
     await page.setViewport({'width': 360, 'height': 640, 'isMobile': True})
