@@ -326,7 +326,7 @@ class DOMWorld:
         return await self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
     async def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
+        self, pageFunction: str, *args: JSFunctionArg, polling: str = 'raf', timeout: Optional[float] = None,
     ) -> 'JSHandle':
         if not timeout:
             timeout = self._timeoutSettings.timeout
