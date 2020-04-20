@@ -151,7 +151,7 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-o',
-        '--output_path',
+        '--output-path',
         type=str,
         help='Where to save the generated file',
         default='../pyppeteer/device_descriptors.py',
