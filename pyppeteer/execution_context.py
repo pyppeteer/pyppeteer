@@ -139,7 +139,7 @@ class ExecutionContext:
         return createJSHandle(context=self, remoteObject=obj)
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
-        if elementHandle.executionContext() == self:
+        if elementHandle.executionContext == self:
             raise ElementHandleError('Cannot adopt handle that already belongs to this execution context')
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
