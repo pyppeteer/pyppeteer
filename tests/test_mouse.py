@@ -82,8 +82,8 @@ async def test_mouse_selects_text(isolated_page, server):
     text = "This is the text that we are going to try to select. Let\'s see how it goes."
     await page.keyboard.type(text)
     # Firefox needs an extra frame here after typing or it will fail to set the scrollTop
-    await page.evaluate("() => new Promise(requestAnimationFrame)")
-    await page.evaluate("() => document.querySelector('textarea').scrollTop = 0")
+    await page.evaluate("new Promise(requestAnimationFrame)")
+    await page.evaluate("document.querySelector('textarea').scrollTop = 0")
     x, y, _, _ = await evaluate_dimensions(page)
     await page.mouse.move(x + 2, y + 2)
     await page.mouse.down()
@@ -104,13 +104,13 @@ async def test_mouse_triggers_hover_state(isolated_page, server):
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.hover('#button-6')
-    button6_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    button6_id = await page.evaluate("document.querySelector('button:hover').id")
     assert button6_id == 'button-6'
     await page.hover('#button-2')
-    button2_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    button2_id = await page.evaluate("document.querySelector('button:hover').id")
     assert button2_id == 'button-2'
     await page.hover('#button-91')
-    button91_id = await page.evaluate("() => document.querySelector('button:hover').id")
+    button91_id = await page.evaluate("document.querySelector('button:hover').id")
     assert button91_id == 'button-91'
 
 
@@ -120,9 +120,9 @@ async def test_removing_window_node_triggers_hover(isolated_page, server):
     """It should be possible to trigger hover state with removed window.Node."""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
-    await page.evaluate("() => delete window.Node")
+    await page.evaluate("delete window.Node")
     await page.hover('#button-6')
-    assert await page.evaluate("() => document.querySelector('button:hover').id") == 'button-6'
+    assert await page.evaluate("document.querySelector('button:hover').id") == 'button-6'
 
 
 @sync
@@ -131,10 +131,7 @@ async def test_setting_modifier_keys_onclick(isolated_page, server, firefox):
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
     await page.evaluate("""
-        () => {
-            const btn = document.querySelector('#button-3');
-            btn.addEventListener('mousedown', e => window.lastEvent = e, true);
-        }
+            document.querySelector('#button-3').addEventListener('mousedown', e => window.lastEvent = e, true);
     """)
     modifiers = {'Shift': 'shiftKey', 'Control': 'ctrlKey', 'Alt': 'altKey', 'Meta': 'metaKey'}
     # In Firefox, the Meta modifier only exists on Mac
@@ -184,10 +181,10 @@ async def test_mobile_viewport(isolated_page, server):
     await page.goto(server / "empty.html")
     await page.setViewport({'width': 360, 'height': 640, 'isMobile': True})
     await page.goto(server / 'mobile.html')
-    await page.evaluate("""() => {
+    await page.evaluate("""
       document.addEventListener('click', event => {
         window.result = {x: event.clientX, y: event.clientY};
       });
-    }""")
+    """)
     await page.mouse.click(30, 40)
     assert await page.evaluate('result') == {'x': 30, 'y': 40}
