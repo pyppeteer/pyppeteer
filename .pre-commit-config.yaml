@@ -8,7 +8,6 @@ repos:
       - id: check-toml
       - id: check-builtin-literals
       - id: debug-statements
-      - id: check-builtin-literals
       - id: check-added-large-files
   - repo: https://github.com/asottile/seed-isort-config
     rev: v2.1.1
