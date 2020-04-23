@@ -1,9 +1,8 @@
 import textwrap
 
 import pytest
-from syncer import sync
-
 from pyppeteer.errors import PyppeteerError
+from syncer import sync
 from tests.utils import attachFrame
 
 
@@ -256,7 +255,7 @@ async def test_presses_meta_key(isolated_page, firefox):
         '''() => {
         window.result = null;
         document.addEventListener('keydown', event => {
-            window.result = [event.key, event.code, event.metaKey];   
+            window.result = [event.key, event.code, event.metaKey];
         });
     }'''
     )

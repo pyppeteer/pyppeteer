@@ -258,7 +258,7 @@ class ElementHandle(JSHandle):
             """(element, values) => {
               if (element.nodeName.toLowerCase() !== 'select')
                 throw new Error('Element is not a <select> element.');
-        
+
               const options = Array.from(element.options);
               element.value = undefined;
               for (const option of options) {

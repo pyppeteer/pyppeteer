@@ -15,8 +15,6 @@ from pathlib import Path
 from syncer import sync
 
 
-
-
 class TestPyppeteer:
     @sync
     async def test_get_https(self):

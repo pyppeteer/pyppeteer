@@ -1,15 +1,14 @@
 import asyncio
 from contextlib import suppress
-from typing import Optional, List
+from typing import List, Optional
 
 import pytest
-from syncer import sync
-
 import tests.utils.server
 from pyppeteer import devices
-from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
+from pyppeteer.errors import BrowserError, ElementHandleError, NetworkError, PageError, TimeoutError
 from pyppeteer.page import ConsoleMessage
-from tests.utils import waitEvent, gather_with_timeout, attachFrame, var_setter
+from syncer import sync
+from tests.utils import attachFrame, gather_with_timeout, var_setter, waitEvent
 
 
 @sync

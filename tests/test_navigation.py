@@ -4,13 +4,11 @@ Tests relating to page/frame navigation
 from contextlib import suppress
 
 import pytest
-from syncer import sync
-
 import tests.utils.server
-from pyppeteer.errors import BrowserError, TimeoutError, NetworkError
-from tests.utils import isFavicon, attachFrame, var_setter
+from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
+from syncer import sync
 from tests.conftest import needs_server_side_implementation
-from tests.utils import gather_with_timeout
+from tests.utils import attachFrame, gather_with_timeout, isFavicon, var_setter
 
 
 class TestPage:
@@ -76,7 +74,7 @@ class TestPage:
                 '''() => {
                 window.addEventListener('beforeunload', () => {
                         history.replaceState(null, 'initial', window.location.href)
-                    }, 
+                    },
                 false);
             }'''
             )
@@ -405,9 +403,7 @@ class TestFrame:
             server_resps = ['aaa', 'bbb', 'ccc']
             navigations = []
             for resp, frame in zip(['aaa', 'bbb', 'ccc'], frames):
-                server.app.add_one_time_request_resp(
-                    '/one-style.html', resp.encode()
-                )
+                server.app.add_one_time_request_resp('/one-style.html', resp.encode())
                 navigations.append(await frame.goto(server / 'one-style.html'))
                 await server.app.waitForRequest('/one-style.html')
 
@@ -415,15 +411,13 @@ class TestFrame:
                 assert actual_resp.frame == frames
                 assert actual_resp.text == expected_resp
 
-
     class TestWaitForNavigation:
         @sync
         async def test_basic_usage(self, isolated_page, server):
             await isolated_page.goto(server / 'frame/one-frame.html')
             frame = isolated_page.frames[1]
             resp, *_ = await gather_with_timeout(
-                frame.waitForNavigation(),
-                frame.evaluate('url => window.location.href = url', server / 'grid.html')
+                frame.waitForNavigation(), frame.evaluate('url => window.location.href = url', server / 'grid.html')
             )
             assert resp.ok
             assert 'grid.html' in resp.url
@@ -439,8 +433,7 @@ class TestFrame:
             nav_task = event_loop.create_task(frame.waitForNavigation())
 
             await gather_with_timeout(
-                server.app.waitForRequest(server.empty_page),
-                isolated_page.Jeval('iframe', 'f => f.remove()'),
+                server.app.waitForRequest(server.empty_page), isolated_page.Jeval('iframe', 'f => f.remove()'),
             )
 
             with pytest.raises(NetworkError, match='frame was detached') as excpt:

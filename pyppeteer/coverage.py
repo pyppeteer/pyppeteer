@@ -11,7 +11,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem
+from pyppeteer.models import CoverageResult, NestedRangeItem, NestedRangeItemInput
 
 logger = logging.getLogger(__name__)
 

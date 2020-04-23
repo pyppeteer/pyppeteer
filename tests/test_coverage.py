@@ -4,8 +4,6 @@
 from syncer import sync
 
 
-
-
 class TestJSCoverage:
     @sync
     async def test_js_coverage(self):

@@ -376,7 +376,9 @@ class DOMWorld:
           }
         }
         """
-        waitTask = WaitTask(self, predicate, title, polling, timeout, self.loop, selectorOrXpath, isXPath, visible, hidden)
+        waitTask = WaitTask(
+            self, predicate, title, polling, timeout, self.loop, selectorOrXpath, isXPath, visible, hidden
+        )
         handle = await waitTask.promise
         if not handle.asElement():
             await handle.dispose()

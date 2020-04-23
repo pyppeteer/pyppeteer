@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from syncer import sync
-
-from pyppeteer.errors import ElementHandleError, NetworkError
-
-
 import pytest
+from pyppeteer.errors import ElementHandleError, NetworkError
+from syncer import sync
 
 
 class TestQueryObject:

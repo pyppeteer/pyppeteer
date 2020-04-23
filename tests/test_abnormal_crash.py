@@ -5,11 +5,10 @@ import asyncio
 import logging
 import unittest
 
-from syncer import sync
-
+import pytest
 from pyppeteer import launch
 from pyppeteer.errors import NetworkError
-import pytest
+from syncer import sync
 
 
 class TestBrowserCrash(unittest.TestCase):

@@ -1,7 +1,6 @@
 import pytest
-from syncer import sync
-
 from pyppeteer.errors import NetworkError
+from syncer import sync
 from tests.conftest import CHROME
 
 
@@ -34,8 +33,7 @@ async def test_warn_nested_handles(isolated_page, server):
     p = isolated_page
     handle = await p.evaluateHandle('document.body')
     await p.evaluateHandle(
-        "opts => opts.elem.querySelector('p')",
-        handle,  # todo translate {elem: handle} right now this hangs
+        "opts => opts.elem.querySelector('p')", handle,  # todo translate {elem: handle} right now this hangs
     )
 
 
@@ -49,37 +47,43 @@ async def test_handle_unserializable(isolated_page, server):
 @sync
 async def test_js_wrappers(isolated_page, server):
     p = isolated_page
-    handle = await p.evaluateHandle("""
+    handle = await p.evaluateHandle(
+        """
         () => {
             window.Foo = 123;
-            return window;    
+            return window;
         }
-    """.strip())
+    """.strip()
+    )
     assert await p.evaluate('e => e.Foo', handle) == 123
 
 
 @sync
 async def test_with_primitives(isolated_page, server):
     p = isolated_page
-    handle = await p.evaluateHandle("""
+    handle = await p.evaluateHandle(
+        """
         () => {
             window.Foo = 123;
-            return window;    
+            return window;
         }
-    """.strip())
+    """.strip()
+    )
     assert await p.evaluate('e => e.Foo', handle) == 123
 
 
 @sync
 async def test_getProperty(isolated_page, server):
     p = isolated_page
-    handle = await p.evaluateHandle("""
+    handle = await p.evaluateHandle(
+        """
         () => ({
             one: 1,
             two: 2,
             three: 3
         })
-    """.strip())
+    """.strip()
+    )
     handle2 = await handle.getProperty('two')
     assert await handle2.jsonValue() == 2
 
@@ -92,9 +96,7 @@ async def test_jsonValue(isolated_page, server):
     assert await handle.jsonValue() == {'foo': 'bar'}
 
     # should not work with dates
-    handle_date = await p.evaluateHandle(
-        "new Date('2017-09-26T00:00:00.000Z')"
-    )
+    handle_date = await p.evaluateHandle("new Date('2017-09-26T00:00:00.000Z')")
     assert await handle_date.jsonValue() == {}
 
     # should throw for circular objects like windows
@@ -135,7 +137,8 @@ async def test_getProperties(isolated_page, server):
 
             return new B()
         }
-        """)
+        """
+    )
     properties = await handle.getProperties()
     assert await properties.get('a').jsonValue() == '1'
     assert await properties.get('b').jsonValue() == '2'
@@ -155,23 +158,15 @@ async def test_asElement(isolated_page, server):
 
     # should return ElementHandle for TextNodes
     await p.setContent('<div>ee!</div>')
-    handle = await p.evaluateHandle(
-        "document.querySelector('div').firstChild"
-    )
+    handle = await p.evaluateHandle("document.querySelector('div').firstChild")
     element = handle.asElement()
     assert element
-    assert await p.evaluate(
-        'e => e.nodeType === HTMLElement.TEXT_NODE',
-        element
-    )
-
+    assert await p.evaluate('e => e.nodeType === HTMLElement.TEXT_NODE', element)
 
     # should work with nulified None
     await p.setContent('<section>test</section>')
     await p.evaluate('delete Node')
-    handle = await p.evaluateHandle(
-        'document.querySelector("section")'
-    )
+    handle = await p.evaluateHandle('document.querySelector("section")')
     assert handle.asElement()
 
 
@@ -202,7 +197,6 @@ async def test_toString(isolated_page, server):
         'new Error()': 'JSHandle@error',
         'new Int32Array()': 'JSHandle@typedarray',
         'new Proxy({}, {})': 'JSHandle@proxy',
-
     }
     for value, expected in input_to_expected.items():
         handle = await p.evaluateHandle(value)

@@ -2,9 +2,7 @@ import platform
 from collections import namedtuple
 
 from syncer import sync
-
 from tests.conftest import chrome_only
-
 
 dimensions = """() =>
     {
@@ -29,7 +27,8 @@ async def evaluate_dimensions(isolated_page):
 @sync
 async def test_mouse_clicks_document(isolated_page):
     """It should be possible to click the document with the mouse."""
-    await isolated_page.evaluate("""
+    await isolated_page.evaluate(
+        """
     () => {
       window.clickPromise = new Promise(resolve => {
         document.addEventListener('click', event => {
@@ -44,7 +43,8 @@ async def test_mouse_clicks_document(isolated_page):
         });
       });
     }
-    """)
+    """
+    )
     await isolated_page.mouse.click(50, 60)
     event = await isolated_page.evaluate("window.clickPromise")
     assert event['type'] == 'click'
@@ -87,13 +87,15 @@ async def test_mouse_selects_text(isolated_page, server):
     x, y, _, _ = await evaluate_dimensions(page)
     await page.mouse.move(x + 2, y + 2)
     await page.mouse.down()
-    await page.mouse.move(100,100)
+    await page.mouse.move(100, 100)
     await page.mouse.up()
-    result = await page.evaluate("""
+    result = await page.evaluate(
+        """
         () => {
             const textarea = document.querySelector('textarea');
             return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-    }""")
+    }"""
+    )
     assert result == text
 
 
@@ -130,9 +132,11 @@ async def test_setting_modifier_keys_onclick(isolated_page, server, firefox):
     """It should be possible to set modifier keys on click."""
     page = isolated_page
     await page.goto(server / 'input/scrollable.html')
-    await page.evaluate("""
+    await page.evaluate(
+        """
             document.querySelector('#button-3').addEventListener('mousedown', e => window.lastEvent = e, true);
-    """)
+    """
+    )
     modifiers = {'Shift': 'shiftKey', 'Control': 'ctrlKey', 'Alt': 'altKey', 'Meta': 'metaKey'}
     # In Firefox, the Meta modifier only exists on Mac
     if firefox and platform.system() != 'darwin':
@@ -146,8 +150,9 @@ async def test_setting_modifier_keys_onclick(isolated_page, server, firefox):
 
     await page.click('#button-3')
     for modifier_key, modifier_value in modifiers.items():
-        assert not await page.evaluate("mod => window.lastEvent[mod]", modifier_value),  \
-            f"{modifier_key, modifier_value} should be false"
+        assert not await page.evaluate(
+            "mod => window.lastEvent[mod]", modifier_value
+        ), f"{modifier_key, modifier_value} should be false"
 
 
 @sync
@@ -156,20 +161,16 @@ async def test_mouse_fires_events_between_movement(isolated_page):
     """Mouse fires the events with x, y position on mouse movement."""
     page = isolated_page
     await page.mouse.move(100, 100)
-    await page.evaluate("""() => {
+    await page.evaluate(
+        """() => {
       window.result = [];
       document.addEventListener('mousemove', event => {
         window.result.push([event.clientX, event.clientY]);
       });
-    }""")
+    }"""
+    )
     await page.mouse.move(200, 300, steps=5)
-    assert await page.evaluate('result') == [
-      [120, 140],
-      [140, 180],
-      [160, 220],
-      [180, 260],
-      [200, 300]
-    ]
+    assert await page.evaluate('result') == [[120, 140], [140, 180], [160, 220], [180, 260], [200, 300]]
 
 
 # @see https://crbug.com/929806
@@ -181,10 +182,12 @@ async def test_mobile_viewport(isolated_page, server):
     await page.goto(server / "empty.html")
     await page.setViewport({'width': 360, 'height': 640, 'isMobile': True})
     await page.goto(server / 'mobile.html')
-    await page.evaluate("""
+    await page.evaluate(
+        """
       document.addEventListener('click', event => {
         window.result = {x: event.clientX, y: event.clientY};
       });
-    """)
+    """
+    )
     await page.mouse.click(30, 40)
     assert await page.evaluate('result') == {'x': 30, 'y': 40}

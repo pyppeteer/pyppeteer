@@ -98,4 +98,3 @@ jobs:
       - run:
           name: Check code style
           command: tox
-

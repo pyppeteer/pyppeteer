@@ -3,14 +3,11 @@
 
 import asyncio
 
-from tests.utils import waitEvent, gather_with_timeout
-
+import pytest
 from pyppeteer import connect
 from pyppeteer.errors import BrowserError
-
 from syncer import sync
-
-import pytest
+from tests.utils import gather_with_timeout, waitEvent
 
 
 @sync

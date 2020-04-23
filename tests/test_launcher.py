@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from copy import deepcopy
 import glob
 import logging
 import os
@@ -12,18 +11,17 @@ import sys
 import tempfile
 import time
 import unittest
+from copy import deepcopy
 from unittest import mock
 
-from syncer import sync
+import pytest
 import websockets
-
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
-
+from syncer import sync
 
 from .utils.server import get_application
-import pytest
 
 
 class TestLauncher(unittest.TestCase):

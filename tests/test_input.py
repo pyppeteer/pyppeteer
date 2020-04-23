@@ -2,17 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
+import pytest
+from pyppeteer.errors import PageError, PyppeteerError
 from syncer import sync
 
-from pyppeteer.errors import PageError, PyppeteerError
-
-
 from .utils import attachFrame
-import pytest
 
 
 class TestClick:
