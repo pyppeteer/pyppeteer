@@ -91,18 +91,3 @@ class Tracing:
         await self._client.send('Tracing.end')
         self._recording = False
         return await contentFuture
-
-    async def _readStream(self, handle: str, path: Union[Path, str]) -> str:
-        # might be better to return as bytes
-        eof = False
-        bufs = []
-        while not eof:
-            response = await self._client.send('IO.read', {'handle': handle})
-            eof = response.get('eof', False)
-            bufs.append(response.get('data', ''))
-        await self._client.send('IO.close', {'handle': handle})
-
-        result = ''.join(bufs)
-        if path:
-            Path(path).write_text(result)
-        return result
