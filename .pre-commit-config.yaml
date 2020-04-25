@@ -13,6 +13,9 @@ repos:
     rev: v2.1.1
     hooks:
       - id: seed-isort-config
+        # if we don't specify these the seeder will intermittently include
+        # these as 'known third parties' which messes with our diffs
+        args: ['--application-directories', './pyppeteer:./tests']
   - repo: https://github.com/timothycrosley/isort
     rev: 4.3.21
     hooks:
