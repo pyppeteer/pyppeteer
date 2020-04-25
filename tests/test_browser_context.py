@@ -4,9 +4,10 @@
 import asyncio
 
 import pytest
+from syncer import sync
+
 from pyppeteer import connect
 from pyppeteer.errors import BrowserError
-from syncer import sync
 from tests.utils import gather_with_timeout, waitEvent
 
 

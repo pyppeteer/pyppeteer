@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from pyppeteer.errors import ElementHandleError, NetworkError
 from syncer import sync
+
+from pyppeteer.errors import ElementHandleError, NetworkError
 
 
 class TestQueryObject:

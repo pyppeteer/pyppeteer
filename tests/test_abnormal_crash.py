@@ -6,9 +6,10 @@ import logging
 import unittest
 
 import pytest
+from syncer import sync
+
 from pyppeteer import launch
 from pyppeteer.errors import NetworkError
-from syncer import sync
 
 
 class TestBrowserCrash(unittest.TestCase):

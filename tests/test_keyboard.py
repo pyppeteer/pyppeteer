@@ -1,8 +1,9 @@
 import textwrap
 
 import pytest
-from pyppeteer.errors import PyppeteerError
 from syncer import sync
+
+from pyppeteer.errors import PyppeteerError
 from tests.utils import attachFrame
 
 

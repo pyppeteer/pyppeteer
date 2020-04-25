@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from pyppeteer.errors import NetworkError
 from syncer import sync
+
+from pyppeteer.errors import NetworkError
 
 
 class TestConnection:

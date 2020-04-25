@@ -6,6 +6,7 @@ from typing import Any, Awaitable, Dict
 
 import websockets
 from pyee import AsyncIOEventEmitter
+
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
 from pyppeteer.websocket_transport import WebsocketTransport

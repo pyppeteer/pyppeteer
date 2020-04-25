@@ -7,8 +7,9 @@ import unittest
 from pathlib import Path
 
 import pytest
-from pyppeteer.errors import NetworkError, PageError
 from syncer import sync
+
+from pyppeteer.errors import NetworkError, PageError
 
 
 class TestNetworkEvent:

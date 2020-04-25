@@ -5,14 +5,15 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 import pytest
+from syncer import sync
+from websockets import ConnectionClosedError
+
 from pyppeteer import Browser, launch
 from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
-from syncer import sync
 from tests.utils.server import _Application, get_application
-from websockets import ConnectionClosedError
 
 # internal, conftest.py only variables
 _launch_options = {'args': ['--no-sandbox']}

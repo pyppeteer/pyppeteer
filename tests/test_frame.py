@@ -3,8 +3,9 @@
 from asyncio import gather
 
 import pytest
-from pyppeteer.errors import BrowserError
 from syncer import sync
+
+from pyppeteer.errors import BrowserError
 from tests.utils import attachFrame, detachFrame, dumpFrames, navigateFrame, waitEvent
 
 

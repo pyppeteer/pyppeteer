@@ -4,9 +4,10 @@ Tests relating to page/frame navigation
 from contextlib import suppress
 
 import pytest
+from syncer import sync
+
 import tests.utils.server
 from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
-from syncer import sync
 from tests.conftest import needs_server_side_implementation
 from tests.utils import attachFrame, gather_with_timeout, isFavicon, var_setter
 

@@ -7,6 +7,7 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
+
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError, PageError

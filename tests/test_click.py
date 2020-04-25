@@ -1,9 +1,10 @@
 from asyncio import gather
 
 import pytest
+from syncer import sync
+
 from pyppeteer import devices
 from pyppeteer.errors import BrowserError, NetworkError
-from syncer import sync
 from tests.utils import attachFrame
 
 

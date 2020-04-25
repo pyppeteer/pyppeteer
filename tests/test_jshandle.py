@@ -1,6 +1,7 @@
 import pytest
-from pyppeteer.errors import NetworkError
 from syncer import sync
+
+from pyppeteer.errors import NetworkError
 from tests.conftest import CHROME
 
 

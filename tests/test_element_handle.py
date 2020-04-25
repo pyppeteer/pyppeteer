@@ -4,10 +4,11 @@
 import logging
 import sys
 
-import pyppeteer
 import pytest
-from pyppeteer.errors import ElementHandleError
 from syncer import sync
+
+import pyppeteer
+from pyppeteer.errors import ElementHandleError
 
 from .utils import attachFrame
 

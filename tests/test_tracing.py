@@ -5,8 +5,9 @@ import json
 import unittest
 from pathlib import Path
 
-from pyppeteer.errors import NetworkError
 from syncer import sync
+
+from pyppeteer.errors import NetworkError
 
 
 class TestTracing:

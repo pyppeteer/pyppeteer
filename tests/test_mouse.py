@@ -2,6 +2,7 @@ import platform
 from collections import namedtuple
 
 from syncer import sync
+
 from tests.conftest import chrome_only
 
 dimensions = """() =>

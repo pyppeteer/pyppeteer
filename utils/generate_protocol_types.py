@@ -14,6 +14,7 @@ from textwrap import dedent
 from typing import Any, Dict, Hashable, List, Literal, Match, Tuple, Union
 
 import networkx as nx
+
 from pyppeteer import launch
 
 handler = logging.StreamHandler()

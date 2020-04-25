@@ -16,10 +16,11 @@ from unittest import mock
 
 import pytest
 import websockets
+from syncer import sync
+
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
-from syncer import sync
 
 from .utils.server import get_application
 
