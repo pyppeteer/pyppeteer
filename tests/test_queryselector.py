@@ -204,24 +204,18 @@ async def test_ElementHandle_Jeval_raises_exc_if_no_selector(isolated_page):
     assert 'Error: failed to find element matching selector ".a"' in str(exc)
 
 
-# describeFailsFirefox('ElementHandle.$$eval', function()
-# {
-# it('should work', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent(
-#     '<html><body><div class="tweet"><div class="like">100</div><div class="like">10</div></div></body></html>');
-# const
-# tweet = await
-# page.$('.tweet');
-# const
-# content = await
-# tweet.$$eval('.like', nodes= > nodes.map(n= > n.innerText));
-# expect(content).toEqual(['100', '10']);
-# });
-#
+@chrome_only
+@sync
+async def test_ElementHandle_JJeval_executes_js_func(isolated_page):
+    """Test ElementHandle.JJeval() should execute JS function."""
+    page = isolated_page
+    await page.setContent(
+        '<html><body><div class="tweet"><div class="like">100</div><div class="like">10</div></div></body></html>'
+    )
+    tweet = await page.J('.tweet')
+    content = await tweet.JJeval('.like', "nodes => nodes.map(n => n.innerText)")
+    assert content == ['100', '10']
+
 # it('should retrieve content from subtree', async() = > {
 #     const
 # {page} = getTestState();
