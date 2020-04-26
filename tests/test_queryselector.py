@@ -60,7 +60,7 @@ async def test_Jeval_throws_exception(isolated_page):
 @chrome_only
 @sync
 async def test_page_JJeval_method(isolated_page):
-    """Test Page().JJeval() method should work."""
+    """Test Page().JJeval() method."""
     page = isolated_page
     await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
     divsCount_jjeval = await page.JJeval('div', "divs => divs.length")
@@ -68,19 +68,16 @@ async def test_page_JJeval_method(isolated_page):
     assert divsCount_jjeval == divsCount_query == 3
 
 
-# describeFailsFirefox('Page.$', function()
-# {
-# it('should query existing element', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<section>test</section>');
-# const
-# element = await
-# page.$('section');
-# expect(element).toBeTruthy();
-# });
+@chrome_only
+@sync
+async def test_page_J_queries_element(isolated_page):
+    """Test Page().J() method should query existing element."""
+    page = isolated_page
+    await page.setContent('<section>test</section>')
+    element = await page.J('section')
+    assert element
+
+
 # it('should return null for non-existing element', async() = > {
 #     const
 # {page} = getTestState();
