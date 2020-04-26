@@ -231,25 +231,20 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
     assert content == ['a1-child-div', 'a2-child-div']
 
 
-# it('should not throw in case of missing selector', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>';
-# await
-# page.setContent(htmlContent);
-# const
-# elementHandle = await
-# page.$('#myId');
-# const
-# nodesLength = await
-# elementHandle.$$eval('.a', nodes= > nodes.length);
-# expect(nodesLength).toBe(0);
-# });
-#
-# });
-#
+@chrome_only
+@sync
+async def test_ElementHandle_JJeval_returns_empty_array_if_no_selector(isolated_page):
+    """Test ElementHandle.JJeval() should return an empty array
+    and doesn't raises exception in case of missing selector.
+    """
+    page = isolated_page
+    htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
+    await page.setContent(htmlContent)
+    elementHandle = await page.J('#myId')
+    nodesLength = await elementHandle.JJeval('.a', "nodes => nodes.length")
+    assert nodesLength == 0
+
+
 # describeFailsFirefox('ElementHandle.$$', function()
 # {
 # it('should query existing elements', async() = > {
@@ -269,7 +264,6 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
 # promises = elements.map(element= > page.evaluate(e= > e.textContent, element));
 # expect(await
 # Promise.all(promises)).toEqual(['A', 'B']);
-# });
 #
 # it('should return empty array for non-existing elements', async() = > {
 #     const
@@ -284,8 +278,6 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
 # elements = await
 # html.$$('div');
 # expect(elements.length).toBe(0);
-# });
-# });
 #
 #
 # describe('ElementHandle.$x', function()
@@ -310,7 +302,6 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
 # const inner = await second[0].$x(`./ div[contains( @ class, 'inner')]`);
 # const content = await page.evaluate(e = > e.textContent, inner[0]);
 # expect(content).toBe('A');
-# });
 #
 # itFailsFirefox('should return null for non-existing element', async() = > {
 # const {page} = getTestState();
