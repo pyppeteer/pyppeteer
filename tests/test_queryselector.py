@@ -179,23 +179,18 @@ async def test_ElementHandle_Jeval_evalates_js_func(isolated_page):
     assert content == '100'
 
 
-# it('should retrieve content from subtree', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>';
-# await
-# page.setContent(htmlContent);
-# const
-# elementHandle = await
-# page.$('#myId');
-# const
-# content = await
-# elementHandle.$eval('.a', node= > node.innerText);
-# expect(content).toBe('a-child-div');
-# });
-#
+@chrome_only
+@sync
+async def test_ElementHandle_Jeval_retrieves_content(isolated_page):
+    """Test ElementHandle.Jeval() method should retrieve content from subtree."""
+    page = isolated_page
+    htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'
+    await page.setContent(htmlContent)
+    elementHandle = await page.J('#myId')
+    content = await elementHandle.Jeval('.a', "node => node.innerText")
+    assert content == 'a-child-div'
+
+
 # it('should throw in case of missing selector', async() = > {
 #     const
 # {page} = getTestState();
