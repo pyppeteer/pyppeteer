@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
@@ -119,14 +118,14 @@ class NetworkManager(AsyncIOEventEmitter):
         is_data_request = event.get('request', {}).get('url', '').startswith('data:')
         if self._protocolRequestInterceptionEnabled and not is_data_request:
             requestId = event['requestId']
-            interceptionId = self._requestIdToInterceptionId.get(requestId)  # noqa: E501
+            interceptionId = self._requestIdToInterceptionId.get(requestId)
             if interceptionId:
                 self._onRequest(event, interceptionId)
-                self._requestIdToInterceptionId.pop(requestId)  # noqa: E501
+                self._requestIdToInterceptionId.pop(requestId)
             else:
-                self._requestIdToResponseWillBeSent[requestId] = event  # noqa: E501
-            return
-        self._onRequest(event, None)
+                self._requestIdToRequestWillBeSent[requestId] = event
+        else:
+            self._onRequest(event, None)
 
     async def _onAuthRequired(self, event: Dict) -> None:
         response = 'Default'
@@ -289,9 +288,7 @@ class Request:
 
         request_event = event['request']
         self._url = request_event['url']
-        self._resourceType = request_event.get('type')
-        if isinstance(self._resourceType, str):
-            self._resourceType = self._resourceType.lower()
+        self._resourceType = event.get('type').lower() if isinstance(event.get('type'), str) else None
         self._method = request_event['method']
         self._postData = request_event.get('postData')
         self._frame = frame
@@ -380,7 +377,9 @@ class Request:
         """
         return None if not self._failureText else {'errorText': self._failureText}
 
-    async def continue_(self, overrides: Dict[str, Any]) -> None:
+    async def continue_(
+        self, url: str = None, method: str = None, postData: str = None, headers: Dict[str, str] = None
+    ) -> None:
         """Continue request with optional request overrides.
 
         To use this method, request interception should be enabled by
@@ -397,18 +396,25 @@ class Request:
         if not self._actionable_request:
             return
 
-        available_overrides = {'url', 'method', 'postData', 'headers'}
-        overrides = {k: v for k, v in overrides.items() if k in available_overrides}
-        if overrides.get('headers'):
-            overrides['headers'] = headersArray(overrides['headers'])
+        if headers:
+            headers = headersArray(headers)
 
         self._interceptionHandled = True
         try:
-            await self._client.send('Fetch.continueRequest', {'requestId': self._interceptionId, **overrides})
+            await self._client.send(
+                'Fetch.continueRequest',
+                {
+                    'requestId': self._interceptionId,
+                    'url': url,
+                    'method': method,
+                    'postData': postData,
+                    'headers': headers,
+                },
+            )
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occurred: {e}')
+            logger.exception(f'An exception occurred while trying to continue the request')
 
     async def respond(self, response: Dict[str, Any]) -> None:
         """Fulfills request with given response.
