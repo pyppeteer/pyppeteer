@@ -245,25 +245,16 @@ async def test_ElementHandle_JJeval_returns_empty_array_if_no_selector(isolated_
     assert nodesLength == 0
 
 
-# describeFailsFirefox('ElementHandle.$$', function()
-# {
-# it('should query existing elements', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<html><body><div>A</div><br/><div>B</div></body></html>');
-# const
-# html = await
-# page.$('html');
-# const
-# elements = await
-# html.$$('div');
-# expect(elements.length).toBe(2);
-# const
-# promises = elements.map(element= > page.evaluate(e= > e.textContent, element));
-# expect(await
-# Promise.all(promises)).toEqual(['A', 'B']);
+@chrome_only
+@sync
+async def test_ElementHandle_JJ_queries_elements(isolated_page):
+    """Test ElementHandle.JJ() should query existing elements."""
+    page = isolated_page
+    await page.setContent('<html><body><div>A</div><br/><div>B</div></body></html>')
+    html = await page.J('html')
+    elements = await html.JJ('div')
+    assert len(elements) == 2
+    assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
 #
 # it('should return empty array for non-existing elements', async() = > {
 #     const
