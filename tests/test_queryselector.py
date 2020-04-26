@@ -1,4 +1,5 @@
-"""Pyppeteer2 uses functions which have following counterparts in original puppeteer node.js:
+"""Test queryselector set of methods.
+Pyppeteer2 uses functions which have following counterparts in original puppeteer node.js:
 puppeteer 	    pyppeteer2 	                pyppeteer2 shorthand
 Page.$() 	    Page.querySelector() 	    Page.J()
 Page.$$() 	    Page.querySelectorAll() 	Page.JJ()
@@ -7,6 +8,7 @@ Page.$eval()    Page.querySelectorEval()    Page.Jeval()
 Page.$$eval()   Page.querySelectorAllEval() Page.JJeval()
 
 """
+
 import pytest
 
 from syncer import sync
@@ -17,8 +19,11 @@ from tests.conftest import chrome_only
 
 @chrome_only
 @sync
-async def test_page_Jeval_method(isolated_page):
-    """Test Page().Jeval() aka `querySelectorEval()` method."""
+async def test_page_Jeval_executes_js_func(isolated_page):
+    """Test Page().Jeval() aka `querySelectorEval()` method,
+    which executes JS function with an element which matches ``selector``
+
+    """
     page = isolated_page
     await page.setContent('<section id="testAttribute">43543</section>')
     idAttribute_Jeval = await page.Jeval('section', "e => e.id")
@@ -49,7 +54,7 @@ async def test_Jeval_accepts_elementHandle(isolated_page):
 
 @chrome_only
 @sync
-async def test_Jeval_throws_exception(isolated_page):
+async def test_Jeval_throws_exc_if_no_element(isolated_page):
     """Test Page().Jeval() should throw error if no element is found."""
     page = isolated_page
     with pytest.raises(ElementHandleError) as exc:
@@ -59,8 +64,11 @@ async def test_Jeval_throws_exception(isolated_page):
 
 @chrome_only
 @sync
-async def test_page_JJeval_method(isolated_page):
-    """Test Page().JJeval() method."""
+async def test_page_JJeval_executes_js_func(isolated_page):
+    """Test Page().JJeval() method executes JS function
+    with all elements which matches ``selector``.
+
+    """
     page = isolated_page
     await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
     divsCount_jjeval = await page.JJeval('div', "divs => divs.length")
@@ -101,7 +109,7 @@ async def test_page_JJ_queries_elements(isolated_page):
 @chrome_only
 @sync
 async def test_page_JJ_returns_empty_list_if_no_element(isolated_page, server):
-    """Test Page().JJ() method should return empty array if nothing is found."""
+    """Test Page().JJ() method should return empty list if nothing is found."""
     page = isolated_page
     await page.goto(server / "empty.html")
     elements = await page.JJ('div')
@@ -236,6 +244,7 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
 async def test_ElementHandle_JJeval_returns_empty_list_if_no_selector(isolated_page):
     """Test ElementHandle.JJeval() should return an empty list
     and doesn't raises exception in case of missing selector.
+
     """
     page = isolated_page
     htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
