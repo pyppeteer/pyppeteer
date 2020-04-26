@@ -57,22 +57,15 @@ async def test_Jeval_throws_exception(isolated_page):
     assert 'Error: failed to find element matching selector "section"' in str(exc)
 
 
+@chrome_only
+@sync
+async def test_page_JJeval_method(isolated_page):
+    """Test Page().JJeval() method should work."""
+    page = isolated_page
+    await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
+    divsCount = await page.JJeval('div', "divs => divs.length")
+    assert divsCount == 3
 
-# describeFailsFirefox('Page.$$eval', function()
-# {
-# it('should work', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>');
-# const
-# divsCount = await
-# page.$$eval('div', divs= > divs.length);
-# expect(divsCount).toBe(3);
-# });
-# });
-#
 # describeFailsFirefox('Page.$', function()
 # {
 # it('should query existing element', async() = > {
