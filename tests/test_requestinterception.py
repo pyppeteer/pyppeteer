@@ -1,19 +1,54 @@
+import asyncio
+
+import pytest
 from syncer import sync
+from tests.utils import isFavicon
 
 
 class TestPageSetRequestInterception:
     @sync
     async def test_basic_usage(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
 
+        @isolated_page.on('request')
+        def request_checker(request):
+            if not isFavicon(request):
+                assert 'empty.html' in request.url
+                assert request.headers['user-agent']
+                assert request.method == 'GET'
+                assert request.postData is None
+                assert request.isNavigationRequest
+                assert request.resourceType == 'document'
+                assert request.frame == isolated_page.mainFrame
+                assert request.frame.url == 'about:blank'
+            request.continue_()
+
+        resp = await isolated_page.goto(server.empty_page)
+        assert resp.ok
+        assert resp.remoteAddress['port'] == server.port
+
+    # see https://github.com/puppeteer/puppeteer/issues/3973
     @sync
+    @pytest.mark.skip(reason='needs server side implementation')
     async def test_works_when_POST_redirects_with_302(self, isolated_page, server):
-        pass
+        server.app.add_one_time_request_redirect('/rredirect', '/empty.html')
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.setRequestInterception(True)
+        isolated_page.on('request', lambda r: r.continue_())
+        await isolated_page.setContent(
+            '''
+            <form action='/rredirect' method='post'>
+                <input type="hidden" id="foo" name="foo" value="FOOBAR">
+            </form>
+        '''
+        )
+        await asyncio.gather(isolated_page.Jeval('form', 'f => f.submit()'), isolated_page.waitForNavigation())
 
     @sync
     async def test_works_with_header_manipulation_and_redirect(self, isolated_page, server):
         pass
 
+    # see https://github.com/puppeteer/puppeteer/issues/4743
     @sync
     async def test_is_able_to_remove_headers(self, isolated_page, server):
         pass
@@ -34,6 +69,7 @@ class TestPageSetRequestInterception:
     async def test_shows_custom_HTTP_headers(self, isolated_page, server):
         pass
 
+    # see https://github.com/puppeteer/puppeteer/issues/4337
     @sync
     async def test_works_with_redirect_within_synchronous_XHR(self, isolated_page, server):
         pass
