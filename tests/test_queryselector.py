@@ -165,24 +165,20 @@ async def test_ElementHandle_J_returns_none_if_no_element(isolated_page):
     second = await html.J('.third')
     assert not second
 
-# describeFailsFirefox('ElementHandle.$eval', function()
-# {
-# it('should work', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent(
-#     '<html><body><div class="tweet"><div class="like">100</div><div class="retweets">10</div></div></body></html>');
-# const
-# tweet = await
-# page.$('.tweet');
-# const
-# content = await
-# tweet.$eval('.like', node= > node.innerText);
-# expect(content).toBe('100');
-# });
-#
+
+@chrome_only
+@sync
+async def test_ElementHandle_Jeval_evalates_js_func(isolated_page):
+    """Test ElementHandle.Jeval() method evaluates JS function against css selector."""
+    page = isolated_page
+    await page.setContent(
+        '<html><body><div class="tweet"><div class="like">100</div><div class="retweets">10</div></div></body></html>'
+    )
+    tweet = await page.J('.tweet')
+    content = await tweet.Jeval('.like', "node => node.innerText")
+    assert content == '100'
+
+
 # it('should retrieve content from subtree', async() = > {
 #     const
 # {page} = getTestState();
