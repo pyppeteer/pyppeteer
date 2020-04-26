@@ -269,30 +269,16 @@ async def test_ElementHandle_JJ_returns_empty_list_if_no_element(isolated_page):
 
 
 @sync
-async def test_ElementHandle_JJ_returns_empty_list_if_no_element(isolated_page):
-    """Test ElementHandle.JJ() should return empty array for non-existing elements."""
+async def test_ElementHandle_Jx_queries_element(isolated_page, server):
+    """Test ElementHandle.Jx() should query existing element."""
     page = isolated_page
-# describe('ElementHandle.$x', function()
-# {
-# it('should query existing element', async() = > {
-#     const
-# {page, server} = getTestState();
-#
-# await
-# page.goto(server.PREFIX + '/playground.html');
-# await
-# page.setContent('<html><body><div class="second"><div class="inner">A</div></div></body></html>');
-# const
-# html = await
-# page.$('html');
-# const
-# second = await
-# html.$x(`. / body / div[contains( @
-#
-#
-# class , 'second')]`);
-# const inner = await second[0].$x(`./ div[contains( @ class, 'inner')]`);
-# const content = await page.evaluate(e = > e.textContent, inner[0]);
+    await page.goto(server / 'playground.html')
+    await page.setContent('<html><body><div class="second"><div class="inner">A</div></div></body></html>')
+    html = await page.J('html')
+    second = await html.Jx("./body/div[contains(@class , 'second')]")
+    inner = await second[0].Jx("./div[contains(@class, 'inner')]")
+    content = await page.evaluate("e => e.textContent", inner[0])
+    assert content == 'A'
 # expect(content).toBe('A');
 #
 # itFailsFirefox('should return null for non-existing element', async() = > {
