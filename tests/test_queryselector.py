@@ -191,30 +191,19 @@ async def test_ElementHandle_Jeval_retrieves_content(isolated_page):
     assert content == 'a-child-div'
 
 
-# it('should throw in case of missing selector', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>';
-# await
-# page.setContent(htmlContent);
-# const
-# elementHandle = await
-# page.$('#myId');
-# const
-# errorMessage = await
-# elementHandle.$eval('.a', node= > node.innerText).catch(error= > error.message);
-# expect(errorMessage).toBe(`Error: failed
-# to
-# find
-# element
-# matching
-# selector
-# ".a"
-# `);
-# });
-# });
+@chrome_only
+@sync
+async def test_ElementHandle_Jeval_raises_exc_if_no_selector(isolated_page):
+    """Test ElementHandle.Jeval() throws exception in case of missing selector."""
+    page = isolated_page
+    htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
+    await page.setContent(htmlContent)
+    elementHandle = await page.J('#myId')
+    with pytest.raises(ElementHandleError) as exc:
+        await elementHandle.Jeval('.a', "node => node.innerText")
+    assert 'Error: failed to find element matching selector ".a"' in str(exc)
+
+
 # describeFailsFirefox('ElementHandle.$$eval', function()
 # {
 # it('should work', async() = > {
