@@ -95,10 +95,7 @@ async def test_page_JJ_queries_elements(isolated_page):
     await page.setContent('<div>A</div><br/><div>B</div>')
     elements = await page.JJ('div')
     assert len(elements) == 2
-    expected = []
-    for element in elements:
-        expected.append(await page.evaluate("e => e.textContent", element))
-    assert expected == ['A', 'B']
+    assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
 
 
 @chrome_only
