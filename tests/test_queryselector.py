@@ -7,8 +7,11 @@ Page.$eval()    Page.querySelectorEval()    Page.Jeval()
 Page.$$eval()   Page.querySelectorAllEval() Page.JJeval()
 
 """
+import pytest
+
 from syncer import sync
 
+from pyppeteer.errors import ElementHandleError
 from tests.conftest import chrome_only
 
 
@@ -36,7 +39,7 @@ async def test_Jeval_accepts_args(isolated_page):
 @chrome_only
 @sync
 async def test_Jeval_accepts_elementHandle(isolated_page):
-    """Test Page().Jeval() should accept ElementHandle object."""
+    """Test Page().Jeval() should accept ElementHandle object as args."""
     page = isolated_page
     await page.setContent('<section>hello</section><div> world</div>')
     divHandle = await page.J('div')
@@ -44,18 +47,17 @@ async def test_Jeval_accepts_elementHandle(isolated_page):
     assert text == 'hello world'
 
 
-#     it('should throw error if no element is found', async() = > {
-#         const
-#     {page} = getTestState();
-#
-#     let
-#     error = null;
-#     await page.$eval('section', e= > e.id).catch(e= > error = e);
-#     expect(error.message).toContain('failed to find element matching selector "section"');
-#     });
-#
-# });
-#
+@chrome_only
+@sync
+async def test_Jeval_throws_exception(isolated_page):
+    """Test Page().Jeval() should throw error if no element is found."""
+    page = isolated_page
+    with pytest.raises(ElementHandleError) as exc:
+        await page.Jeval('section', "e => e.id")
+    assert 'Error: failed to find element matching selector "section"' in str(exc)
+
+
+
 # describeFailsFirefox('Page.$$eval', function()
 # {
 # it('should work', async() = > {
