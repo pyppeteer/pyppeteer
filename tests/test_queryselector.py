@@ -100,21 +100,12 @@ async def test_page_JJ_queries_elements(isolated_page):
 
 @chrome_only
 @sync
-async def test_page_JJ_returns_empty_array(isolated_page):
+async def test_page_JJ_returns_empty_array(isolated_page, server):
     """Test Page().JJ() method should return empty array if nothing is found."""
     page = isolated_page
-# it('should return empty array if nothing is found', async() = > {
-#     const
-# {page, server} = getTestState();
-#
-# await
-# page.goto(server.EMPTY_PAGE);
-# const
-# elements = await
-# page.$$('div');
-# expect(elements.length).toBe(0);
-# });
-# });
+    await page.goto(server / "empty.html")
+    elements = await page.JJ('div')
+    assert len(elements) == 0  # should it be just `assert not elements` ?
 #
 # describeFailsFirefox('Path.$x', function()
 # {
