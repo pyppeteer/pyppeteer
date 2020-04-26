@@ -26,16 +26,11 @@ async def test_page_Jeval_method(isolated_page):
 @chrome_only
 @sync
 async def test_Jeval_accepts_args(isolated_page):
-    """Test Page().evaluate() should accept arguments."""
-    # it('should accept arguments', async() = > {
-    #     const
-    # {page} = getTestState();
-    #
-    # await page.setContent('<section>hello</section>');
-    # const
-    # text = await page.$eval('section', (e, suffix) = > e.textContent + suffix, ' world!');
-    # expect(text).toBe('hello world!');
-    # });
+    """Test Page().Jeval() should accept arguments."""
+    page = isolated_page
+    await page.setContent('<section>hello</section>')
+    text = await page.Jeval('section', "(e, suffix) => e.textContent + suffix", ' world!')
+    assert text == 'hello world!'
 
 
 @chrome_only
