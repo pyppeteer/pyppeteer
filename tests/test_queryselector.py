@@ -123,6 +123,7 @@ async def test_Jx_queries_elements(isolated_page):
     assert len(elements_path) == len(elements_jx) == 1
 
 
+@chrome_only
 @sync
 async def test_Jx_returns_empty_array(isolated_page):
     """Test Page().Jx() method should return empty array for non-existing element."""
@@ -130,22 +131,17 @@ async def test_Jx_returns_empty_array(isolated_page):
     elements = await page.Jx('/html/body/non-existing-element')
     assert not elements and elements == []
 
-# expect(element).toEqual([]);
-# });
-# it('should return multiple elements', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<div></div><div></div>');
-# const
-# elements = await
-# page.$x('/html/body/div');
-# expect(elements.length).toBe(2);
-# });
-# });
-#
-#
+
+@chrome_only
+@sync
+async def test_Jx_returns_multiple_elements(isolated_page):
+    """Test Page().Jx() method should return multiple elements."""
+    page = isolated_page
+    await page.setContent('<div></div><div></div>')
+    elements = await page.Jx('/html/body/div')
+    assert len(elements) == 2
+
+
 # describe('ElementHandle.$', function()
 # {
 # it('should query existing element', async() = > {
