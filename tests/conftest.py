@@ -5,15 +5,14 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 import pytest
-from syncer import sync
-from websockets import ConnectionClosedError
-
 from pyppeteer import Browser, launch
 from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
+from syncer import sync
 from tests.utils.server import _Application, get_application
+from websockets import ConnectionClosedError
 
 # internal, conftest.py only variables
 _launch_options = {'args': ['--no-sandbox']}
@@ -36,12 +35,13 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_inst: bool = False):
+    def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_instance: bool = False):
         self.app: _Application = app
+        self.port = port
         self.base = f'http{"s" if https else ""}://{"127.0.0.1" if cross_process else "localhost"}:{port}'
-        if not child_inst:
-            self.https = ServerURL(port, app, https=True, child_inst=True)
-            self.cross_process_server = ServerURL(port, app, cross_process=True, child_inst=True)
+        if not child_instance:
+            self.https = ServerURL(port, app, https=True, child_instance=True)
+            self.cross_process_server = ServerURL(port, app, cross_process=True, child_instance=True)
         self.empty_page = self / 'empty.html'
 
     def __repr__(self):

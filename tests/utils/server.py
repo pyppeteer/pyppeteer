@@ -1,17 +1,17 @@
 import asyncio
 import base64
 import functools
+import inspect
 from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Type, Union
 from urllib.parse import urlparse
 
+from pyppeteer.util import get_free_port
 from tornado import web
 from tornado.httputil import HTTPServerRequest
 from tornado.log import access_log
 from tornado.routing import _RuleList
-
-from pyppeteer.util import get_free_port
 
 BASE_HTML = '''
 <html>
@@ -89,15 +89,26 @@ class _StaticFileHandler(web.StaticFileHandler):
         (cls.one_time_request_headers if one_time else cls.request_headers)[path.strip('/')] = headers
 
     @classmethod
-    def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
+    def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any], should_return: bool = False):
         stripped = path.strip('/')
         if stripped not in cls.callbacks:
             cls.callbacks[stripped] = []
-        cls.callbacks[stripped].append(func)
+        cls.callbacks[stripped].append((func, should_return))
 
     @classmethod
-    def add_one_time_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        cls.add_one_time_callback(path, lambda _: precondition() if callable(precondition) else precondition)
+    def add_one_time_request_precondition(
+        cls, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
+    ):
+        def caller(request_handler):
+            if callable(precondition):
+                # only pass in request handler if we detect one, and only one arg
+                if len(inspect.getfullargspec(precondition).args) == 1:
+                    return precondition(request_handler)
+                else:
+                    return precondition()
+            return precondition
+
+        cls.add_one_time_callback(path, caller, should_return)
 
     @classmethod
     def add_one_time_request_resp(cls, path: str, resp: bytes):
@@ -107,10 +118,12 @@ class _StaticFileHandler(web.StaticFileHandler):
         if path in self.callbacks:
             callbacks = self.callbacks[path][:]
             del self.callbacks[path]
-            for callback in callbacks:
-                func_res = callback(self.request)
+            for callback, should_return in callbacks:
+                func_res = callback(self)
                 if isawaitable(func_res):
                     await func_res
+                if should_return:
+                    return
 
         headers = self.request_headers.get(path, {})
         if path in self.one_time_request_headers:
@@ -146,11 +159,21 @@ class _Application(web.Application):
 
         self.add_one_time_request_precondition(path, precondition=_delay)
 
+    def add_one_time_request_redirect(self, from_path: str, to: str):
+        def redirector(handler):
+            handler.redirect(to)
+
+        self.add_one_time_request_precondition(from_path, redirector, should_return=True)
+
     def add_one_time_request_resp(self, path: str, resp: bytes):
         self._static_handler_instance.add_one_time_request_resp(urlparse(path), resp)
 
-    def add_one_time_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        self._static_handler_instance.add_one_time_request_precondition(urlparse(path).path, precondition)
+    def add_one_time_request_precondition(
+        self, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
+    ):
+        self._static_handler_instance.add_one_time_request_precondition(
+            urlparse(path).path, precondition, should_return
+        )
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
         self._static_handler_instance.set_request_header(urlparse(path).path, headers, True)
