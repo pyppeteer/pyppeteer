@@ -63,8 +63,10 @@ async def test_page_JJeval_method(isolated_page):
     """Test Page().JJeval() method should work."""
     page = isolated_page
     await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
-    divsCount = await page.JJeval('div', "divs => divs.length")
-    assert divsCount == 3
+    divsCount_jjeval = await page.JJeval('div', "divs => divs.length")
+    divsCount_query = await page.querySelectorAllEval('div', "divs => divs.length")
+    assert divsCount_jjeval == divsCount_query == 3
+
 
 # describeFailsFirefox('Page.$', function()
 # {
