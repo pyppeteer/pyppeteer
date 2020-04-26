@@ -35,14 +35,13 @@ async def test_Jeval_accepts_args(isolated_page):
 
 @chrome_only
 @sync
-async def test_evaluate_accepts_elementhandles(isolated_page):
+async def test_Jeval_accepts_elementHandle(isolated_page):
+    """Test Page().Jeval() should accept ElementHandle object."""
     page = isolated_page
     await page.setContent('<section>hello</section><div> world</div>')
-    # const
-    # divHandle = await page.$('div');
-    # const
-    # text = await page.$eval('section', (e, div) = > e.textContent + div.textContent, divHandle);
-    # expect(text).toBe('hello world');
+    divHandle = await page.J('div')
+    text = await page.Jeval('section', "(e, div) => e.textContent + div.textContent", divHandle)
+    assert text == 'hello world'
 
 
 #     it('should throw error if no element is found', async() = > {
