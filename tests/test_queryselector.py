@@ -78,34 +78,34 @@ async def test_page_J_queries_element(isolated_page):
     assert element
 
 
-# it('should return null for non-existing element', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# element = await
-# page.$('non-existing-element');
-# expect(element).toBe(null);
-# });
-# });
-#
-# describe('Page.$$', function()
-# {
-# itFailsFirefox('should query existing elements', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<div>A</div><br/><div>B</div>');
-# const
-# elements = await
-# page.$$('div');
-# expect(elements.length).toBe(2);
-# const
-# promises = elements.map(element= > page.evaluate(e= > e.textContent, element));
-# expect(await
-# Promise.all(promises)).toEqual(['A', 'B']);
-# });
+@chrome_only
+@sync
+async def test_J_returns_none_for_nonexisting_element(isolated_page):
+    """Test Page().J() method should return null for non-existing element."""
+    page = isolated_page
+    element = await page.J('non-existing-element')
+    assert not element
+
+
+@chrome_only
+@sync
+async def test_page_JJ_queries_elements(isolated_page):
+    """Test Page().JJ() method should query existing elements."""
+    page = isolated_page
+    await page.setContent('<div>A</div><br/><div>B</div>')
+    elements = await page.JJ('div')
+    assert len(elements) == 2
+    expected = []
+    for element in elements:
+        expected.append(await page.evaluate("e => e.textContent", element))
+    assert expected == ['A', 'B']
+
+
+@chrome_only
+@sync
+async def test_page_JJ_returns_empty_array(isolated_page):
+    """Test Page().JJ() method should return empty array if nothing is found."""
+    page = isolated_page
 # it('should return empty array if nothing is found', async() = > {
 #     const
 # {page, server} = getTestState();
