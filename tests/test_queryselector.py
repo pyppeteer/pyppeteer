@@ -18,18 +18,9 @@ async def test_page_Jeval_method(isolated_page):
     """Test Page().Jeval() aka `querySelectorEval()` method."""
     page = isolated_page
     await page.setContent('<section id="testAttribute">43543</section>')
-    idAttribute = await page.Jeval('section', "e => e.id")
-    assert idAttribute == 'testAttribute'
-
-
-@chrome_only
-@sync
-async def test_page_querySelectorEval_method(isolated_page):
-    """Test Page().querySelectorEval() method."""
-    page = isolated_page
-    await page.setContent('<section id="testAttribute">43543</section>')
-    idAttribute = await page.Jeval('section', "e => e.id")
-    assert idAttribute == 'testAttribute'
+    idAttribute_Jeval = await page.Jeval('section', "e => e.id")
+    idAttribute_query_eval = await page.querySelectorEval('section', "e => e.id")
+    assert idAttribute_Jeval == idAttribute_query_eval == 'testAttribute'
 
 
 @chrome_only
