@@ -105,29 +105,31 @@ async def test_page_JJ_returns_empty_array(isolated_page, server):
     page = isolated_page
     await page.goto(server / "empty.html")
     elements = await page.JJ('div')
-    assert len(elements) == 0  # should it be just `assert not elements` ?
-#
-# describeFailsFirefox('Path.$x', function()
-# {
-# it('should query existing element', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<section>test</section>');
-# const
-# elements = await
-# page.$x('/html/body/section');
-# expect(elements[0]).toBeTruthy();
-# expect(elements.length).toBe(1);
-# });
-# it('should return empty array for non-existing element', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# element = await
-# page.$x('/html/body/non-existing-element');
+    assert not elements and elements == []
+
+
+@chrome_only
+@sync
+async def test_Jx_queries_elements(isolated_page):
+    """Test Page().Jx() method should query existing elements."""
+    page = isolated_page
+    await page.setContent('<section>test</section>')
+    elements_jx = await page.Jx('/html/body/section')
+    elements_path = await page.xpath('/html/body/section')
+    assert isinstance(elements_jx, list)
+    assert isinstance(elements_path, list)
+    assert elements_jx[0]
+    assert elements_path[0]
+    assert len(elements_path) == len(elements_jx) == 1
+
+
+@sync
+async def test_Jx_returns_empty_array(isolated_page):
+    """Test Page().Jx() method should return empty array for non-existing element."""
+    page = isolated_page
+    elements = await page.Jx('/html/body/non-existing-element')
+    assert not elements and elements == []
+
 # expect(element).toEqual([]);
 # });
 # it('should return multiple elements', async() = > {
