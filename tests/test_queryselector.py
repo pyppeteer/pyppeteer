@@ -216,23 +216,21 @@ async def test_ElementHandle_JJeval_executes_js_func(isolated_page):
     content = await tweet.JJeval('.like', "nodes => nodes.map(n => n.innerText)")
     assert content == ['100', '10']
 
-# it('should retrieve content from subtree', async() = > {
-#     const
-# {page} = getTestState();
-#
-# const
-# htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a1-child-div</div><div class="a">a2-child-div</div></div>';
-# await
-# page.setContent(htmlContent);
-# const
-# elementHandle = await
-# page.$('#myId');
-# const
-# content = await
-# elementHandle.$$eval('.a', nodes= > nodes.map(n= > n.innerText));
-# expect(content).toEqual(['a1-child-div', 'a2-child-div']);
-# });
-#
+
+@chrome_only
+@sync
+async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
+    """Test ElementHandle.JJeval() should retrieve content from subtree."""
+    page = isolated_page
+    htmlContent = \
+        '<div class="a">not-a-child-div</div><div id="myId">' \
+        '<div class="a">a1-child-div</div><div class="a">a2-child-div</div></div>'
+    await page.setContent(htmlContent)
+    elementHandle = await page.J('#myId')
+    content = await elementHandle.JJeval('.a', "nodes => nodes.map(n => n.innerText)")
+    assert content == ['a1-child-div', 'a2-child-div']
+
+
 # it('should not throw in case of missing selector', async() = > {
 #     const
 # {page} = getTestState();
