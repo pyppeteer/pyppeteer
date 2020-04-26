@@ -262,22 +262,16 @@ async def test_ElementHandle_JJ_queries_elements(isolated_page):
 async def test_ElementHandle_JJ_returns_empty_list_if_no_element(isolated_page):
     """Test ElementHandle.JJ() should return empty array for non-existing elements."""
     page = isolated_page
+    await page.setContent('<html><body><span>A</span><br/><span>B</span></body></html>')
+    html = await page.J('html')
+    elements = await html.JJ('div')
+    assert not elements and elements == []
 
-# it('should return empty array for non-existing elements', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<html><body><span>A</span><br/><span>B</span></body></html>');
-# const
-# html = await
-# page.$('html');
-# const
-# elements = await
-# html.$$('div');
-# expect(elements.length).toBe(0);
-#
-#
+
+@sync
+async def test_ElementHandle_JJ_returns_empty_list_if_no_element(isolated_page):
+    """Test ElementHandle.JJ() should return empty array for non-existing elements."""
+    page = isolated_page
 # describe('ElementHandle.$x', function()
 # {
 # it('should query existing element', async() = > {
