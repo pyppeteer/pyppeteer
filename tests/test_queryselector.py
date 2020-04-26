@@ -154,21 +154,17 @@ async def test_ElementHandle_J_queries_element(isolated_page, server):
     content = await page.evaluate("e => e.textContent", inner)
     assert content == 'A'
 
-# itFailsFirefox('should return null for non-existing element', async() = > {
-#     const
-# {page} = getTestState();
-#
-# await
-# page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>');
-# const
-# html = await
-# page.$('html');
-# const
-# second = await
-# html.$('.third');
-# expect(second).toBe(null);
-# });
-# });
+
+@chrome_only
+@sync
+async def test_ElementHandle_J_returns_none_if_no_element(isolated_page):
+    """Test ElementHandle.J() method should return none for non existing element."""
+    page = isolated_page
+    await page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>')
+    html = await page.J('html')
+    second = await html.J('.third')
+    assert not second
+
 # describeFailsFirefox('ElementHandle.$eval', function()
 # {
 # it('should work', async() = > {
