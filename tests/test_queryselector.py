@@ -279,12 +279,14 @@ async def test_ElementHandle_Jx_queries_element(isolated_page, server):
     inner = await second[0].Jx("./div[contains(@class, 'inner')]")
     content = await page.evaluate("e => e.textContent", inner[0])
     assert content == 'A'
-# expect(content).toBe('A');
-#
-# itFailsFirefox('should return null for non-existing element', async() = > {
-# const {page} = getTestState();
-#
-# await page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>');
-# const html = await page.$('html');
-# const second = await html.$x(` / div[contains( @ class, 'third')]`);
-# expect(second).toEqual([]);
+
+
+@sync
+@chrome_only
+async def test_ElementHandle_Jx_returns_none_if_no_element(isolated_page):
+    """Test ElementHandle.Jx() should return None for non-existing element."""
+    page = isolated_page
+    await page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>')
+    html = await page.J('html')
+    second = await html.Jx("/div[contains(@class, 'third')]")
+    assert not second and second == []
