@@ -80,7 +80,7 @@ async def test_page_J_queries_element(isolated_page):
 
 @chrome_only
 @sync
-async def test_J_returns_none_for_nonexisting_element(isolated_page):
+async def test_J_returns_none_if_no_element(isolated_page):
     """Test Page().J() method should return null for non-existing element."""
     page = isolated_page
     element = await page.J('non-existing-element')
@@ -100,7 +100,7 @@ async def test_page_JJ_queries_elements(isolated_page):
 
 @chrome_only
 @sync
-async def test_page_JJ_returns_empty_array(isolated_page, server):
+async def test_page_JJ_returns_empty_list_if_no_element(isolated_page, server):
     """Test Page().JJ() method should return empty array if nothing is found."""
     page = isolated_page
     await page.goto(server / "empty.html")
@@ -125,8 +125,8 @@ async def test_Jx_queries_elements(isolated_page):
 
 @chrome_only
 @sync
-async def test_Jx_returns_empty_array(isolated_page):
-    """Test Page().Jx() method should return empty array for non-existing element."""
+async def test_Jx_returns_empty_list_if_no_element(isolated_page):
+    """Test Page().Jx() method should return empty list for non-existing element."""
     page = isolated_page
     elements = await page.Jx('/html/body/non-existing-element')
     assert not elements and elements == []
@@ -233,8 +233,8 @@ async def test_ElementHandle_JJeval_retrieves_content(isolated_page):
 
 @chrome_only
 @sync
-async def test_ElementHandle_JJeval_returns_empty_array_if_no_selector(isolated_page):
-    """Test ElementHandle.JJeval() should return an empty array
+async def test_ElementHandle_JJeval_returns_empty_list_if_no_selector(isolated_page):
+    """Test ElementHandle.JJeval() should return an empty list
     and doesn't raises exception in case of missing selector.
     """
     page = isolated_page
@@ -255,7 +255,14 @@ async def test_ElementHandle_JJ_queries_elements(isolated_page):
     elements = await html.JJ('div')
     assert len(elements) == 2
     assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
-#
+
+
+@chrome_only
+@sync
+async def test_ElementHandle_JJ_returns_empty_list_if_no_element(isolated_page):
+    """Test ElementHandle.JJ() should return empty array for non-existing elements."""
+    page = isolated_page
+
 # it('should return empty array for non-existing elements', async() = > {
 #     const
 # {page} = getTestState();
