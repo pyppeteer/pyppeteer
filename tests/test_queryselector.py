@@ -31,9 +31,9 @@ class TestPageJeval:
         """
         page = isolated_page
         await page.setContent('<section id="testAttribute">43543</section>')
-        idAttribute_Jeval = await page.Jeval('section', "e => e.id")
-        idAttribute_query_eval = await page.querySelectorEval('section', "e => e.id")
-        assert idAttribute_Jeval == idAttribute_query_eval == 'testAttribute'
+        idAttributeJeval = await page.Jeval('section', "e => e.id")
+        idAttributeQueryEval = await page.querySelectorEval('section', "e => e.id")
+        assert idAttributeJeval == idAttributeQueryEval == 'testAttribute'
 
     @chrome_only
     @sync
@@ -75,9 +75,9 @@ class TestPageJJeval:
         """
         page = isolated_page
         await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
-        divsCount_jjeval = await page.JJeval('div', "divs => divs.length")
-        divsCount_query = await page.querySelectorAllEval('div', "divs => divs.length")
-        assert divsCount_jjeval == divsCount_query == 3
+        divsCountJJeval = await page.JJeval('div', "divs => divs.length")
+        divsCountQuery = await page.querySelectorAllEval('div', "divs => divs.length")
+        assert divsCountJJeval == divsCountQuery == 3
 
 
 class TestPageJ:
@@ -97,7 +97,7 @@ class TestPageJ:
         """Test Page().J() method should return null for non-existing element."""
         page = isolated_page
         element = await page.J('non-existing-element')
-        assert not element
+        assert element is None
 
 
 class TestPageJJ:
@@ -119,7 +119,7 @@ class TestPageJJ:
         page = isolated_page
         await page.goto(server / "empty.html")
         elements = await page.JJ('div')
-        assert not elements and elements == []
+        assert elements == []
 
 
 class TestPageJx:
@@ -130,13 +130,13 @@ class TestPageJx:
         """Test Page().Jx() method should query existing elements."""
         page = isolated_page
         await page.setContent('<section>test</section>')
-        elements_jx = await page.Jx('/html/body/section')
-        elements_path = await page.xpath('/html/body/section')
-        assert isinstance(elements_jx, list)
-        assert isinstance(elements_path, list)
-        assert elements_jx[0]
-        assert elements_path[0]
-        assert len(elements_path) == len(elements_jx) == 1
+        elementsJx = await page.Jx('/html/body/section')
+        elementsXpath = await page.xpath('/html/body/section')
+        assert isinstance(elementsJx, list)
+        assert isinstance(elementsXpath, list)
+        assert elementsJx[0]
+        assert elementsXpath[0]
+        assert len(elementsXpath) == len(elementsJx) == 1
 
     @chrome_only
     @sync
@@ -144,8 +144,7 @@ class TestPageJx:
         """Test Page().Jx() method should return empty list for non-existing element."""
         page = isolated_page
         elements = await page.Jx('/html/body/non-existing-element')
-        assert not elements and elements == []
-
+        assert elements == []
 
     @chrome_only
     @sync
@@ -179,7 +178,7 @@ class TestElementHandleJ:
         await page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>')
         html = await page.J('html')
         second = await html.J('.third')
-        assert not second
+        assert second is None
 
 
 class TestElementHandleJeval:
@@ -235,7 +234,6 @@ class TestElementHandleJJeval:
         content = await tweet.JJeval('.like', "nodes => nodes.map(n => n.innerText)")
         assert content == ['100', '10']
 
-
     @chrome_only
     @sync
     async def test_JJeval_retrieves_content(self, isolated_page):
@@ -285,7 +283,7 @@ class TestElementHandleJJ:
         await page.setContent('<html><body><span>A</span><br/><span>B</span></body></html>')
         html = await page.J('html')
         elements = await html.JJ('div')
-        assert not elements and elements == []
+        assert elements == []
 
 
 class TestElementHandleJx:
@@ -310,4 +308,4 @@ class TestElementHandleJx:
         await page.setContent('<html><body><div class="second"><div class="inner">B</div></div></body></html>')
         html = await page.J('html')
         second = await html.Jx("/div[contains(@class, 'third')]")
-        assert not second and second == []
+        assert second == []
