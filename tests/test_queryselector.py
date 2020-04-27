@@ -1,11 +1,14 @@
 """Test queryselector set of methods.
 Pyppeteer2 uses functions which have following counterparts in original puppeteer node.js:
-puppeteer 	    pyppeteer2 	                pyppeteer2 shorthand
-Page.$() 	    Page.querySelector() 	    Page.J()
-Page.$$() 	    Page.querySelectorAll() 	Page.JJ()
-Page.$x() 	    Page.xpath() 	            Page.Jx()
-Page.$eval()    Page.querySelectorEval()    Page.Jeval()
-Page.$$eval()   Page.querySelectorAllEval() Page.JJeval()
+┌───────────────┬─────────────────────────────┬──────────────────────┐
+│   puppeteer   │         pyppeteer2          │ pyppeteer2 shorthand │
+├───────────────┼─────────────────────────────┼──────────────────────┤
+│ Page.$()      │ Page.querySelector()        │ Page.J()             │
+│ Page.$$()     │ Page.querySelectorAll()     │ Page.JJ()            │
+│ Page.$x()     │ Page.xpath()                │ Page.Jx()            │
+│ Page.$eval()  │ Page.querySelectorEval()    │ Page.Jeval()         │
+│ Page.$$eval() │ Page.querySelectorAllEval() │ Page.JJeval()        │
+└───────────────┴─────────────────────────────┴──────────────────────┘
 
 """
 
