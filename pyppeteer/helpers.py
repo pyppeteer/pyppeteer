@@ -9,7 +9,7 @@ import logging
 import math
 import re
 from asyncio.futures import Future
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from pyee import AsyncIOEventEmitter
 
@@ -205,21 +205,21 @@ def is_js_func(func: str) -> bool:
         (?P<argopen>\()?
         # matches one argument optionally. if function args are opening with (, we optionally match the rest argument
         (?P<args>(?(argopen)(?:\.\.\.)?)%(js)s,?)?
-        # if the function opens with ( and the first arg was matched, we match more arguments, 
+        # if the function opens with ( and the first arg was matched, we match more arguments,
         # otherwise, don't match any thing.  if function args are opening with (, we optionally match the rest argument
         (?(argopen) (?(args)(?:(?(argopen)(?:\.\.\.)?)%(js)s,?)*) )
-        # if we matched the opening (, match the closing ) 
+        # if we matched the opening (, match the closing )
         (?(argopen)\))
         # function bodies open with =>, {, both, or none. If the function is declared with a name, it must have a { to
         # open the body. The opposite is also true. If the function has a name, it will not open with =>.
         (?(named)(?P<fnopen>{)|(?:=>))
-        # asserts that there are at least 3 characters behind us (the minimum to be able create a function declaration 
+        # asserts that there are at least 3 characters behind us (the minimum to be able create a function declaration
         # and begin declaring the function body, ie f=>).
         (?<=.{3})
         # matches the function body
         .+
         # matches the closing } if the opening one was found
-        (?(fnopen)}) 
+        (?(fnopen)})
         """
             % {'js': _js_identifier_re},
             func,

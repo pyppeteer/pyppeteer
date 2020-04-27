@@ -14,14 +14,13 @@ __chromium_revision__ = '722234'
 __base_puppeteer_version__ = 'v2.1.1'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 
-from pyppeteer.browser import Browser
-from pyppeteer.browser_fetcher import BrowserFetcher, Platform
-from pyppeteer.device_descriptors import devices
-from pyppeteer.launcher import ChromeLauncher, FirefoxLauncher, launcher
-from pyppeteer.models import BrowserOptions, ChromeArgOptions, Devices, LaunchOptions, Protocol
-from pyppeteer.websocket_transport import WebsocketTransport
 
-
+from pyppeteer.browser import Browser  # isort:skip
+from pyppeteer.browser_fetcher import BrowserFetcher, Platform  # isort:skip
+from pyppeteer.device_descriptors import devices  # isort:skip
+from pyppeteer.launcher import ChromeLauncher, FirefoxLauncher, launcher  # isort:skip
+from pyppeteer.models import BrowserOptions, ChromeArgOptions, Devices, LaunchOptions, Protocol  # isort:skip
+from pyppeteer.websocket_transport import WebsocketTransport  # isort:skip
 
 # Setup root logger
 _logger = logging.getLogger(__name__)

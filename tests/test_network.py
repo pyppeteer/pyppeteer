@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
+import pytest
 from syncer import sync
 
 from pyppeteer.errors import NetworkError, PageError
-
-
-import pytest
 
 
 class TestNetworkEvent:

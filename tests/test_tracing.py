@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import json
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from syncer import sync
 
 from pyppeteer.errors import NetworkError
-
-
 
 
 class TestTracing:

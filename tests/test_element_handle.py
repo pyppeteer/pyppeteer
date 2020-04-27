@@ -4,14 +4,13 @@
 import logging
 import sys
 
+import pytest
 from syncer import sync
 
 import pyppeteer
 from pyppeteer.errors import ElementHandleError
 
-
 from .utils import attachFrame
-import pytest
 
 
 class TestBoundingBox:

@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from os import path
 import subprocess
+from os import path
 
-from livereload import Server
-from livereload import watcher
+from livereload import Server, watcher
 
 watcher.pyinotify = None  # disable pyinotify
 
 docsdir = path.dirname(path.abspath(__file__))
 builddir = path.join(docsdir, '_build')
 build_cmd = [
-    'sphinx-build', '-q', '-j', 'auto', '-b', 'html',
-    '-d', path.join(builddir, 'doctrees'),
-    docsdir, path.join(builddir, 'html'),
+    'sphinx-build',
+    '-q',
+    '-j',
+    'auto',
+    '-b',
+    'html',
+    '-d',
+    path.join(builddir, 'doctrees'),
+    docsdir,
+    path.join(builddir, 'html'),
 ]
 
 

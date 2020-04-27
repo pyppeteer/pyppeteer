@@ -6,7 +6,7 @@ import pytest
 from syncer import sync
 
 from pyppeteer.errors import BrowserError
-from tests.utils import waitEvent, attachFrame, detachFrame, dumpFrames, navigateFrame
+from tests.utils import attachFrame, detachFrame, dumpFrames, navigateFrame, waitEvent
 
 
 @sync
@@ -23,15 +23,12 @@ async def test_executionContext(isolated_page, server):
     assert context2.frame is frame2
 
     await gather(
-        context1.evaluate('window.a = 1'),
-        context2.evaluate('window.a = 2'),
+        context1.evaluate('window.a = 1'), context2.evaluate('window.a = 2'),
     )
-    a1, a2 = await gather(
-        context1.evaluate('window.a'),
-        context2.evaluate('window.a'),
-    )
+    a1, a2 = await gather(context1.evaluate('window.a'), context2.evaluate('window.a'),)
     assert a1 == 1
     assert a2 == 2
+
 
 @sync
 async def test_evaluate(isolated_page, server):
@@ -42,6 +39,7 @@ async def test_evaluate(isolated_page, server):
     with pytest.raises(BrowserError) as e:
         await frame1.evaluate('7 * 8')
     assert e.match('Execution Context is not available in detached frame')
+
 
 @sync
 async def test_management(isolated_page, server):
@@ -77,16 +75,14 @@ async def test_management(isolated_page, server):
     assert detachedFrames[0].isDetached is True
     # should send framenavigated when navigating on anchor urls
     await p.goto(server.empty_page)
-    await gather(
-        p.goto(server.empty_page + '#foo'),
-        waitEvent(p, 'framenavigated')
-    )
+    await gather(p.goto(server.empty_page + '#foo'), waitEvent(p, 'framenavigated'))
     assert p.url == server.empty_page + '#foo'
     # should persist mainFrame on cross-process navigation
     await p.goto(server.empty_page)
     mainFrame = p.mainFrame
     await p.goto(server.cross_process_server / 'empty.html')
     assert p.mainFrame is mainFrame
+
 
 @sync
 async def test_attaching(isolated_page, server):
@@ -113,6 +109,7 @@ async def test_attaching(isolated_page, server):
     assert len(detachedFrames) == 4
     assert len(navigatedFrames) == 1
 
+
 @sync
 async def test_report_frame(isolated_page, server):
     p = isolated_page
@@ -127,10 +124,11 @@ async def test_report_frame(isolated_page, server):
             await new Promise(x => frame.onload = x);
         }
         """,
-        server.empty_page
+        server.empty_page,
     )
     assert len(p.frames) == 2
     assert p.frames[1].url == server.empty_page
+
 
 @sync
 async def test_report_frame_name(isolated_page, server):
@@ -146,11 +144,12 @@ async def test_report_frame_name(isolated_page, server):
             return new Promise(x => frame.onload = x);
         }
         """,
-        server.empty_page
+        server.empty_page,
     )
     assert p.frames[0].name == ''
     assert p.frames[1].name == 'theFrameId'
     assert p.frames[2].name == 'theFrameName'
+
 
 @sync
 async def test_report_frame_parents(isolated_page, server):
@@ -160,6 +159,7 @@ async def test_report_frame_parents(isolated_page, server):
     assert p.frames[0].parentFrame is None
     assert p.frames[1].parentFrame is p.mainFrame
     assert p.frames[2].parentFrame is p.mainFrame
+
 
 @sync
 async def test_frame_reattach(isolated_page, server):
@@ -174,10 +174,6 @@ async def test_frame_reattach(isolated_page, server):
         """
     )
     assert frame1.isDetached is True
-    frame2 = (await gather(
-        waitEvent(p, 'frameattached'),
-        p.evaluate('document.body.appendChild(window.frame)')
-    ))[0]
+    frame2 = (await gather(waitEvent(p, 'frameattached'), p.evaluate('document.body.appendChild(window.frame)')))[0]
     assert frame2.isDetached is False
     assert frame1 is not frame2
-

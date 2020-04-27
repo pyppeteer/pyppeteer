@@ -8,7 +8,7 @@ import pytest
 from syncer import sync
 from websockets import ConnectionClosedError
 
-from pyppeteer import launch, Browser
+from pyppeteer import Browser, launch
 from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
