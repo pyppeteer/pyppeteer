@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 from pyppeteer.util import get_free_port
 from tornado import web
 from tornado.httputil import HTTPServerRequest
-from tornado.log import access_log
+from tornado.log import app_log
 from tornado.routing import _RuleList
 
 BASE_HTML = '''
@@ -78,15 +78,7 @@ class AuthHandler:
 
 class _StaticFileHandler(web.StaticFileHandler):
     # todo: feels like a hack...
-    request_headers = {}
-    one_time_request_headers = {}
     callbacks = {}
-    request_preconditions = {}
-    request_resp = {}
-
-    @classmethod
-    def set_request_header(cls, path: str, headers: Dict[str, str], one_time: bool = False):
-        (cls.one_time_request_headers if one_time else cls.request_headers)[path.strip('/')] = headers
 
     @classmethod
     def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any], should_return: bool = False):
@@ -110,13 +102,15 @@ class _StaticFileHandler(web.StaticFileHandler):
 
         cls.add_one_time_callback(path, caller, should_return)
 
-    @classmethod
-    def add_one_time_request_resp(cls, path: str, resp: bytes):
-        cls.request_resp[path.strip('/')] = resp
-
     async def get(self, path: str, include_body: bool = True) -> None:
         if path in self.callbacks:
+            # sort callbacks first by should_return, then by their index
             callbacks = sorted(self.callbacks[path], key=lambda x: (x[1], self.callbacks[path].index(x)))
+            if len([x for x in callbacks if x[1]]):
+                app_log.warning(
+                    'More than one callback with should_return=True specified! '
+                    'This means that every callback after the first one will be completely ignored!'
+                )
             del self.callbacks[path]
             for callback, should_return in callbacks:
                 func_res = callback(self)
@@ -124,21 +118,7 @@ class _StaticFileHandler(web.StaticFileHandler):
                     await func_res
                 if should_return:
                     return
-
-        headers = self.request_headers.get(path, {})
-        if path in self.one_time_request_headers:
-            headers = self.one_time_request_headers[path]
-            del self.one_time_request_headers[path]
-
-        if headers:
-            [self.set_header(k, v) for k, v in headers.items()]
-
-        if path in self.request_resp:
-            resp = self.request_resp[path]
-            del self.request_resp[path]
-            self.write(resp)
-        else:
-            await super().get(path, include_body)
+        return await super().get(path, include_body)
 
 
 class _Application(web.Application):
@@ -166,7 +146,9 @@ class _Application(web.Application):
         self.add_one_time_request_precondition(from_path, redirector, should_return=True)
 
     def add_one_time_request_resp(self, path: str, resp: bytes):
-        self._static_handler_instance.add_one_time_request_resp(urlparse(path), resp)
+        self.add_one_time_request_precondition(
+            urlparse(path).path, lambda handler: handler.write(resp), should_return=True
+        )
 
     def add_one_time_request_precondition(
         self, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
@@ -176,16 +158,15 @@ class _Application(web.Application):
         )
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._static_handler_instance.set_request_header(urlparse(path).path, headers, True)
-
-    def add_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._static_handler_instance.set_request_header(urlparse(path).path, headers, False)
+        self._static_handler_instance.add_one_time_request_precondition(
+            urlparse(path).path, lambda handler: [handler.set_header(k, v) for k, v in headers.items()]
+        )
 
     def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
         fut = asyncio.get_event_loop().create_future()
 
-        def resolve_fut(req):
-            fut.set_result(req)
+        def resolve_fut(handler):
+            fut.set_result(handler.request)
 
         self._static_handler_instance.add_one_time_callback(urlparse(path).path, resolve_fut)
         return fut
