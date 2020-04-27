@@ -116,7 +116,7 @@ class _StaticFileHandler(web.StaticFileHandler):
 
     async def get(self, path: str, include_body: bool = True) -> None:
         if path in self.callbacks:
-            callbacks = self.callbacks[path][:]
+            callbacks = sorted(self.callbacks[path], key=lambda x: (x[1], self.callbacks[path].index(x)))
             del self.callbacks[path]
             for callback, should_return in callbacks:
                 func_res = callback(self)
