@@ -59,9 +59,8 @@ class TestPageJeval:
     async def test_Jeval_throws_exc_if_no_element(self, isolated_page):
         """Test Page().Jeval() should throw error if no element is found."""
         page = isolated_page
-        with pytest.raises(ElementHandleError) as exc:
+        with pytest.raises(ElementHandleError, match='Error: failed to find element matching selector "section"'):
             await page.Jeval('section', "e => e.id")
-        assert 'Error: failed to find element matching selector "section"' in str(exc)
 
 
 class TestPageJJeval:
@@ -215,9 +214,8 @@ class TestElementHandleJeval:
         htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
         await page.setContent(htmlContent)
         elementHandle = await page.J('#myId')
-        with pytest.raises(ElementHandleError) as exc:
+        with pytest.raises(ElementHandleError, match='Error: failed to find element matching selector ".a"'):
             await elementHandle.Jeval('.a', "node => node.innerText")
-        assert 'Error: failed to find element matching selector ".a"' in str(exc)
 
 
 class TestElementHandleJJeval:
