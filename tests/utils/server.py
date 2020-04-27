@@ -106,7 +106,7 @@ class _StaticFileHandler(web.StaticFileHandler):
         if path in self.callbacks:
             # sort callbacks first by should_return, then by their index
             callbacks = sorted(self.callbacks[path], key=lambda x: (x[1], self.callbacks[path].index(x)))
-            if len([x for x in callbacks if x[1]]):
+            if len([True for callback_fn, should_return in callbacks if should_return]) > 1:
                 app_log.warning(
                     'More than one callback with should_return=True specified! '
                     'This means that every callback after the first one will be completely ignored!'
