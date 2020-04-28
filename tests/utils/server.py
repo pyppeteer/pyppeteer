@@ -139,7 +139,7 @@ class _Application(web.Application):
 
         self.add_one_time_request_precondition(path, precondition=_delay)
 
-    def add_one_time_request_redirect(self, from_path: str, to: str):
+    def one_time_redirect(self, from_path: str, to: str):
         def redirector(handler):
             handler.redirect(to)
 
