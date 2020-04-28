@@ -104,7 +104,6 @@ class LifecycleWatcher:
             self._navigationRequest = request
 
     def _onFrameDetached(self, frame: 'Frame' = None) -> None:
-        # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._terminationFuture.set_exception(PageError('Navigating frame was detached'))
         else:
