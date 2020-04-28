@@ -28,6 +28,8 @@ CHROME = not _firefox
 
 def pytest_configure(config):
     # shim for running in pycharm - see https://youtrack.jetbrains.com/issue/PY-41295
+    # this is useful when debugging tests that hang, preventing the PyCharm pytest runner
+    # from displaying the captured log calls
     if config.getoption('--verbose'):
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter('[{levelname}] {name}: {message}', style='{'))
