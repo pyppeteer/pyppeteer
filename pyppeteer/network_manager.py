@@ -8,7 +8,7 @@ import base64
 import json
 import logging
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set, Union
 
 from pyee import AsyncIOEventEmitter
 from pyppeteer.connection import CDPSession
@@ -393,38 +393,36 @@ class Request:
         * ``postData`` (str): If set, change the post data or request.
         * ``headers`` (dict): If set, change the request HTTP header.
         """
-        if not self._actionable_request:
-            return
+        if self._is_actionable_request:
+            if headers:
+                headers = headersArray(headers)
 
-        if headers:
-            headers = headersArray(headers)
+            self._interceptionHandled = True
+            try:
+                await self._client.send(
+                    'Fetch.continueRequest',
+                    {
+                        'requestId': self._interceptionId,
+                        'url': url,
+                        'method': method,
+                        'postData': postData,
+                        'headers': headers,
+                    },
+                )
+            except Exception as e:
+                # In certain cases, protocol will return error if the request was already canceled
+                # or the page was closed. We should tolerate these errors.
+                # (logger.exception will pick up the stack trace for us)
+                logger.exception(f'An exception occurred while trying to continue the request')
 
-        self._interceptionHandled = True
-        try:
-            await self._client.send(
-                'Fetch.continueRequest',
-                {
-                    'requestId': self._interceptionId,
-                    'url': url,
-                    'method': method,
-                    'postData': postData,
-                    'headers': headers,
-                },
-            )
-        except Exception as e:
-            # In certain cases, protocol will return error if the request was already canceled
-            # or the page was closed. We should tolerate these errors.
-            # (logger.exception will pick up the stack trace for us)
-            logger.exception(f'An exception occurred while trying to continue the request')
-
-    async def respond(self, response: Dict[str, Any]) -> None:
+    async def respond(
+        self, status: int = 200, headers: Dict[str, str] = None, contentType: str = None, body: Union[bytes, str] = None
+    ) -> None:
         """Fulfills request with given response.
 
         To use this, request interception should by enabled by
         :meth:`pyppeteer.page.Page.setRequestInterception`. Request
         interception is not enabled, raise ``NetworkError``.
-
-        ``response`` is a dictionary which can have the following fields:
 
         * ``status`` (int): Response status code, defaults to 200.
         * ``headers`` (dict): Optional response headers.
@@ -432,35 +430,34 @@ class Request:
           response header.
         * ``body`` (str|bytes): Optional response body.
         """
-        if not self._actionable_request:
-            return
-        self._interceptionHandled = True
+        if self._is_actionable_request:
+            self._interceptionHandled = True
 
-        if isinstance(response.get('body'), str):
-            responseBody: bytes = response['body'].encode('utf-8')
-        else:
-            responseBody = response.get('body')
+            if isinstance(body, str):
+                responseBody = body.encode('utf-8')
+            else:
+                responseBody = body
 
-        responseHeaders = {k.lower(): v for k, v in response.get('headers', {}).items()}
-        if response.get('content-type'):
-            responseHeaders['content-type'] = response['content-type']
-        if responseBody and 'content-length' not in responseHeaders:
-            responseHeaders['content-length'] = str(len(responseBody))
-        try:
-            await self._client.send(
-                'Fetch.fulfillRequest',
-                {
-                    'requestId': self._interceptionId,
-                    'responseCode': response.get('status', 200),
-                    'responsePhrase': STATUS_TEXTS[int(response.get('status', 200))],
-                    'responseHeaders': headersArray(responseHeaders),
-                    'body': base64.b64encode(responseBody).decode('ascii') if responseBody else None,
-                },
-            )
-        except Exception as e:
-            # In certain cases, protocol will return error if the request was already canceled
-            # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occurred fulfilling a response: {e}')
+            responseHeaders = {k.lower(): v for k, v in (headers or {}).items()}
+            if contentType:
+                responseHeaders['content-type'] = contentType
+            if responseBody and 'content-length' not in responseHeaders:
+                responseHeaders['content-length'] = str(len(responseBody))
+            try:
+                await self._client.send(
+                    'Fetch.fulfillRequest',
+                    {
+                        'requestId': self._interceptionId,
+                        'responseCode': status,
+                        'responsePhrase': STATUS_TEXTS[status],
+                        'responseHeaders': headersArray(responseHeaders),
+                        'body': base64.b64encode(responseBody).decode('ascii') if responseBody else None,
+                    },
+                )
+            except Exception as e:
+                # In certain cases, protocol will return error if the request was already canceled
+                # or the page was closed. We should tolerate these errors.
+                logger.error(f'An exception occurred fulfilling a response: {e}')
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
@@ -495,25 +492,23 @@ class Request:
         - ``timedout``: An operation timed out.
         - ``failed``: A generic failure occurred.
         """
-        if not self._actionable_request:
-            return
+        if self._is_actionable_request:
+            errorReason = self._errorReasons.get(errorCode)
+            if not errorReason:
+                raise NetworkError(f'Unknown error code: {errorCode}')
 
-        errorReason = self._errorReasons.get(errorCode)
-        if not errorReason:
-            raise NetworkError(f'Unknown error code: {errorCode}')
-
-        self._interceptionHandled = True
-        try:
-            await self._client.send(
-                'Fetch.failRequest', {'requestId': self._interceptionId, 'errorReason': errorReason}
-            )
-        except Exception as e:
-            # In certain cases, protocol will return error if the request was already canceled
-            # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occurred: {e}')
+            self._interceptionHandled = True
+            try:
+                await self._client.send(
+                    'Fetch.failRequest', {'requestId': self._interceptionId, 'errorReason': errorReason}
+                )
+            except Exception as e:
+                # In certain cases, protocol will return error if the request was already canceled
+                # or the page was closed. We should tolerate these errors.
+                logger.error(f'An exception occurred: {e}')
 
     @property
-    def _actionable_request(self) -> bool:
+    def _is_actionable_request(self) -> bool:
         """
         Checks if we can abort/continue/respond to request.
         :return: True if we can, False if we can't
