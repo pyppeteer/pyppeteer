@@ -1,6 +1,7 @@
 import asyncio
 import itertools
 from contextlib import suppress
+from http import HTTPStatus
 
 import pytest
 from pyppeteer.errors import BrowserError
@@ -190,13 +191,13 @@ class TestPageSetRequestInterception:
             await req.abort('internetdisconnected')
 
         failed_req = None
-        isolated_page.on('requestfailed', var_setter('var_setter'))
+        isolated_page.on('requestfailed', var_setter('failed_req'))
         with suppress(BrowserError):
             await isolated_page.goto(server.empty_page)
 
         assert failed_req is not None
         # noinspection PyUnresolvedReferences
-        assert failed_req.failure.errorText == 'net::ERR_INTERNET_DISCONNECTED'
+        assert failed_req.failure['errorText'] == 'net::ERR_INTERNET_DISCONNECTED'
 
     @sync
     async def test_sends_referer(self, isolated_page, server):
@@ -204,7 +205,9 @@ class TestPageSetRequestInterception:
         await isolated_page.setExtraHTTPHeaders({'referer': referer})
         await isolated_page.setRequestInterception(True)
         isolated_page.on('request', request_continuer)
-        request, *_ = asyncio.gather(server.app.waitForRequest('/grid.html'), isolated_page.goto(server / 'grid.html'))
+        request, *_ = await asyncio.gather(
+            server.app.waitForRequest('/grid.html'), isolated_page.goto(server / 'grid.html')
+        )
         assert request.headers.get('referer') == referer
 
     @sync
@@ -246,7 +249,7 @@ class TestPageSetRequestInterception:
 
         for index, redirect in enumerate(redirect_chain):
             assert redirect.isNavigationRequest
-            assert redirect.redirectChain.index(redirect)
+            assert redirect.redirectChain.index(redirect) == index
 
     @sync
     async def test_works_with_redirects_for_subresources(self, isolated_page, server):
@@ -282,8 +285,8 @@ class TestPageSetRequestInterception:
     @sync
     async def test_redirection_abortibility(self, isolated_page, server):
         await isolated_page.setRequestInterception(True)
-        server.app.setRedirect('/non-existing.json', '/non-existing-2.json')
-        server.app.setRedirect('/non-existing-2.json', '/simple.html')
+        server.app.one_time_redirect('/non-existing.json', '/non-existing-2.json')
+        server.app.one_time_redirect('/non-existing-2.json', '/simple.html')
 
         @isolated_page.on('request')
         async def request_aborter(req):
@@ -406,14 +409,13 @@ class TestPageSetRequestInterception:
     @sync
     async def test_works_with_badly_encoded_server(self, isolated_page, server):
         await isolated_page.setRequestInterception(True)
+        isolated_page.on('request', request_continuer)
 
         # todo: define __str__ for server
         resp = await isolated_page.goto(
             f'data:text/html,<link rel="stylesheet" href="{server}/fonts?helvetica|arial"/>'
         )
         assert resp.status == 200
-        assert len(requests) == 2
-        assert requests[1].response.status == 404
 
     @sync
     async def test_doesnt_raise_on_request_cancellation(self, isolated_page, server):
@@ -437,11 +439,11 @@ class TestPageSetRequestInterception:
 
         @isolated_page.on('request')
         async def request_continuer_error_catch(req):
-            nonlocal error
             try:
                 await req.continue_()
-            except Exception as error:
-                pass
+            except Exception as e:
+                nonlocal error
+                error = e
 
         await isolated_page.goto(server.empty_page)
         assert 'Request Interception is not enabled' in str(error)
@@ -478,7 +480,7 @@ class TestRequestContinue:
             await req.continue_(headers=headers)
 
         await isolated_page.goto(server.empty_page)
-        request, *_ = asyncio.gather(
+        request, *_ = await asyncio.gather(
             server.app.waitForRequest('/sleep.zzz'), isolated_page.evaluate('() => fetch("/sleep.zzz")')
         )
         assert request.headers.get('foo') == 'bar'
@@ -507,7 +509,9 @@ class TestRequestContinue:
         async def method_changer(req):
             await req.continue_(method='POST')
 
-        req, *_ = asyncio.gather(server.app.waitForRequest('/sleep.zzz'), isolated_page.evaluate('fetch("/sleep.zzz")'))
+        req, *_ = await asyncio.gather(
+            server.app.waitForRequest('/sleep.zzz'), isolated_page.evaluate('fetch("/sleep.zzz")')
+        )
         assert req.method == 'POST'
 
     @sync
@@ -535,7 +539,7 @@ class TestRequestContinue:
             await req.continue_(method='POST', postData='doggo')
 
         server_req, *_ = await asyncio.gather(
-            server.app.waitForRequest('/empty.html'), await isolated_page.goto(server.empty_page)
+            server.app.waitForRequest('/empty.html'), isolated_page.goto(server.empty_page)
         )
         assert server_req.method == 'POST'
         assert server_req.postBody == 'doggo'
@@ -552,7 +556,7 @@ class TestRequestRespond:
 
         resp = await isolated_page.goto(server.empty_page)
         assert resp.status == 201
-        assert resp.headers == {'foo': 'bar'}
+        assert resp.headers['foo'] == 'bar'
         assert await isolated_page.evaluate('document.body.textContent') == 'Yo, Page!'
 
     @sync
@@ -561,11 +565,11 @@ class TestRequestRespond:
 
         @isolated_page.on('request')
         async def request_responder(req):
-            await req.respond(status=422, body='Yo, Page!')
+            await req.respond(status=HTTPStatus.UNPROCESSABLE_ENTITY.value, body='Yo, Page!')
 
         resp = await isolated_page.goto(server.empty_page)
-        assert resp.status == 422
-        assert resp.statusText == 'Unprocessable Entity'
+        assert resp.status == HTTPStatus.UNPROCESSABLE_ENTITY.value
+        assert resp.statusText == HTTPStatus.UNPROCESSABLE_ENTITY.name
         assert await isolated_page.evaluate('document.body.textContent') == 'Yo, Page!'
 
     @sync
