@@ -191,7 +191,7 @@ class Frame:
                 }
         ''',
             *values,
-        )  # noqa: E501
+        )
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.

@@ -123,7 +123,7 @@ class LifecycleWatcher:
     def _createTimeoutFuture(self) -> Awaitable[None]:
         self._maximumTimerFuture = self.loop.create_future()
         if self._timeout:
-            errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'  # noqa: E501
+            errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'
 
             async def _timeout_func() -> None:
                 await asyncio.sleep(self._timeout / 1000)

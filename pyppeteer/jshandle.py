@@ -493,7 +493,7 @@ class ElementHandle(JSHandle):
             tweetHandle = await page.querySelector('.tweet')
             assert (await tweetHandle.querySelectorEval('.like', 'node => node.innerText')) == 100
             assert (await tweetHandle.Jeval('.retweets', 'node => node.innerText')) == 10
-        """  # noqa: E501
+        """
         elementHandle = await self.querySelector(selector)
         if not elementHandle:
             raise ElementHandleError(f'Error: failed to find element matching selector "{selector}"')
@@ -525,9 +525,9 @@ class ElementHandle(JSHandle):
 
             feedHandle = await page.J('.feed')
             assert (await feedHandle.JJeval('.tweet', '(nodes => nodes.map(n => n.innerText))')) == ['Hello!', 'Hi!']
-        """  # noqa: E501
+        """
         arrayHandle = await self.executionContext.evaluateHandle(
-            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector  # noqa: E501
+            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector
         )
         result = await self.executionContext.evaluate(pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()

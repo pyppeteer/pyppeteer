@@ -7,9 +7,8 @@ import unittest
 from pathlib import Path
 
 import pytest
-from syncer import sync
-
 from pyppeteer.errors import PageError, PyppeteerError
+from syncer import sync
 
 from .utils import attachFrame
 
@@ -24,7 +23,7 @@ class TestClick:
                 width: rect.width,
                 height: rect.height
             };
-        }'''  # noqa: E501
+        }'''
 
     @sync
     async def test_click(self):
@@ -197,7 +196,7 @@ class TestClick:
     async def test_select_text_by_mouse(self):
         await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
-        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
+        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'
         await self.page.keyboard.type(text)
         await self.page.evaluate('document.querySelector("textarea").scrollTop = 0')
         dimensions = await self.page.evaluate(self.get_dimensions)
@@ -213,7 +212,7 @@ class TestClick:
     async def test_select_text_by_triple_click(self):
         await self.page.goto(self.url + 'assets/textarea.html')
         await self.page.focus('textarea')
-        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'  # noqa: E501
+        text = 'This is the text that we are going to try to select. Let\'s see how it goes.'
         await self.page.keyboard.type(text)
         await self.page.click('textarea')
         await self.page.click('textarea', clickCount=2)
@@ -241,7 +240,7 @@ class TestClick:
         await self.page.goto(self.url + 'assets/scrollable.html')
         await self.page.evaluate(
             '() => document.querySelector("#button-3").addEventListener("mousedown", e => window.lastEvent = e, true)'
-        )  # noqa: E501
+        )
         modifiers = {
             'Shift': 'shiftKey',
             'Control': 'ctrlKey',
@@ -382,9 +381,7 @@ class TestType:
         result = await self.page.evaluate('() => document.querySelector("textarea").value')
         assert result == 'f'
 
-        await self.page.evaluate(
-            '() => window.addEventListener("keydown", e => e.preventDefault(), true)'  # noqa: E501
-        )
+        await self.page.evaluate('() => window.addEventListener("keydown", e => e.preventDefault(), true)')
         await textarea.press('a', text='y')
         assert result == 'f'
 
@@ -396,9 +393,7 @@ class TestType:
         result = await self.page.evaluate('() => document.querySelector("textarea").value')
         assert result == '朝'
 
-        await self.page.evaluate(
-            '() => window.addEventListener("keydown", e => e.preventDefault(), true)'  # noqa: E501
-        )
+        await self.page.evaluate('() => window.addEventListener("keydown", e => e.preventDefault(), true)')
         await self.page.keyboard.sendCharacter('a')
         result = await self.page.evaluate('() => document.querySelector("textarea").value')
         assert result == '朝a'
@@ -542,9 +537,7 @@ window.addEventListener('keydown', event => {
     async def test_key_location(self):
         await self.page.goto(self.url + 'assets/textarea.html')
         textarea = await self.page.J('textarea')
-        await self.page.evaluate(
-            '() => window.addEventListener("keydown", e => window.keyLocation = e.location, true)'  # noqa: E501
-        )
+        await self.page.evaluate('() => window.addEventListener("keydown", e => window.keyLocation = e.location, true)')
 
         await textarea.press('Digit5')
         assert await self.page.evaluate('keyLocation') == 0
