@@ -149,7 +149,7 @@ class NetworkManager(AsyncIOEventEmitter):
         )
 
     async def _onRequestPaused(self, event: Dict) -> None:
-        if self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
+        if not self._userRequestInterceptionEnabled and self._protocolRequestInterceptionEnabled:
             await self._client.send('Fetch.continueRequest', {'requestId': event.get('requestId')})
         requestId = event['networkId']
         interceptionId = event['requestId']
@@ -414,6 +414,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
+            # (logger.exception will pick up the stack trace for us)
             logger.exception(f'An exception occurred while trying to continue the request')
 
     async def respond(self, response: Dict[str, Any]) -> None:
