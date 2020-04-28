@@ -91,14 +91,17 @@ class _StaticFileHandler(web.StaticFileHandler):
     def add_one_time_request_precondition(
         cls, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
     ):
-        def caller(request_handler):
+        async def caller(request_handler):
             if callable(precondition):
                 # only pass in request handler if we detect one, and only one arg
                 if len(inspect.getfullargspec(precondition).args) == 1:
-                    return precondition(request_handler)
+                    func_res = precondition(request_handler)
                 else:
-                    return precondition()
-            return precondition
+                    func_res = precondition()
+            else:
+                func_res = precondition
+            if isawaitable(func_res):
+                return await func_res
 
         cls.add_one_time_callback(path, caller, should_return)
 
@@ -113,9 +116,7 @@ class _StaticFileHandler(web.StaticFileHandler):
                 )
             del self.callbacks[path]
             for callback, should_return in callbacks:
-                func_res = callback(self)
-                if isawaitable(func_res):
-                    await func_res
+                await callback(self)
                 if should_return:
                     return
         return await super().get(path, include_body)
@@ -146,9 +147,10 @@ class _Application(web.Application):
         self.add_one_time_request_precondition(from_path, redirector, should_return=True)
 
     def add_one_time_request_resp(self, path: str, resp: bytes):
-        self.add_one_time_request_precondition(
-            urlparse(path).path, lambda handler: handler.write(resp), should_return=True
-        )
+        async def writer(handler):
+            await handler.write(resp)
+
+        self.add_one_time_request_precondition(urlparse(path).path, writer, should_return=True)
 
     def add_one_time_request_precondition(
         self, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
