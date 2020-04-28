@@ -19,7 +19,7 @@ class TestPageSetRequestInterception:
         await isolated_page.setRequestInterception(True)
 
         @isolated_page.on('request')
-        def request_checker(request):
+        async def request_checker(request):
             if not isFavicon(request):
                 assert 'empty.html' in request.url
                 assert request.headers['user-agent']
@@ -115,9 +115,9 @@ class TestPageSetRequestInterception:
     async def test_stop_interception(self, isolated_page, server):
         await isolated_page.setRequestInterception(True)
         isolated_page.once('request', request_continuer)
-        await isolated_page.goto(server)
+        await isolated_page.goto(server.empty_page)
         await isolated_page.setRequestInterception(False)
-        await isolated_page.goto(server)
+        await isolated_page.goto(server.empty_page)
 
     @sync
     async def test_shows_custom_HTTP_headers(self, isolated_page, server):
@@ -129,13 +129,13 @@ class TestPageSetRequestInterception:
             assert req.headers['foo'] == 'bar'
             await req.continue_()
 
-        resp = await isolated_page.goto(server)
+        resp = await isolated_page.goto(server.empty_page)
         assert resp.ok
 
     # see https://github.com/puppeteer/puppeteer/issues/4337
     @sync
     async def test_works_with_redirect_within_synchronous_XHR(self, isolated_page, server):
-        await isolated_page.goto(server)
+        await isolated_page.goto(server.empty_page)
         server.app.one_time_redirect('/logo.png', '/pptr.png')
         await isolated_page.setRequestInterception(True)
         isolated_page.on('request', request_continuer)
@@ -159,7 +159,7 @@ class TestPageSetRequestInterception:
             assert req.headers['referer'] == server.empty_page
             await req.continue_()
 
-        resp = await isolated_page.goto(server)
+        resp = await isolated_page.goto(server.empty_page)
         assert resp.ok
 
     @sync
@@ -173,7 +173,7 @@ class TestPageSetRequestInterception:
             else:
                 await req.continue_()
 
-        failed_reqs = itertools.count()
+        failed_reqs = itertools.count(1)
 
         isolated_page.on('requestfailed', lambda _: next(failed_reqs))
         resp = await isolated_page.goto(server / 'one-style.html')
@@ -192,7 +192,7 @@ class TestPageSetRequestInterception:
         failed_req = None
         isolated_page.on('requestfailed', var_setter('var_setter'))
         with suppress(BrowserError):
-            await isolated_page.goto(server)
+            await isolated_page.goto(server.empty_page)
 
         assert failed_req is not None
         # noinspection PyUnresolvedReferences
@@ -216,7 +216,7 @@ class TestPageSetRequestInterception:
             await req.abort()
 
         with pytest.raises(BrowserError, match='(net::ERR_FAILED|NS_ERROR_FAILURE)'):
-            await isolated_page.goto(server)
+            await isolated_page.goto(server.empty_page)
 
     @sync
     async def test_works_with_redirects(self, isolated_page, server):
@@ -436,7 +436,7 @@ class TestPageSetRequestInterception:
         error = None
 
         @isolated_page.on('request')
-        def request_continuer_error_catch(req):
+        async def request_continuer_error_catch(req):
             nonlocal error
             try:
                 await req.continue_()
@@ -464,46 +464,156 @@ class TestPageSetRequestInterception:
 class TestRequestContinue:
     @sync
     async def test_basic_usage(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+        isolated_page.on('request', request_continuer)
+        await isolated_page.goto(server.empty_page)
 
     @sync
     async def test_amends_HTTP_headers(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def header_amender(req):
+            headers = {**req.headers, 'FOO': 'bar'}
+            await req.continue_(headers=headers)
+
+        await isolated_page.goto(server.empty_page)
+        request, *_ = asyncio.gather(
+            server.app.waitForRequest('/sleep.zzz'), isolated_page.evaluate('() => fetch("/sleep.zzz")')
+        )
+        assert request.headers.get('foo') == 'bar'
 
     @sync
     async def test_redirects_are_inobservable_by_page(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def redirector(req):
+            redirect_url = server / 'consolelog.html' if server.empty_page == req.url else None
+            await req.continue_(url=redirect_url)
+
+        console_message = None
+        isolated_page.on('console', var_setter('console_message'))
+        # noinspection PyUnresolvedReferences
+        assert console_message.text == 'yellow'
 
     @sync
     async def test_amends_method(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server.empty_page)
+
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def method_changer(req):
+            await req.continue_(method='POST')
+
+        req, *_ = asyncio.gather(server.app.waitForRequest('/sleep.zzz'), isolated_page.evaluate('fetch("/sleep.zzz")'))
+        assert req.method == 'POST'
 
     @sync
     async def test_amends_POST_data(self, isolated_page, server):
-        pass
+        await isolated_page.goto(server.empty_page)
+
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def post_data_modifier(req):
+            await req.continue_(postData='doggo')
+
+        server_req = await asyncio.gather(
+            server.app.waitForRequest('/sleep.zzz'),
+            isolated_page.evaluate('fetch("/sleep.zzz", {method: "POST", body:"birdy"})'),
+        )
+        assert server_req.postBody == 'doggo'
 
     @sync
     async def test_amends_both_POST_data_and_method_on_nav(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def post_data_and_method_modifier(req):
+            await req.continue_(method='POST', postData='doggo')
+
+        server_req, *_ = await asyncio.gather(
+            server.app.waitForRequest('/empty.html'), await isolated_page.goto(server.empty_page)
+        )
+        assert server_req.method == 'POST'
+        assert server_req.postBody == 'doggo'
 
 
 class TestRequestRespond:
     @sync
     async def test_basic_usage(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def request_responder(req):
+            await req.respond(status=201, headers={'foo': 'bar'}, body='Yo, Page!')
+
+        resp = await isolated_page.goto(server.empty_page)
+        assert resp.status == 201
+        assert resp.headers == {'foo': 'bar'}
+        assert await isolated_page.evaluate('document.body.textContent') == 'Yo, Page!'
 
     @sync
     async def test_works_with_status_code_422(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def request_responder(req):
+            await req.respond(status=422, body='Yo, Page!')
+
+        resp = await isolated_page.goto(server.empty_page)
+        assert resp.status == 422
+        assert resp.statusText == 'Unprocessable Entity'
+        assert await isolated_page.evaluate('document.body.textContent') == 'Yo, Page!'
 
     @sync
     async def test_executes_redirects(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def request_redirector(req):
+            if 'rrredirect' not in req.url:
+                await req.continue_()
+            else:
+                await req.respond(status=302, headers={'location': server.empty_page})
+
+        resp = await isolated_page.goto(server / 'rrredirect')
+        assert len(resp.request.redirectChain) == 1
+        assert resp.request.redirectChain[0].url == server / 'rrredirect'
+        assert resp.url == server.empty_page
 
     @sync
-    async def test_allowance_of_mocking_binary_responses(self, isolated_page, server):
-        pass
+    async def test_allowance_of_mocking_binary_responses(self, isolated_page, server, assets, isGolden):
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def binary_responder(req):
+            file = (assets / 'pptr.png').read_bytes()
+            await req.respond(contentType='image/png', body=file)
+
+        await isolated_page.evaluate(
+            '''serverURL => {
+            const img = document.createElement('img');
+            img.src = serverURL + '/does-not-exist.png';
+            document.body.appendChild(img);
+            return new Promise(fulfill => img.onload = fulfill);
+        }'''
+        )
+
+        img = await isolated_page.J('img')
+        assert isGolden(img.screenshot(), 'mock-binary-response.png')
 
     @sync
     async def test_stringifies_intercepted_request_response_headers(self, isolated_page, server):
-        pass
+        await isolated_page.setRequestInterception(True)
+
+        @isolated_page.on('request')
+        async def request_responder(req):
+            await req.respond(status=200, headers={'foo': True}, body='Yo, Page!')
+
+        resp = await isolated_page.goto(server.empty_page)
+        assert resp.status == 200
+        assert resp.headers == {'foo': 'true'}
+        assert await isolated_page.evaluate('document.body.textContent') == 'Yo, Page!'
