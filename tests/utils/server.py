@@ -81,29 +81,24 @@ class _StaticFileHandler(web.StaticFileHandler):
     callbacks = {}
 
     @classmethod
-    def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any], should_return: bool = False):
-        stripped = path.strip('/')
-        if stripped not in cls.callbacks:
-            cls.callbacks[stripped] = []
-        cls.callbacks[stripped].append((func, should_return))
-
-    @classmethod
     def add_one_time_request_precondition(
         cls, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
     ):
         async def caller(request_handler):
+            func_res = precondition
             if callable(precondition):
                 # only pass in request handler if we detect one, and only one arg
                 if len(inspect.getfullargspec(precondition).args) == 1:
                     func_res = precondition(request_handler)
                 else:
                     func_res = precondition()
-            else:
-                func_res = precondition
             if isawaitable(func_res):
                 return await func_res
 
-        cls.add_one_time_callback(path, caller, should_return)
+        stripped = urlparse(path).path.strip('/')
+        if stripped not in cls.callbacks:
+            cls.callbacks[stripped] = []
+        cls.callbacks[stripped].append((caller, should_return))
 
     async def get(self, path: str, include_body: bool = True) -> None:
         if path in self.callbacks:
@@ -135,14 +130,11 @@ class _Application(web.Application):
         super().__init__(handlers, default_host, transforms, **settings)
 
     def add_one_time_request_delay(self, path: str, delay: float):
-        async def _delay():
-            await asyncio.sleep(delay)
-
-        self.add_one_time_request_precondition(path, precondition=_delay)
+        self.add_one_time_request_precondition(path, precondition=asyncio.sleep(delay))
 
     def one_time_redirect(self, from_path: str, to: str):
-        def redirector(handler):
-            handler.redirect(to)
+        async def redirector(handler):
+            await handler.redirect(to)
 
         self.add_one_time_request_precondition(from_path, redirector, should_return=True)
 
@@ -150,27 +142,25 @@ class _Application(web.Application):
         async def writer(handler):
             await handler.write(resp)
 
-        self.add_one_time_request_precondition(urlparse(path).path, writer, should_return=True)
+        self.add_one_time_request_precondition(path, writer, should_return=True)
 
     def add_one_time_request_precondition(
         self, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
     ):
-        self._static_handler_instance.add_one_time_request_precondition(
-            urlparse(path).path, precondition, should_return
-        )
+        self._static_handler_instance.add_one_time_request_precondition(path, precondition, should_return)
 
     def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
         self._static_handler_instance.add_one_time_request_precondition(
-            urlparse(path).path, lambda handler: [handler.set_header(k, v) for k, v in headers.items()]
+            path, lambda handler: [handler.set_header(k, v) for k, v in headers.items()]
         )
 
     def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
         fut = asyncio.get_event_loop().create_future()
 
-        def resolve_fut(handler):
+        def future_resolver(handler):
             fut.set_result(handler.request)
 
-        self._static_handler_instance.add_one_time_callback(urlparse(path).path, resolve_fut)
+        self._static_handler_instance.add_one_time_request_precondition(path, future_resolver)
         return fut
 
 
