@@ -31,7 +31,7 @@ class TestPageSetRequestInterception:
     @sync
     @pytest.mark.skip(reason='needs server side implementation')
     async def test_works_when_POST_redirects_with_302(self, isolated_page, server):
-        server.app.add_one_time_request_redirect('/rredirect', '/empty.html')
+        server.app.one_time_redirect('/rredirect', '/empty.html')
         await isolated_page.goto(server.empty_page)
         await isolated_page.setRequestInterception(True)
         isolated_page.on('request', lambda r: r.continue_())
@@ -46,12 +46,31 @@ class TestPageSetRequestInterception:
 
     @sync
     async def test_works_with_header_manipulation_and_redirect(self, isolated_page, server):
-        pass
+        server.app.one_time_redirect('/rrredirect', '/button.html')
+        await isolated_page.setRequestInterception(True)
+        await isolated_page.goto(server.empty_page)
+
+        @isolated_page.on('request')
+        def header_manipulator(request):
+            headers = {**request.headers, 'foo': 'bar'}
+            request.continue_(headers=headers)
+
+        await isolated_page.goto(server / 'rrredirect')
 
     # see https://github.com/puppeteer/puppeteer/issues/4743
     @sync
     async def test_is_able_to_remove_headers(self, isolated_page, server):
-        pass
+        @isolated_page.on('request')
+        def header_manipulator(request):
+            # ie, origin header won't be sent
+            headers = {**request.headers, 'origin': None}
+            request.continue_(headers=headers)
+
+        server_req, *_ = await asyncio.gather(
+            server.app.waitForRequest('/empty.html'), isolated_page.goto(server.empty_page),
+        )
+
+        assert server_req.headers.get('origin') is None
 
     @sync
     async def test_contains_referer_header(self, isolated_page, server):
