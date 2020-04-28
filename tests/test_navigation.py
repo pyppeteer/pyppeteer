@@ -1,15 +1,18 @@
 """
 Tests relating to page/frame navigation
 """
+import asyncio
+import re
 from contextlib import suppress
 
 import pytest
-from syncer import sync
-
 import tests.utils.server
 from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
+from syncer import sync
 from tests.conftest import needs_server_side_implementation
 from tests.utils import attachFrame, gather_with_timeout, isFavicon, var_setter
+
+NAV_TIMEOUT_MATCH = re.compile('navigation timeout', re.IGNORECASE)
 
 
 class TestPage:
@@ -112,28 +115,27 @@ class TestPage:
 
         @sync
         async def test_fails_when_main_resources_fail_loading(self, isolated_page, server):
-            with pytest.raises(BrowserError, match='no longer supported'):
+            with pytest.raises(BrowserError, match='(ERR|NS_ERROR)_CONNECTION_REFUSED'):
                 await isolated_page.goto('http://localhost:27182/non-existing-url')
 
         @sync
         async def test_fails_on_exceeding_nav_timeout(self, isolated_page, server):
             server.app.add_one_time_request_delay(server.empty_page, 1)
-            with pytest.raises(TimeoutError) as excpt:
+            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page, timeout=1)
-            assert 'navigation timeout' in str(excpt)
 
         @sync
         async def test_fails_on_exceeding_default_nav_timeout(self, isolated_page, server):
             server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultNavigationTimeout(1)
-            with pytest.raises(TimeoutError, match='navigation timeout'):
+            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
 
         @sync
         async def test_fails_on_exceeding_default_timeout(self, isolated_page, server):
             server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultTimeout(1)
-            with pytest.raises(TimeoutError, match='navigation timeout') as excpt:
+            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH) as excpt:
                 await isolated_page.goto(server.empty_page)
 
         @sync
@@ -141,7 +143,7 @@ class TestPage:
             server.app.add_one_time_request_delay(server.empty_page, 1)
             isolated_page.setDefaultTimeout(0)
             isolated_page.setDefaultNavigationTimeout(1)
-            with pytest.raises(TimeoutError, match='navigation timeout'):
+            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
 
         @sync
@@ -403,10 +405,11 @@ class TestFrame:
 
             server_resps = ['aaa', 'bbb', 'ccc']
             navigations = []
-            for resp, frame in zip(['aaa', 'bbb', 'ccc'], frames):
+            for resp, frame in zip(server_resps, frames):
                 server.app.add_one_time_request_resp('/one-style.html', resp.encode())
-                navigations.append(await frame.goto(server / 'one-style.html'))
-                await server.app.waitForRequest('/one-style.html')
+                _, nav = await asyncio.gather(
+                    server.app.waitForRequest('/one-style.html'), frame.goto(server / 'one-style.html'),
+                )
 
             for expected_resp, expected_frame, actual_resp in zip(server_resps, frames, navigations):
                 assert actual_resp.frame == frames

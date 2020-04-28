@@ -7,9 +7,8 @@ import unittest
 from pathlib import Path
 
 import pytest
-from syncer import sync
-
 from pyppeteer.errors import NetworkError, PageError
+from syncer import sync
 
 
 class TestNetworkEvent:
@@ -40,7 +39,7 @@ class TestNetworkEvent:
         self.app.add_handlers('localhost', [('/post', PostHandler)])
         requests = []
         self.page.on('request', lambda req: requests.append(req))
-        await self.page.evaluate('fetch("/post", {method: "POST", body: JSON.stringify({foo: "bar"})})')  # noqa: E501
+        await self.page.evaluate('fetch("/post", {method: "POST", body: JSON.stringify({foo: "bar"})})')
         assert len(requests) == 1
         req = requests[0]
         assert req

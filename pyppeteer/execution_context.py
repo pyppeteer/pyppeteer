@@ -110,13 +110,11 @@ class ExecutionContext:
         objectHandle = arg if isinstance(arg, JSHandle) else None
         if objectHandle:
             if objectHandle._context != self:
-                raise ElementHandleError(
-                    'JSHandles can be evaluated only in the context they were created!'
-                )  # noqa: E501
+                raise ElementHandleError('JSHandles can be evaluated only in the context they were created!')
             if objectHandle._disposed:
                 raise ElementHandleError('JSHandle is disposed!')
             if objectHandle._remoteObject.get('unserializableValue'):
-                return {'unserializableValue': objectHandle._remoteObject.get('unserializableValue')}  # noqa: E501
+                return {'unserializableValue': objectHandle._remoteObject.get('unserializableValue')}
             if not objectHandle._remoteObject.get('objectId'):
                 return {'value': objectHandle._remoteObject.get('value')}
             return {'objectId': objectHandle._remoteObject.get('objectId')}

@@ -7,7 +7,6 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError, PageError
@@ -209,7 +208,7 @@ class FrameManager(AsyncIOEventEmitter):
         _id = framePayload.get('id', '')
         if isMainFrame:
             if frame:
-                # Update frame id to retain frame identity on cross-process navigation.  # noqa: E501
+                # Update frame id to retain frame identity on cross-process navigation.
                 self._frames.pop(frame._id, None)
                 frame._id = _id
             else:
