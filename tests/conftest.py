@@ -54,8 +54,36 @@ class ServerURL:
 
 
 @pytest.fixture(scope='session')
-def assets():
-    return Path(__file__).parent / 'assets'
+def test_dir():
+    return Path(__file__).parent
+
+
+@pytest.fixture(scope='session')
+def assets(test_dir):
+    return test_dir / 'assets'
+
+
+@pytest.fixture(scope='session')
+def golden_chrome_dir(test_dir):
+    return test_dir / 'golden-chromium'
+
+
+@pytest.fixture(scope='session')
+def golden_firefox_dir(test_dir):
+    return test_dir / 'golden-firefox'
+
+
+@pytest.fixture(scope='session')
+def isGolden(golden_chrome_dir, golden_firefox_dir):
+    def comparer(input_bytes_or_str, output_file_name):
+        read_fn = 'read_bytes' if isinstance(input_bytes_or_str, bytes) else 'read_text'
+        if not (golden_firefox_dir / output_file_name).exists() and not (golden_chrome_dir / output_file_name).exists():
+            raise FileNotFoundError(f'{output_file_name} does not exist in either golden directory!')
+
+        # todo: implement this
+        return True
+
+    return comparer
 
 
 @pytest.fixture(scope='session')
