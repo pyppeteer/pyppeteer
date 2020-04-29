@@ -2,9 +2,10 @@ import asyncio
 import base64
 import functools
 import inspect
+import re
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Type, Union
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union
 from urllib.parse import urlparse
 
 from pyppeteer.util import get_free_port
@@ -95,12 +96,13 @@ class _StaticFileHandler(web.StaticFileHandler):
             if isawaitable(func_res):
                 return await func_res
 
-        stripped = urlparse(path).path.strip('/')
+        stripped = urlparse(path).path
         if stripped not in cls.callbacks:
             cls.callbacks[stripped] = []
         cls.callbacks[stripped].append((caller, should_return))
 
-    async def get(self, path: str, include_body: bool = True) -> None:
+    async def prepare(self) -> Optional[Awaitable[None]]:
+        path = self.request.path
         if path in self.callbacks:
             # sort callbacks first by should_return, then by their index
             callbacks = sorted(self.callbacks[path], key=lambda x: (x[1], self.callbacks[path].index(x)))
@@ -114,7 +116,9 @@ class _StaticFileHandler(web.StaticFileHandler):
                 await callback(self)
                 if should_return:
                     return
-        return await super().get(path, include_body)
+
+    async def post(self, path: str):
+        return await self.get(path)
 
 
 class _Application(web.Application):
@@ -125,24 +129,33 @@ class _Application(web.Application):
         transforms: List[Type["OutputTransform"]] = None,
         **settings: Any,
     ) -> None:
-        self._handlers = handlers
-        self._static_handler_instance = self._handlers[0][1]
+        self._static_handler_instance = handlers[0][1]
         super().__init__(handlers, default_host, transforms, **settings)
 
     def add_one_time_request_delay(self, path: str, delay: float):
         self.add_one_time_request_precondition(path, precondition=asyncio.sleep(delay))
 
     def one_time_redirect(self, from_path: str, to: str):
-        async def redirector(handler):
-            await handler.redirect(to)
+        to = urlparse(to).path
+
+        def redirector(handler):
+            handler.redirect(to)
 
         self.add_one_time_request_precondition(from_path, redirector, should_return=True)
 
-    def add_one_time_request_resp(self, path: str, resp: bytes):
-        async def writer(handler):
-            await handler.write(resp)
+    def add_one_time_request_resp(self, path: str, resp: Union[str, bytes], method: str = 'GET', status: int = 200):
+        method = method.lower()
 
-        self.add_one_time_request_precondition(path, writer, should_return=True)
+        class OneTimeHandler(web.RequestHandler):
+            has_completed_req = False
+
+            def one_time_responder(self, *__, **_):
+                self.set_status(status)
+                self.write(resp)
+                self.has_completed_req = True
+
+        setattr(OneTimeHandler, method, OneTimeHandler.one_time_responder)
+        self.add_handlers(r'.*', [(re.escape(urlparse(path).path), OneTimeHandler)])
 
     def add_one_time_request_precondition(
         self, path: str, precondition: Union[Awaitable, Callable[[], None]], should_return: bool = False
