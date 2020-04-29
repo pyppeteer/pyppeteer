@@ -38,7 +38,6 @@ class TestPageSetRequestInterception:
 
     # see https://github.com/puppeteer/puppeteer/issues/3973
     @sync
-    @pytest.mark.skip(reason='needs server side implementation')
     async def test_works_when_POST_redirects_with_302(self, isolated_page, server):
         server.app.one_time_redirect('/rredirect', server.empty_page)
         await isolated_page.goto(server.empty_page)
@@ -205,6 +204,12 @@ class TestPageSetRequestInterception:
         await isolated_page.setExtraHTTPHeaders({'referer': referer})
         await isolated_page.setRequestInterception(True)
         isolated_page.on('request', request_continuer)
+        # todo: strange behaviour
+        # continuing request and just passing the headers in again makes it pass
+        # @isolated_page.on('request')
+        # async def m(r):
+        #     await r.continue_(headers=r.headers)
+
         request, *_ = await asyncio.gather(
             server.app.waitForRequest('/grid.html'), isolated_page.goto(server / 'grid.html')
         )
