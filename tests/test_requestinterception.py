@@ -22,7 +22,7 @@ class TestPageSetRequestInterception:
         @isolated_page.on('request')
         async def request_checker(request):
             if not isFavicon(request):
-                assert 'empty.html' in request.url
+                assert server.empty_page == request.url
                 assert request.headers['user-agent']
                 assert request.method == 'GET'
                 assert request.postData is None
@@ -30,7 +30,7 @@ class TestPageSetRequestInterception:
                 assert request.resourceType == 'document'
                 assert request.frame == isolated_page.mainFrame
                 assert request.frame.url == 'about:blank'
-            request.continue_()
+            await request.continue_()
 
         resp = await isolated_page.goto(server.empty_page)
         assert resp.ok
@@ -40,7 +40,7 @@ class TestPageSetRequestInterception:
     @sync
     @pytest.mark.skip(reason='needs server side implementation')
     async def test_works_when_POST_redirects_with_302(self, isolated_page, server):
-        server.app.one_time_redirect('/rredirect', '/empty.html')
+        server.app.one_time_redirect('/rredirect', server.empty_page)
         await isolated_page.goto(server.empty_page)
         await isolated_page.setRequestInterception(True)
 
@@ -80,7 +80,7 @@ class TestPageSetRequestInterception:
             await request.continue_(headers=headers)
 
         server_req, *_ = await asyncio.gather(
-            server.app.waitForRequest('/empty.html'), isolated_page.goto(server.empty_page),
+            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
 
         assert server_req.headers.get('origin') is None
@@ -234,11 +234,11 @@ class TestPageSetRequestInterception:
         server.app.one_time_redirect('/non-existing-page.html', '/non-existing-page-2.html')
         server.app.one_time_redirect('/non-existing-page-2.html', '/non-existing-page-3.html')
         server.app.one_time_redirect('/non-existing-page-3.html', '/non-existing-page-4.html')
-        server.app.one_time_redirect('/non-existing-page-4.html', '/empty.html')
+        server.app.one_time_redirect('/non-existing-page-4.html', server.empty_page)
 
         resp = await isolated_page.goto(server / 'non-existing-page.html')
         assert resp.status == 200
-        assert 'empty.html' in resp.url
+        assert server.empty_page in resp.url
         assert len(requests) == 5
         assert requests[2].resourceType == 'document'
         # check redirect chain
@@ -277,7 +277,7 @@ class TestPageSetRequestInterception:
         assert await requests[-1].response.text == end_of_chain_resp
 
         # check redirect chain
-        redirect_chain = await requests[1].redirectChain
+        redirect_chain = requests[1].redirectChain
         assert len(redirect_chain) == 3
         assert 'one-style.css' in redirect_chain[0].url
         assert 'three-style.css' in redirect_chain[2].url
@@ -496,6 +496,7 @@ class TestRequestContinue:
 
         console_message = None
         isolated_page.on('console', var_setter('console_message'))
+        await isolated_page.goto(server.empty_page)
         # noinspection PyUnresolvedReferences
         assert console_message.text == 'yellow'
 
@@ -524,11 +525,11 @@ class TestRequestContinue:
         async def post_data_modifier(req):
             await req.continue_(postData='doggo')
 
-        server_req = await asyncio.gather(
+        server_req, *_ = await asyncio.gather(
             server.app.waitForRequest('/sleep.zzz'),
             isolated_page.evaluate('fetch("/sleep.zzz", {method: "POST", body:"birdy"})'),
         )
-        assert server_req.postBody == 'doggo'
+        assert server_req.body.decode() == 'doggo'
 
     @sync
     async def test_amends_both_POST_data_and_method_on_nav(self, isolated_page, server):
@@ -539,10 +540,10 @@ class TestRequestContinue:
             await req.continue_(method='POST', postData='doggo')
 
         server_req, *_ = await asyncio.gather(
-            server.app.waitForRequest('/empty.html'), isolated_page.goto(server.empty_page)
+            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page)
         )
         assert server_req.method == 'POST'
-        assert server_req.postBody == 'doggo'
+        assert server_req.body.decode() == 'doggo'
 
 
 class TestRequestRespond:
