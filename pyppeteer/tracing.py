@@ -4,8 +4,9 @@
 """Tracing module."""
 
 from pathlib import Path
-from typing import Sequence
+from typing import Sequence, Union
 
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 
 
@@ -28,7 +29,9 @@ class Tracing:
         self._recording = False
         self._path = ''
 
-    async def start(self, path: str = '', screenshots: bool = False, categories: Sequence[str] = None) -> None:
+    async def start(
+        self, path: Union[Path, str] = '', screenshots: bool = False, categories: Sequence[str] = None
+    ) -> None:
         """Start tracing.
 
         Only one trace can be active at a time per browser.
@@ -76,29 +79,15 @@ class Tracing:
         :return: trace data as string.
         """
         contentFuture = self._client.loop.create_future()
+
+        async def complete_trace(event):
+            nonlocal self, contentFuture
+            result = await helpers.readProtocolStream(self._client, event['stream'], self._path)
+            contentFuture.set_result(result)
+
         self._client.once(
-            'Tracing.tracingComplete',
-            lambda event: self._client.loop.create_task(
-                self._readStream(event.get('stream'), self._path)
-            ).add_done_callback(lambda fut: contentFuture.set_result(fut.result())),
+            'Tracing.tracingComplete', complete_trace,
         )
         await self._client.send('Tracing.end')
         self._recording = False
         return await contentFuture
-
-    async def _readStream(self, handle: str, path: str) -> str:
-        # might be better to return as bytes
-        eof = False
-        bufs = []
-        while not eof:
-            response = await self._client.send('IO.read', {'handle': handle})
-            eof = response.get('eof', False)
-            bufs.append(response.get('data', ''))
-        await self._client.send('IO.close', {'handle': handle})
-
-        result = ''.join(bufs)
-        if path:
-            file = Path(path)
-            with file.open('w') as f:
-                f.write(result)
-        return result

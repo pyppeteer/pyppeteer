@@ -9,6 +9,7 @@ import logging
 import math
 import re
 from asyncio.futures import Future
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Union
 
 from pyee import AsyncIOEventEmitter
@@ -191,7 +192,7 @@ def is_js_func(func: str) -> bool:
     func = func.strip()
     if func.startswith('function ') or func.startswith('async '):
         return True
-    # 85% faster than using multiple .replace()
+    # ~85% faster than using chained .replace()
     func = func.translate(str.maketrans(dict.fromkeys(' \t\r\n')))
     return bool(
         re.match(
@@ -230,3 +231,19 @@ def is_js_func(func: str) -> bool:
 def safe_future_set_result(fut: Future, res: Any):
     if not fut.done():
         fut.set_result(res)
+
+
+async def readProtocolStream(client: CDPSession, handle: str, path: Union[Path, str]) -> str:
+    # might be better to return as bytes
+    eof = False
+    buffs = []
+    while not eof:
+        response = await client.send('IO.read', {'handle': handle})
+        buffs.append(response.get('data', ''))
+        eof = response.get('eof', False)
+    await client.send('IO.close', {'handle': handle})
+
+    result = ''.join(bufs)
+    if path:
+        Path(path).write_text(result)
+    return result
