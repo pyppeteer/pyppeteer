@@ -102,20 +102,16 @@ def valueFromRemoteObject(remoteObject: 'Protocol.Runtime.RemoteObject') -> Any:
     return remoteObject.get('value')
 
 
-def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
+async def releaseObject(client: CDPSession, remoteObject: dict) -> Awaitable:
     """Release remote object."""
     objectId = remoteObject.get('objectId')
-    fut_none = client.loop.create_future()
-    fut_none.set_result(None)
-    if not objectId:
-        return fut_none
-    try:
-        return client.send('Runtime.releaseObject', {'objectId': objectId})
-    except Exception as e:
-        # Exceptions might happen in case of a page been navigated or closed.
-        # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
-        logger.error(f'An exception occurred: {e}')
-    return fut_none
+    if objectId:
+        try:
+            await client.send('Runtime.releaseObject', {'objectId': objectId})
+        except Exception as e:
+            # Exceptions might happen in case of a page been navigated or closed.
+            # Swallow these since they are harmless and we don't leak anything in this case.  # noqa
+            logger.error(f'An exception occurred: {e}')
 
 
 def waitForEvent(
