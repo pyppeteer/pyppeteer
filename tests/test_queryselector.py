@@ -11,7 +11,6 @@ Pyppeteer2 uses functions which have following counterparts in original puppetee
 └───────────────┴─────────────────────────────┴──────────────────────┘
 
 """
-
 import pytest
 
 from syncer import sync
@@ -32,8 +31,8 @@ class TestPageJeval:
         page = isolated_page
         await page.setContent('<section id="testAttribute">43543</section>')
         idAttributeJeval = await page.Jeval('section', "e => e.id")
-        idAttributeQueryEval = await page.querySelectorEval('section', "e => e.id")
-        assert idAttributeJeval == idAttributeQueryEval == 'testAttribute'
+        assert idAttributeJeval == 'testAttribute'
+        assert page.Jeval == page.querySelectorEval
 
     @chrome_only
     @sync
@@ -75,8 +74,8 @@ class TestPageJJeval:
         page = isolated_page
         await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
         divsCountJJeval = await page.JJeval('div', "divs => divs.length")
-        divsCountQuery = await page.querySelectorAllEval('div', "divs => divs.length")
-        assert divsCountJJeval == divsCountQuery == 3
+        assert divsCountJJeval == 3
+        assert page.JJeval == page.querySelectorAllEval
 
 
 class TestPageJ:
@@ -89,6 +88,7 @@ class TestPageJ:
         await page.setContent('<section>test</section>')
         element = await page.J('section')
         assert element
+        assert page.J == page.querySelector
 
     @chrome_only
     @sync
@@ -110,6 +110,7 @@ class TestPageJJ:
         elements = await page.JJ('div')
         assert len(elements) == 2
         assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
+        assert page.JJ == page.querySelectorAll
 
     @chrome_only
     @sync
@@ -130,12 +131,10 @@ class TestPageJx:
         page = isolated_page
         await page.setContent('<section>test</section>')
         elementsJx = await page.Jx('/html/body/section')
-        elementsXpath = await page.xpath('/html/body/section')
         assert isinstance(elementsJx, list)
-        assert isinstance(elementsXpath, list)
         assert elementsJx[0]
-        assert elementsXpath[0]
-        assert len(elementsXpath) == len(elementsJx) == 1
+        assert len(elementsJx) == 1
+        assert page.xpath == page.Jx
 
     @chrome_only
     @sync
@@ -168,6 +167,7 @@ class TestElementHandleJ:
         inner = await second.J('.inner')
         content = await page.evaluate("e => e.textContent", inner)
         assert content == 'A'
+        assert second.J == second.querySelector
 
     @chrome_only
     @sync
@@ -194,6 +194,7 @@ class TestElementHandleJeval:
         tweet = await page.J('.tweet')
         content = await tweet.Jeval('.like', "node => node.innerText")
         assert content == '100'
+        assert tweet.Jeval == tweet.querySelectorEval
 
     @chrome_only
     @sync
@@ -231,6 +232,7 @@ class TestElementHandleJJeval:
         tweet = await page.J('.tweet')
         content = await tweet.JJeval('.like', "nodes => nodes.map(n => n.innerText)")
         assert content == ['100', '10']
+        assert tweet.JJeval == tweet.querySelectorAllEval
 
     @chrome_only
     @sync
@@ -272,6 +274,7 @@ class TestElementHandleJJ:
         elements = await html.JJ('div')
         assert len(elements) == 2
         assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
+        assert html.JJ == html.querySelectorAll
 
     @chrome_only
     @sync
@@ -297,6 +300,7 @@ class TestElementHandleJx:
         inner = await second[0].Jx("./div[contains(@class, 'inner')]")
         content = await page.evaluate("e => e.textContent", inner[0])
         assert content == 'A'
+        assert html.Jx == html.xpath
 
     @sync
     @chrome_only
