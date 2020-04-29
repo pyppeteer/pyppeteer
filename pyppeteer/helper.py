@@ -11,7 +11,7 @@ from typing import Any, Awaitable, Callable, Dict, List
 
 from pyee import EventEmitter
 
-from pyppeteer2custom import pyppeteer
+import pyppeteer
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
