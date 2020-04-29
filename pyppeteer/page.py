@@ -9,6 +9,7 @@ import json
 import logging
 import math
 import mimetypes
+import os
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 from typing import TYPE_CHECKING
@@ -103,6 +104,12 @@ class Page(EventEmitter):
             client.send('Performance.enable', {}),
             client.send('Log.enable', {}),
         )
+
+        try:
+            client.send('Page.setInterceptFileChooserDialog', {'enabled': True})
+        except Exception as e:
+            _fileChooserInterceptionIsDisabled = True
+
         if ignoreHTTPSErrors:
             await client.send('Security.setOverrideCertificateErrors',
                               {'override': True})
@@ -130,6 +137,8 @@ class Page(EventEmitter):
         self._javascriptEnabled = True
         self._coverage = Coverage(client)
         self._viewport: Optional[Dict] = None
+        self._fileChooserInterceptionIsDisabled = False
+        self._fileChooserInterceptors = set()
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = list()
@@ -209,6 +218,8 @@ class Page(EventEmitter):
                   lambda event: self._emitMetrics(event))
         client.on('Log.entryAdded',
                   lambda event: self._onLogEntryAdded(event))
+        client.on('Page.fileChooserOpened', 
+                  lambda event: self._onFileChooser(event));
 
         def closed(fut: asyncio.futures.Future) -> None:
             self.emit(Page.Events.Close)
@@ -240,6 +251,25 @@ class Page(EventEmitter):
 
         if source != 'worker':
             self.emit(Page.Events.Console, ConsoleMessage(level, text))
+
+    def _onFileChooser(self, event: Dict) -> None:
+        
+        if(len(self._fileChooserInterceptors) is None):
+            try:
+                self._client.send('Page.handleFileChooser', {
+                    'action': 'fallback',
+                })
+            except Exception as e:
+                helper.debugError(logger, e)
+            return
+
+        interceptors = list(self._fileChooserInterceptors)
+        self._fileChooserInterceptors.clear()
+        fileChooser = FileChooser(self._client,event)
+        for interceptor in interceptors:
+            interceptor(fileChooser)
+
+
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -1716,6 +1746,28 @@ function addPageBinding(bindingName) {
         return frame.waitForFunction(pageFunction, options, *args, **kwargs)
 
 
+    async def waitForFileChooser(self, options: dict = None,*args: str, **kwargs: Any) -> Awaitable:
+        if self._fileChooserInterceptionIsDisabled:
+            raise PageError('File chooser handling does not work with multiple connections to the same page')
+        options = merge_dict(options, kwargs)
+        timeout = options.get('timeout', 30000)
+        promise = self._client._loop.create_future()
+
+        def promiseCallback(x: FileChooser) -> None:
+            promise.set_result(x)
+
+        self._fileChooserInterceptors.add(promiseCallback)
+
+        result,exception = await helper.waitWithTimeout(promise, 'waiting for file chooser',timeout,self._client._loop)
+        for e in exception:
+            if not e.done():
+                for r in result:
+                    return r.result()
+            else:
+                self._fileChooserInterceptors.remove(promiseCallback)
+                raise e.exception()
+
+
 supportedMetrics = (
     'Timestamp',
     'Documents',
@@ -1797,6 +1849,43 @@ class ConsoleMessage(object):
         """Return list of args (JSHandle) of this message."""
         return self._args
 
+class FileChooser(object):
+    """File Chooser class.
+
+    File Chooser objects are dispatched by page via the ``filechooser`` event.
+    """
+
+    def __init__(self, client: CDPSession, event: Dict) -> None:
+        self._client = client
+        self._multiple = event['mode'] != 'selectSingle'
+        self._handled = False
+
+    @property
+    def isMultiple(self) -> None:
+        """Return type of this message."""
+        return self.isMultiple
+
+    async def accept(self, *filePaths: str) -> None:
+        if self._handled:
+            raise PageError('Cannot accept FileChooser which is already handled!')
+        self._handled = True
+        
+        files = []
+        for filePath in filePaths:
+            files.append(os.path.abspath(filePath))
+        await self._client.send('Page.handleFileChooser', {
+            'action': 'accept',
+            'files': files
+        })
+
+    async def cancel(self) -> None:
+        if self._handled:
+            raise PageError('Cannot cancel FileChooser which is already handled!')
+        self._handled = True
+        await self._client.send('Page.handleFileChooser', {
+            'action': 'cancel'
+        })
+
 
 async def craete(*args: Any, **kwargs: Any) -> Page:
     """[Deprecated] miss-spelled function.
@@ -1808,3 +1897,4 @@ async def craete(*args: Any, **kwargs: Any) -> Page:
         'Use `Page.create` instead.'
     )
     return await Page.create(*args, **kwargs)
+

@@ -11,7 +11,7 @@ from typing import Any, Awaitable, Callable, Dict, List
 
 from pyee import EventEmitter
 
-import pyppeteer
+from pyppeteer2custom import pyppeteer
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import ElementHandleError, TimeoutError
 
@@ -152,6 +152,28 @@ def waitForEvent(emitter: EventEmitter, eventName: str,  # noqa: C901
             eventTimeout.cancel()
 
     return promise
+
+async def waitWithTimeout(promise: Any, taskName: str, timeout: int, loop: asyncio.AbstractEventLoop) -> Awaitable:
+    timeoutError = TimeoutError(f'waiting for {taskName} failed: timeout {timeout}ms exceeded')
+    timeoutPromise = loop.create_future()
+    
+    def reject(x: Exception) -> None:
+        timeoutPromise.set_exception(x)
+
+    async def timeoutTimer() -> None:
+        await asyncio.sleep(timeout / 1000)
+        reject(timeoutError)
+
+    if timeout:
+        timeoutTimer = loop.create_task(timeoutTimer())
+
+    try:
+        return await asyncio.wait(
+            (promise, timeoutPromise), return_when=asyncio.FIRST_COMPLETED
+        )
+    finally:
+        if timeout:
+            timeoutTimer.cancel()
 
 
 def get_positive_int(obj: dict, name: str) -> int:
