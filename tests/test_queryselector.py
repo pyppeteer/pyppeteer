@@ -32,6 +32,7 @@ class TestPageJeval:
         await page.setContent('<section id="testAttribute">43543</section>')
         idAttributeJeval = await page.Jeval('section', "e => e.id")
         assert idAttributeJeval == 'testAttribute'
+        # verify alias is the same method
         assert page.Jeval == page.querySelectorEval
 
     @chrome_only
@@ -75,6 +76,7 @@ class TestPageJJeval:
         await page.setContent('<div>hello</div><div>beautiful</div><div>world!</div>')
         divsCountJJeval = await page.JJeval('div', "divs => divs.length")
         assert divsCountJJeval == 3
+        # verify alias is the same method
         assert page.JJeval == page.querySelectorAllEval
 
 
@@ -88,6 +90,7 @@ class TestPageJ:
         await page.setContent('<section>test</section>')
         element = await page.J('section')
         assert element
+        # verify alias is the same method
         assert page.J == page.querySelector
 
     @chrome_only
@@ -110,6 +113,7 @@ class TestPageJJ:
         elements = await page.JJ('div')
         assert len(elements) == 2
         assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
+        # verify alias is the same method
         assert page.JJ == page.querySelectorAll
 
     @chrome_only
@@ -134,6 +138,7 @@ class TestPageJx:
         assert isinstance(elementsJx, list)
         assert elementsJx[0]
         assert len(elementsJx) == 1
+        # verify alias is the same method
         assert page.xpath == page.Jx
 
     @chrome_only
@@ -167,6 +172,7 @@ class TestElementHandleJ:
         inner = await second.J('.inner')
         content = await page.evaluate("e => e.textContent", inner)
         assert content == 'A'
+        # verify alias is the same method
         assert second.J == second.querySelector
 
     @chrome_only
@@ -194,6 +200,7 @@ class TestElementHandleJeval:
         tweet = await page.J('.tweet')
         content = await tweet.Jeval('.like', "node => node.innerText")
         assert content == '100'
+        # verify alias is the same method
         assert tweet.Jeval == tweet.querySelectorEval
 
     @chrome_only
@@ -232,6 +239,7 @@ class TestElementHandleJJeval:
         tweet = await page.J('.tweet')
         content = await tweet.JJeval('.like', "nodes => nodes.map(n => n.innerText)")
         assert content == ['100', '10']
+        # verify alias is the same method
         assert tweet.JJeval == tweet.querySelectorAllEval
 
     @chrome_only
@@ -274,6 +282,7 @@ class TestElementHandleJJ:
         elements = await html.JJ('div')
         assert len(elements) == 2
         assert [await page.evaluate("e => e.textContent", element) for element in elements] == ['A', 'B']
+        # verify alias is the same method
         assert html.JJ == html.querySelectorAll
 
     @chrome_only
@@ -300,6 +309,7 @@ class TestElementHandleJx:
         inner = await second[0].Jx("./div[contains(@class, 'inner')]")
         content = await page.evaluate("e => e.textContent", inner[0])
         assert content == 'A'
+        # verify alias is the same method
         assert html.Jx == html.xpath
 
     @sync
