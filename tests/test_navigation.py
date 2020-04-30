@@ -32,9 +32,12 @@ class TestPage:
             assert isolated_page.url == server.empty_page + '#bar'
 
         @sync
-        @needs_server_side_implementation
         async def test_works_with_redirects(self, isolated_page, server):
-            pass
+            server.app.one_time_redirect('/redirect/1.html', '/redirect/2.html')
+            server.app.one_time_redirect('/redirect/2.html', server.empty_page)
+
+            await isolated_page.goto(server / 'redirect/1.html')
+            assert isolated_page.url == server.empty_page
 
         @sync
         async def test_navigates_to_aboutblank(self, isolated_page):
@@ -94,19 +97,30 @@ class TestPage:
         async def test_fails_on_bad_ssl(self, isolated_page, server):
             # Make sure that network events do not emit 'undefined'.
             # @see https://crbug.com/750469
-            def assert_truthy(o):
-                assert o
+            def assert_truthy(req):
+                assert req
 
             isolated_page.on('request', assert_truthy)
             isolated_page.on('requestfinished', assert_truthy)
             isolated_page.on('requestfailed', assert_truthy)
-            with pytest.raises(BrowserError, match='(ERR_SSL_PROTOCOL_ERROR|SSL_ERROR_UNKNOWN)') as excpt:
+            with pytest.raises(BrowserError, match='(ERR_SSL_PROTOCOL_ERROR|SSL_ERROR_UNKNOWN)'):
                 await isolated_page.goto(server.https.empty_page)
 
         @sync
-        @needs_server_side_implementation
         async def test_fails_on_bad_ssl_redirects(self, isolated_page, server):
-            pass
+            # Make sure that network events do not emit 'undefined'.
+            # @see https://crbug.com/750469
+            @isolated_page.on('request')
+            @isolated_page.on('requestfailed')
+            @isolated_page.on('requestfinished')
+            async def request_checker(req):
+                assert req
+
+            server.app.one_time_redirect('/redirect/1.html', '/redirect/2.html')
+            server.app.one_time_redirect('/redirect/2.html', server.empty_pagke)
+
+            with pytest.raises(BrowserError, match=r'(SSL_ERROR_UNKNOWN|net::ERR_CERT_AUTHORITY_INVALID)'):
+                await isolated_page.goto(server.https.empty_page)
 
         @sync
         async def test_raises_on_deprecated_networkidle_waituntil(self, isolated_page, server):

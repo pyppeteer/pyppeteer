@@ -3,6 +3,7 @@ import base64
 import functools
 import inspect
 import re
+import ssl
 from inspect import isawaitable
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, Union
@@ -10,6 +11,7 @@ from urllib.parse import urlparse
 
 from pyppeteer.util import get_free_port
 from tornado import web
+from tornado.httpserver import HTTPServer
 from tornado.httputil import HTTPServerRequest
 from tornado.log import app_log
 from tornado.routing import _RuleList
@@ -183,7 +185,7 @@ def get_application() -> _Application:
         # required that the _StaticFileHandler is the first handler
         (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
     ]
-    return _Application(handlers, static_path=static_path,)
+    return _Application(handlers, static_path=static_path)
 
 
 if __name__ == '__main__':
