@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import random
 import ssl
+import string
 from contextlib import suppress
 from pathlib import Path
 from urllib.parse import urljoin
@@ -66,6 +68,10 @@ class ServerURL:
             self.tornado_server_inst.listen(self.port)
 
         self.empty_page = self / 'empty.html'
+
+    @property
+    def unique_url(self) -> str:
+        return self / ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
 
     def stop_all(self):
         if self.https:

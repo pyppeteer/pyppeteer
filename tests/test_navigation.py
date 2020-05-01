@@ -55,9 +55,11 @@ class TestPage:
             pass
 
         @sync
-        @needs_server_side_implementation
         async def test_fail_when_server_204s(self, isolated_page, server):
-            pass
+            url = server.unique_url
+            server.app.add_one_time_request_resp(url, resp=None, status=204)
+            with pytest.raises(BrowserError, match='_ABORTED'):
+                await isolated_page.goto(url)
 
         @sync
         async def test_navigates_to_empty_page_and_waits_until_domcontentloaded(self, isolated_page, server):
@@ -178,13 +180,19 @@ class TestPage:
             assert resp.status == 404
 
         @sync
-        @needs_server_side_implementation
         async def test_returns_last_response_in_redirect_chain(self, isolated_page, server):
-            pass
+            server.app.one_time_redirect('/redirect/1.html', '/redirect/2.html')
+            server.app.one_time_redirect('/redirect/2.html', '/redirect/3.html')
+            server.app.one_time_redirect('/redirect/3.html', server.empty_page)
+            resp = await isolated_page.goto(server / 'redirect/1.html')
+            assert resp.ok
+            assert resp.url == server.empty_page
 
         @sync
         @needs_server_side_implementation
         async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
+            # Hold on to a bunch of requests without answering.
+            # server.app.add_one_time_request_precondition()
             pass
 
         @sync

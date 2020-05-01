@@ -145,7 +145,9 @@ class _Application(web.Application):
 
         self.add_one_time_request_precondition(from_path, redirector, should_return=True)
 
-    def add_one_time_request_resp(self, path: str, resp: Union[str, bytes], method: str = 'GET', status: int = 200):
+    def add_one_time_request_resp(
+        self, path: str, resp: Union[str, bytes] = None, method: str = 'GET', status: int = 200
+    ):
         method = method.lower()
 
         class OneTimeHandler(web.RequestHandler):
@@ -153,7 +155,8 @@ class _Application(web.Application):
 
             def one_time_responder(self, *__, **_):
                 self.set_status(status)
-                self.write(resp)
+                if resp is not None:
+                    self.write(resp)
                 self.has_completed_req = True
 
         setattr(OneTimeHandler, method, OneTimeHandler.one_time_responder)
