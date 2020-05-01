@@ -1299,6 +1299,8 @@ function addPageBinding(bindingName) {
         opt = {'format': format}
         if clip:
             opt['clip'] = clip
+        if options.get('quality'):
+            opt['quality'] = options['quality']
         result = await self._client.send('Page.captureScreenshot', opt)
 
         if options.get('omitBackground'):
