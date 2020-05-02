@@ -16,7 +16,7 @@ class TaskQueue:
         async def run_awaitable(prev) -> None:
             try:
                 await prev
-                await task
+                return await task
             except Exception as e:
                 logger.error(f'Exception while evaluating task queue: {e}')
 
