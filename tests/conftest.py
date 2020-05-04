@@ -14,14 +14,12 @@ from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
 from syncer import sync
-from tests.utils.server import _Application, get_application
-from tornado.httpserver import HTTPServer
+from tests.utils.server import WrappedApplication, app_runner
 from websockets import ConnectionClosedError
 
 # internal, conftest.py only variables
 _launch_options = {'args': ['--no-sandbox']}
 _firefox = False
-_app = get_application()
 _port = get_free_port()
 
 if _firefox:
@@ -42,7 +40,7 @@ def pytest_configure(config):
 
 class ServerURL:
     def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_instance: bool = False):
-        self.app: _Application = app
+        self.app: WrappedApplication = app
         self.port = port + int(https)
         del port  # make sure we always refer to updated port
         self.base = f'http{"s" if https else ""}://{"127.0.0.1" if cross_process else "localhost"}:{self.port}'
@@ -56,30 +54,7 @@ class ServerURL:
             self.https = None
             self.cross_process_server = None
 
-        if not cross_process:
-            if https:
-                ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                cert_dir = Path(__file__).parent / 'utils'
-                ssl_ctx.load_cert_chain(certfile=cert_dir / 'cert.pem', keyfile=cert_dir / 'private.key')
-            else:
-                ssl_ctx = None
-
-            self.tornado_server_inst = HTTPServer(app, ssl_options=ssl_ctx)
-            self.tornado_server_inst.listen(self.port)
-
         self.empty_page = self / 'empty.html'
-
-    @property
-    def unique_url(self) -> str:
-        return self / ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
-
-    def stop_all(self):
-        if self.https:
-            self.https.stop()
-        self.stop()
-
-    def stop(self):
-        self.tornado_server_inst.stop()
 
     def __repr__(self):
         return f'<ServerURL "{self.base}">'
@@ -147,10 +122,11 @@ def isolated_page(isolated_context) -> Page:
 
 
 @pytest.fixture(scope='session')
-def server():
-    server = ServerURL(_port, _app)
-    yield server
-    server.stop_all()
+def server(assets):
+    app = sync(app_runner(assets_path=assets, free_port=_port))
+    yield ServerURL(_port, app)
+    sync(app.shutdown())
+    sync(app.cleanup())
 
 
 @pytest.fixture(scope='session')
