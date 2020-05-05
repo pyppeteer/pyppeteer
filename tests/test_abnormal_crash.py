@@ -4,6 +4,7 @@
 import asyncio
 import logging
 import unittest
+import sys
 
 import pytest
 from syncer import sync
@@ -22,7 +23,7 @@ class TestBrowserCrash(unittest.TestCase):
         browser.process.terminate()
         browser.process.wait()
 
-        if current_platform().startswith('win'):
+        if sys.platform.startswith('win'):
             # wait for terminating browser process
             await asyncio.sleep(1)
 
