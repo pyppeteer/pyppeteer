@@ -92,8 +92,9 @@ class FrameManager(AsyncIOEventEmitter):
 
         async def navigate(url_: str, referer_: Optional[str], frameId: str) -> Optional[Exception]:
             try:
+                # careful, this is the correct spelling of referrer (even though everywhere else the key is correct
                 response = await self._client.send(
-                    'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
+                    'Page.navigate', {'url': url_, 'referrer': referer_, 'frameId': frameId}
                 )
                 nonlocal ensureNewDocumentNavigation
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
