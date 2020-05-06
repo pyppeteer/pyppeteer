@@ -2,73 +2,74 @@
 # -*- coding: utf-8 -*-
 
 import json
-import unittest
+import time
 from pathlib import Path
 
+import pytest
+from pyppeteer.errors import NetworkError
 from syncer import sync
 
-from pyppeteer.errors import NetworkError
+
+@pytest.fixture
+def temp_file_path(tmpdir):
+    return Path(tmpdir / f'{time.perf_counter_ns()}file.json')
 
 
-class TestTracing:
-    def setUp(self):
-        self.outfile = Path(__file__).parent / 'trace.json'
-        if self.outfile.is_file():
-            self.outfile.unlink()
-        super().setUp()
+@sync
+async def test_tracing(isolated_page, temp_file_path, server):
+    await isolated_page.tracing.start(path=temp_file_path)
+    await isolated_page.goto(server / 'grid.html')
+    await isolated_page.tracing.stop()
+    assert temp_file_path.is_file() and temp_file_path.stat().st_size > 0
 
-    def tearDown(self):
-        if self.outfile.is_file():
-            self.outfile.unlink()
-        super().tearDown()
 
-    @sync
-    async def test_tracing(self):
-        await self.page.tracing.start({'path': str(self.outfile)})
-        await self.page.goto(self.url)
-        await self.page.tracing.stop()
-        self.assertTrue(self.outfile.is_file())
+@sync
+async def test_custom_categories(isolated_page, temp_file_path):
+    await isolated_page.tracing.start(path=temp_file_path, categories=['disabled-by-default-v8.cpu_profiler.hires'])
+    await isolated_page.tracing.stop()
+    assert temp_file_path.is_file() and temp_file_path.stat().st_size > 0
+    trace_json = json.loads(temp_file_path.read_text())
+    assert 'disabled-by-default-v8.cpu_profiler.hires' in trace_json['metadata']['trace-config']
 
-    @sync
-    async def test_custom_categories(self):
-        await self.page.tracing.start(
-            {'path': str(self.outfile), 'categories': ['disabled-by-default-v8.cpu_profiler.hires'],}
-        )
-        await self.page.tracing.stop()
-        self.assertTrue(self.outfile.is_file())
-        with self.outfile.open() as f:
-            trace_json = json.load(f)
-        self.assertIn(
-            'disabled-by-default-v8.cpu_profiler.hires', trace_json['metadata']['trace-config'],
-        )
 
-    @sync
-    async def test_tracing_two_page_error(self):
-        await self.page.tracing.start({'path': str(self.outfile)})
-        new_page = await self.browser.newPage()
-        with self.assertRaises(NetworkError):
-            await new_page.tracing.start({'path': str(self.outfile)})
+@sync
+async def test_two_page_error(isolated_page, shared_browser, temp_file_path):
+    await isolated_page.tracing.start(path=temp_file_path)
+    try:
+        new_page = await shared_browser.newPage()
+        with pytest.raises(NetworkError):
+            await new_page.tracing.start(path=temp_file_path)
+    finally:
         await new_page.close()
-        await self.page.tracing.stop()
+    await isolated_page.tracing.stop()
 
-    @sync
-    async def test_return_buffer(self):
-        await self.page.tracing.start(screenshots=True, path=str(self.outfile))
-        await self.page.goto(self.url + 'assets/grid.html')
-        trace = await self.page.tracing.stop()
-        with self.outfile.open('r') as f:
-            buf = f.read()
-        self.assertEqual(trace, buf)
 
-    @unittest.skip('Not implemented')
-    @sync
-    async def test_return_null_on_error(self):
-        await self.page.tracing.start(screenshots=True)
-        await self.page.goto(self.url + 'assets/grid.html')
+@sync
+async def test_return_buffer(isolated_page, server, temp_file_path):
+    await isolated_page.tracing.start(screenshots=True, path=temp_file_path)
+    await isolated_page.goto(server / 'grid.html')
+    trace = await isolated_page.tracing.stop()
+    assert trace == temp_file_path.read_text()
 
-    @sync
-    async def test_without_path(self):
-        await self.page.tracing.start(screenshots=True)
-        await self.page.goto(self.url + 'assets/grid.html')
-        trace = await self.page.tracing.stop()
-        self.assertIn('screenshot', trace)
+
+@sync
+async def test_works_without_any_options(isolated_page, server):
+    await isolated_page.tracing.start()
+    await isolated_page.goto(server / 'grid.html')
+    trace = await isolated_page.tracing.stop()
+    assert trace
+
+
+@sync
+@pytest.mark.skip(reason='No analogous python behaviour known')
+async def test_return_null_on_error(isolated_page, server):
+    await isolated_page.tracing.start(screenshots=True)
+    await isolated_page.goto(server / 'grid.html')
+
+
+@sync
+async def test_without_path(isolated_page, server):
+    await isolated_page.tracing.start(screenshots=True)
+    await isolated_page.goto(server / 'grid.html')
+    trace = await isolated_page.tracing.stop()
+    assert 'screenshot' in trace
