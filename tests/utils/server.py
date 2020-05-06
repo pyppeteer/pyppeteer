@@ -2,9 +2,10 @@ import asyncio
 import inspect
 import logging
 import ssl
+from functools import partial
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Optional
+from typing import Any, Awaitable, Callable, Iterable, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 from aiohttp import web
@@ -12,6 +13,8 @@ from aiohttp.log import web_logger
 from aiohttp.web_app import _Middleware
 from aiohttp.web_exceptions import HTTPNotFound
 from aiohttp.web_urldispatcher import UrlDispatcher
+
+RequestPrecondition = Union[Callable, Callable[[web.Request], Any], Awaitable[Any]]
 
 
 class WrappedApplication(web.Application):
@@ -26,7 +29,10 @@ class WrappedApplication(web.Application):
         loop: Optional[asyncio.AbstractEventLoop] = None,
         debug: Any = ...,
     ) -> None:
-        self.pre_request_callbacks = {}
+        self.pre_request_subscribers = {}
+        self.raisable_statuses = {
+            204: web.HTTPNoContent(),
+        }
         super().__init__(
             logger=logger,
             router=router,
@@ -39,13 +45,24 @@ class WrappedApplication(web.Application):
         self.router._frozen = False
 
     @staticmethod
-    def get_pre_request_caller(precondition):
+    def get_pre_request_caller(precondition: RequestPrecondition):
+        """
+        Returns an async function which executes (if necessary) precondition with the single argument of request
+         (if necessary) and awaits the result (if necessary). This allows precondition to be an awaitable (eg future),
+         async, or nonasync functions
+        Args:
+            precondition: (async or nonasync) function or awaitable
+
+        Returns:
+            function which waits for the completion of precondition
+        """
+
         async def caller(request):
             func_res = precondition
             if callable(precondition):
                 args = []
+                # only pass in request handler if we detect one, and only one arg
                 if len(inspect.getfullargspec(precondition).args) == 1:
-                    # only pass in request handler if we detect one, and only one arg
                     args = [request]
                 func_res = precondition(*args)
             if isawaitable(func_res):
@@ -54,35 +71,35 @@ class WrappedApplication(web.Application):
 
         return caller
 
-    def add_pre_request_callback(self, path: str, precondition, should_return: bool):
+    def add_pre_request_subscriber(self, path: str, precondition: RequestPrecondition, should_return: bool):
         path = urlparse(path).path.strip('/')
 
         caller = self.get_pre_request_caller(precondition)
 
-        if path not in self.pre_request_callbacks:
-            self.pre_request_callbacks[path] = []
-        self.pre_request_callbacks[path].append((caller, should_return))
+        if path not in self.pre_request_subscribers:
+            self.pre_request_subscribers[path] = []
+        self.pre_request_subscribers[path].append((caller, should_return))
 
     def set_one_time_redirects(self, from_path: str, *path_items: str):
         last_path = from_path
         for to_path in path_items:
 
-            def raiser():
-                raise web.HTTPFound(to_path)
+            def redirect_raiser(redirect_path):
+                raise web.HTTPFound(redirect_path)
 
-            self.add_pre_request_callback(last_path, raiser, should_return=True)
+            # we need to wrap the fn in partial to 'capture' to_path at the current iteration in the loop
+            # otherwise, every endpoint will (incorrectly) redirect to the last item in the chain
+            self.add_pre_request_subscriber(last_path, partial(redirect_raiser, to_path), should_return=True)
             last_path = to_path
 
     def set_one_time_response(self, path: str, response: str = None, status: int = 200):
         def responder():
-            raisable_statuses = {
-                204: web.HTTPNoContent(),
-            }
-            if status in raisable_statuses:
-                raise raisable_statuses[status]
+
+            if status in self.raisable_statuses:
+                raise self.raisable_statuses[status]
             return web.Response(body=response, status=status)
 
-        self.add_pre_request_callback(path, responder, should_return=True)
+        self.add_pre_request_subscriber(path, responder, should_return=True)
 
     def waitForRequest(self, path: str):
         fut = asyncio.get_event_loop().create_future()
@@ -90,29 +107,50 @@ class WrappedApplication(web.Application):
         def resolve_fut(req):
             fut.set_result(req)
 
-        self.add_pre_request_callback(path, resolve_fut, should_return=False)
+        self.add_pre_request_subscriber(path, resolve_fut, should_return=False)
         return fut
 
 
-async def app_runner(assets_path, free_port: int = None):
-    free_port = free_port
+def create_request_content_cache_fn(content):
+    """
+    Creates an async function which returns content. This is used in the context of a route handler to allow checking
+    the request content after a response is sent (which isn't natively possible with aiohttp)
+    Args:
+        content: bytes to return
 
+    Returns:
+        async function returning content
+    """
+
+    async def cached_content():
+        return content
+
+    return cached_content
+
+
+async def app_runner(assets_path, free_port):
     async def static_file_serve(request):
         path = request.match_info['path']
-        if path in request.app.pre_request_callbacks:
-            callbacks = request.app.pre_request_callbacks.pop(path)
-            callbacks = sorted(callbacks, key=lambda item: (item[1], callbacks.index(item)),)
-            callback_fns, should_returns = zip(*callbacks)
-            gathered = await asyncio.gather(*[fn(request) for fn in callback_fns], return_exceptions=True)
+
+        # cache the request's content for later use
+        request.read = create_request_content_cache_fn(await request.read())
+
+        if path in request.app.pre_request_subscribers:
+            # we make sure to remove the path ASAP, otherwise a unrelated request may be unintentionally mistreated
+            callback_fns, should_returns = zip(*request.app.pre_request_subscribers.pop(path))
+            # run all subscribers at once
+            gathered = await asyncio.gather(*[sub(request) for sub in callback_fns], return_exceptions=True)
             for result, should_return in zip(gathered, should_returns):
-                if isinstance(result, Exception):
-                    raise result
+                # aiohttp use exceptions for HTTP responses (sometimes) eg 404, 302
                 if should_return:
+                    if isinstance(result, Exception):
+                        raise result
                     return result
 
-        if not (assets_path / request.match_info['path']).exists():
-            raise HTTPNotFound()
-        return web.FileResponse(assets_path / request.match_info['path'])
+        file_path = assets_path / request.match_info['path']
+        if not file_path.exists():
+            raise HTTPNotFound()  # ie 404
+        return web.FileResponse(file_path)
 
     app = WrappedApplication()
     app.add_routes([web.get('/{path:.*}', static_file_serve), web.post('/{path:.*}', static_file_serve)])
@@ -129,6 +167,6 @@ async def app_runner(assets_path, free_port: int = None):
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    app = loop.run_until_complete(app_runner(Path(__file__).parents[1] / 'assets_path', 55015))
+    loop.run_until_complete(app_runner(Path(__file__).parents[1] / 'assets_path', 55015))
     while True:
         loop.run_until_complete(asyncio.sleep(0.5))
