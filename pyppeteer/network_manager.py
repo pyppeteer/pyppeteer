@@ -672,7 +672,7 @@ class SecurityDetails:
 
 
 def headersArray(headers: Dict[str, str]) -> List[Dict[str, str]]:
-    return [{'name': k, 'value': v} for k, v in headers.items() if v is not None]
+    return [{'name': k, 'value': str(v)} for k, v in headers.items() if v is not None]
 
 
 STATUS_TEXTS = {num.value: code for code, num in vars(HTTPStatus).items() if isinstance(num, HTTPStatus)}
