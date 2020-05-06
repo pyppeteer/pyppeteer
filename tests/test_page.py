@@ -551,7 +551,7 @@ class TestSetContent:
             await img_fut
             return web.Response(body='img')
 
-        server.app.add_pre_request_callback(img_path, image_responder, should_return=True)
+        server.app.add_pre_request_subscriber(img_path, image_responder, should_return=True)
 
         loaded = False
 

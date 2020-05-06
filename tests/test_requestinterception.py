@@ -4,6 +4,7 @@ from contextlib import suppress
 from http import HTTPStatus
 
 import pytest
+from aiohttp import web
 from pyppeteer.errors import BrowserError
 from syncer import sync
 from tests import utils
@@ -39,7 +40,7 @@ class TestPageSetRequestInterception:
     # see https://github.com/puppeteer/puppeteer/issues/3973
     @sync
     async def test_works_when_POST_redirects_with_302(self, isolated_page, server):
-        server.app.one_time_redirect('/rredirect', server.empty_page)
+        server.app.set_one_time_redirects('/rredirect', server.empty_page)
         await isolated_page.goto(server.empty_page)
         await isolated_page.setRequestInterception(True)
 
@@ -56,9 +57,8 @@ class TestPageSetRequestInterception:
 
     @sync
     async def test_works_with_header_manipulation_and_redirect(self, isolated_page, server):
-        server.app.one_time_redirect('/rrredirect', '/button.html')
+        server.app.set_one_time_redirects('/rrredirect', '/button.html')
         await isolated_page.setRequestInterception(True)
-        await isolated_page.goto(server.empty_page)
 
         @isolated_page.on('request')
         async def header_manipulator(request):
@@ -136,7 +136,7 @@ class TestPageSetRequestInterception:
     @sync
     async def test_works_with_redirect_within_synchronous_XHR(self, isolated_page, server):
         await isolated_page.goto(server.empty_page)
-        server.app.one_time_redirect('/logo.png', '/pptr.png')
+        server.app.set_one_time_redirects('/logo.png', '/pptr.png')
         await isolated_page.setRequestInterception(True)
         isolated_page.on('request', request_continuer)
         status = await isolated_page.evaluate(
@@ -236,10 +236,13 @@ class TestPageSetRequestInterception:
             await req.continue_()
             requests.append(req)
 
-        server.app.one_time_redirect('/non-existing-page.html', '/non-existing-page-2.html')
-        server.app.one_time_redirect('/non-existing-page-2.html', '/non-existing-page-3.html')
-        server.app.one_time_redirect('/non-existing-page-3.html', '/non-existing-page-4.html')
-        server.app.one_time_redirect('/non-existing-page-4.html', server.empty_page)
+        server.app.set_one_time_redirects(
+            '/non-existing-page.html',
+            '/non-existing-page-2.html',
+            '/non-existing-page-3.html',
+            '/non-existing-page-4.html',
+            server.empty_page,
+        )
 
         resp = await isolated_page.goto(server / 'non-existing-page.html')
         assert resp.status == 200
@@ -268,10 +271,8 @@ class TestPageSetRequestInterception:
                 requests.append(req)
 
         end_of_chain_resp = 'body {box-sizing: border-box; }'
-        server.app.one_time_redirect('/one-style.css', '/two-style.css')
-        server.app.one_time_redirect('/two-style.css', '/three-style.css')
-        server.app.one_time_redirect('/three-style.css', '/four-style.css')
-        server.app.add_one_time_request_resp('/four-style.css', end_of_chain_resp)
+        server.app.set_one_time_redirects('/one-style.css', '/two-style.css', '/three-style.css', '/four-style.css')
+        server.app.set_one_time_response('/four-style.css', end_of_chain_resp)
 
         resp = await isolated_page.goto(server / 'one-style.html')
         assert resp.status == 200
@@ -290,8 +291,7 @@ class TestPageSetRequestInterception:
     @sync
     async def test_redirection_abortibility(self, isolated_page, server):
         await isolated_page.setRequestInterception(True)
-        server.app.one_time_redirect('/non-existing.json', '/non-existing-2.json')
-        server.app.one_time_redirect('/non-existing-2.json', '/simple.html')
+        server.app.set_one_time_redirects('/non-existing.json', '/non-existing-2.json', '/simple.html')
 
         @isolated_page.on('request')
         async def request_aborter(req):
@@ -313,34 +313,43 @@ class TestPageSetRequestInterception:
         assert 'Failed to fetch' in res or 'NetworkError' in res
 
     @sync
-    async def test_works_with_equal_requests(self, isolated_page, server):
+    async def test_works_with_equal_requests(self, isolated_page, server, event_loop):
         await isolated_page.goto(server.empty_page)
-        response_count = 1
+        response_count = 0
 
-        async def server_response_handler(handler):
+        def server_response_handler():
             nonlocal response_count
-            await handler.write(f'{response_count*11}')
             response_count += 1
+            return web.Response(body=f'{response_count*11}'.encode())
 
-        server.app.add_one_time_request_precondition('/zzz', server_response_handler)
+        server.app.add_pre_request_subscriber('/zzz1', server_response_handler, should_return=True)
+        server.app.add_pre_request_subscriber('/zzz2', server_response_handler, should_return=True)
+        server.app.add_pre_request_subscriber('/zzz3', server_response_handler, should_return=True)
+
         await isolated_page.setRequestInterception(True)
 
         spinner = False
 
         @isolated_page.on('request')
-        async def request_aborter(req):
+        def request_aborter(req):
+            # note: in most test, the speed at which we continue/abort requests doesn't really matter, however it does
+            # here. We need to schedule the execution as fast as possible otherwise all 3 requests will pass before
+            # spinner is flipped.
             nonlocal spinner
-            if utils.isFavicon(req) or spinner:
-                await req.continue_()
-            elif spinner:
-                await req.abort()
+            if utils.isFavicon(req):
+                event_loop.create_task(req.continue_())
+                return
+            if spinner:
+                event_loop.create_task(req.abort())
+            else:
+                event_loop.create_task(req.continue_())
             spinner = not spinner
 
         results = await isolated_page.evaluate(
             '''() => Promise.all([
-            fetch('/zzz').then(response => response.text()).catch(e => 'FAILED'),
-            fetch('/zzz').then(response => response.text()).catch(e => 'FAILED'),
-            fetch('/zzz').then(response => response.text()).catch(e => 'FAILED'),
+            fetch('/zzz1').then(response => response.text()).catch(e => 'FAILED'),
+            fetch('/zzz2').then(response => response.text()).catch(e => 'FAILED'),
+            fetch('/zzz3').then(response => response.text()).catch(e => 'FAILED'),
         ])'''
         )
         assert results == ['11', 'FAILED', '22']
@@ -428,7 +437,13 @@ class TestPageSetRequestInterception:
         await isolated_page.setRequestInterception(True)
 
         request = None
-        isolated_page.on('request', var_setter('request'))
+
+        @isolated_page.on('request')
+        async def request_continuer_and_recorder(req):
+            nonlocal request
+            request = req
+            await req.continue_()
+
         await isolated_page.Jeval('iframe', '(frame, url) => frame.src = url', server.empty_page)
         # wait for request to be intercepted
         await utils.waitEvent(isolated_page, 'request')
@@ -534,7 +549,7 @@ class TestRequestContinue:
             server.app.waitForRequest('/sleep.zzz'),
             isolated_page.evaluate('fetch("/sleep.zzz", {method: "POST", body:"birdy"})'),
         )
-        assert server_req.body.decode() == 'doggo'
+        assert await server_req.text() == 'doggo'
 
     @sync
     async def test_amends_both_POST_data_and_method_on_nav(self, isolated_page, server):
@@ -548,7 +563,7 @@ class TestRequestContinue:
             server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page)
         )
         assert server_req.method == 'POST'
-        assert server_req.body.decode() == 'doggo'
+        assert await server_req.text() == 'doggo'
 
 
 class TestRequestRespond:
@@ -609,7 +624,8 @@ class TestRequestRespond:
             img.src = serverURL + '/does-not-exist.png';
             document.body.appendChild(img);
             return new Promise(fulfill => img.onload = fulfill);
-        }'''
+        }''',
+            server.base,
         )
 
         img = await isolated_page.J('img')

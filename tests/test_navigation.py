@@ -203,7 +203,7 @@ class TestPage:
             holders = {}
             for char in 'abcd':
                 holders[char], resolver = request_holder()
-                server.app.add_pre_request_callback(f'/fetch-request-{char}.js', resolver, should_return=True)
+                server.app.add_pre_request_subscriber(f'/fetch-request-{char}.js', resolver, should_return=True)
 
             initial_fetch_resources_requested = asyncio.gather(
                 *[server.app.waitForRequest(f'/fetch-request-{char}.js') for char in 'abc']
