@@ -4,10 +4,10 @@ pyppeteer2
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
 [![PyPI version](https://img.shields.io/pypi/pyversions/pyppeteer2.svg)](https://pypi.python.org/pypi/pyppeteer2)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://pyppeteer.github.io/pyppeteer2/)
-[![Travis status](https://travis-ci.com/pyppeteer/pyppeteer2.svg)](https://travis-ci.com/pyppeteer/pyppeteer2)
+[![CircleCI](https://circleci.com/gh/pyppeteer/pyppeteer2.svg?style=shield)](https://circleci.com/gh/circleci/circleci-docs)
 [![codecov](https://codecov.io/gh/pyppeteer/pyppeteer2/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer2)
 
-_Note: this is a WIP continuation of the pyppeteer project_
+_Note: this is a continuation of the original, apparently abandoned [pyppeteer project](https://github.com/miyakogi/pyppeteer)_
 
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
