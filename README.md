@@ -7,7 +7,7 @@ pyppeteer
 [![CircleCI](https://circleci.com/gh/pyppeteer/pyppeteer.svg?style=shield)](https://circleci.com/gh/circleci/circleci-docs)
 [![codecov](https://codecov.io/gh/pyppeteer/pyppeteer/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer)
 
-_Note: this is a continuation of the original, apparently abandoned [pyppeteer project](https://github.com/miyakogi/pyppeteer)_
+_Note: this is a continuation of the [pyppeteer project](https://github.com/miyakogi/pyppeteer)_
 
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
