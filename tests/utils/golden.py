@@ -15,7 +15,7 @@ def compare_images(actual: bytes, expected: bytes):
     if expected.size != actual.size:
         res['error'] = f'Sizes differ: expected {"x".join(expected.size)}, got {"x".join(actual.size)}'
         return res
-    mismatch = pixelmatch(expected, actual, expected, tolerance=0.1)
+    mismatch = pixelmatch(expected, actual, expected, threshold=0.1)
     if mismatch > 0:
         res['diff'] = output.tobytes()
 
