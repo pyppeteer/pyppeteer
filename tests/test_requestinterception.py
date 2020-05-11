@@ -631,7 +631,7 @@ class TestRequestRespond:
         )
 
         img = await isolated_page.J('img')
-        assert isGolden(img.screenshot(), 'mock-binary-response.png')
+        assert isGolden(await img.screenshot(), 'mock-binary-response.png')
 
     @sync
     async def test_stringifies_intercepted_request_response_headers(self, isolated_page, server):
