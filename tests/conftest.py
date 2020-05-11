@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import random
-import ssl
-import string
+import mimetypes
 from contextlib import suppress
 from pathlib import Path
 from urllib.parse import urljoin
@@ -14,6 +12,7 @@ from pyppeteer.errors import PageError
 from pyppeteer.page import Page
 from pyppeteer.util import get_free_port
 from syncer import sync
+from tests.utils.golden import golden_comparators
 from tests.utils.server import WrappedApplication, app_runner
 from websockets import ConnectionClosedError
 
@@ -41,6 +40,7 @@ def pytest_configure(config):
 class ServerURL:
     def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_instance: bool = False):
         self.app: WrappedApplication = app
+        # https will be at port+1
         self.port = port + int(https)
         del port  # make sure we always refer to updated port
         self.base = f'http{"s" if https else ""}://{"127.0.0.1" if cross_process else "localhost"}:{self.port}'
@@ -60,6 +60,7 @@ class ServerURL:
         return f'<ServerURL "{self.base}">'
 
     def __truediv__(self, other):
+        """allows you to do stuff like ServerURL / 'button.html' which becomes 'http://localhost:453/button.html'"""
         return urljoin(self.base, other)
 
 
@@ -84,13 +85,36 @@ def golden_firefox_dir(test_dir):
 
 
 @pytest.fixture(scope='session')
-def isGolden(golden_chrome_dir, golden_firefox_dir):
-    def comparer(input_bytes_or_str, output_file_name):
+def isGolden(golden_chrome_dir, golden_firefox_dir, firefox):
+    def comparer(input_bytes_or_str, actual_file_name):
         read_fn = 'read_bytes' if isinstance(input_bytes_or_str, bytes) else 'read_text'
-        if not (golden_firefox_dir / output_file_name).exists() and not (golden_chrome_dir / output_file_name).exists():
-            raise FileNotFoundError(f'{output_file_name} does not exist in either golden directory!')
+        if firefox:
+            gdir = golden_firefox_dir
+        else:
+            gdir = golden_chrome_dir
+        output_file = gdir / actual_file_name
+        if not output_file.exists():
+            raise FileNotFoundError(f'{actual_file_name} does not exist in the golden directory! (dir={output_file})')
 
-        # todo: implement this
+        mime_type = mimetypes.guess_type(output_file)[0]
+        try:
+            comparator = golden_comparators[mime_type]
+        except KeyError:
+            raise KeyError(f'No comparator known for mime type "{mime_type}"')
+
+        if isinstance(input_bytes_or_str, bytes):
+            result = comparator(input_bytes_or_str, output_file.read_bytes())
+        else:
+            result = comparator(input_bytes_or_str, output_file.read_text())
+
+        if not result:
+            return True
+
+        if result.get('diff'):
+            diff_path = None
+        if result.get('error'):
+            raise AssertionError(f'golden mismatch for {actual_file_name}: {result["error"]}')
+
         return True
 
     return comparer
