@@ -3,6 +3,7 @@ import logging
 import mimetypes
 from contextlib import suppress
 from pathlib import Path
+from shutil import copyfile
 from urllib.parse import urljoin
 
 import pytest
@@ -75,43 +76,51 @@ def assets(test_dir):
 
 
 @pytest.fixture(scope='session')
-def golden_chrome_dir(test_dir):
-    return test_dir / 'golden-chromium'
+def isGolden(test_dir, firefox):
+    def add_file_name_suffix(file: Path, name_suffix: str, file_suffix: str = None):
+        injected = file.parent / (file.stem + name_suffix + file.suffix)
+        if file_suffix:
+            injected = injected.with_suffix(file_suffix)
+        return injected
 
-
-@pytest.fixture(scope='session')
-def golden_firefox_dir(test_dir):
-    return test_dir / 'golden-firefox'
-
-
-@pytest.fixture(scope='session')
-def isGolden(golden_chrome_dir, golden_firefox_dir, firefox):
     def comparer(input_bytes_or_str, actual_file_name):
-        read_fn = 'read_bytes' if isinstance(input_bytes_or_str, bytes) else 'read_text'
         if firefox:
-            gdir = golden_firefox_dir
+            output_suffix = 'firefox'
         else:
-            gdir = golden_chrome_dir
-        output_file = gdir / actual_file_name
-        if not output_file.exists():
-            raise FileNotFoundError(f'{actual_file_name} does not exist in the golden directory! (dir={output_file})')
+            output_suffix = 'chromium'
 
-        mime_type = mimetypes.guess_type(output_file)[0]
+        output = test_dir / f'output-{output_suffix}'
+        output.mkdir(exist_ok=True)
+        gdir = test_dir / f'golden-{output_suffix}'
+
+        golden_file = gdir / actual_file_name
+        actual_file_output = output / actual_file_name
+        if not golden_file.exists():
+            raise FileNotFoundError(f'{actual_file_name} does not exist in the golden directory! (dir={golden_file})')
+
+        mime_type = mimetypes.guess_type(golden_file)[0]
         try:
             comparator = golden_comparators[mime_type]
         except KeyError:
             raise KeyError(f'No comparator known for mime type "{mime_type}"')
 
         if isinstance(input_bytes_or_str, bytes):
-            result = comparator(input_bytes_or_str, output_file.read_bytes())
+            result = comparator(input_bytes_or_str, golden_file.read_bytes())
         else:
-            result = comparator(input_bytes_or_str, output_file.read_text())
+            result = comparator(input_bytes_or_str, golden_file.read_text())
 
         if not result:
             return True
 
+        if isinstance(input_bytes_or_str, bytes):
+            add_file_name_suffix(actual_file_output, '-actual').write_bytes(input_bytes_or_str)
+        else:
+            add_file_name_suffix(actual_file_output, '-actual').write_text(input_bytes_or_str)
+        copyfile(golden_file, output / add_file_name_suffix(actual_file_name, 'expected'))
+
         if result.get('diff'):
-            diff_path = None
+            add_file_name_suffix(actual_file_output, '-diff', result.get('diffExtension'))
+
         if result.get('error'):
             raise AssertionError(f'golden mismatch for {actual_file_name}: {result["error"]}')
 
