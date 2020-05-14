@@ -1,7 +1,7 @@
 """Test queryselector set of methods.
-Pyppeteer2 uses functions which have following counterparts in original puppeteer node.js:
+Pyppeteer uses functions which have following counterparts in original puppeteer node.js:
 ┌───────────────┬─────────────────────────────┬──────────────────────┐
-│   puppeteer   │         pyppeteer2          │ pyppeteer2 shorthand │
+│   puppeteer   │         pyppeteer           │ pyppeteer shorthand  │
 ├───────────────┼─────────────────────────────┼──────────────────────┤
 │ Page.$()      │ Page.querySelector()        │ Page.J()             │
 │ Page.$$()     │ Page.querySelectorAll()     │ Page.JJ()            │

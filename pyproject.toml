@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "pyppeteer2"
+name = "pyppeteer"
 version = "0.2.2"
 description = "Headless chrome/chromium automation library (unofficial port of puppeteer)"
 readme = 'README.md'
 license = "MIT"
-homepage = "https://github.com/pyppeteer/pyppeteer2"
-repository = "https://github.com/pyppeteer/pyppeteer2"
+homepage = "https://github.com/pyppeteer/pyppeteer"
+repository = "https://github.com/pyppeteer/pyppeteer"
 keywords=['pyppeteer', 'puppeteer', 'chrome', 'chromium']
 authors = [
     "pyppeteer <pyppeteer@protonmail.com>",
@@ -38,10 +38,10 @@ exclude = [
 ]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/pyppeteer/pyppeteer2/issues"
+"Bug Tracker" = "https://github.com/pyppeteer/pyppeteer/issues"
 
 [tool.poetry.scripts]
-pyppeteer2-install = 'pyppeteer.command:install'
+pyppeteer-install = 'pyppeteer.command:install'
 
 [tool.poetry.dependencies]
 python = "^3.6.1"
