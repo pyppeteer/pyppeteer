@@ -272,7 +272,7 @@ class ChromeLauncher(BaseBrowserLauncher):
         if not any(x.startswith('--remote-debugging-') for x in chrome_args):
             chrome_args.append(f'--remote-debugging-port={get_free_port()}')
         if not any(x.startswith(f'--user-data-dir') for x in chrome_args):
-            profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_chrome_profile_')
+            profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer_chrome_profile_')
             chrome_args.append(f'--user-data-dir={profile_path.name}')
 
         if not executablePath:
@@ -598,7 +598,7 @@ class FirefoxLauncher(BaseBrowserLauncher):
         return proc_args
 
     def _create_profile(self, extra_prefs: Dict[str, Any]) -> tempfile.TemporaryDirectory:
-        profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer2_firefox_profile')
+        profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer_firefox_profile')
         prefs = {**self.DEFAULT_PROFILE_PREFS, **extra_prefs}
         serialized_prefs = [f'user_pref({json.dumps(key)}, {json.dumps(val)}' for key, val in prefs.items()]
         with open(Path(profile_path.name).joinpath('user.js'), 'w') as user:
@@ -663,7 +663,7 @@ def resolveExecutablePath(projectRoot: Path, preferred_revision: str) -> Tuple[O
             return None, missing_text
     revision_info = browser_fetcher.revision_info(preferred_revision)
     if not revision_info['local']:
-        missing_text = 'Browser is not downloaded. Try running pyppeteer2-install'
+        missing_text = 'Browser is not downloaded. Try running pyppeteer-install'
     return revision_info['executablePath'], missing_text
 
 
