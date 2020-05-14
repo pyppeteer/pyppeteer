@@ -93,6 +93,7 @@ def isGolden(test_dir, firefox):
         output.mkdir(exist_ok=True)
         gdir = test_dir / f'golden-{output_suffix}'
 
+        actual_file_name = Path(actual_file_name)
         golden_file = gdir / actual_file_name
         actual_file_output = output / actual_file_name
         if not golden_file.exists():
@@ -116,7 +117,7 @@ def isGolden(test_dir, firefox):
             add_file_name_suffix(actual_file_output, '-actual').write_bytes(input_bytes_or_str)
         else:
             add_file_name_suffix(actual_file_output, '-actual').write_text(input_bytes_or_str)
-        copyfile(golden_file, output / add_file_name_suffix(actual_file_name, 'expected'))
+        copyfile(golden_file, output / add_file_name_suffix(actual_file_name, '-expected'))
 
         if result.get('diff'):
             add_file_name_suffix(actual_file_output, '-diff', result.get('diffExtension'))

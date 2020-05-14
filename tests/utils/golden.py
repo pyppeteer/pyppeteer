@@ -13,7 +13,7 @@ def compare_images(actual: bytes, expected: bytes):
     output = Image.new('RGBA', expected.size)
     res = {}
     if expected.size != actual.size:
-        res['error'] = f'Sizes differ: expected {"x".join(expected.size)}, got {"x".join(actual.size)}'
+        res['error'] = f'Sizes differ: expected {"x".join(map(str, expected.size))}, got {"x".join(map(str, actual.size))}'
         return res
     mismatch = pixelmatch(expected, actual, expected, threshold=0.1)
     if mismatch > 0:
