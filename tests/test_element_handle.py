@@ -6,7 +6,7 @@ import sys
 
 import pyppeteer
 import pytest
-from pyppeteer.errors import ElementHandleError
+from pyppeteer.errors import BrowserError, ElementHandleError
 from syncer import sync
 
 from .utils import attachFrame
@@ -24,17 +24,17 @@ class TestBoundingBox:
     @sync
     async def test_nested_frame(self, isolated_page, server, firefox):
         await isolated_page.setViewport({'width': 500, 'height': 500})
-        await isolated_page.goto(server / 'nested-frames.html')
+        await isolated_page.goto(server / 'frames/nested-frames.html')
         nestedFrame = isolated_page.frames[1].childFrames[1]
         elementHandle = await nestedFrame.J('div')
         box = await elementHandle.boundingBox()
         if firefox:
             assert box == {'x': 28, 'y': 182, 'width': 254, 'height': 18}
         else:
-            assert box == {'x': 28, 'y': 260, 'width': 254, 'height': 18}
+            assert box == {'x': 28, 'y': 260, 'width': 264, 'height': 18}
 
     @sync
-    async def test_invisible_element(self, isolated_page, server):
+    async def test_returns_None_for_invisible_element(self, isolated_page, server):
         await isolated_page.setContent('<div style="display: none;">hi</div>')
         element = await isolated_page.J('div')
         assert await element.boundingBox() is None
@@ -142,8 +142,7 @@ class TestBoxModel:
     async def test_returns_None_for_invisible_elements(self, isolated_page, server):
         await isolated_page.setContent('<div style="display:none;">hi</div>')
         element = await isolated_page.J('div')
-        with self.assertLogs('pyppeteer.element_handle', logging.DEBUG):
-            assert await element.boxModel() is None
+        assert await element.boxModel() is None
 
 
 class TestContentFrame:
@@ -175,16 +174,15 @@ class TestClick:
     async def test_works_with_text_nodes(self, isolated_page, server):
         await isolated_page.goto(server / 'button.html')
         buttonTextNode = await isolated_page.evaluateHandle('() => document.querySelector("button").firstChild')
-        with pytest.raises(ElementHandleError, match='Node is not of type HTMLElement'):
+        with pytest.raises(BrowserError, match='Node is not of type HTMLElement'):
             await buttonTextNode.click()
-        assert 'Node is not of type HTMLElement' == cm.exception.args[0]
 
     @sync
     async def test_raises_for_detached_nodes(self, isolated_page, server):
         await isolated_page.goto(server / 'button.html')
         button = await isolated_page.J('button')
         await isolated_page.evaluate('btn => btn.remove()', button)
-        with pytest.raises(ElementHandleError, match='Node is detached from document') as cm:
+        with pytest.raises(BrowserError, match='Node is detached from document') as cm:
             await button.click()
 
     @sync
@@ -192,7 +190,7 @@ class TestClick:
         await isolated_page.goto(server / 'button.html')
         button = await isolated_page.J('button')
         await isolated_page.evaluate('btn => btn.style.display = "none"', button)
-        with pytest.raises(ElementHandleError, match='Node is either not visible or not an HTMLElement'):
+        with pytest.raises(BrowserError, match='Node is either not visible or not an HTMLElement'):
             await button.click()
 
     @sync
@@ -200,15 +198,16 @@ class TestClick:
         await isolated_page.goto(server / 'button.html')
         button = await isolated_page.J('button')
         await isolated_page.evaluate('btn => btn.parentElement.style.display = "none"', button)
-        with pytest.raises(ElementHandleError, match='Node is either not visible or not an HTMLElement'):
+        with pytest.raises(BrowserError, match='Node is either not visible or not an HTMLElement'):
             await button.click()
 
     @sync
     async def test_raises_for_br_elements(self, isolated_page, server):
         await isolated_page.setContent('hello<br>goodbye')
         br = await isolated_page.J('br')
-        with pytest.raises(ElementHandleError, match='Node is either not visible or not an HTMLElement'):
+        with pytest.raises(BrowserError, match='Node is either not visible or not an HTMLElement'):
             await br.click()
+
 
 class TestHover:
     @sync

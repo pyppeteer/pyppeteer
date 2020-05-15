@@ -45,7 +45,7 @@ class ExecutionContext:
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> Union['JSHandle', 'ElementHandle']:
         """Execute ``pageFunction`` on this context.
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
