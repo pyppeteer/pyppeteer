@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
-import sys
-
-import pyppeteer
 import pytest
-from pyppeteer.errors import BrowserError, ElementHandleError
+from pyppeteer.errors import BrowserError
 from syncer import sync
 
 from .utils import attachFrame
@@ -23,11 +19,13 @@ class TestBoundingBox:
 
     @sync
     async def test_nested_frame(self, isolated_page, server, firefox):
-        # todo: different elements selected (eg scriptid 9 vs 11?)
+        # caution: flaky test is times past due to (maybe) the server
+        # not responding fast enough (unclear and can't reproduce failure) anymore
         await isolated_page.setViewport({'width': 500, 'height': 500})
         await isolated_page.goto(server / 'frames/nested-frames.html')
         nestedFrame = isolated_page.frames[1].childFrames[1]
         elementHandle = await nestedFrame.J('div')
+        # add sleep here if you suspect the server isn't loading the
         box = await elementHandle.boundingBox()
         if firefox:
             assert box == {'x': 28, 'y': 182, 'width': 254, 'height': 18}

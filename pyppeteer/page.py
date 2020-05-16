@@ -1142,7 +1142,7 @@ class Page(AsyncIOEventEmitter):
             elif mimeType == 'image/jpeg':
                 type_ = 'jpeg'
             else:
-                raise ValueError(f'Unsupported screenshot mime type: {mimeType}. Specify the type manually.')
+                raise ValueError(f'Unsupported screenshot mime type: {mimeType}')
         if quality:
             if type_ != 'jpeg':
                 raise ValueError(f'Screenshot quality is unsupported for {type_} screenshot')
