@@ -180,8 +180,8 @@ class ElementHandle(JSHandle):
         # after swallowing: Node is either invisible or not an HTMLElement
         async def silent_get_quads():
             try:
-                await self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']})
-            except NetworkError:
+                return await self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']})
+            except NetworkError as e:
                 logger.exception('Failed to retrieve content quads')
 
         result, layoutMetrics = await asyncio.gather(silent_get_quads(), self._client.send('Page.getLayoutMetrics'),)

@@ -23,6 +23,7 @@ class TestBoundingBox:
 
     @sync
     async def test_nested_frame(self, isolated_page, server, firefox):
+        # todo: different elements selected (eg scriptid 9 vs 11?)
         await isolated_page.setViewport({'width': 500, 'height': 500})
         await isolated_page.goto(server / 'frames/nested-frames.html')
         nestedFrame = isolated_page.frames[1].childFrames[1]
@@ -157,7 +158,7 @@ class TestContentFrame:
 
 class TestClick:
     @sync
-    async def test_clik(self, isolated_page, server):
+    async def test_basic_usage(self, isolated_page, server):
         await isolated_page.goto(server / 'input/button.html')
         button = await isolated_page.J('button')
         await button.click()
