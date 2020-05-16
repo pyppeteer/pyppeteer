@@ -99,9 +99,3 @@ class CDPSession(AsyncIOEventEmitter):
         self._callbacks.clear()
         self._connection = None
         self.emit(Events.CDPSession.Disconnected)
-
-    def _createSession(self, targetType: str, sessionId: str) -> 'CDPSession':
-        # TODO this is only used internally and is confusing with createSession
-        session = CDPSession(self, targetType, sessionId, self.loop)
-        self._sessions[sessionId] = session
-        return session

@@ -3,14 +3,13 @@ import copy
 import logging
 import math
 import os
-from idlelib.rpc import RemoteObject
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError
-from pyppeteer.models import JSFunctionArg, MouseButton
+from pyppeteer.models import JSFunctionArg, MouseButton, Protocol
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
@@ -36,7 +35,7 @@ class JSHandle:
     with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.
     """
 
-    def __init__(self, context: 'ExecutionContext', client: 'CDPSession', remoteObject: 'RemoteObject'):
+    def __init__(self, context: 'ExecutionContext', client: 'CDPSession', remoteObject: Protocol.Runtime.RemoteObject):
         self._context = context
         self._client = client
         self._remoteObject = remoteObject
@@ -120,7 +119,7 @@ class ElementHandle(JSHandle):
         self,
         context: 'ExecutionContext',
         client: CDPSession,
-        remoteObject: RemoteObject,
+        remoteObject: Protocol.Runtime.RemoteObject,
         page: 'Page',
         frameManager: 'FrameManager',
     ):
@@ -206,7 +205,7 @@ class ElementHandle(JSHandle):
         try:
             return await self._client.send('DOM.getBoxModel', {'objectId': self._remoteObject['objectId']})
         except Exception as e:
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     def _fromProtocolQuad(self, quad):
         return [
@@ -259,7 +258,7 @@ class ElementHandle(JSHandle):
             """(element, values) => {
               if (element.nodeName.toLowerCase() !== 'select')
                 throw new Error('Element is not a <select> element.');
-        
+
               const options = Array.from(element.options);
               element.value = undefined;
               for (const option of options) {
@@ -494,7 +493,7 @@ class ElementHandle(JSHandle):
             tweetHandle = await page.querySelector('.tweet')
             assert (await tweetHandle.querySelectorEval('.like', 'node => node.innerText')) == 100
             assert (await tweetHandle.Jeval('.retweets', 'node => node.innerText')) == 10
-        """  # noqa: E501
+        """
         elementHandle = await self.querySelector(selector)
         if not elementHandle:
             raise ElementHandleError(f'Error: failed to find element matching selector "{selector}"')
@@ -526,9 +525,9 @@ class ElementHandle(JSHandle):
 
             feedHandle = await page.J('.feed')
             assert (await feedHandle.JJeval('.tweet', '(nodes => nodes.map(n => n.innerText))')) == ['Hello!', 'Hi!']
-        """  # noqa: E501
+        """
         arrayHandle = await self.executionContext.evaluateHandle(
-            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector  # noqa: E501
+            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector
         )
         result = await self.executionContext.evaluate(pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()

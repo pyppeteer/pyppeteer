@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
@@ -119,12 +118,12 @@ class NetworkManager(AsyncIOEventEmitter):
         is_data_request = event.get('request', {}).get('url', '').startswith('data:')
         if self._protocolRequestInterceptionEnabled and not is_data_request:
             requestId = event['requestId']
-            interceptionId = self._requestIdToInterceptionId.get(requestId)  # noqa: E501
+            interceptionId = self._requestIdToInterceptionId.get(requestId)
             if interceptionId:
                 self._onRequest(event, interceptionId)
-                self._requestIdToInterceptionId.pop(requestId)  # noqa: E501
+                self._requestIdToInterceptionId.pop(requestId)
             else:
-                self._requestIdToResponseWillBeSent[requestId] = event  # noqa: E501
+                self._requestIdToResponseWillBeSent[requestId] = event
             return
         self._onRequest(event, None)
 
@@ -403,13 +402,12 @@ class Request:
             overrides['headers'] = headersArray(overrides['headers'])
 
         self._interceptionHandled = True
-        # todo: verify whether undefined == not specifying at all
         try:
             await self._client.send('Fetch.continueRequest', {'requestId': self._interceptionId, **overrides})
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     async def respond(self, response: Dict[str, Any]) -> None:
         """Fulfills request with given response.
@@ -431,7 +429,7 @@ class Request:
         self._interceptionHandled = True
 
         if isinstance(response.get('body'), str):
-            responseBody: bytes = response['body'].encode('utf-9')
+            responseBody: bytes = response['body'].encode('utf-8')
         else:
             responseBody = response.get('body')
 
@@ -452,10 +450,9 @@ class Request:
                 },
             )
         except Exception as e:
-            # todo: find out what error is raised from here
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred fulfilling a response: {e}')
 
     async def abort(self, errorCode: str = 'failed') -> None:
         """Abort request.
@@ -505,7 +502,7 @@ class Request:
         except Exception as e:
             # In certain cases, protocol will return error if the request was already canceled
             # or the page was closed. We should tolerate these errors.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     @property
     def _actionable_request(self) -> bool:
@@ -596,7 +593,7 @@ class Response:
                 body = response.get('body', '')
                 if response.get('base64Encoded'):
                     return base64.b64decode(body)
-                # b64decode returns bytes, and body is str. We encode body so that this fn always returns bytes
+                # b64decode gives us bytes, we encode this so that this fn always returns a bytes
                 return body.encode('utf-8')
 
             self._contentFuture = self._client.loop.create_task(buffer_read())
@@ -605,7 +602,7 @@ class Response:
     @property
     async def text(self) -> str:
         """Text representation of response body."""
-        return (await self.buffer()).decode('utf-8')
+        return (await self.buffer()).decode('utf-8', errors='replace')
 
     @property
     async def json(self) -> Dict[str, Any]:

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from copy import deepcopy
 import glob
 import logging
 import os
@@ -12,31 +11,28 @@ import sys
 import tempfile
 import time
 import unittest
+from copy import deepcopy
 from unittest import mock
 
-from syncer import sync
+import pytest
 import websockets
-
-from pyppeteer import connect, launch, executablePath, defaultArgs
-from pyppeteer.browser_fetcher import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import launcher
 from pyppeteer.util import get_free_port
+from syncer import sync
 
-from .base import DEFAULT_OPTIONS
 from .utils.server import get_application
-import pytest
 
 
 class TestLauncher(unittest.TestCase):
-    def setUp(self):
-        self.headless_options = [
-            '--headless',
-            '--hide-scrollbars',
-            '--mute-audio',
-        ]
-        if current_platform().startswith('win'):
-            self.headless_options.append('--disable-gpu')
+    # def setUp(self):
+    #     self.headless_options = [
+    #         '--headless',
+    #         '--hide-scrollbars',
+    #         '--mute-audio',
+    #     ]
+    #     if current_platform().startswith('win'):
+    #         self.headless_options.append('--disable-gpu')
 
     def check_default_args(self, launcher):
         for opt in self.headless_options:
@@ -253,7 +249,7 @@ class TestLogLevel(unittest.TestCase):
         assert not self.logger.isEnabledFor(logging.DEBUG)
         self.mock.assert_not_called()
 
-    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
+    # @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_level_info(self):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.INFO)
@@ -265,7 +261,7 @@ class TestLogLevel(unittest.TestCase):
 
         assert 'listening on' in self.mock.call_args_list[0][0][0]
 
-    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
+    # @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_level_debug(self):
         browser = await launch(args=['--no-sandbox'], logLevel=logging.DEBUG)
@@ -284,7 +280,7 @@ class TestLogLevel(unittest.TestCase):
             assert 'SEND' in self.mock.call_args_list[1][0][0]
             assert 'RECV' in self.mock.call_args_list[2][0][0]
 
-    @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
+    # @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
     async def test_connect_debug(self):
         browser = await launch(args=['--no-sandbox'])
@@ -371,7 +367,7 @@ class TestUserDataDir(unittest.TestCase):
         browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
-        await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
+        await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')
         await browser.close()
 
         browser2 = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir)

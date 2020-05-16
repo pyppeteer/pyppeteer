@@ -1,22 +1,14 @@
 import asyncio
 from contextlib import suppress
-from typing import Optional, List
+from typing import List
 
 import pytest
 from syncer import sync
 
-import tests.utils.server
 from pyppeteer import devices
-from pyppeteer.errors import TimeoutError, ElementHandleError, NetworkError, BrowserError, PageError
+from pyppeteer.errors import BrowserError, ElementHandleError, NetworkError, PageError, TimeoutError
 from pyppeteer.page import ConsoleMessage
-from tests.utils import waitEvent, gather_with_timeout, attachFrame, var_setter
-
-
-@sync
-async def test_async_stacks(isolated_page, server):
-    with pytest.raises(Exception) as excpt:
-        await isolated_page.goto(server.empty_page)
-        assert __file__ in str(excpt)
+from tests.utils import attachFrame, gather_with_timeout, var_setter, waitEvent
 
 
 @sync
@@ -118,9 +110,8 @@ class TestBrowserContextOverridePermissions:
     @sync
     async def test_fail_on_bad_permission(self, isolated_page, isolated_context, server):
         await isolated_page.goto(server.empty_page)
-        with pytest.raises(RuntimeError) as excpt:
+        with pytest.raises(RuntimeError, match='Unknown permission: foo'):
             await isolated_context.overridePermissions(server.empty_page, ['foo'])
-        assert 'Unknown permission: foo' in str(excpt)
 
     @sync
     async def test_grant_permission_when_overridden(self, isolated_page, isolated_context, server):
@@ -210,7 +201,6 @@ class TestExecutionContextQueryObjects:
         await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
         proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
         objs_handle = await isolated_page.queryObjects(proto_handle)
-        # todo (Mattwmaster58): correct typing
         assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
         assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
             'hello',
@@ -233,16 +223,14 @@ class TestExecutionContextQueryObjects:
     async def test_fails_on_disposed_handles(self, isolated_page):
         proto_handle = await isolated_page.evaluateHandle('() => HTMLBodyElement.prototype')
         await proto_handle.dispose()
-        with pytest.raises(ElementHandleError) as excpt:
+        with pytest.raises(ElementHandleError, match='Prototype JSHandle is disposed'):
             await isolated_page.queryObjects(proto_handle)
-        assert 'Prototype JSHandle is disposed' in str(excpt.value)
 
     @sync
     async def test_fail_on_primitive_vals_as_proto(self, isolated_page):
         proto_handle = await isolated_page.evaluateHandle('() => 42')
-        with pytest.raises(ElementHandleError) as excpt:
+        with pytest.raises(ElementHandleError, match='must not be referencing primitive value'):
             await isolated_page.queryObjects(proto_handle)
-        assert 'Prototype JSHandle must not be referencing primitive value' in str(excpt.value)
 
 
 class TestMetrics:
@@ -493,7 +481,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            tests.utils.server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
+            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -502,7 +490,7 @@ class TestSetUserAgent:
         assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
         await isolated_page.setUserAgent('foobar')
         request, *_ = await gather_with_timeout(
-            tests.utils.server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
+            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
         )
         assert request.headers.get('user-agent') == 'foobar'
 
@@ -538,7 +526,7 @@ class TestSetContent:
     async def test_respects_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
+        server.app.add_one_time_request_delay('/img.png', 1)
         with pytest.raises(TimeoutError):
             # note: timeout in ms
             await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
@@ -547,7 +535,7 @@ class TestSetContent:
     async def test_respects_default_timeout(self, isolated_page, server):
         img_path = server / 'img.png'
         # stall image response by 1s, causing the setContent to timeout
-        tests.utils.server.app.add_one_time_request_delay('/img.png', 1)
+        server.app.add_one_time_request_delay('/img.png', 1)
         # note: timeout in ms
         isolated_page.setDefaultNavigationTimeout(1)
         with pytest.raises(TimeoutError):
@@ -597,7 +585,7 @@ class TestSetBypassCSP:
 
     @sync
     async def test_bypass_CSP_header(self, isolated_page, server):
-        tests.utils.server.app.add_one_time_header_for_request(
+        server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         # make sure CSP bypass is actually working
@@ -605,7 +593,7 @@ class TestSetBypassCSP:
         await isolated_page.addScriptTag(content='window.__injected = 42;')
         assert await isolated_page.evaluate('window.__injected') is None
 
-        tests.utils.server.app.add_one_time_header_for_request(
+        server.app.add_one_time_header_for_request(
             server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
         )
         await isolated_page.setBypassCSP(True)
@@ -658,7 +646,7 @@ class TestAddScriptTag:
         await isolated_page.goto(server.empty_page)
         script_handle = await isolated_page.addScriptTag(url='/es6/es6import.js', _type='module')
         assert script_handle.asElement()
-        assert await isolated_page.evaluate('__injected') == 42
+        assert await isolated_page.evaluate('window.__injected') == 42
 
     @sync
     async def test_works_with_path_type_module(self, isolated_page, server, assets):
@@ -694,7 +682,7 @@ class TestAddScriptTag:
     @sync
     async def test_includes_sourcemap_when_path_provided(self, isolated_page, server, assets):
         await isolated_page.goto(server.empty_page)
-        script_handle = await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
+        await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
         res = await isolated_page.evaluate('() => __injectedError.stack')
         assert (assets / 'injectedfile.js').name in res
 
@@ -800,13 +788,13 @@ class TestSetCacheEnabled:
     async def test_basic_usage(self, isolated_page, server):
         await isolated_page.goto(server / 'cached/one-style.html')
         cached_req, *_ = await gather_with_timeout(
-            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert cached_req.headers.get('if-modified-since')
 
         await isolated_page.setCacheEnabled(False)
         non_cached_req, *_ = await gather_with_timeout(
-            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 
@@ -818,7 +806,7 @@ class TestSetCacheEnabled:
 
         await isolated_page.goto(server / 'cached/one-style.html')
         non_cached_req, *_ = await gather_with_timeout(
-            tests.utils.server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
         )
         assert non_cached_req.headers.get('if-modified-since') is None
 
@@ -867,9 +855,8 @@ class TestSelect:
     @sync
     async def test_raises_when_element_is_not_select_elem(self, isolated_page, server):
         await isolated_page.goto(server / 'input/select.html')
-        with pytest.raises(ElementHandleError) as excpt:
+        with pytest.raises(ElementHandleError, match='Element is not a <select> element.'):
             await isolated_page.select('body')
-        assert 'Element is not a <select> element.' in str(excpt)
 
     @sync
     async def test_returns_empty_list_on_no_matched_value(self, isolated_page, server):
@@ -1053,7 +1040,7 @@ class TestEvents:
             )
             assert 'ERR_NAME_NOT_RESOLVED' in message.text
             assert message.type == 'error'
-            assert message.location == {'url': 'http://wat/', 'lineNumber': None}
+            assert message.location == {'lineNumber': None, 'url': 'http://wat/'}
 
         @sync
         async def test_location_for_console_API_calls(self, isolated_page, server, firefox):

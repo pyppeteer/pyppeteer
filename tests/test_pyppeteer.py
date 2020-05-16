@@ -14,10 +14,8 @@ from pathlib import Path
 
 from syncer import sync
 
-from .base import BaseTestCase
 
-
-class TestPyppeteer(BaseTestCase):
+class TestPyppeteer:
     @sync
     async def test_get_https(self):
         await self.page.goto('https://example.com/')
@@ -53,7 +51,7 @@ class TestPyppeteer(BaseTestCase):
         tmp_file.unlink()
 
 
-class TestScreenshot(BaseTestCase):
+class TestScreenshot:
     def setUp(self):
         super().setUp()
         self.target_path = Path(__file__).resolve().parent / 'test.png'

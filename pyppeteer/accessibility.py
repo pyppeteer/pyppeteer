@@ -31,7 +31,7 @@ class Accessibility:
         return serializeTree(needle, interestingNodes)[0]
 
 
-class AXNode(object):
+class AXNode:
     def __init__(self, payload: Dict):
         """
         :param payload: dict with keys nodeId, name, role, properties

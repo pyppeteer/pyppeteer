@@ -3,14 +3,11 @@
 
 import asyncio
 
-from tests.utils import waitEvent, gather_with_timeout
-
+import pytest
 from pyppeteer import connect
 from pyppeteer.errors import BrowserError
-
 from syncer import sync
-
-import pytest
+from tests.utils import gather_with_timeout, waitEvent
 
 
 @sync
@@ -18,9 +15,8 @@ async def test_default_context(shared_browser):
     assert len(shared_browser.browserContexts) == 1
     defaultContext = shared_browser.browserContexts[0]
     assert not defaultContext.isIncognito()
-    with pytest.raises(BrowserError) as cm:
+    with pytest.raises(BrowserError, match='cannot be closed') as cm:
         await defaultContext.close()
-    assert 'cannot be closed' in str(cm)
 
 
 @sync
@@ -109,9 +105,9 @@ async def test_isolate_local_storage_and_cookie(shared_browser, server):
     assert context2.targets()[0] == page2.target
 
     # make sure pages don't share local storage and cookie
-    assert await page1.evaluate('localStorage.getItem("name")') == 'page1'  # noqa: E501
+    assert await page1.evaluate('localStorage.getItem("name")') == 'page1'
     assert await page1.evaluate('document.cookie') == 'name=page1'
-    assert await page2.evaluate('localStorage.getItem("name")') == 'page2'  # noqa: E501
+    assert await page2.evaluate('localStorage.getItem("name")') == 'page2'
     assert await page2.evaluate('document.cookie') == 'name=page2'
 
     await gather_with_timeout(context1.close(), context2.close())

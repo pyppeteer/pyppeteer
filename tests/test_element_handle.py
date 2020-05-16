@@ -4,17 +4,15 @@
 import logging
 import sys
 
+import pyppeteer
+import pytest
+from pyppeteer.errors import ElementHandleError
 from syncer import sync
 
-import pyppeteer
-from pyppeteer.errors import ElementHandleError
-
-from .base import BaseTestCase
-from .frame_utils import attachFrame
-import pytest
+from .utils import attachFrame
 
 
-class TestBoundingBox(BaseTestCase):
+class TestBoundingBox:
     @sync
     async def test_bounding_box(self):
         await self.page.setViewport({'width': 500, 'height': 500})
@@ -70,7 +68,7 @@ class TestBoundingBox(BaseTestCase):
                 <rect id="theRect" x="30" y="50" width="200" height="300"></rect>
             </svg>
         '''
-        )  # noqa: E501
+        )
         element = await self.page.J('#therect')
         pptrBoundingBox = await element.boundingBox()
         webBoundingBox = await self.page.evaluate(
@@ -79,11 +77,11 @@ class TestBoundingBox(BaseTestCase):
             return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
         }''',
             element,
-        )  # noqa: E501
+        )
         assert pptrBoundingBox == webBoundingBox
 
 
-class TestBoxModel(BaseTestCase):
+class TestBoxModel:
     def setUp(self):
         self._old_debug = pyppeteer.DEBUG
         super().setUp()
@@ -173,7 +171,7 @@ class TestBoxModel(BaseTestCase):
                 assert await element.boxModel() is None
 
 
-class TestContentFrame(BaseTestCase):
+class TestContentFrame:
     @sync
     async def test_content_frame(self):
         await self.page.goto(self.url + 'empty')
@@ -183,7 +181,7 @@ class TestContentFrame(BaseTestCase):
         assert frame == self.page.frames[1]
 
 
-class TestClick(BaseTestCase):
+class TestClick:
     @sync
     async def test_clik(self):
         await self.page.goto(self.url + 'assets/button.html')
@@ -242,7 +240,7 @@ class TestClick(BaseTestCase):
         assert 'Node is either not visible or not an HTMLElement' == cm.exception.args[0]
 
 
-class TestHover(BaseTestCase):
+class TestHover:
     @sync
     async def test_hover(self):
         await self.page.goto(self.url + 'assets/scrollable.html')
@@ -251,7 +249,7 @@ class TestHover(BaseTestCase):
         assert await self.page.evaluate('document.querySelector("button:hover").id') == 'button-6'
 
 
-class TestIsIntersectingViewport(BaseTestCase):
+class TestIsIntersectingViewport:
     @sync
     async def test_is_intersecting_viewport(self):
         await self.page.goto(self.url + 'assets/offscreenbuttons.html')
@@ -261,7 +259,7 @@ class TestIsIntersectingViewport(BaseTestCase):
             assert await button.isIntersectingViewport() == visible
 
 
-class TestScreenshot(BaseTestCase):
+class TestScreenshot:
     @sync
     async def test_screenshot_larger_than_viewport(self):
         await self.page.setViewport({'width': 500, 'height': 500})
@@ -290,7 +288,7 @@ div.to-screenshot {
         assert {'w': 500, 'h': 500} == size
 
 
-class TestQuerySelector(BaseTestCase):
+class TestQuerySelector:
     @sync
     async def test_J(self):
         await self.page.setContent(
@@ -331,9 +329,7 @@ class TestQuerySelector(BaseTestCase):
 
     @sync
     async def test_Jeval_subtree(self):
-        htmlContent = (
-            '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
-        )
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         content = await elementHandle.Jeval('.a', 'node => node.innerText')
@@ -341,7 +337,7 @@ class TestQuerySelector(BaseTestCase):
 
     @sync
     async def test_Jeval_with_missing_selector(self):
-        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         with pytest.raises(ElementHandleError) as cm:
@@ -407,9 +403,7 @@ class TestQuerySelector(BaseTestCase):
 
     @sync
     async def test_xpath(self):
-        await self.page.setContent(
-            '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
-        )
+        await self.page.setContent('<html><body><div class="second"><div class="inner">A</div></div></body></html>')
         html = await self.page.querySelector('html')
         second = await html.xpath('./body/div[contains(@class, \'second\')]')
         inner = await second[0].xpath('./div[contains(@class, \'inner\')]')

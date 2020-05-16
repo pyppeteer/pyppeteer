@@ -7,7 +7,6 @@ import logging
 from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.jshandle import JSHandle
 from pyppeteer.models import JSFunctionArg
@@ -61,7 +60,7 @@ class Worker(AsyncIOEventEmitter):
             # execution contexts.
             self._client.send('Runtime.enable', {})
         except Exception as e:
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
         def onConsoleAPICalled(event: Dict[str, Any]) -> None:
             args: List[JSHandle] = []
@@ -91,12 +90,12 @@ class Worker(AsyncIOEventEmitter):
         """Evaluate ``pageFunction`` with ``args``.
 
         Shortcut for ``(await worker.executionContext).evaluate(pageFunction, *args)``.
-        """  # noqa: E501
+        """
         return await (await self._executionContextPromise).evaluate(pageFunction, *args)
 
     async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
         """Evaluate ``pageFunction`` with ``args`` and return :class:`~pyppeteer.execution_context.JSHandle`.
 
         Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.
-        """  # noqa: E501
+        """
         return await (await self._executionContextPromise).evaluateHandle(pageFunction, *args)

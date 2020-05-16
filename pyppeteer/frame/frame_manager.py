@@ -7,7 +7,6 @@ import re
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError, PageError
@@ -17,9 +16,10 @@ from pyppeteer.frame import Frame
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response
+from pyppeteer.timeout_settings import TimeoutSettings
 
 if TYPE_CHECKING:
-    pass
+    from pyppeteer.page import Page
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class FrameManager(AsyncIOEventEmitter):
     """FrameManager class."""
 
     def __init__(
-        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: 'TimeoutSettings'
+        self, client: CDPSession, page: 'Page', ignoreHTTPSErrors: bool, timeoutSettings: TimeoutSettings
     ) -> None:
         """Make new frame manager."""
         super().__init__()
@@ -208,7 +208,7 @@ class FrameManager(AsyncIOEventEmitter):
         _id = framePayload.get('id', '')
         if isMainFrame:
             if frame:
-                # Update frame id to retain frame identity on cross-process navigation.  # noqa: E501
+                # Update frame id to retain frame identity on cross-process navigation.
                 self._frames.pop(frame._id, None)
                 frame._id = _id
             else:
@@ -255,7 +255,6 @@ class FrameManager(AsyncIOEventEmitter):
         if frame:
             self._removeFramesRecursively(frame)
 
-    # todo (mattwmaster58): type contextPayload w/ TypedDict
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         auxData = contextPayload.get('auxData')
         frameId = auxData.get('frameId')

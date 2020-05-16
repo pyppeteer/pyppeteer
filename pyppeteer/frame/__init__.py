@@ -7,6 +7,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
 from pyppeteer.errors import BrowserError, PageError
+from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.jshandle import ElementHandle, JSHandle
 from pyppeteer.models import JSFunctionArg, WaitTargets
 from pyppeteer.network_manager import Response
@@ -36,7 +37,7 @@ class Frame:
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
-        self._waitTasks: Set[WaitTask] = set()  # maybe list
+        self._waitTasks: Set[WaitTask] = set()
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
@@ -60,15 +61,15 @@ class Frame:
         self.tap = self.secondaryWorld.tap
 
     @property
-    async def executionContext(self):
+    async def executionContext(self) -> Optional['ExecutionContext']:
         return await self.mainWorld.executionContext
 
     @property
-    async def content(self):
+    async def content(self) -> str:
         return await self.secondaryWorld.content
 
     @property
-    async def title(self):
+    async def title(self) -> str:
         return await self.secondaryWorld.title
 
     async def goto(
@@ -122,12 +123,18 @@ class Frame:
         """
         return self._detached
 
-    async def addScriptTag(self, url=None, path=None, content=None, type='') -> ElementHandle:
+    async def addScriptTag(
+        self,
+        url: Optional[str] = None,
+        path: Optional[Union[str, Path]] = None,
+        content: Optional[str] = None,
+        type_: str = '',
+    ) -> ElementHandle:
         """Add script tag to this frame.
 
         Details see :meth:`pyppeteer.page.Page.addScriptTag`.
         """
-        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, _type=type)
+        return await self._mainWorld.addScriptTag(url=url, path=path, content=content, type_=type_)
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[str, Path]] = None, content: Optional[str] = None
@@ -167,26 +174,25 @@ class Frame:
         return await self.querySelectorEval(  # type: ignore
             selector,
             '''
-(element, values) => {
-    if (element.nodeName.toLowerCase() !== 'select')
-        throw new Error('Element is not a <select> element.');
+                (element, values) => {
+                    if (element.nodeName.toLowerCase() !== 'select')
+                        throw new Error('Element is not a <select> element.');
 
-    const options = Array.from(element.options);
-    element.value = undefined;
-    for (const option of options) {
-        option.selected = values.includes(option.value);
-        if (option.selected && !element.multiple)
-            break;
-    }
+                    const options = Array.from(element.options);
+                    element.value = undefined;
+                    for (const option of options) {
+                        option.selected = values.includes(option.value);
+                        if (option.selected && !element.multiple)
+                            break;
+                    }
 
-    element.dispatchEvent(new Event('input', { 'bubbles': true }));
-    element.dispatchEvent(new Event('change', { 'bubbles': true }));
-    return options.filter(option => option.selected).map(options => options.value)
-}
+                    element.dispatchEvent(new Event('input', { 'bubbles': true }));
+                    element.dispatchEvent(new Event('change', { 'bubbles': true }));
+                    return options.filter(option => option.selected).map(options => options.value)
+                }
         ''',
-            # todo (mattwmaster58): investigate *args vs args usage here
             *values,
-        )  # noqa: E501
+        )
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.
@@ -218,6 +224,8 @@ class Frame:
         Details see :meth:`pyppeteer.page.Page.waitFor`.
         """
         xPathPattern = '//'
+        if helpers.is_js_func(selectorOrFunctionOrTimeout):
+            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, str):
             string = selectorOrFunctionOrTimeout
             if string.startswith(xPathPattern):
@@ -225,8 +233,6 @@ class Frame:
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             return self._client.loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
-        if helpers.is_js_func(selectorOrFunctionOrTimeout):
-            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client.loop.create_future()
         f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))
         return f

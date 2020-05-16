@@ -4,7 +4,7 @@ import inspect
 import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
-from typing import Awaitable, Any, Optional, List, Union
+from typing import Any, Awaitable, List, Optional, Union
 
 from pyppeteer.frame import Frame
 from pyppeteer.page import Page
@@ -89,15 +89,14 @@ def dumpFrames(frame: Frame, indentation: str = '') -> List[str]:
     return results
 
 
-def isFavicon(req):
+def isFavicon(req) -> bool:
     return 'favicon.ico' in req.url
 
 
 def var_setter(name, default_value=None):
     """
-    Returns a function which takes one argument, value. The function returned takes one arg, value and sets the
-    variable in the locals of the caller with the name of name to value. If name refers to a future,
-    then <name>.set_result(value) is used.
+    Returns a function which takes one argument, value. The function returned takes one arg, value, and sets the
+    variable in the locals of the caller's frame with the name of name to (value or default_value).
 
     Args:
         name: name of value in callers locals to set
@@ -109,13 +108,7 @@ def var_setter(name, default_value=None):
     stack_frame = inspect.stack()[1][0]
 
     def _setter_func(value=default_value):
-        var = stack_frame.f_locals[name]
-        if asyncio.isfuture(var):
-            stack_frame.f_locals[name].set_result(value)
-        elif isinstance(var, list):
-            stack_frame.f_locals[name].append(value)
-        else:
-            stack_frame.f_locals[name] = value
+        stack_frame.f_locals[name] = value
         ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(stack_frame), ctypes.c_int(0))
 
     return _setter_func

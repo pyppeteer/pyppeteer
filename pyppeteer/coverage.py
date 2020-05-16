@@ -11,7 +11,7 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.models import CoverageResult
+from pyppeteer.models import CoverageResult, NestedRangeItem, NestedRangeItemInput
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +175,7 @@ class JSCoverage:
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
             # This might happen if the page has already navigated away.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
@@ -256,7 +256,7 @@ class CSSCoverage:
             self._stylesheetSources[header['styleSheetId']] = response['text']
         except Exception as e:
             # This might happen if the page has already navigated away.
-            logger.error(f'An exception occured: {e}')
+            logger.error(f'An exception occurred: {e}')
 
     async def stop(self) -> List[CoverageResult]:
         """Stop coverage measurement and return results."""
@@ -292,8 +292,7 @@ class CSSCoverage:
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
-    # todo (mattwmaster58): typeddict for this
+def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[NestedRangeItem]:
     """
     Convert ranges.
     NestedRange members support keys:
@@ -324,8 +323,8 @@ def convertToDisjointRanges(nestedRanges: List[dict]) -> List[Any]:
 
     points.sort(key=cmp_to_key(_sort_func))
 
-    hitCountStack: List[int] = []
-    results: List[Dict] = []
+    hitCountStack = []
+    results = []
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:

@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pytest
 from syncer import sync
 
 from pyppeteer.errors import NetworkError
 
-from .base import BaseTestCase
-import pytest
 
-
-class TestConnection(BaseTestCase):
+class TestConnection:
     @sync
     async def test_error_msg(self):
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='ThisCommand.DoesNotExists') as cm:
             await self.page._client.send('ThisCommand.DoesNotExists')
-        assert 'ThisCommand.DoesNotExists' in cm.exception.args[0]
 
 
-class TestCDPSession(BaseTestCase):
+class TestCDPSession:
     @sync
     async def test_create_session(self):
         client = await self.page.target.createCDPSession()

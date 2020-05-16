@@ -8,7 +8,7 @@ from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError
 
 
-class Dialog(object):
+class Dialog:
     """Dialog class.
 
     Dialog objects are dispatched by page via the ``dialog`` event.

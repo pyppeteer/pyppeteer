@@ -9,11 +9,10 @@ from subprocess import Popen
 from typing import TYPE_CHECKING, Awaitable, Callable, Dict, List, Optional, Sequence
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.events import Events
-from pyppeteer.models import Protocol
+from pyppeteer.models import Protocol, WebPermission
 from pyppeteer.target import Target
 from pyppeteer.task_queue import TaskQueue
 
@@ -112,7 +111,7 @@ class Browser(AsyncIOEventEmitter):
         In a newly created browser, this will return a single instance of
         ``[BrowserContext]``
         """
-        return [self._defaultContext] + [context for context in self._contexts.values()]  # noqa: E501
+        return [self._defaultContext] + [context for context in self._contexts.values()]
 
     @property
     def defaultBrowserContext(self) -> 'BrowserContext':
@@ -167,7 +166,7 @@ class Browser(AsyncIOEventEmitter):
         target._closedCallback()
         if await target._initializedPromise:
             self.emit(Events.Browser.TargetDestroyed, target)
-            target.browserContext.emit(Events.BrowserContext.TargetDestroyed, target)  # noqa: E501
+            target.browserContext.emit(Events.BrowserContext.TargetDestroyed, target)
         target._initializedCallback(False)
 
     async def _targetInfoChanged(self, event: Dict) -> None:
@@ -179,7 +178,7 @@ class Browser(AsyncIOEventEmitter):
         target._targetInfoChanged(event['targetInfo'])
         if wasInitialized and previousURL != target.url:
             self.emit(Events.Browser.TargetChanged, target)
-            target.browserContext.emit(Events.BrowserContext.TargetChanged, target)  # noqa: E501
+            target.browserContext.emit(Events.BrowserContext.TargetChanged, target)
 
     @property
     def wsEndpoint(self) -> str:
@@ -347,8 +346,7 @@ class BrowserContext(AsyncIOEventEmitter):
         """
         return bool(self._id)
 
-    # todo (Mattwmaster58): Literal type for this
-    async def overridePermissions(self, origin: str, permissions: Sequence[str]) -> None:
+    async def overridePermissions(self, origin: str, permissions: Sequence[WebPermission]) -> None:
         web_perm_to_protocol = {
             'geolocation': 'geolocation',
             'midi': 'midi',

@@ -37,18 +37,16 @@ class LifecycleWatcher:
         self, frameManager: 'FrameManager', frame: 'Frame', timeout: Optional[float], waitUntil: WaitTargets = 'load',
     ) -> None:
         """Make new LifecycleWatcher"""
-        self._expectedLifecycle: List[str] = []
+        self._expectedLifecycle = []
         if isinstance(waitUntil, str):
             waitUntil = [waitUntil]
         for value in waitUntil:
             try:
-                protocolEvent = pyppeteerToProtocolLifecycle[value]
+                self._expectedLifecycle.append(pyppeteerToProtocolLifecycle[value])
             except KeyError:
                 raise KeyError(
                     f'Unknown value for waitUntil: "{value}", it\'s possible "{value}" is no longer supported'
                 )
-            else:
-                self._expectedLifecycle.append(protocolEvent)
 
         self._futures = []
         self._frameManager = frameManager
@@ -106,7 +104,6 @@ class LifecycleWatcher:
             self._navigationRequest = request
 
     def _onFrameDetached(self, frame: 'Frame' = None) -> None:
-        # note: frame never appears to specified, left in for compatibility
         if frame == self._frame:
             self._terminationFuture.set_exception(PageError('Navigating frame was detached'))
         else:
@@ -125,7 +122,7 @@ class LifecycleWatcher:
     def _createTimeoutFuture(self) -> Awaitable[None]:
         self._maximumTimerFuture = self.loop.create_future()
         if self._timeout:
-            errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'  # noqa: E501
+            errorMessage = f'Navigation Timeout Exceeded: {self._timeout}ms exceeded.'
 
             async def _timeout_func() -> None:
                 await asyncio.sleep(self._timeout / 1000)

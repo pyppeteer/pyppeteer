@@ -1,6 +1,7 @@
 import pytest
-from pyppeteer import devices
 from syncer import sync
+
+from pyppeteer import devices
 
 
 @pytest.fixture

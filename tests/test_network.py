@@ -2,19 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from pathlib import Path
 import sys
 import unittest
+from pathlib import Path
 
+import pytest
+from pyppeteer.errors import NetworkError, PageError
 from syncer import sync
 
-from pyppeteer.errors import NetworkError, PageError
 
-from .base import BaseTestCase
-import pytest
-
-
-class TestNetworkEvent(BaseTestCase):
+class TestNetworkEvent:
     @sync
     async def test_request(self):
         requests = []
@@ -35,14 +32,14 @@ class TestNetworkEvent(BaseTestCase):
 
         from tornado.web import RequestHandler
 
-        class PostHandler(RequestHandler):
+        class PostHandler:
             def post(self):
                 self.write('')
 
         self.app.add_handlers('localhost', [('/post', PostHandler)])
         requests = []
         self.page.on('request', lambda req: requests.append(req))
-        await self.page.evaluate('fetch("/post", {method: "POST", body: JSON.stringify({foo: "bar"})})')  # noqa: E501
+        await self.page.evaluate('fetch("/post", {method: "POST", body: JSON.stringify({foo: "bar"})})')
         assert len(requests) == 1
         req = requests[0]
         assert req
@@ -139,9 +136,8 @@ class TestNetworkEvent(BaseTestCase):
         assert len(redirectChain) == 1
         redirected = redirectChain[0].response
         assert redirected.status == 302
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='Response body is unavailable for redirect response') as cm:
             await redirected.text()
-        assert 'Response body is unavailable for redirect response' in cm.exception.args[0]
 
     @unittest.skip('This test hangs')
     @sync
@@ -151,7 +147,7 @@ class TestNetworkEvent(BaseTestCase):
 
         from tornado.web import RequestHandler
 
-        class GetHandler(RequestHandler):
+        class GetHandler:
             def get(self):
                 serverResponses.append(self)
                 self.write('hello ')
@@ -241,7 +237,7 @@ class TestNetworkEvent(BaseTestCase):
         assert 'redirect1' in redirectChain[0].url
 
 
-class TestRequestInterception(BaseTestCase):
+class TestRequestInterception:
     @sync
     async def test_request_interception(self):
         await self.page.setRequestInterception(True)
@@ -445,9 +441,8 @@ class TestRequestInterception(BaseTestCase):
             await req.abort()
 
         self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
-        with pytest.raises(PageError) as cm:
+        with pytest.raises(PageError, match='net::ERR_FAILED') as cm:
             await self.page.goto('data:text/html,No way!')
-        assert 'net::ERR_FAILED' in cm.exception.args[0]
 
     @sync
     async def test_request_interception_with_hash(self):
@@ -552,7 +547,7 @@ class TestRequestInterception(BaseTestCase):
         pass
 
 
-class TestNavigationRequest(BaseTestCase):
+class TestNavigationRequest:
     @sync
     async def test_navigation_request(self):
         requests = {}

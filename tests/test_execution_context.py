@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pytest
 from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, NetworkError
 
-from .base import BaseTestCase
-import pytest
 
-
-class TestQueryObject(BaseTestCase):
+class TestQueryObject:
     @sync
     async def test_query_objects(self):
         await self.page.goto(self.url + 'empty')
@@ -37,7 +35,7 @@ class TestQueryObject(BaseTestCase):
             await self.page.queryObjects(prototypeHandle)
 
 
-class TestJSHandle(BaseTestCase):
+class TestJSHandle:
     @sync
     async def test_get_property(self):
         handle1 = await self.page.evaluateHandle('() => ({one: 1, two: 2, three: 3})')
@@ -59,13 +57,12 @@ class TestJSHandle(BaseTestCase):
     @sync
     async def test_json_circular_object_error(self):
         windowHandle = await self.page.evaluateHandle('window')
-        with pytest.raises(NetworkError) as cm:
+        with pytest.raises(NetworkError, match='Object reference chain is too long') as cm:
             await windowHandle.jsonValue()
-        assert 'Object reference chain is too long' in cm.exception.args[0]
 
     @sync
     async def test_get_properties(self):
-        handle1 = await self.page.evaluateHandle('() => ({foo: "bar"})')
+        handle1 = await self.page.evaluateHandle('{foo: "bar"}')
         properties = await handle1.getProperties()
         foo = properties.get('foo')
         assert foo

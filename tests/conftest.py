@@ -8,7 +8,7 @@ import pytest
 from syncer import sync
 from websockets import ConnectionClosedError
 
-from pyppeteer import launch, Browser
+from pyppeteer import Browser, launch
 from pyppeteer.browser import BrowserContext
 from pyppeteer.errors import PageError
 from pyppeteer.page import Page
@@ -23,6 +23,8 @@ _port = get_free_port()
 
 if _firefox:
     _launch_options['product'] = 'firefox'
+
+CHROME = not _firefox
 
 
 def pytest_configure(config):

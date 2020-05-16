@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer import helpers
 from pyppeteer.accessibility import Accessibility
 from pyppeteer.connection import CDPSession, Connection
@@ -108,7 +107,7 @@ class Page(AsyncIOEventEmitter):
         self._pageBindings: Dict[str, Callable[..., Any]] = {}
         self._coverage = Coverage(client)
         self._javascriptEnabled = True
-        self._viewport: Optional[Viewport] = None
+        self._viewport: Optional[Protocol.Page.Viewport] = None
 
         if screenshotTaskQueue is None:
             screenshotTaskQueue = TaskQueue()
@@ -124,7 +123,7 @@ class Page(AsyncIOEventEmitter):
                 try:
                     client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    logger.error(f'An exception occured: {e}')
+                    logger.error(f'An exception occurred: {e}')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
@@ -188,6 +187,8 @@ class Page(AsyncIOEventEmitter):
             return
         frame = self._frameManager.frame(event['frameId'])
         context = await frame.executionContext
+        if context is None:
+            raise BrowserError(f'Frame {frame} execution\'s context is not defined')
         element = await context._adoptBackednNodeId(event['backendNodeId'])
         interceptors = copy(self._fileChooserInterceptors)
         self._fileChooserInterceptors.clear()
@@ -250,7 +251,7 @@ class Page(AsyncIOEventEmitter):
             helpers.releaseObject(self._client, arg)
 
         if source != 'worker':
-            self.emit(Events.Page.Console, ConsoleMessage(level, text, {'url': url, 'lineNumber': lineNumber}))
+            self.emit(Events.Page.Console, ConsoleMessage(level, text, location={'url': url, 'lineNumber': lineNumber}))
 
     @property
     def mainFrame(self) -> Frame:
@@ -521,7 +522,7 @@ class Page(AsyncIOEventEmitter):
         :return ElementHandle: :class:`~pyppeteer.element_handle.ElementHandle`
                                of added tag.
         """
-        return await self.mainFrame.addScriptTag(url=url, path=path, content=content, _type=_type)
+        return await self.mainFrame.addScriptTag(url=url, path=path, content=content, type_=_type)
 
     async def addStyleTag(
         self, url: Optional[str] = None, path: Optional[Union[Path, str]] = None, content: Optional[str] = None
@@ -568,7 +569,7 @@ class Page(AsyncIOEventEmitter):
                 return promise;
             };
         }
-        '''  # noqa: E501
+        '''
         expression = helpers.evaluationString(addPageBinding, name)
         await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': expression})
@@ -577,7 +578,7 @@ class Page(AsyncIOEventEmitter):
             try:
                 await frame.evaluate(expression)
             except Exception as e:
-                logger.error(f'An exception occured: {e}')
+                logger.error(f'An exception occurred: {e}')
 
         await asyncio.gather(*(_evaluate(frame) for frame in self.frames))
 
@@ -703,7 +704,9 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             logger.error(f'An exception occurred: {e}')
 
-    def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace=None) -> None:
+    def _addConsoleMessage(
+        self, type_: str, args: List[JSHandle], stackTrace: Protocol.Runtime.StackTrace = None
+    ) -> None:
         if not self.listeners(Events.Page.Console):
             for arg in args:
                 self._client.loop.create_task(arg.dispose())
@@ -817,9 +820,7 @@ class Page(AsyncIOEventEmitter):
             )
         )[0]
 
-    async def waitForNavigation(
-        self, timeout: float = None, waitUntil: Union[str, List[str]] = None,
-    ) -> Optional[Response]:
+    async def waitForNavigation(self, timeout: float = None, waitUntil: WaitTargets = None,) -> Optional[Response]:
         """Wait for navigation.
 
         Available options are same as :meth:`goto` method.
@@ -851,7 +852,7 @@ class Page(AsyncIOEventEmitter):
         .. note::
             Usage of the History API to change the URL is considered a
             navigation.
-        """  # noqa: E501
+        """
         return await self.mainFrame.waitForNavigation(timeout=timeout, waitUntil=waitUntil)
 
     def _sessionClosePromise(self) -> Awaitable[None]:
@@ -882,7 +883,7 @@ class Page(AsyncIOEventEmitter):
             firstRequest = await page.waitForRequest('http://example.com/resource')
             finalRequest = await page.waitForRequest(lambda req: req.url == 'http://example.com' and req.method == 'GET')
             return firstRequest.url
-        """  # noqa: E501
+        """
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
@@ -916,7 +917,7 @@ class Page(AsyncIOEventEmitter):
             firstResponse = await page.waitForResponse('http://example.com/resource')
             finalResponse = await page.waitForResponse(lambda res: res.url == 'http://example.com' and res.status == 200)
             return finalResponse.ok
-        """  # noqa: E501
+        """
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
@@ -1352,7 +1353,7 @@ class Page(AsyncIOEventEmitter):
 
             1. Script tags inside templates are not evaluated.
             2. Page styles are not visible inside templates.
-        """  # noqa: E501
+        """
         paperWidth: Optional[float] = 8.5
         paperHeight: Optional[float] = 11.0
         if format:
@@ -1417,7 +1418,7 @@ class Page(AsyncIOEventEmitter):
            If ``runBeforeUnload`` is passed as ``True``, a ``beforeunload``
            dialog might be summoned and should be handled manually via page's
            ``dialog`` event.
-        """  # noqa: E501
+        """
         conn = self._client._connection
         if conn is None:
             raise PageError('Protocol Error: Connection Closed. Most likely the page has been closed.')
@@ -1504,9 +1505,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    async def waitFor(
-        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs
-    ) -> Awaitable:
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
 
         This method behaves differently with respect to the first argument:
@@ -1590,7 +1589,7 @@ class Page(AsyncIOEventEmitter):
         return self.mainFrame.waitForXPath(xpath, visible=visible, hidden=hidden, timeout=timeout)
 
     def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: Sequence[Any]
+        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
     ) -> Awaitable[JSHandle]:
         """Wait until the function completes and returns a truthy value.
 
@@ -1669,15 +1668,15 @@ class ConsoleMessage:
     """
 
     def __init__(
-        self, type: str, text: str, args: List[JSHandle] = None, location: Dict[str, Union[str, int]] = None
+        self, type: str, text: str, args: Optional[List[JSHandle]] = None, location: Dict[str, Union[str, int]] = None
     ) -> None:
         self._args = args
         self._type = type
-        self._text = text or []
+        self._text = text
         self._location = location or {}
 
     @property
-    def args(self) -> List[JSHandle]:
+    def args(self) -> Optional[List[JSHandle]]:
         return self._args
 
     @property

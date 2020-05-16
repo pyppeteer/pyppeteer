@@ -81,7 +81,7 @@ class Connection(AsyncIOEventEmitter):
         return self._url
 
     async def _recv_loop(self) -> None:
-        exception = ''
+        exception = None
         try:
             self._connected = True
             self.connection = self._transport
@@ -197,11 +197,11 @@ class Connection(AsyncIOEventEmitter):
         self._sessions.clear()
         self.emit(Events.Connection.Disconnected)
 
-    async def dispose(self, code: int = 1000, reason: str = 'None') -> None:
+    async def dispose(self, code: int = 1000, reason: str = None) -> None:
         """Close all connection."""
         self._connected = False
         await self._onClose()
-        await self._transport.close(code=code, reason=reason)
+        await self._transport.close(code=code, reason=str(reason))
 
     async def createSession(self, targetInfo: Dict) -> 'CDPSession':
         """Create new session."""
@@ -240,4 +240,4 @@ def remove_none_items_inplace(o: Dict[str, Any]) -> None:
         del o[key]
 
 
-from pyppeteer.connection.cdpsession import CDPSession # isort:skip
+from pyppeteer.connection.cdpsession import CDPSession  # isort:skip

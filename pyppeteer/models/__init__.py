@@ -68,6 +68,35 @@ class RevisionInfo(TypedDict):
     revision: str
 
 
+class NestedRangeItemInput(TypedDict):
+    startOffset: float
+    endOffset: float
+    count: int
+
+
+class NestedRangeItem(TypedDict):
+    start: int
+    end: int
+
+
+WebPermission = Literal[
+    'geolocation',
+    'midi',
+    'notifications',
+    'push',
+    'camera',
+    'microphone',
+    'background-sync',
+    'ambient-light-sensor',
+    'accelerometer',
+    'gyroscope',
+    'magnetometer',
+    'accessibility-events',
+    'clipboard-read',
+    'clipboard-write',
+    'payment-handler',
+    'midi-sysex',
+]
 JSFunctionArg = Union['JSHandle', str, int, float, bool, None, Dict[str, Any], List[Any]]
 Devices = Dict[str, DeviceDetails]
 Platform = Literal['linux', 'mac', 'win32', 'win64']
