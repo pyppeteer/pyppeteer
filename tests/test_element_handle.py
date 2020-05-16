@@ -19,13 +19,12 @@ class TestBoundingBox:
 
     @sync
     async def test_nested_frame(self, isolated_page, server, firefox):
-        # caution: flaky test is times past due to (maybe) the server
-        # not responding fast enough (unclear and can't reproduce failure) anymore
+        # caution: flaky test
         await isolated_page.setViewport({'width': 500, 'height': 500})
         await isolated_page.goto(server / 'frames/nested-frames.html')
         nestedFrame = isolated_page.frames[1].childFrames[1]
         elementHandle = await nestedFrame.J('div')
-        # add sleep here if you suspect the server isn't loading the
+        # todo: various amounts of sleep will intermittently fix this
         box = await elementHandle.boundingBox()
         if firefox:
             assert box == {'x': 28, 'y': 182, 'width': 254, 'height': 18}
