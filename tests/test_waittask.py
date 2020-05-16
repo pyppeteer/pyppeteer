@@ -1,6 +1,9 @@
 from asyncio import ensure_future
 import asyncio
-from time import time
+from time import perf_counter
+
+def perf_counter_ms():
+    return perf_counter()*1000
 
 import pytest
 from syncer import sync
@@ -52,7 +55,7 @@ async def test_waitfor_function(isolated_page, server):
     p = isolated_page
     # should work with string functions
     watchdog = p.waitForFunction('window.__FOO === 1')
-    await p.evaluate('() => window.__FOO = 1')
+    await p.evaluate('window.__FOO = 1')
     await watchdog
 
 
@@ -76,26 +79,24 @@ async def test_waitfor_function_newdoc(isolated_page, server):
 @sync
 async def test_waitfor_poll_on_interval(isolated_page, server):
     p = isolated_page
-    start = time()
+    start = perf_counter_ms()
     polling = 100
     success = False
 
     async def watchdog():
-        await p.waitForFunction('() => window.__FOO === "hit"', polling=polling)
+        await p.waitForFunction('window.__FOO === "hit"', polling=polling)
         nonlocal success
         success = True
 
-    await p.evaluate("() => window.__FOO = 'hit'")
+    await p.evaluate("window.__FOO = 'hit'")
     await watchdog()
-    elapsed = time() - start
-    assert elapsed >= polling / 2
+    assert perf_counter_ms() - start >= polling / 2
 
 
 @sync
-@pytest.mark.skip('Fails because of syncer failing to properly raise TimeoutError')
 async def test_waitfor_timeout(isolated_page, server):
     p = isolated_page
-    # should time out
-    # this fails because of issue with syncer
-    with pytest.raises(asyncio.TimeoutError):
-        await p.waitFor(42_000)  # 42 seconds
+    start = perf_counter_ms() 
+    timeout = 42
+    await p.waitFor(timeout)
+    assert perf_counter_ms() - start > timeout/2
