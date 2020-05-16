@@ -40,7 +40,6 @@ if sys.version_info < (3, 8):
 else:
     from typing import Literal
 
-
 if TYPE_CHECKING:
     from pyppeteer.target import Target
     from pyppeteer.browser import Browser, BrowserContext
@@ -1588,8 +1587,8 @@ class Page(AsyncIOEventEmitter):
         """
         return self.mainFrame.waitForXPath(xpath, visible=visible, hidden=hidden, timeout=timeout)
 
-    def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
+    async def waitForFunction(
+        self, pageFunction: str, *args: JSFunctionArg, polling: str = 'raf', timeout: Optional[float] = None,
     ) -> Awaitable[JSHandle]:
         """Wait until the function completes and returns a truthy value.
 
@@ -1615,7 +1614,7 @@ class Page(AsyncIOEventEmitter):
         * ``timeout`` (int|float): maximum time to wait for in milliseconds.
           Defaults to 30000 (30 seconds). Pass ``0`` to disable timeout.
         """
-        return self.mainFrame.waitForFunction(pageFunction=pageFunction, polling=polling, timeout=timeout, *args)
+        return self.mainFrame.waitForFunction(pageFunction, *args, polling=polling, timeout=timeout, *args)
 
 
 supportedMetrics = (
