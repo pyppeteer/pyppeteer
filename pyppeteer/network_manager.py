@@ -11,7 +11,6 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Awaitable, Dict, List, Optional, Set
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import NetworkError
 from pyppeteer.events import Events
@@ -119,12 +118,12 @@ class NetworkManager(AsyncIOEventEmitter):
         is_data_request = event.get('request', {}).get('url', '').startswith('data:')
         if self._protocolRequestInterceptionEnabled and not is_data_request:
             requestId = event['requestId']
-            interceptionId = self._requestIdToInterceptionId.get(requestId)  # noqa: E501
+            interceptionId = self._requestIdToInterceptionId.get(requestId)
             if interceptionId:
                 self._onRequest(event, interceptionId)
-                self._requestIdToInterceptionId.pop(requestId)  # noqa: E501
+                self._requestIdToInterceptionId.pop(requestId)
             else:
-                self._requestIdToResponseWillBeSent[requestId] = event  # noqa: E501
+                self._requestIdToResponseWillBeSent[requestId] = event
             return
         self._onRequest(event, None)
 
@@ -585,7 +584,7 @@ class Response:
         return self._securityDetails
 
     def buffer(self) -> Awaitable[bytes]:
-        """Return awaitable which resolves to str with response body."""
+        """Return awaitable which resolves to bytes with response body."""
         if self._contentFuture is None:
 
             async def buffer_read():
@@ -595,7 +594,7 @@ class Response:
                 if response.get('base64Encoded'):
                     return base64.b64decode(body)
                 # b64decode gives us bytes, we encode this so that this fn always returns a bytes
-                return body
+                return body.encode('utf-8')
 
             self._contentFuture = self._client.loop.create_task(buffer_read())
             return self._contentFuture

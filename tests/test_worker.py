@@ -15,6 +15,7 @@ async def test_worker(isolated_page, server):
     executionContext = await worker.executionContext
     assert await executionContext.evaluate('self.workerFunction()') == 'worker function result'
 
+
 @sync
 async def test_create_destroy_events(isolated_page, event_loop):
     workerCreatedPromise = event_loop.create_future()
@@ -25,6 +26,7 @@ async def test_create_destroy_events(isolated_page, event_loop):
     isolated_page.once('workerdestroyed', lambda w: workerDestroyedPromise.set_result(w))
     await isolated_page.evaluate('workerObj => workerObj.terminate()', workerObj)
     assert await workerDestroyedPromise == worker
+
 
 @sync
 async def test_report_console_logs(isolated_page):
@@ -39,6 +41,7 @@ async def test_report_console_logs(isolated_page):
         'columnNumber': 8,
     }
 
+
 @sync
 async def test_jshandle_for_console_log(isolated_page):
     logPromise = asyncio.get_event_loop().create_future()
@@ -49,6 +52,7 @@ async def test_jshandle_for_console_log(isolated_page):
     assert len(log.args) == 4
     assert await (await log.args[3].getProperty('origin')).jsonValue() == 'null'
 
+
 @sync
 async def test_execution_context(isolated_page):
     workerCreatedPromise = asyncio.get_event_loop().create_future()
@@ -57,12 +61,11 @@ async def test_execution_context(isolated_page):
     ctx = await (await workerCreatedPromise).executionContext
     assert await ctx.evaluate('1+1') == 2
 
+
 @sync
 async def test_report_error(isolated_page):
     errorPromise = asyncio.get_event_loop().create_future()
     isolated_page.on('pageerror', lambda x: errorPromise.set_result(x))
-    await isolated_page.evaluate(
-        '() => new Worker(`data:text/javascript, throw new Error("this is my error");`)'
-    )
+    await isolated_page.evaluate('() => new Worker(`data:text/javascript, throw new Error("this is my error");`)')
     errorLog = await errorPromise
     assert 'this is my error' in errorLog.args[0]

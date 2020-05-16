@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pytest
 from syncer import sync
 
 from pyppeteer.errors import ElementHandleError, NetworkError
-
-
-import pytest
 
 
 class TestQueryObject:

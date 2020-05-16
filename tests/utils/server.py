@@ -3,7 +3,7 @@ import base64
 import functools
 from inspect import isawaitable
 from pathlib import Path
-from typing import Callable, Any, Dict, Union, Awaitable, List, Type
+from typing import Any, Awaitable, Callable, Dict, List, Type, Union
 from urllib.parse import urlparse
 
 from tornado import web

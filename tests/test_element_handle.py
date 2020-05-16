@@ -4,14 +4,12 @@
 import logging
 import sys
 
+import pyppeteer
+import pytest
+from pyppeteer.errors import ElementHandleError
 from syncer import sync
 
-import pyppeteer
-from pyppeteer.errors import ElementHandleError
-
-
 from .utils import attachFrame
-import pytest
 
 
 class TestBoundingBox:
@@ -70,7 +68,7 @@ class TestBoundingBox:
                 <rect id="theRect" x="30" y="50" width="200" height="300"></rect>
             </svg>
         '''
-        )  # noqa: E501
+        )
         element = await self.page.J('#therect')
         pptrBoundingBox = await element.boundingBox()
         webBoundingBox = await self.page.evaluate(
@@ -79,7 +77,7 @@ class TestBoundingBox:
             return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
         }''',
             element,
-        )  # noqa: E501
+        )
         assert pptrBoundingBox == webBoundingBox
 
 
@@ -331,9 +329,7 @@ class TestQuerySelector:
 
     @sync
     async def test_Jeval_subtree(self):
-        htmlContent = (
-            '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
-        )
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         content = await elementHandle.Jeval('.a', 'node => node.innerText')
@@ -341,7 +337,7 @@ class TestQuerySelector:
 
     @sync
     async def test_Jeval_with_missing_selector(self):
-        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'  # noqa: E501
+        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"></div>'
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         with pytest.raises(ElementHandleError) as cm:
@@ -407,9 +403,7 @@ class TestQuerySelector:
 
     @sync
     async def test_xpath(self):
-        await self.page.setContent(
-            '<html><body><div class="second"><div class="inner">A</div></div></body></html>'  # noqa: E501
-        )
+        await self.page.setContent('<html><body><div class="second"><div class="inner">A</div></div></body></html>')
         html = await self.page.querySelector('html')
         second = await html.xpath('./body/div[contains(@class, \'second\')]')
         inner = await second[0].xpath('./div[contains(@class, \'inner\')]')

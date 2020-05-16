@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
 
 from pyee import AsyncIOEventEmitter
-
 from pyppeteer import helpers
 from pyppeteer.accessibility import Accessibility
 from pyppeteer.connection import CDPSession, Connection
@@ -570,7 +569,7 @@ class Page(AsyncIOEventEmitter):
                 return promise;
             };
         }
-        '''  # noqa: E501
+        '''
         expression = helpers.evaluationString(addPageBinding, name)
         await self._client.send('Runtime.addBinding', {'name': name})
         await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': expression})
@@ -705,7 +704,9 @@ class Page(AsyncIOEventEmitter):
         except Exception as e:
             logger.error(f'An exception occurred: {e}')
 
-    def _addConsoleMessage(self, type_: str, args: List[JSHandle], stackTrace: Protocol.Runtime.StackTrace=None) -> None:
+    def _addConsoleMessage(
+        self, type_: str, args: List[JSHandle], stackTrace: Protocol.Runtime.StackTrace = None
+    ) -> None:
         if not self.listeners(Events.Page.Console):
             for arg in args:
                 self._client.loop.create_task(arg.dispose())
@@ -819,9 +820,7 @@ class Page(AsyncIOEventEmitter):
             )
         )[0]
 
-    async def waitForNavigation(
-        self, timeout: float = None, waitUntil: WaitTargets = None,
-    ) -> Optional[Response]:
+    async def waitForNavigation(self, timeout: float = None, waitUntil: WaitTargets = None,) -> Optional[Response]:
         """Wait for navigation.
 
         Available options are same as :meth:`goto` method.
@@ -853,7 +852,7 @@ class Page(AsyncIOEventEmitter):
         .. note::
             Usage of the History API to change the URL is considered a
             navigation.
-        """  # noqa: E501
+        """
         return await self.mainFrame.waitForNavigation(timeout=timeout, waitUntil=waitUntil)
 
     def _sessionClosePromise(self) -> Awaitable[None]:
@@ -884,7 +883,7 @@ class Page(AsyncIOEventEmitter):
             firstRequest = await page.waitForRequest('http://example.com/resource')
             finalRequest = await page.waitForRequest(lambda req: req.url == 'http://example.com' and req.method == 'GET')
             return firstRequest.url
-        """  # noqa: E501
+        """
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
@@ -918,7 +917,7 @@ class Page(AsyncIOEventEmitter):
             firstResponse = await page.waitForResponse('http://example.com/resource')
             finalResponse = await page.waitForResponse(lambda res: res.url == 'http://example.com' and res.status == 200)
             return finalResponse.ok
-        """  # noqa: E501
+        """
         if not timeout:
             timeout = self._timeoutSettings.timeout
 
@@ -1354,7 +1353,7 @@ class Page(AsyncIOEventEmitter):
 
             1. Script tags inside templates are not evaluated.
             2. Page styles are not visible inside templates.
-        """  # noqa: E501
+        """
         paperWidth: Optional[float] = 8.5
         paperHeight: Optional[float] = 11.0
         if format:
@@ -1419,7 +1418,7 @@ class Page(AsyncIOEventEmitter):
            If ``runBeforeUnload`` is passed as ``True``, a ``beforeunload``
            dialog might be summoned and should be handled manually via page's
            ``dialog`` event.
-        """  # noqa: E501
+        """
         conn = self._client._connection
         if conn is None:
             raise PageError('Protocol Error: Connection Closed. Most likely the page has been closed.')
@@ -1506,9 +1505,7 @@ class Page(AsyncIOEventEmitter):
         """
         return await self.mainFrame.type(selector, text, **kwargs)
 
-    def waitFor(
-        self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs
-    ) -> Awaitable:
+    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float], *args: JSFunctionArg, **kwargs) -> Awaitable:
         """Wait for function, timeout, or element which matches on page.
 
         This method behaves differently with respect to the first argument:
