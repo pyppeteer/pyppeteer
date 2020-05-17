@@ -33,7 +33,7 @@ if NO_PROGRESS_BAR.lower() in ('1', 'true'):
 
 # Windows archive name changed at r591479.
 windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
-    
+
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
@@ -91,7 +91,10 @@ def download_zip(url: str) -> BytesIO:
 
         process_bar = tqdm(
             total=total_length,
-            file=os.devnull if NO_PROGRESS_BAR else None,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            disable=NO_PROGRESS_BAR,
         )
 
         # 10 * 1024
