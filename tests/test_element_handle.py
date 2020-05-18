@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import asyncio
 
 import pytest
 from pyppeteer.errors import BrowserError
@@ -19,12 +20,12 @@ class TestBoundingBox:
 
     @sync
     async def test_nested_frame(self, isolated_page, server, firefox):
-        # caution: flaky test
         await isolated_page.setViewport({'width': 500, 'height': 500})
         await isolated_page.goto(server / 'frames/nested-frames.html')
+        # need order guaranteed set for this to work
         nestedFrame = isolated_page.frames[1].childFrames[1]
+        await asyncio.sleep(5)
         elementHandle = await nestedFrame.J('div')
-        # todo: various amounts of sleep will intermittently fix this
         box = await elementHandle.boundingBox()
         if firefox:
             assert box == {'x': 28, 'y': 182, 'width': 254, 'height': 18}
