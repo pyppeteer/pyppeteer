@@ -22,7 +22,6 @@ class TestBoundingBox:
     async def test_nested_frame(self, isolated_page, server, firefox):
         await isolated_page.setViewport({'width': 500, 'height': 500})
         await isolated_page.goto(server / 'frames/nested-frames.html')
-        # need order guaranteed set for this to work
         nestedFrame = isolated_page.frames[1].childFrames[1]
         await asyncio.sleep(5)
         elementHandle = await nestedFrame.J('div')
