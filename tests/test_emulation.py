@@ -3,12 +3,11 @@ from pyppeteer.device_descriptors import devices
 from syncer import sync
 from tests.conftest import chrome_only
 
+iPhone = devices['iPhone 6']
+iPhoneLandscape = devices['iPhone 6 landscape']
+
 
 class TestPageViewport:
-
-    iPhone = devices['iPhone 6']
-    iPhoneLandscape = devices['iPhone 6 landscape']
-
     @sync
     async def test_gets_viewport_size(self, isolated_page):
         """The page should get the proper viewport size"""
@@ -23,7 +22,7 @@ class TestPageViewport:
         page = isolated_page
         await page.goto(server / 'mobile.html')
         assert await page.evaluate("window.innerWidth") == 800
-        await page.setViewport(self.iPhone["viewport"])
+        await page.setViewport(iPhone["viewport"])
         assert await page.evaluate("window.innerWidth") == 375
         await page.setViewport({"width": 400, "height": 300})
         assert await page.evaluate("window.innerWidth") == 400
@@ -35,7 +34,7 @@ class TestPageViewport:
         page = isolated_page
         await page.goto(server / 'mobile.html')
         assert await page.evaluate("'ontouchstart' in window") == False
-        await page.setViewport(self.iPhone["viewport"])
+        await page.setViewport(iPhone["viewport"])
         assert await page.evaluate("'ontouchstart' in window") == True
         dispatchTouch = """() => {
                 let fulfill;
@@ -61,7 +60,7 @@ class TestPageViewport:
         page = isolated_page
         await page.goto(server / 'detect-touch.html')
         assert await page.evaluate("document.body.textContent.trim()") == 'NO'
-        await page.setViewport(self.iPhone['viewport'])
+        await page.setViewport(iPhone['viewport'])
         await page.goto(server / 'detect-touch.html')
         assert await page.evaluate("document.body.textContent.trim()") == 'YES'
 
@@ -77,28 +76,28 @@ class TestPageViewport:
     @chrome_only
     @sync
     async def test_supports_landscape_emulation(self, server, isolated_page):
-        """Verify the page emulation should support landscape emulation."""
+        """It should support landscape emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
         assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
-        await page.setViewport(self.iPhoneLandscape['viewport'])
+        await page.setViewport(iPhoneLandscape['viewport'])
         assert await page.evaluate("screen.orientation.type") == 'landscape-primary'
         await page.setViewport({"width": 100, "height": 100})
         assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
 
 
-"""
-  describe('Page.emulate', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
+class TestPageEmulation:
+    @sync
+    async def test_page_emulates_mobile_devices(self, server, isolated_page):
+        """Verify the page emulation works with emulating mobile devices."""
+        page = isolated_page
+        await page.goto(server / 'mobile.html')
+        await page.emulate(viewport=iPhone['viewport'], userAgent=iPhone['userAgent'])
+        assert await page.evaluate("window.innerWidth") == 375
+        assert 'iPhone' in await page.evaluate("navigator.userAgent")
 
-      await page.goto(server.PREFIX + '/mobile.html');
-      await page.emulate(iPhone);
-      expect(await page.evaluate(() => window.innerWidth)).toBe(375);
-      expect(await page.evaluate(() => navigator.userAgent)).toContain(
-        'iPhone'
-      );
-    });
+
+"""
     it('should support clicking', async () => {
       const { page, server } = getTestState();
 
