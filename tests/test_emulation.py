@@ -96,183 +96,110 @@ class TestPageEmulation:
         assert await page.evaluate("window.innerWidth") == 375
         assert 'iPhone' in await page.evaluate("navigator.userAgent")
 
+    @sync
+    async def test_supports_clicking(self, server, isolated_page):
+        """Verify the emulation should support clicking."""
+        page = isolated_page
+        await page.emulate(viewport=iPhone['viewport'], userAgent=iPhone['userAgent'])
+        await page.goto(server / 'input/button.html')
+        button = await page.J('button')
+        await page.evaluate("(button) => (button.style.marginTop = '200px')", button)
+        await button.click()
+        assert await page.evaluate("result") == 'Clicked'
+
+
+# deprecated
+class TestEmulationMedia:
+    """
+    emulateMedia is deprecated in favour of emulateMediaType but we
+    don't want to remove it from Puppeteer just yet. We can't check
+    that emulateMedia === emulateMediaType because when running tests
+    with COVERAGE=1 the methods get rewritten. So instead we
+    duplicate the tests for emulateMediaType and ensure they pass
+    when calling the deprecated emulateMedia method.
+
+    If you update these tests, you should update emulateMediaType's
+    tests, and vice-versa.
+    """
+
+    @chrome_only
+    @sync
+    async def test_emulation_media(self, isolated_page):
+        """The emulation media should work."""
+        page = isolated_page
+
+        assert await page.evaluate("matchMedia('screen').matches") == True
+        assert await page.evaluate("matchMedia('print').matches") == False
+        await page.emulateMedia('print')
+        assert await page.evaluate("matchMedia('screen').matches") == False
+        assert await page.evaluate("matchMedia('print').matches") == True
+        await page.emulateMedia(None)
+        assert await page.evaluate("matchMedia('screen').matches") == True
+        assert await page.evaluate("matchMedia('print').matches") == False
+
+    @sync
+    async def test_throws_err_if_bad_arg(self, isolated_page):
+        """Exception should be thrown in case of bad argument"""
+        page = isolated_page
+        with pytest.raises(ValueError, match="Unsupported media type: bad"):
+            await page.emulateMedia('bad')
+
+
+@pytest.mark.skip(reason="Not implemented: `'Page' object has no attribute 'emulateMediaType'`")
+class TestEmulateMediaType:
+    """TestEmulationMedia is a duplicate of this."""
+
+    @chrome_only
+    @sync
+    async def test_emulation_media(self, isolated_page):
+        """The emulation media should work."""
+        page = isolated_page
+
+        assert await page.evaluate("matchMedia('screen').matches") == True
+        assert await page.evaluate("matchMedia('print').matches") == False
+        await page.emulateMediaType('print')
+        assert await page.evaluate("matchMedia('screen').matches") == False
+        assert await page.evaluate("matchMedia('print').matches") == True
+        await page.emulateMediaType(None)
+        assert await page.evaluate("matchMedia('screen').matches") == True
+        assert await page.evaluate("matchMedia('print').matches") == False
+
+    @sync
+    async def test_throws_err_if_bad_arg(self, isolated_page):
+        """Exception should be thrown in case of bad argument"""
+        page = isolated_page
+        with pytest.raises(ValueError, match="Unsupported media type: bad"):
+            await page.emulateMediaType('bad')
+
+
+class TestEmulateMediaFeatures:
+    @chrome_only
+    @sync
+    async def test_emulate_media_features_work(self, isolated_page):
+        """The emulate media features work."""
+        page = isolated_page
+        await page.emulateMediaFeatures([{'name': 'prefers-reduced-motion', 'value': 'reduce'}])
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches") == True
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: no-preference)').matches") == False
+        await page.emulateMediaFeatures([{'name': 'prefers-color-scheme', 'value': 'light'}])
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") == True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") == False
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") == False
+        await page.emulateMediaFeatures([{'name': 'prefers-color-scheme', 'value': 'dark'}])
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") == True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") == False
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") == False
+        await page.emulateMediaFeatures(
+            [{'name': 'prefers-reduced-motion', 'value': 'reduce'}, {'name': 'prefers-color-scheme', 'value': 'light'},]
+        )
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches") == True
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: no-preference)').matches") == False
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") == True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") == False
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") == False
+
 
 """
-    it('should support clicking', async () => {
-      const { page, server } = getTestState();
-
-      await page.emulate(iPhone);
-      await page.goto(server.PREFIX + '/input/button.html');
-      const button = await page.$('button');
-      await page.evaluate(
-        (button) => (button.style.marginTop = '200px'),
-        button
-      );
-      await button.click();
-      expect(await page.evaluate(() => result)).toBe('Clicked');
-    });
-  });
-
-  describe('Page.emulateMedia [deprecated]', function () {
-    /* emulateMedia is deprecated in favour of emulateMediaType but we
-     * don't want to remove it from Puppeteer just yet. We can't check
-     * that emulateMedia === emulateMediaType because when running tests
-     * with COVERAGE=1 the methods get rewritten. So instead we
-     * duplicate the tests for emulateMediaType and ensure they pass
-     * when calling the deprecated emulateMedia method.
-     *
-     * If you update these tests, you should update emulateMediaType's
-     * tests, and vice-versa.
-     */
-    itFailsFirefox('should work', async () => {
-      const { page } = getTestState();
-
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        true
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(
-        false
-      );
-      await page.emulateMedia('print');
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        false
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(true);
-      await page.emulateMedia(null);
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        true
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(
-        false
-      );
-    });
-    it('should throw in case of bad argument', async () => {
-      const { page } = getTestState();
-
-      let error = null;
-      await page.emulateMedia('bad').catch((error_) => (error = error_));
-      expect(error.message).toBe('Unsupported media type: bad');
-    });
-  });
-
-  describe('Page.emulateMediaType', function () {
-    /* NOTE! Updating these tests? Update the emulateMedia tests above
-     * too (and see the big comment for why we have these duplicated).
-     */
-    itFailsFirefox('should work', async () => {
-      const { page } = getTestState();
-
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        true
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(
-        false
-      );
-      await page.emulateMediaType('print');
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        false
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(true);
-      await page.emulateMediaType(null);
-      expect(await page.evaluate(() => matchMedia('screen').matches)).toBe(
-        true
-      );
-      expect(await page.evaluate(() => matchMedia('print').matches)).toBe(
-        false
-      );
-    });
-    it('should throw in case of bad argument', async () => {
-      const { page } = getTestState();
-
-      let error = null;
-      await page.emulateMediaType('bad').catch((error_) => (error = error_));
-      expect(error.message).toBe('Unsupported media type: bad');
-    });
-  });
-
-  describe('Page.emulateMediaFeatures', function () {
-    itFailsFirefox('should work', async () => {
-      const { page } = getTestState();
-
-      await page.emulateMediaFeatures([
-        { name: 'prefers-reduced-motion', value: 'reduce' },
-      ]);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-reduced-motion: reduce)').matches
-        )
-      ).toBe(true);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-reduced-motion: no-preference)').matches
-        )
-      ).toBe(false);
-      await page.emulateMediaFeatures([
-        { name: 'prefers-color-scheme', value: 'light' },
-      ]);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: light)').matches
-        )
-      ).toBe(true);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: dark)').matches
-        )
-      ).toBe(false);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: no-preference)').matches
-        )
-      ).toBe(false);
-      await page.emulateMediaFeatures([
-        { name: 'prefers-color-scheme', value: 'dark' },
-      ]);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: dark)').matches
-        )
-      ).toBe(true);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: light)').matches
-        )
-      ).toBe(false);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: no-preference)').matches
-        )
-      ).toBe(false);
-      await page.emulateMediaFeatures([
-        { name: 'prefers-reduced-motion', value: 'reduce' },
-        { name: 'prefers-color-scheme', value: 'light' },
-      ]);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-reduced-motion: reduce)').matches
-        )
-      ).toBe(true);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-reduced-motion: no-preference)').matches
-        )
-      ).toBe(false);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: light)').matches
-        )
-      ).toBe(true);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: dark)').matches
-        )
-      ).toBe(false);
-      expect(
-        await page.evaluate(
-          () => matchMedia('(prefers-color-scheme: no-preference)').matches
-        )
-      ).toBe(false);
-    });
     it('should throw in case of bad argument', async () => {
       const { page } = getTestState();
 
