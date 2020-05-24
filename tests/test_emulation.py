@@ -1,5 +1,6 @@
 import pytest
 from pyppeteer.device_descriptors import devices
+from pyppeteer.errors import BrowserError
 from syncer import sync
 from tests.conftest import chrome_only
 
@@ -198,19 +199,15 @@ class TestEmulateMediaFeatures:
         assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") == False
         assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") == False
 
+    @sync
+    async def test_throws_err_if_bad_arg(self, isolated_page):
+        """Exception should be thrown in case of bad argument"""
+        page = isolated_page
+        with pytest.raises(BrowserError, match="Unsupported media feature: {'name': 'bad', 'value': ''}"):
+            await page.emulateMediaFeatures([{'name': 'bad', 'value': ''}])
+
 
 """
-    it('should throw in case of bad argument', async () => {
-      const { page } = getTestState();
-
-      let error = null;
-      await page
-        .emulateMediaFeatures([{ name: 'bad', value: '' }])
-        .catch((error_) => (error = error_));
-      expect(error.message).toBe('Unsupported media feature: bad');
-    });
-  });
-
   describeFailsFirefox('Page.emulateTimezone', function () {
     it('should work', async () => {
       const { page } = getTestState();
