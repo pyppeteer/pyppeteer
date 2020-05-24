@@ -67,11 +67,11 @@ class TestPageViewport:
 
     @chrome_only
     @sync
-    async def test_is_detecteable_by_modernizr(self, assets, isolated_page):
+    async def test_is_detecteable_by_modernizr(self, server, isolated_page):
         """Verify the emulation should be detectable by Modernizr JS lib."""
         page = isolated_page
         await page.setViewport({"width": 800, "height": 600, "hasTouch": True})
-        await page.addScriptTag(path=f"{assets / 'modernizr.js'}")
+        await page.addScriptTag(url=f"{server / 'modernizr.js'}")
         assert await page.evaluate("Modernizr.touchevents") == True
 
     @chrome_only
