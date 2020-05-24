@@ -1,6 +1,6 @@
 import pytest
 from pyppeteer.device_descriptors import devices
-from pyppeteer.errors import BrowserError
+from pyppeteer.errors import BrowserError, PageError
 from syncer import sync
 from tests.conftest import chrome_only
 
@@ -210,6 +210,7 @@ class TestEmulateMediaFeatures:
 class TestEmulateTimezone:
     @sync
     async def test_emulate_timezone_works(self, isolated_page):
+        """Verify emulation of timezone works."""
         page = isolated_page
         await page.evaluate("globalThis.date = new Date(1479579154987)")
         await page.emulateTimezone('America/Jamaica')
@@ -227,17 +228,11 @@ class TestEmulateTimezone:
             == 'Sat Nov 19 2016 19:12:34 GMT+0100 (Central European Standard Time)'
         )
 
-
-"""
-    it('should throw for invalid timezone IDs', async () => {
-      const { page } = getTestState();
-
-      let error = null;
-      await page.emulateTimezone('Foo/Bar').catch((error_) => (error = error_));
-      expect(error.message).toBe('Invalid timezone ID: Foo/Bar');
-      await page.emulateTimezone('Baz/Qux').catch((error_) => (error = error_));
-      expect(error.message).toBe('Invalid timezone ID: Baz/Qux');
-    });
-  });
-});
-"""
+    @sync
+    async def test_err_thrown_if_invalid_timezone_ids(self, isolated_page):
+        """The exceptions should be thrown for invalid timezone IDs."""
+        page = isolated_page
+        with pytest.raises(PageError, match='Invalid timezone ID: Foo/Bar'):
+            await page.emulateTimezone('Foo/Bar')
+        with pytest.raises(PageError, match='Invalid timezone ID: Baz/Qux'):
+            await page.emulateTimezone('Baz/Qux')
