@@ -207,35 +207,28 @@ class TestEmulateMediaFeatures:
             await page.emulateMediaFeatures([{'name': 'bad', 'value': ''}])
 
 
+class TestEmulateTimezone:
+    @sync
+    async def test_emulate_timezone_works(self, isolated_page):
+        page = isolated_page
+        await page.evaluate("globalThis.date = new Date(1479579154987)")
+        await page.emulateTimezone('America/Jamaica')
+        assert await page.evaluate("date.toString()") == 'Sat Nov 19 2016 13:12:34 GMT-0500 (Eastern Standard Time)'
+        await page.emulateTimezone('Pacific/Honolulu')
+        assert (
+            await page.evaluate("date.toString()")
+            == 'Sat Nov 19 2016 08:12:34 GMT-1000 (Hawaii-Aleutian Standard Time)'
+        )
+        await page.emulateTimezone('America/Buenos_Aires')
+        assert await page.evaluate("date.toString()") == 'Sat Nov 19 2016 15:12:34 GMT-0300 (Argentina Standard Time)'
+        await page.emulateTimezone('Europe/Berlin')
+        assert (
+            await page.evaluate("date.toString()")
+            == 'Sat Nov 19 2016 19:12:34 GMT+0100 (Central European Standard Time)'
+        )
+
+
 """
-  describeFailsFirefox('Page.emulateTimezone', function () {
-    it('should work', async () => {
-      const { page } = getTestState();
-
-      page.evaluate(() => {
-        globalThis.date = new Date(1479579154987);
-      });
-      await page.emulateTimezone('America/Jamaica');
-      expect(await page.evaluate(() => date.toString())).toBe(
-        'Sat Nov 19 2016 13:12:34 GMT-0500 (Eastern Standard Time)'
-      );
-
-      await page.emulateTimezone('Pacific/Honolulu');
-      expect(await page.evaluate(() => date.toString())).toBe(
-        'Sat Nov 19 2016 08:12:34 GMT-1000 (Hawaii-Aleutian Standard Time)'
-      );
-
-      await page.emulateTimezone('America/Buenos_Aires');
-      expect(await page.evaluate(() => date.toString())).toBe(
-        'Sat Nov 19 2016 15:12:34 GMT-0300 (Argentina Standard Time)'
-      );
-
-      await page.emulateTimezone('Europe/Berlin');
-      expect(await page.evaluate(() => date.toString())).toBe(
-        'Sat Nov 19 2016 19:12:34 GMT+0100 (Central European Standard Time)'
-      );
-    });
-
     it('should throw for invalid timezone IDs', async () => {
       const { page } = getTestState();
 
