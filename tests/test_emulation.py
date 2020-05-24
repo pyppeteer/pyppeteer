@@ -10,7 +10,7 @@ class TestPageViewport:
     iPhoneLandscape = devices['iPhone 6 landscape']
 
     @sync
-    async def test_viewport_size(self, isolated_page):
+    async def test_gets_viewport_size(self, isolated_page):
         """The page should get the proper viewport size"""
         page = isolated_page
         assert page.viewport == {"width": 800, "height": 600}
@@ -18,8 +18,8 @@ class TestPageViewport:
         assert page.viewport == {"width": 123, "height": 456}
 
     @sync
-    async def test_viewport_size(self, server, isolated_page):
-        """The page should support mobile emulation"""
+    async def test_supports_mobile_emulation(self, server, isolated_page):
+        """The page should support mobile emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
         assert await page.evaluate("window.innerWidth") == 800
@@ -30,7 +30,7 @@ class TestPageViewport:
 
     @chrome_only
     @sync
-    async def test_support_touch(self, server, isolated_page):
+    async def test_supports_touch(self, server, isolated_page):
         """Verify support of touch emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
@@ -54,50 +54,40 @@ class TestPageViewport:
         await page.setViewport({"width": 100, "height": 100})
         assert await page.evaluate("'ontouchstart' in window") == False
 
+    @chrome_only
+    @sync
+    async def test_detects_touch(self, server, isolated_page):
+        """It should detect touch when applying viewport with touches."""
+        page = isolated_page
+        await page.goto(server / 'detect-touch.html')
+        assert await page.evaluate("document.body.textContent.trim()") == 'NO'
+        await page.setViewport(self.iPhone['viewport'])
+        await page.goto(server / 'detect-touch.html')
+        assert await page.evaluate("document.body.textContent.trim()") == 'YES'
+
+    @chrome_only
+    @sync
+    async def test_is_detecteable_by_modernizr(self, assets, isolated_page):
+        """Verify the emulation should be detectable by Modernizr JS lib."""
+        page = isolated_page
+        await page.setViewport({"width": 800, "height": 600, "hasTouch": True})
+        await page.addScriptTag(path=f"{assets / 'modernizr.js'}")
+        assert await page.evaluate("Modernizr.touchevents") == True
+
+    @chrome_only
+    @sync
+    async def test_supports_landscape_emulation(self, server, isolated_page):
+        """Verify the page emulation should support landscape emulation."""
+        page = isolated_page
+        await page.goto(server / 'mobile.html')
+        assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
+        await page.setViewport(self.iPhoneLandscape['viewport'])
+        assert await page.evaluate("screen.orientation.type") == 'landscape-primary'
+        await page.setViewport({"width": 100, "height": 100})
+        assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
+
 
 """
-
-    itFailsFirefox('should be detectable by Modernizr', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.PREFIX + '/detect-touch.html');
-      expect(await page.evaluate(() => document.body.textContent.trim())).toBe(
-        'NO'
-      );
-      await page.setViewport(iPhone.viewport);
-      await page.goto(server.PREFIX + '/detect-touch.html');
-      expect(await page.evaluate(() => document.body.textContent.trim())).toBe(
-        'YES'
-      );
-
-    itFailsFirefox(
-      'should detect touch when applying viewport with touches',
-      async () => {
-        const { page, server } = getTestState();
-
-        await page.setViewport({ width: 800, height: 600, hasTouch: true });
-        await page.addScriptTag({ url: server.PREFIX + '/modernizr.js' });
-        expect(await page.evaluate(() => Modernizr.touchevents)).toBe(true);
-      }
-
-    itFailsFirefox('should support landscape emulation', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.PREFIX + '/mobile.html');
-      expect(await page.evaluate(() => screen.orientation.type)).toBe(
-        'portrait-primary'
-      );
-      await page.setViewport(iPhoneLandscape.viewport);
-      expect(await page.evaluate(() => screen.orientation.type)).toBe(
-        'landscape-primary'
-      );
-      await page.setViewport({ width: 100, height: 100 });
-      expect(await page.evaluate(() => screen.orientation.type)).toBe(
-        'portrait-primary'
-      );
-    });
-  });
-
   describe('Page.emulate', function () {
     it('should work', async () => {
       const { page, server } = getTestState();
