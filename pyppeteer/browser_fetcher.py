@@ -25,9 +25,10 @@ from zipfile import ZipFile
 
 import certifi
 import urllib3
+from tqdm import tqdm
+
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
 from pyppeteer.models import Platform, RevisionInfo
-from tqdm import tqdm
 
 if sys.version_info < (3, 8):
     from typing_inspect import get_args
