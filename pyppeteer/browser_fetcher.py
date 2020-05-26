@@ -80,8 +80,10 @@ def download_file(url: str, zip_path: BytesIO) -> None:
     file_req = request.urlopen(url)
     progress_bar = tqdm(
         total=int(file_req.getheader('Content-Length', 0)),
+        unit="B",
         unit_scale=True,
-        file=os.devnull if NO_PROGRESS_BAR else None,
+        unit_divisor=1024,
+        disable=NO_PROGRESS_BAR,
     )
     for chunk in iter(lambda: file_req.read(CHUNK_SIZE), b''):
         progress_bar.update(CHUNK_SIZE)
