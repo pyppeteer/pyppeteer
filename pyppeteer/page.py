@@ -993,8 +993,7 @@ class Page(AsyncIOEventEmitter):
 
         * ``userAgent`` (str): user agent string.
         """
-        await self.setViewport(viewport)
-        await self.setUserAgent(userAgent)
+        await asyncio.gather(self.setViewport(viewport), self.setUserAgent(userAgent))
 
     async def setJavaScriptEnabled(self, enabled: bool) -> None:
         """Set JavaScript enable/disable."""
