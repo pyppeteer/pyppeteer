@@ -62,7 +62,6 @@ class TestPageViewport:
         await page.goto(server / 'detect-touch.html')
         assert await page.evaluate('document.body.textContent.trim()') == 'NO'
         await page.setViewport(iPhone['viewport'])
-        await page.goto(server / 'detect-touch.html')
         assert await page.evaluate('document.body.textContent.trim()') == 'YES'
 
     @chrome_only
