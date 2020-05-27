@@ -1,185 +1,172 @@
 import asyncio
-import base64
-import functools
+import inspect
+import logging
+import ssl
+from functools import partial
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Type, Union
+from typing import Any, Awaitable, Callable, Iterable, Mapping, Optional, Union
 from urllib.parse import urlparse
 
-from tornado import web
-from tornado.httputil import HTTPServerRequest
-from tornado.log import access_log
-from tornado.routing import _RuleList
+from aiohttp import web
+from aiohttp.log import web_logger
+from aiohttp.web_app import _Middleware
+from aiohttp.web_exceptions import HTTPNotFound
+from aiohttp.web_urldispatcher import UrlDispatcher
 
-from pyppeteer.util import get_free_port
-
-BASE_HTML = '''
-<html>
-<head><title>main</title></head>
-<body>
-<h1 id="hello">Hello</h1>
-<a id="link1" href="./1">link1</a>
-<a id="link2" href="./2">link2</a>
-</body>
-</html>
-'''
+RequestPrecondition = Union[Callable, Callable[[web.Request], Any], Awaitable[Any]]
 
 
-class BaseHandler(web.RequestHandler):
-    def get(self) -> None:
-        self.set_header(
-            'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0',
-        )
-
-
-def auth_api(username: str, password: str) -> bool:
-    if username == 'user' and password == 'pass':
-        return True
-    else:
-        return False
-
-
-def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
-    def wrapper(f: Callable) -> Callable:
-        def _request_auth(handler: Any) -> None:
-            handler.set_header('WWW-Authenticate', 'Basic realm=JSL')
-            handler.set_status(401)
-            handler.finish()
-
-        @functools.wraps(f)
-        def new_f(*args: Any) -> None:
-            handler = args[0]
-
-            auth_header = handler.request.headers.get('Authorization')
-            if auth_header is None:
-                return _request_auth(handler)
-            if not auth_header.startswith('Basic '):
-                return _request_auth(handler)
-
-            auth_decoded = base64.b64decode(auth_header[6:])
-            username, password = auth_decoded.decode('utf-8').split(':', 2)
-
-            if auth(username, password):
-                f(*args)
-            else:
-                _request_auth(handler)
-
-        return new_f
-
-    return wrapper
-
-
-class AuthHandler:
-    @basic_auth(auth_api)
-    def get(self) -> None:
-        super().get()
-        self.write('ok')
-
-
-class _StaticFileHandler(web.StaticFileHandler):
-    # todo: feels like a hack...
-    request_headers = {}
-    one_time_request_headers = {}
-    callbacks = {}
-    request_preconditions = {}
-    request_resp = {}
-
-    @classmethod
-    def set_request_header(cls, path: str, headers: Dict[str, str], one_time: bool = False):
-        (cls.one_time_request_headers if one_time else cls.request_headers)[path.strip('/')] = headers
-
-    @classmethod
-    def add_one_time_callback(cls, path: str, func: Callable[[HTTPServerRequest], Any]):
-        stripped = path.strip('/')
-        if stripped not in cls.callbacks:
-            cls.callbacks[stripped] = []
-        cls.callbacks[stripped].append(func)
-
-    @classmethod
-    def add_one_time_request_precondition(cls, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        cls.add_one_time_callback(path, lambda _: precondition() if callable(precondition) else precondition)
-
-    @classmethod
-    def add_one_time_request_resp(cls, path: str, resp: bytes):
-        cls.request_resp[path.strip('/')] = resp
-
-    async def get(self, path: str, include_body: bool = True) -> None:
-        if path in self.callbacks:
-            callbacks = self.callbacks[path][:]
-            del self.callbacks[path]
-            for callback in callbacks:
-                func_res = callback(self.request)
-                if isawaitable(func_res):
-                    await func_res
-
-        headers = self.request_headers.get(path, {})
-        if path in self.one_time_request_headers:
-            headers = self.one_time_request_headers[path]
-            del self.one_time_request_headers[path]
-
-        if headers:
-            [self.set_header(k, v) for k, v in headers.items()]
-
-        if path in self.request_resp:
-            resp = self.request_resp[path]
-            del self.request_resp[path]
-            self.write(resp)
-        else:
-            await super().get(path, include_body)
-
-
-class _Application(web.Application):
+class WrappedApplication(web.Application):
     def __init__(
         self,
-        handlers: _RuleList = None,
-        default_host: str = None,
-        transforms: List[Type["OutputTransform"]] = None,
-        **settings: Any,
+        *,
+        logger: logging.Logger = web_logger,
+        router: Optional[UrlDispatcher] = None,
+        middlewares: Iterable[_Middleware] = (),
+        handler_args: Mapping[str, Any] = None,
+        client_max_size: int = 1024 ** 2,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+        debug: Any = ...,
     ) -> None:
-        self._handlers = handlers
-        self._static_handler_instance = self._handlers[0][1]
-        super().__init__(handlers, default_host, transforms, **settings)
+        self.pre_request_subscribers = {}
+        self.raisable_statuses = {
+            204: web.HTTPNoContent(),
+        }
+        super().__init__(
+            logger=logger,
+            router=router,
+            middlewares=middlewares,
+            handler_args=handler_args,
+            client_max_size=client_max_size,
+            loop=loop,
+            debug=debug,
+        )
+        self.router._frozen = False
 
-    def add_one_time_request_delay(self, path: str, delay: float):
-        async def _delay():
-            await asyncio.sleep(delay)
+    @staticmethod
+    def get_pre_request_caller(precondition: RequestPrecondition):
+        """
+        Returns an async function which executes (if necessary) precondition with the single argument of request
+         (if necessary) and awaits the result (if necessary). This allows precondition to be an awaitable (eg future),
+         async, or nonasync functions
+        Args:
+            precondition: (async or nonasync) function or awaitable
 
-        self.add_one_time_request_precondition(path, precondition=_delay)
+        Returns:
+            function which waits for the completion of precondition
+        """
 
-    def add_one_time_request_resp(self, path: str, resp: bytes):
-        self._static_handler_instance.add_one_time_request_resp(urlparse(path), resp)
+        async def caller(request):
+            func_res = precondition
+            if callable(precondition):
+                args = []
+                # only pass in request handler if we detect one, and only one arg
+                if len(inspect.getfullargspec(precondition).args) == 1:
+                    args = [request]
+                func_res = precondition(*args)
+            if isawaitable(func_res):
+                func_res = await func_res
+            return func_res
 
-    def add_one_time_request_precondition(self, path: str, precondition: Union[Awaitable, Callable[[], None]]):
-        self._static_handler_instance.add_one_time_request_precondition(urlparse(path).path, precondition)
+        return caller
 
-    def add_one_time_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._static_handler_instance.set_request_header(urlparse(path).path, headers, True)
+    def add_pre_request_subscriber(self, path: str, precondition: RequestPrecondition, should_return: bool):
+        path = urlparse(path).path.strip('/')
 
-    def add_header_for_request(self, path: str, headers: Dict[str, str]):
-        self._static_handler_instance.set_request_header(urlparse(path).path, headers, False)
+        caller = self.get_pre_request_caller(precondition)
 
-    def waitForRequest(self, path: str) -> Awaitable[HTTPServerRequest]:
+        if path not in self.pre_request_subscribers:
+            self.pre_request_subscribers[path] = []
+        self.pre_request_subscribers[path].append((caller, should_return))
+
+    def set_one_time_redirects(self, from_path: str, *path_items: str):
+        last_path = from_path
+        for to_path in path_items:
+
+            def redirect_raiser(redirect_path):
+                raise web.HTTPFound(redirect_path)
+
+            # we need to wrap the fn in partial to 'capture' to_path at the current iteration in the loop
+            # otherwise, every endpoint will (incorrectly) redirect to the last item in the chain
+            self.add_pre_request_subscriber(last_path, partial(redirect_raiser, to_path), should_return=True)
+            last_path = to_path
+
+    def set_one_time_response(self, path: str, response: str = None, status: int = 200):
+        def responder():
+
+            if status in self.raisable_statuses:
+                raise self.raisable_statuses[status]
+            return web.Response(body=response, status=status)
+
+        self.add_pre_request_subscriber(path, responder, should_return=True)
+
+    def waitForRequest(self, path: str):
         fut = asyncio.get_event_loop().create_future()
 
         def resolve_fut(req):
             fut.set_result(req)
 
-        self._static_handler_instance.add_one_time_callback(urlparse(path).path, resolve_fut)
+        self.add_pre_request_subscriber(path, resolve_fut, should_return=False)
         return fut
 
 
-def get_application() -> _Application:
-    static_path = Path(__file__).parents[1] / 'assets'
-    handlers = [
-        # required that the _StaticFileHandler is the first handler
-        (r'/(.*)', _StaticFileHandler, {'path': static_path.name}),
-    ]
-    return _Application(handlers, static_path=static_path,)
+def create_request_content_cache_fn(content):
+    """
+    Creates an async function which returns content. This is used in the context of a route handler to allow checking
+    the request content after a response is sent (which isn't natively possible with aiohttp)
+    Args:
+        content: bytes to return
+
+    Returns:
+        async function returning content
+    """
+
+    async def cached_content():
+        return content
+
+    return cached_content
+
+
+async def app_runner(assets_path, free_port):
+    async def static_file_serve(request):
+        path = request.match_info['path']
+
+        # cache the request's content for later use
+        request.read = create_request_content_cache_fn(await request.read())
+
+        if path in request.app.pre_request_subscribers:
+            # we make sure to remove the path ASAP, otherwise a unrelated request may be unintentionally mistreated
+            callback_fns, should_returns = zip(*request.app.pre_request_subscribers.pop(path))
+            # run all subscribers at once
+            gathered = await asyncio.gather(*[sub(request) for sub in callback_fns], return_exceptions=True)
+            for result, should_return in zip(gathered, should_returns):
+                # aiohttp use exceptions for HTTP responses (sometimes) eg 404, 302
+                if should_return:
+                    if isinstance(result, Exception):
+                        raise result
+                    return result
+
+        file_path = assets_path / request.match_info['path']
+        if not file_path.exists():
+            raise HTTPNotFound()  # ie 404
+        return web.FileResponse(file_path)
+
+    app = WrappedApplication()
+    app.add_routes([web.get('/{path:.*}', static_file_serve), web.post('/{path:.*}', static_file_serve)])
+    runner = web.AppRunner(app)
+    await runner.setup()
+    ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    cert_dir = Path(__file__).parent
+    ssl_ctx.load_cert_chain(certfile=cert_dir / 'cert.pem', keyfile=cert_dir / 'private.key')
+    http_site = web.TCPSite(runner, port=free_port)
+    https_site = web.TCPSite(runner, port=free_port + 1, ssl_context=ssl_ctx)
+    await asyncio.gather(http_site.start(), https_site.start())
+    return app
 
 
 if __name__ == '__main__':
-    app = get_application()
-    port = get_free_port()
-    app.listen(port)
-    print(f'server running on http://localhost:{port}')
-    asyncio.get_event_loop().run_forever()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(app_runner(Path(__file__).parents[1] / 'assets_path', 55015))
+    while True:
+        loop.run_until_complete(asyncio.sleep(0.5))

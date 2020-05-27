@@ -3,11 +3,11 @@ from contextlib import suppress
 from typing import List
 
 import pytest
-from syncer import sync
-
+from aiohttp import web
 from pyppeteer import devices
 from pyppeteer.errors import BrowserError, ElementHandleError, NetworkError, PageError, TimeoutError
 from pyppeteer.page import ConsoleMessage
+from syncer import sync
 from tests.utils import attachFrame, gather_with_timeout, var_setter, waitEvent
 
 
@@ -541,10 +541,31 @@ class TestSetContent:
         with pytest.raises(TimeoutError):
             await isolated_page.setContent(f'<img src="{img_path}"/>')
 
+    # @pytest.mark.skip('need good way to determine if waiting for loading')
     @sync
-    @pytest.mark.skip('need good way to determine if waiting for loading')
     async def test_awaits_loading_of_resources(self, event_loop, isolated_page, server):
-        pass
+        img_path = '/img.png'
+        img_fut = event_loop.create_future()
+
+        async def image_responder():
+            await img_fut
+            return web.Response(body='img')
+
+        server.app.add_pre_request_subscriber(img_path, image_responder, should_return=True)
+
+        loaded = False
+
+        async def content_setter():
+            await isolated_page.setContent(f'<img src="{server / img_path}">')
+            nonlocal loaded
+            loaded = True
+
+        content_setter_task = event_loop.create_task(content_setter())
+
+        await server.app.waitForRequest(img_path)
+        assert loaded is False
+        img_fut.set_result(None)
+        await content_setter_task
 
     @sync
     async def test_works_with_badly_formed_input(self, isolated_page, server):

@@ -11,13 +11,12 @@ from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import BrowserError, ElementHandleError, PageError
 from pyppeteer.events import Events
+from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.frame import Frame
 from pyppeteer.lifecycle_watcher import LifecycleWatcher
 from pyppeteer.models import WaitTargets
 from pyppeteer.network_manager import NetworkManager, Response
-from pyppeteer.execution_context import ExecutionContext
 from pyppeteer.timeout_settings import TimeoutSettings
-
 
 if TYPE_CHECKING:
     from pyppeteer.page import Page
@@ -93,8 +92,9 @@ class FrameManager(AsyncIOEventEmitter):
 
         async def navigate(url_: str, referer_: Optional[str], frameId: str) -> Optional[Exception]:
             try:
+                # careful, this is the correct spelling of referrer (even though everywhere else the key is correct
                 response = await self._client.send(
-                    'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
+                    'Page.navigate', {'url': url_, 'referrer': referer_, 'frameId': frameId}
                 )
                 nonlocal ensureNewDocumentNavigation
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
