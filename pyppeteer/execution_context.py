@@ -133,6 +133,7 @@ class ExecutionContext:
         obj = await self._client.send(
             'DOM.resolveNode', {'backendNodeId': backendNodeId, 'executionContextId': self._contextId}
         )
+        obj = obj['object']
         return createJSHandle(context=self, remoteObject=obj)
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
@@ -141,7 +142,7 @@ class ExecutionContext:
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
         nodeInfo = await self._client.send('DOM.describeNode', {'objectId': elementHandle._remoteObject['objectId']})
-        return self._adoptBackendNodeId(nodeInfo['node']['backendNodeId'])
+        return await self._adoptBackendNodeId(nodeInfo['node']['backendNodeId'])
 
 
 def rewriteError(error: Exception) -> Union[None, Dict[str, Dict[str, str]]]:
