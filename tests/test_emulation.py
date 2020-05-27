@@ -13,20 +13,20 @@ class TestPageViewport:
     async def test_gets_viewport_size(self, isolated_page):
         """The page should get the proper viewport size"""
         page = isolated_page
-        assert page.viewport == {"width": 800, "height": 600}
-        await page.setViewport({"width": 123, "height": 456})
-        assert page.viewport == {"width": 123, "height": 456}
+        assert page.viewport == {'width': 800, 'height': 600}
+        await page.setViewport({'width': 123, 'height': 456})
+        assert page.viewport == {'width': 123, 'height': 456}
 
     @sync
     async def test_supports_mobile_emulation(self, server, isolated_page):
         """The page should support mobile emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
-        assert await page.evaluate("window.innerWidth") == 800
-        await page.setViewport(iPhone["viewport"])
-        assert await page.evaluate("window.innerWidth") == 375
-        await page.setViewport({"width": 400, "height": 300})
-        assert await page.evaluate("window.innerWidth") == 400
+        assert await page.evaluate('window.innerWidth') == 800
+        await page.setViewport(iPhone['viewport'])
+        assert await page.evaluate('window.innerWidth') == 375
+        await page.setViewport({'width': 400, 'height': 300})
+        assert await page.evaluate('window.innerWidth') == 400
 
     @chrome_only
     @sync
@@ -34,9 +34,9 @@ class TestPageViewport:
         """Verify support of touch emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
-        assert await page.evaluate("'ontouchstart' in window") == False
-        await page.setViewport(iPhone["viewport"])
-        assert await page.evaluate("'ontouchstart' in window") == True
+        assert await page.evaluate('"ontouchstart" in window') == False
+        await page.setViewport(iPhone['viewport'])
+        assert await page.evaluate('"ontouchstart" in window') == True
         dispatchTouch = """() => {
                 let fulfill;
                 const promise = new Promise((x) => (fulfill = x));
@@ -51,8 +51,8 @@ class TestPageViewport:
             }
         """
         assert await page.evaluate(dispatchTouch) == 'Received touch'
-        await page.setViewport({"width": 100, "height": 100})
-        assert await page.evaluate("'ontouchstart' in window") == False
+        await page.setViewport({'width': 100, 'height': 100})
+        assert await page.evaluate('"ontouchstart" in window') == False
 
     @chrome_only
     @sync
@@ -60,19 +60,19 @@ class TestPageViewport:
         """It should detect touch when applying viewport with touches."""
         page = isolated_page
         await page.goto(server / 'detect-touch.html')
-        assert await page.evaluate("document.body.textContent.trim()") == 'NO'
+        assert await page.evaluate('document.body.textContent.trim()') == 'NO'
         await page.setViewport(iPhone['viewport'])
         await page.goto(server / 'detect-touch.html')
-        assert await page.evaluate("document.body.textContent.trim()") == 'YES'
+        assert await page.evaluate('document.body.textContent.trim()') == 'YES'
 
     @chrome_only
     @sync
     async def test_is_detecteable_by_modernizr(self, server, isolated_page):
         """Verify the emulation should be detectable by Modernizr JS lib."""
         page = isolated_page
-        await page.setViewport({"width": 800, "height": 600, "hasTouch": True})
-        await page.addScriptTag(url=f"{server / 'modernizr.js'}")
-        assert await page.evaluate("Modernizr.touchevents") == True
+        await page.setViewport({'width': 800, 'height': 600, 'hasTouch': True})
+        await page.addScriptTag(url=server / 'modernizr.js')
+        assert await page.evaluate('Modernizr.touchevents') == True
 
     @chrome_only
     @sync
@@ -80,11 +80,11 @@ class TestPageViewport:
         """It should support landscape emulation."""
         page = isolated_page
         await page.goto(server / 'mobile.html')
-        assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
+        assert await page.evaluate('screen.orientation.type') == 'portrait-primary'
         await page.setViewport(iPhoneLandscape['viewport'])
-        assert await page.evaluate("screen.orientation.type") == 'landscape-primary'
-        await page.setViewport({"width": 100, "height": 100})
-        assert await page.evaluate("screen.orientation.type") == 'portrait-primary'
+        assert await page.evaluate('screen.orientation.type') == 'landscape-primary'
+        await page.setViewport({'width': 100, 'height': 100})
+        assert await page.evaluate('screen.orientation.type') == 'portrait-primary'
 
 
 class TestPageEmulation:
@@ -94,8 +94,8 @@ class TestPageEmulation:
         page = isolated_page
         await page.goto(server / 'mobile.html')
         await page.emulate(viewport=iPhone['viewport'], userAgent=iPhone['userAgent'])
-        assert await page.evaluate("window.innerWidth") == 375
-        assert 'iPhone' in await page.evaluate("navigator.userAgent")
+        assert await page.evaluate('window.innerWidth') == 375
+        assert 'iPhone' in await page.evaluate('navigator.userAgent')
 
     @sync
     async def test_supports_clicking(self, server, isolated_page):
@@ -104,9 +104,9 @@ class TestPageEmulation:
         await page.emulate(viewport=iPhone['viewport'], userAgent=iPhone['userAgent'])
         await page.goto(server / 'input/button.html')
         button = await page.J('button')
-        await page.evaluate("(button) => (button.style.marginTop = '200px')", button)
+        await page.evaluate('button => button.style.marginTop = "200px"', button)
         await button.click()
-        assert await page.evaluate("result") == 'Clicked'
+        assert await page.evaluate('result') == 'Clicked'
 
 
 # deprecated
@@ -128,15 +128,14 @@ class TestEmulationMedia:
     async def test_emulation_media(self, isolated_page):
         """The emulation media should work."""
         page = isolated_page
-
-        assert await page.evaluate("matchMedia('screen').matches") == True
-        assert await page.evaluate("matchMedia('print').matches") == False
+        assert await page.evaluate('matchMedia("screen").matches') == True
+        assert await page.evaluate('matchMedia("print").matches') == False
         await page.emulateMedia('print')
-        assert await page.evaluate("matchMedia('screen').matches") == False
-        assert await page.evaluate("matchMedia('print').matches") == True
+        assert await page.evaluate('matchMedia("screen").matches') == False
+        assert await page.evaluate('matchMedia("print").matches') == True
         await page.emulateMedia(None)
-        assert await page.evaluate("matchMedia('screen').matches") == True
-        assert await page.evaluate("matchMedia('print').matches") == False
+        assert await page.evaluate('matchMedia("screen").matches') == True
+        assert await page.evaluate('matchMedia("print").matches') == False
 
     @sync
     async def test_throws_err_if_bad_arg(self, isolated_page):
@@ -155,15 +154,14 @@ class TestEmulateMediaType:
     async def test_emulation_media(self, isolated_page):
         """The emulation media should work."""
         page = isolated_page
-
-        assert await page.evaluate("matchMedia('screen').matches") == True
-        assert await page.evaluate("matchMedia('print').matches") == False
+        assert await page.evaluate('matchMedia("screen").matches') == True
+        assert await page.evaluate('matchMedia("print").matches') == False
         await page.emulateMediaType('print')
-        assert await page.evaluate("matchMedia('screen').matches") == False
-        assert await page.evaluate("matchMedia('print').matches") == True
+        assert await page.evaluate('matchMedia("screen").matches') == False
+        assert await page.evaluate('matchMedia("print").matches') == True
         await page.emulateMediaType(None)
-        assert await page.evaluate("matchMedia('screen').matches") == True
-        assert await page.evaluate("matchMedia('print').matches") == False
+        assert await page.evaluate('matchMedia("screen").matches') == True
+        assert await page.evaluate('matchMedia("print").matches') == False
 
     @sync
     async def test_throws_err_if_bad_arg(self, isolated_page):
@@ -212,19 +210,19 @@ class TestEmulateTimezone:
     async def test_emulate_timezone_works(self, isolated_page):
         """Verify emulation of timezone works."""
         page = isolated_page
-        await page.evaluate("globalThis.date = new Date(1479579154987)")
+        await page.evaluate('globalThis.date = new Date(1479579154987)')
         await page.emulateTimezone('America/Jamaica')
-        assert await page.evaluate("date.toString()") == 'Sat Nov 19 2016 13:12:34 GMT-0500 (Eastern Standard Time)'
+        assert await page.evaluate('date.toString()') == 'Sat Nov 19 2016 13:12:34 GMT-0500 (Eastern Standard Time)'
         await page.emulateTimezone('Pacific/Honolulu')
         assert (
-            await page.evaluate("date.toString()")
+            await page.evaluate('date.toString()')
             == 'Sat Nov 19 2016 08:12:34 GMT-1000 (Hawaii-Aleutian Standard Time)'
         )
         await page.emulateTimezone('America/Buenos_Aires')
-        assert await page.evaluate("date.toString()") == 'Sat Nov 19 2016 15:12:34 GMT-0300 (Argentina Standard Time)'
+        assert await page.evaluate('date.toString()') == 'Sat Nov 19 2016 15:12:34 GMT-0300 (Argentina Standard Time)'
         await page.emulateTimezone('Europe/Berlin')
         assert (
-            await page.evaluate("date.toString()")
+            await page.evaluate('date.toString()')
             == 'Sat Nov 19 2016 19:12:34 GMT+0100 (Central European Standard Time)'
         )
 
