@@ -77,7 +77,7 @@ class DOMWorld:
 
     async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> 'ElementHandle':
         context = await self.executionContext
-        return context.evaluateHandle(pageFunction=pageFunction, *args)
+        return await context.evaluateHandle(pageFunction=pageFunction, *args)
 
     async def evaluate(self, pageFunction: str, *args: JSFunctionArg):
         context = await self.executionContext
@@ -326,7 +326,7 @@ class DOMWorld:
         return await self._waitForSelectorOrXpath(xpath, isXPath=True, visible=visible, hidden=hidden, timeout=timeout)
 
     async def waitForFunction(
-        self, pageFunction: str, polling: str = 'raf', timeout: Optional[float] = None, *args: JSFunctionArg
+        self, pageFunction: str, *args: JSFunctionArg, polling: str = 'raf', timeout: Optional[float] = None,
     ) -> 'JSHandle':
         if not timeout:
             timeout = self._timeoutSettings.timeout
@@ -376,7 +376,9 @@ class DOMWorld:
           }
         }
         """
-        waitTask = WaitTask(self, predicate, title, polling, timeout, selectorOrXpath, isXPath, visible, hidden)
+        waitTask = WaitTask(
+            self, predicate, title, polling, timeout, self.loop, selectorOrXpath, isXPath, visible, hidden
+        )
         handle = await waitTask.promise
         if not handle.asElement():
             await handle.dispose()

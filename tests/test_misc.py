@@ -4,9 +4,8 @@
 import logging
 import unittest
 
-import pytest
-
 import pyppeteer
+import pytest
 from pyppeteer.helpers import get_positive_int
 from pyppeteer.page import convertPrintParameterToInches
 
@@ -28,8 +27,8 @@ class TestDefaultArgs(unittest.TestCase):
     def test_default_args(self):
         assert '--no-first-run' in pyppeteer.defaultArgs()
         assert '--headless' in pyppeteer.defaultArgs()
-        assert '--headless' not in pyppeteer.defaultArgs({'headless': False})  # noqa: E501
-        assert '--user-data-dir=foo' in pyppeteer.defaultArgs(userDataDir='foo')  # noqa: E501
+        assert '--headless' not in pyppeteer.defaultArgs({'headless': False})
+        assert '--user-data-dir=foo' in pyppeteer.defaultArgs(userDataDir='foo')
 
 
 class TestToInches(unittest.TestCase):

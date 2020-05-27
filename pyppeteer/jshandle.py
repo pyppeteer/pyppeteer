@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
-from pyppeteer.errors import BrowserError, ElementHandleError
+from pyppeteer.errors import BrowserError, ElementHandleError, NetworkError
 from pyppeteer.models import JSFunctionArg, MouseButton, Protocol
 
 if TYPE_CHECKING:
@@ -175,10 +175,16 @@ class ElementHandle(JSHandle):
             raise BrowserError(error)
 
     async def _clickablePoint(self):
-        result, layoutMetrics = await asyncio.gather(
-            self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']}),
-            self._client.send('Page.getLayoutMetrics'),
-        )
+        # swallow any errors to get a better error message
+        # before:  Protocol error (DOM.getContentQuads): Could not compute content quads.
+        # after swallowing: Node is either invisible or not an HTMLElement
+        async def silent_get_quads():
+            try:
+                return await self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']})
+            except NetworkError as e:
+                logger.exception('Failed to retrieve content quads')
+
+        result, layoutMetrics = await asyncio.gather(silent_get_quads(), self._client.send('Page.getLayoutMetrics'),)
         if not result or not result.get('quads'):
             raise BrowserError('Node is either not visible or not an HTMLElement')
         clientWidth = layoutMetrics['layoutViewport']['clientWidth']
@@ -245,9 +251,9 @@ class ElementHandle(JSHandle):
           ``mouseup`` in milliseconds. Defaults to 0.
         """
         await self._scrollIntoViewIfNeeded()
-        obj = await self._clickablePoint()
-        x = obj.get('x', 0)
-        y = obj.get('y', 0)
+        point = await self._clickablePoint()
+        x = point.get('x', 0)
+        y = point.get('y', 0)
         await self._page.mouse.click(x, y, button=button, clickCount=clickCount, delay=delay)
 
     async def select(self, *values: str) -> List[str]:
@@ -258,7 +264,7 @@ class ElementHandle(JSHandle):
             """(element, values) => {
               if (element.nodeName.toLowerCase() !== 'select')
                 throw new Error('Element is not a <select> element.');
-        
+
               const options = Array.from(element.options);
               element.value = undefined;
               for (const option of options) {
@@ -447,9 +453,7 @@ class ElementHandle(JSHandle):
 
         If no element matches the ``selector``, returns ``None``.
         """
-        handle = await self.executionContext.evaluateHandle(
-            '(element, selector) => element.querySelector(selector)', self, selector,
-        )
+        handle = await self.evaluateHandle('(element, selector) => element.querySelector(selector)', selector,)
         element = handle.asElement()
         if element:
             return element
@@ -493,7 +497,7 @@ class ElementHandle(JSHandle):
             tweetHandle = await page.querySelector('.tweet')
             assert (await tweetHandle.querySelectorEval('.like', 'node => node.innerText')) == 100
             assert (await tweetHandle.Jeval('.retweets', 'node => node.innerText')) == 10
-        """  # noqa: E501
+        """
         elementHandle = await self.querySelector(selector)
         if not elementHandle:
             raise ElementHandleError(f'Error: failed to find element matching selector "{selector}"')
@@ -525,9 +529,9 @@ class ElementHandle(JSHandle):
 
             feedHandle = await page.J('.feed')
             assert (await feedHandle.JJeval('.tweet', '(nodes => nodes.map(n => n.innerText))')) == ['Hello!', 'Hi!']
-        """  # noqa: E501
+        """
         arrayHandle = await self.executionContext.evaluateHandle(
-            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector  # noqa: E501
+            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector
         )
         result = await self.executionContext.evaluate(pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()

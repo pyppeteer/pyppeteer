@@ -2,6 +2,7 @@ import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, List, Optional, Set, Union
 
+from ordered_set import OrderedSet
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
@@ -34,7 +35,7 @@ class Frame:
         self._lifecycleEvents: Set[str] = set()
         self._mainWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
         self._secondaryWorld = DOMWorld(frameManager, self, frameManager._timeoutSettings)
-        self._childFrames: Set[Frame] = set()
+        self._childFrames: OrderedSet[Frame] = OrderedSet()
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
 
@@ -178,7 +179,7 @@ class Frame:
                 (element, values) => {
                     if (element.nodeName.toLowerCase() !== 'select')
                         throw new Error('Element is not a <select> element.');
-                
+
                     const options = Array.from(element.options);
                     element.value = undefined;
                     for (const option of options) {
@@ -186,14 +187,14 @@ class Frame:
                         if (option.selected && !element.multiple)
                             break;
                     }
-                
+
                     element.dispatchEvent(new Event('input', { 'bubbles': true }));
                     element.dispatchEvent(new Event('change', { 'bubbles': true }));
                     return options.filter(option => option.selected).map(options => options.value)
                 }
         ''',
             *values,
-        )  # noqa: E501
+        )
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.
@@ -225,6 +226,8 @@ class Frame:
         Details see :meth:`pyppeteer.page.Page.waitFor`.
         """
         xPathPattern = '//'
+        if helpers.is_js_func(selectorOrFunctionOrTimeout):
+            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, str):
             string = selectorOrFunctionOrTimeout
             if string.startswith(xPathPattern):
@@ -232,8 +235,6 @@ class Frame:
             return self.waitForSelector(string, **kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
             return self._client.loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
-        if helpers.is_js_func(selectorOrFunctionOrTimeout):
-            return self.waitForFunction(selectorOrFunctionOrTimeout, *args, **kwargs)
         f = self._client.loop.create_future()
         f.set_exception(BrowserError(f'Unsupported target type: {type(selectorOrFunctionOrTimeout)}'))
         return f

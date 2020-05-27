@@ -44,7 +44,7 @@ class ExecutionContext:
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> Union['JSHandle', 'ElementHandle']:
         """Execute ``pageFunction`` on this context.
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
@@ -109,13 +109,11 @@ class ExecutionContext:
         objectHandle = arg if isinstance(arg, JSHandle) else None
         if objectHandle:
             if objectHandle._context != self:
-                raise ElementHandleError(
-                    'JSHandles can be evaluated only in the context they were created!'
-                )  # noqa: E501
+                raise ElementHandleError('JSHandles can be evaluated only in the context they were created!')
             if objectHandle._disposed:
                 raise ElementHandleError('JSHandle is disposed!')
             if objectHandle._remoteObject.get('unserializableValue'):
-                return {'unserializableValue': objectHandle._remoteObject.get('unserializableValue')}  # noqa: E501
+                return {'unserializableValue': objectHandle._remoteObject.get('unserializableValue')}
             if not objectHandle._remoteObject.get('objectId'):
                 return {'value': objectHandle._remoteObject.get('value')}
             return {'objectId': objectHandle._remoteObject.get('objectId')}
@@ -133,12 +131,12 @@ class ExecutionContext:
 
     async def _adoptBackendNodeId(self, backendNodeId: int):
         obj = await self._client.send(
-            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId}
+            'DOM.resolveNode', {'backendNodeId': backendNodeId, 'executionContextId': self._contextId}
         )
         return createJSHandle(context=self, remoteObject=obj)
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
-        if elementHandle.executionContext() == self:
+        if elementHandle.executionContext == self:
             raise ElementHandleError('Cannot adopt handle that already belongs to this execution context')
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')

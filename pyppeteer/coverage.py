@@ -13,6 +13,7 @@ from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
 from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem, Protocol
 
+
 logger = logging.getLogger(__name__)
 
 

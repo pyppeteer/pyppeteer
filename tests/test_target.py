@@ -7,8 +7,6 @@ import unittest
 from syncer import sync
 
 
-
-
 class TestTarget:
     @sync
     async def test_targets(self):

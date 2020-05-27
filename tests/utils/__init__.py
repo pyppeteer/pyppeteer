@@ -4,7 +4,7 @@ import inspect
 import random
 from asyncio.futures import Future
 from asyncio.tasks import Task
-from typing import Awaitable, Any, Optional, List, Union
+from typing import Any, Awaitable, List, Optional, Union
 
 from pyppeteer.frame import Frame
 from pyppeteer.page import Page
