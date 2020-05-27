@@ -95,4 +95,3 @@ known_third_party = ["PIL", "aiohttp", "appdirs", "certifi", "diff_match_patch",
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
-
