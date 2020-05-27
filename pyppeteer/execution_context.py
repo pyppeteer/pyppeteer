@@ -132,7 +132,7 @@ class ExecutionContext:
 
     async def _adoptBackendNodeId(self, backendNodeId: int):
         obj = await self._client.send(
-            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId}
+            'DOM.resolveNode', {'backendNodeId': backendNodeId, 'executionContextId': self._contextId}
         )
         return createJSHandle(context=self, remoteObject=obj)
 
