@@ -15,6 +15,7 @@ import sys
 from copy import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
+import warnings
 
 from pyee import AsyncIOEventEmitter
 from pyppeteer import helpers
@@ -1016,9 +1017,11 @@ class Page(AsyncIOEventEmitter):
         """Deprecated in favor of ``emulateMediaType()``.
         Please, consider to use ``emulateMediaType()`` instead.
         """
+        warnings.warn('Deprecated: this method is kept for backwards compatibility, '
+                      'but may be removed in a future version. '
+                      'Use `emulateMediaType(mediaType)` instead',
+                      category=DeprecationWarning)
         await self.emulateMediaType(mediaType)
-        raise DeprecationWarning('Deprecated. Use page.emulateMediaType(mediaType) instead. '
-                                 'This method is kept around as an alias for backwards compatibility.')
 
     async def emulateMediaType(self, mediaType: str = None) -> None:
         """Emulate css media type of the page.
