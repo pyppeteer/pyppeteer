@@ -7,10 +7,12 @@ from contextlib import suppress
 
 import pytest
 import tests.utils.server
+from aiohttp import web
 from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
+from pyppeteer.helpers import waitForEvent
 from syncer import sync
 from tests.conftest import needs_server_side_implementation
-from tests.utils import attachFrame, gather_with_timeout, isFavicon, var_setter
+from tests.utils import attachFrame, gather_with_timeout, isFavicon, var_setter, waitEvent
 
 NAV_TIMEOUT_MATCH = re.compile('navigation timeout', re.IGNORECASE)
 
@@ -32,9 +34,11 @@ class TestPage:
             assert isolated_page.url == server.empty_page + '#bar'
 
         @sync
-        @needs_server_side_implementation
         async def test_works_with_redirects(self, isolated_page, server):
-            pass
+            server.app.set_one_time_redirects('/redirect/1.html', '/redirect/2.html', server.empty_page)
+
+            await isolated_page.goto(server / 'redirect/1.html')
+            assert isolated_page.url == server.empty_page
 
         @sync
         async def test_navigates_to_aboutblank(self, isolated_page):
@@ -47,14 +51,15 @@ class TestPage:
             assert resp.status == 200
 
         @sync
-        @needs_server_side_implementation
         async def test_works_with_204_subframes(self, isolated_page, server):
-            pass
+            server.app.set_one_time_response('/frames/frame.html', status=204)
+            await isolated_page.goto(server / 'frames/one-frame.html')
 
         @sync
-        @needs_server_side_implementation
         async def test_fail_when_server_204s(self, isolated_page, server):
-            pass
+            server.app.set_one_time_response(server.empty_page, response='', status=204)
+            with pytest.raises(BrowserError, match='_ABORTED'):
+                await isolated_page.goto(server.empty_page)
 
         @sync
         async def test_navigates_to_empty_page_and_waits_until_domcontentloaded(self, isolated_page, server):
@@ -94,19 +99,29 @@ class TestPage:
         async def test_fails_on_bad_ssl(self, isolated_page, server):
             # Make sure that network events do not emit 'undefined'.
             # @see https://crbug.com/750469
-            def assert_truthy(o):
-                assert o
+            @isolated_page.on('request')
+            @isolated_page.on('requestfinished')
+            @isolated_page.on('requestfailed')
+            def assert_truthy(req):
+                assert req
 
-            isolated_page.on('request', assert_truthy)
-            isolated_page.on('requestfinished', assert_truthy)
-            isolated_page.on('requestfailed', assert_truthy)
-            with pytest.raises(BrowserError, match='(ERR_SSL_PROTOCOL_ERROR|SSL_ERROR_UNKNOWN)') as excpt:
+            with pytest.raises(BrowserError, match='(ERR_CERT_AUTHORITY_INVALID|SSL_ERROR_UNKNOWN)'):
                 await isolated_page.goto(server.https.empty_page)
 
         @sync
-        @needs_server_side_implementation
         async def test_fails_on_bad_ssl_redirects(self, isolated_page, server):
-            pass
+            # Make sure that network events do not emit 'undefined'.
+            # @see https://crbug.com/750469
+            @isolated_page.on('request')
+            @isolated_page.on('requestfailed')
+            @isolated_page.on('requestfinished')
+            async def request_checker(req):
+                assert req
+
+            server.app.set_one_time_redirects('/redirect/1.html', '/redirect/2.html', server.empty_page)
+
+            with pytest.raises(BrowserError, match=r'(SSL_ERROR_UNKNOWN|ERR_CERT_AUTHORITY_INVALID)'):
+                await isolated_page.goto(server.https.empty_page)
 
         @sync
         async def test_raises_on_deprecated_networkidle_waituntil(self, isolated_page, server):
@@ -164,14 +179,67 @@ class TestPage:
             assert resp.status == 404
 
         @sync
-        @needs_server_side_implementation
         async def test_returns_last_response_in_redirect_chain(self, isolated_page, server):
-            pass
+            server.app.set_one_time_redirect(
+                '/redirect/1.html', '/redirect/2.html' '/redirect/3.html', server.empty_page
+            )
+            resp = await isolated_page.goto(server / 'redirect/1.html')
+            assert resp.ok
+            assert resp.url == server.empty_page
 
+        # @needs_server_side_implementation
         @sync
-        @needs_server_side_implementation
-        async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server):
-            pass
+        async def test_wait_for_network_idle_for_nav_to_succeed(self, isolated_page, server, event_loop):
+            # Hold on to a bunch of requests without answering.
+            # response_futures = [event_loop.create_future() for _ in range(4)]
+            def request_holder():
+                to_resolve = asyncio.get_event_loop().create_future()
+
+                async def resolver():
+                    return await to_resolve
+
+                return to_resolve, resolver
+
+            holders = {}
+            for char in 'abcd':
+                holders[char], resolver = request_holder()
+                server.app.add_pre_request_subscriber(f'/fetch-request-{char}.js', resolver, should_return=True)
+
+            initial_fetch_resources_requested = asyncio.gather(
+                *[server.app.waitForRequest(f'/fetch-request-{char}.js') for char in 'abc']
+            )
+            second_fetch_resource_requested = server.app.waitForRequest('/fetch-request-d.js')
+
+            # Navigate to a page which loads immediately and then does a bunch of
+            # requests via javascript's fetch method.
+            nav_prom = asyncio.create_task(isolated_page.goto(server / 'networkidle.html', waitUntil='networkidle0'))
+            nav_finished = False
+            nav_prom.add_done_callback(var_setter('nav_finished', True))
+
+            # wait for the page's load event
+            await waitEvent(isolated_page, 'load')
+            assert nav_finished is False
+
+            # Wait for the initial three resources to be requested.
+            await initial_fetch_resources_requested
+
+            # expect navigation still to be not finished.
+            assert nav_finished is False
+
+            for char, holder in holders.items():
+                # respond to all but the last request
+                if char != 'd':
+                    holder.set_exception(web.HTTPNotFound())
+
+            await second_fetch_resource_requested
+            assert nav_finished is False
+
+            # respond to last request
+            holders['d'].set_exception(web.HTTPNotFound())
+
+            resp = await nav_prom
+            # nav should succeed
+            assert resp.ok
 
         @sync
         async def test_navs_to_dataURL_and_fires_dataURL_reqs(self, isolated_page, server):
@@ -217,9 +285,9 @@ class TestPage:
             req1, req2, *_ = await gather_with_timeout(
                 server.app.waitForRequest('/grid.html'),
                 server.app.waitForRequest('/digits/1.png'),
-                isolated_page.goto(server / 'grid.html', referer='http://google.com'),
+                isolated_page.goto(server / 'grid.html', referer='http://google.com/'),
             )
-            assert req1.headers.get('referer') == 'http://google.com'
+            assert req1.headers.get('referer') == 'http://google.com/'
             assert req2.headers.get('referer') == server / 'grid.html'
 
     class TestWaitForNavigation:
