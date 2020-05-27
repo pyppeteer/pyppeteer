@@ -1,3 +1,15 @@
+"""
+Python port of https://github.com/puppeteer/puppeteer/blob/master/utils/fetch_devices.js
+
+Used to update ../../device_descriptors.py
+
+No attempt is made to properly format the one line expression that contains every device, we leave that to
+autoformatters like black. Support some command line options which can be viewed with fetch_devices.py --help.
+The device list is retrieved from
+https://raw.githubusercontent.com/ChromeDevTools/devtools-frontend/master/front_end/emulated_devices/module.json
+if not specified (which is the same data source used by puppeteer)
+"""
+
 import asyncio
 import json
 import logging
@@ -116,10 +128,7 @@ async def _fetch_devices(output_path: Path, url: str):
         for name in names:
             device = create_device(chrome_version, name, payload, False)
             device_l = create_device(chrome_version, name, payload, True)
-            # if (
-            #     device_l['viewport']['width'] != device['viewport']['width']
-            #     or device_l['viewport']['height'] != device['viewport']['height']
-            # ):
+            # check if landscape width or heights don't match non-landscape
             if any(True for key in ('height', 'width') if device_l['viewport'][key] != device['viewport'][key]):
                 devices.update({device_l['name']: {k: v for k, v in device_l.items() if k != 'name'}})
             devices.update({device['name']: {k: v for k, v in device.items() if k != 'name'}})
