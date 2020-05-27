@@ -1014,9 +1014,7 @@ class Page(AsyncIOEventEmitter):
         await self._client.send('Page.setBypassCSP', {'enabled': enabled})
 
     async def emulateMedia(self, mediaType: str = None) -> None:
-        """Deprecated in favor of ``emulateMediaType()``.
-        Please, consider to use ``emulateMediaType()`` instead.
-        """
+        """Deprecated alias for ``emulateMediaType()``"""
         warnings.warn('Deprecated: this method is kept for backwards compatibility, '
                       'but may be removed in a future version. '
                       'Use `emulateMediaType(mediaType)` instead',
