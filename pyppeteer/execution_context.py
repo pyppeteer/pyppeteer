@@ -15,14 +15,13 @@ from pyppeteer.jshandle import ElementHandle, JSHandle, createJSHandle
 from pyppeteer.models import JSFunctionArg
 
 if TYPE_CHECKING:
-    from pyppeteer.domworld import DOMWorld
     from pyppeteer.frame import Frame
+    from pyppeteer.domworld import DOMWorld
 
 logger = logging.getLogger(__name__)
 
 EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
-SOURCE_URL_REGEX = re.compile(r'^\s*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE)
-
+SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 class ExecutionContext:
     """Execution Context class."""
@@ -45,7 +44,7 @@ class ExecutionContext:
         """
         return await self._evaluateInternal(True, pageFunction, *args)
 
-    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> JSHandle:
+    async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> Union['JSHandle', 'ElementHandle']:
         """Execute ``pageFunction`` on this context.
         Details see :meth:`pyppeteer.page.Page.evaluateHandle`.
         """
@@ -132,8 +131,9 @@ class ExecutionContext:
 
     async def _adoptBackendNodeId(self, backendNodeId: int):
         obj = await self._client.send(
-            'DOM.resolveNode', {'backednNodeId': backendNodeId, 'executionContextId': self._contextId}
+            'DOM.resolveNode', {'backendNodeId': backendNodeId, 'executionContextId': self._contextId}
         )
+        obj = obj['object']
         return createJSHandle(context=self, remoteObject=obj)
 
     async def _adoptElementHandle(self, elementHandle: ElementHandle):
@@ -142,7 +142,7 @@ class ExecutionContext:
         if not self._world:
             raise ElementHandleError('Cannot adopt handle without DOMWorld')
         nodeInfo = await self._client.send('DOM.describeNode', {'objectId': elementHandle._remoteObject['objectId']})
-        return self._adoptBackendNodeId(nodeInfo['node']['backendNodeId'])
+        return await self._adoptBackendNodeId(nodeInfo['node']['backendNodeId'])
 
 
 def rewriteError(error: Exception) -> Union[None, Dict[str, Dict[str, str]]]:

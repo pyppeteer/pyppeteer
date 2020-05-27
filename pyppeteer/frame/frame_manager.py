@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-UTILITY_WORLD_NAME = '__puppeteer_utility_world__'
-EVALUATION_SCRIPT_URL = '__puppeteer_evaluation_script__'
+UTILITY_WORLD_NAME = '__pyppeteer_utility_world__'
+EVALUATION_SCRIPT_URL = '__pyppeteer_evaluation_script__'
 SOURCE_URL_REGEX = re.compile(r'^[ \t]*//[@#] sourceURL=\s*(\S*?)\s*$', re.MULTILINE,)
 
 
@@ -92,8 +92,9 @@ class FrameManager(AsyncIOEventEmitter):
 
         async def navigate(url_: str, referer_: Optional[str], frameId: str) -> Optional[Exception]:
             try:
+                # careful, this is the correct spelling of referrer (even though everywhere else the key is correct
                 response = await self._client.send(
-                    'Page.navigate', {'url': url_, 'referer': referer_, 'frameId': frameId}
+                    'Page.navigate', {'url': url_, 'referrer': referer_, 'frameId': frameId}
                 )
                 nonlocal ensureNewDocumentNavigation
                 ensureNewDocumentNavigation = bool(response.get('loaderId'))
@@ -290,7 +291,7 @@ class FrameManager(AsyncIOEventEmitter):
                 context._world._setContext(None)
         self._contextIdToContext.clear()
 
-    def executionContextById(self, contextId: int) -> ExecutionContext:
+    def executionContextById(self, contextId: int) -> 'ExecutionContext':
         """Get stored ``ExecutionContext`` by ``id``."""
         context = self._contextIdToContext.get(contextId)
         if not context:
