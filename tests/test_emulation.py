@@ -109,18 +109,9 @@ class TestPageEmulation:
         assert await page.evaluate('result') == 'Clicked'
 
 
-# deprecated
 class TestEmulationMedia:
-    """
-    emulateMedia is deprecated in favour of emulateMediaType but we
-    don't want to remove it from Puppeteer just yet. We can't check
-    that emulateMedia === emulateMediaType because when running tests
-    with COVERAGE=1 the methods get rewritten. So instead we
-    duplicate the tests for emulateMediaType and ensure they pass
-    when calling the deprecated emulateMedia method.
-
-    If you update these tests, you should update emulateMediaType's
-    tests, and vice-versa.
+    """```Page::emulateMedia()``` is deprecated in favour of emulateMediaType
+    but it's not removed from Puppeteer just yet.
     """
 
     @chrome_only
