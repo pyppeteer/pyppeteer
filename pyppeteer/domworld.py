@@ -77,7 +77,7 @@ class DOMWorld:
 
     async def evaluateHandle(self, pageFunction: str, *args: JSFunctionArg) -> 'ElementHandle':
         context = await self.executionContext
-        return context.evaluateHandle(pageFunction=pageFunction, *args)
+        return await context.evaluateHandle(pageFunction=pageFunction, *args)
 
     async def evaluate(self, pageFunction: str, *args: JSFunctionArg):
         context = await self.executionContext

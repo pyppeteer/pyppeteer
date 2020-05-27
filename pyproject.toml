@@ -54,7 +54,7 @@ aenum = "^2.2.3"
 typing_extensions = { version ="^3.7.4", python = '<3.8'}
 typing_inspect = { version ="^0.5.0", python = '<3.8'}
 certifi = ">=2019.11.28"
-orderedset = "^2.0.3"
+ordered_set = "^4.0.1"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.14.3"
@@ -91,4 +91,4 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-known_third_party = ["appdirs", "certifi", "livereload", "networkx", "pyee", "pyppeteer", "pytest", "syncer", "tests", "tornado", "tqdm", "urllib3", "websockets"]
+known_third_party = ["appdirs", "certifi", "livereload", "networkx", "ordered_set", "pyee", "pyppeteer", "pytest", "syncer", "tests", "tornado", "tqdm", "urllib3", "websockets"]

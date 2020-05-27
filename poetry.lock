@@ -445,11 +445,11 @@ version = "1.3.5"
 
 [[package]]
 category = "main"
-description = "An Ordered Set implementation in Cython."
-name = "orderedset"
+description = "A set that remembers its order, and allows looking up its items by their index in that order."
+name = "ordered-set"
 optional = false
-python-versions = "*"
-version = "2.0.3"
+python-versions = ">=3.5"
+version = "4.0.1"
 
 [[package]]
 category = "dev"
@@ -1021,7 +1021,7 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "70fd2f3b8a59249163906aad23d6ca86e45448b14f71e866a2fc6e85689beb07"
+content-hash = "d2efe764fe051bacc63b8af598a7d5de9a1147a0cdf8e102562b131036824168"
 python-versions = "^3.6.1"
 
 [metadata.files]
@@ -1276,8 +1276,8 @@ networkx = [
 nodeenv = [
     {file = "nodeenv-1.3.5-py2.py3-none-any.whl", hash = "sha256:5b2438f2e42af54ca968dd1b374d14a1194848955187b0e5e4be1f73813a5212"},
 ]
-orderedset = [
-    {file = "orderedset-2.0.3.tar.gz", hash = "sha256:b2f5ccfb5a86e7b3b3ddf18b29779cc18b24653abf9d6da4bebecf33780a6e29"},
+ordered-set = [
+    {file = "ordered-set-4.0.1.tar.gz", hash = "sha256:a31008c57f9c9776b12eb8841b1f61d1e4d70dfbbe8875ccfa2403c54af3d51b"},
 ]
 packaging = [
     {file = "packaging-20.3-py2.py3-none-any.whl", hash = "sha256:82f77b9bee21c1bafbf35a84905d604d5d1223801d639cf3ed140bd651c08752"},

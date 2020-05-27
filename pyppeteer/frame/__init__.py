@@ -1,8 +1,8 @@
 import asyncio
-from orderedset import OrderedSet
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, List, Optional, Set, Union
 
+from ordered_set import OrderedSet
 from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.domworld import DOMWorld, WaitTask
