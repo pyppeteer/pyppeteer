@@ -1013,6 +1013,14 @@ class Page(AsyncIOEventEmitter):
         await self._client.send('Page.setBypassCSP', {'enabled': enabled})
 
     async def emulateMedia(self, mediaType: str = None) -> None:
+        """Deprecated in favor of ``emulateMediaType()``.
+        Please, consider to use ``emulateMediaType()`` instead.
+        """
+        await self.emulateMediaType(mediaType)
+        raise DeprecationWarning('Deprecated. Use page.emulateMediaType(mediaType) instead. '
+                                 'This method is kept around as an alias for backwards compatibility.')
+
+    async def emulateMediaType(self, mediaType: str = None) -> None:
         """Emulate css media type of the page.
 
         :arg str mediaType: Changes the CSS media type of the page. The only
