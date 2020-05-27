@@ -108,41 +108,12 @@ class TestPageEmulation:
         assert await page.evaluate('result') == 'Clicked'
 
 
-class TestEmulationMedia:
-    """```Page::emulateMedia()``` is deprecated in favour of emulateMediaType
-    but it's not removed from Puppeteer just yet.
-    """
-
-    @chrome_only
-    @sync
-    async def test_emulation_media(self, isolated_page):
-        """The emulation media should work."""
-        page = isolated_page
-        assert await page.evaluate('matchMedia("screen").matches') is True
-        assert await page.evaluate('matchMedia("print").matches') is False
-        await page.emulateMedia('print')
-        assert await page.evaluate('matchMedia("screen").matches') is False
-        assert await page.evaluate('matchMedia("print").matches') is True
-        await page.emulateMedia(None)
-        assert await page.evaluate('matchMedia("screen").matches') is True
-        assert await page.evaluate('matchMedia("print").matches') is False
-
-    @sync
-    async def test_throws_err_if_bad_arg(self, isolated_page):
-        """Exception should be thrown in case of bad argument"""
-        page = isolated_page
-        with pytest.raises(ValueError, match="Unsupported media type: bad"):
-            await page.emulateMedia('bad')
-
-
-@pytest.mark.skip(reason="Not implemented: `'Page' object has no attribute 'emulateMediaType'`")
 class TestEmulateMediaType:
-    """TestEmulationMedia is a duplicate of this."""
 
     @chrome_only
     @sync
-    async def test_emulation_media(self, isolated_page):
-        """The emulation media should work."""
+    async def test_emulation_media_type(self, isolated_page):
+        """The emulation media type should work."""
         page = isolated_page
         assert await page.evaluate('matchMedia("screen").matches') is True
         assert await page.evaluate('matchMedia("print").matches') is False
@@ -150,6 +121,20 @@ class TestEmulateMediaType:
         assert await page.evaluate('matchMedia("screen").matches') is False
         assert await page.evaluate('matchMedia("print").matches') is True
         await page.emulateMediaType(None)
+        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("print").matches') is False
+
+    @chrome_only
+    @sync
+    async def test_emulation_media(self, isolated_page):
+        """The `emulationMedia()` is a deprecated alias for `emulationMediaType()`."""
+        page = isolated_page
+        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("print").matches') is False
+        await page.emulateMedia('print')
+        assert await page.evaluate('matchMedia("screen").matches') is False
+        assert await page.evaluate('matchMedia("print").matches') is True
+        await page.emulateMedia(None)
         assert await page.evaluate('matchMedia("screen").matches') is True
         assert await page.evaluate('matchMedia("print").matches') is False
 
