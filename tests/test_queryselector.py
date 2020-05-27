@@ -12,12 +12,15 @@ Pyppeteer uses functions which have following counterparts in original puppeteer
 
 """
 import pytest
-from pyppeteer.errors import ElementHandleError
+
 from syncer import sync
+
+from pyppeteer.errors import ElementHandleError
 from tests.conftest import chrome_only
 
 
 class TestPageJeval:
+
     @chrome_only
     @sync
     async def test_Jeval_executes_js_func(self, isolated_page):
@@ -61,6 +64,7 @@ class TestPageJeval:
 
 
 class TestPageJJeval:
+
     @chrome_only
     @sync
     async def test_JJeval_executes_js_func(self, isolated_page):
@@ -77,6 +81,7 @@ class TestPageJJeval:
 
 
 class TestPageJ:
+
     @chrome_only
     @sync
     async def test_J_queries_element(self, isolated_page):
@@ -98,6 +103,7 @@ class TestPageJ:
 
 
 class TestPageJJ:
+
     @chrome_only
     @sync
     async def test_JJ_queries_elements(self, isolated_page):
@@ -121,6 +127,7 @@ class TestPageJJ:
 
 
 class TestPageJx:
+
     @chrome_only
     @sync
     async def test_Jx_queries_elements(self, isolated_page):
@@ -153,6 +160,7 @@ class TestPageJx:
 
 
 class TestElementHandleJ:
+
     @sync
     async def test_J_queries_element(self, isolated_page, server):
         """Test ElementHandle.J() method should query existing element."""
@@ -179,6 +187,7 @@ class TestElementHandleJ:
 
 
 class TestElementHandleJeval:
+
     @chrome_only
     @sync
     async def test_Jeval_evalates_js_func(self, isolated_page):
@@ -218,6 +227,7 @@ class TestElementHandleJeval:
 
 
 class TestElementHandleJJeval:
+
     @chrome_only
     @sync
     async def test_JJeval_executes_js_func(self, isolated_page):
@@ -237,10 +247,9 @@ class TestElementHandleJJeval:
     async def test_JJeval_retrieves_content(self, isolated_page):
         """Test ElementHandle.JJeval() should retrieve content from subtree."""
         page = isolated_page
-        htmlContent = (
-            '<div class="a">not-a-child-div</div><div id="myId">'
+        htmlContent = \
+            '<div class="a">not-a-child-div</div><div id="myId">' \
             '<div class="a">a1-child-div</div><div class="a">a2-child-div</div></div>'
-        )
         await page.setContent(htmlContent)
         elementHandle = await page.J('#myId')
         content = await elementHandle.JJeval('.a', "nodes => nodes.map(n => n.innerText)")
@@ -262,6 +271,7 @@ class TestElementHandleJJeval:
 
 
 class TestElementHandleJJ:
+
     @chrome_only
     @sync
     async def test_JJ_queries_elements(self, isolated_page):
@@ -287,6 +297,7 @@ class TestElementHandleJJ:
 
 
 class TestElementHandleJx:
+
     @sync
     async def test_Jx_queries_element(self, isolated_page, server):
         """Test ElementHandle.Jx() should query existing element."""
