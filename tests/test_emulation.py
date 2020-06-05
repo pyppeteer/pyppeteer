@@ -113,30 +113,19 @@ class TestEmulateMediaType:
     @chrome_only
     @sync
     async def test_emulation_media_type(self, isolated_page):
-        """The emulation media type should work."""
+        """The emulation media type should work.
+        The `emulationMedia()` is a deprecated alias for `emulationMediaType()`."""
         page = isolated_page
-        assert await page.evaluate('matchMedia("screen").matches')
-        assert await page.evaluate('matchMedia("print").matches') is False
-        await page.emulateMediaType('print')
-        assert await page.evaluate('matchMedia("screen").matches') is False
-        assert await page.evaluate('matchMedia("print").matches')
-        await page.emulateMediaType(None)
-        assert await page.evaluate('matchMedia("screen").matches')
-        assert await page.evaluate('matchMedia("print").matches') is False
 
-    @chrome_only
-    @sync
-    async def test_emulation_media(self, isolated_page):
-        """The `emulationMedia()` is a deprecated alias for `emulationMediaType()`."""
-        page = isolated_page
-        assert await page.evaluate('matchMedia("screen").matches')
-        assert await page.evaluate('matchMedia("print").matches') is False
-        await page.emulateMedia('print')
-        assert await page.evaluate('matchMedia("screen").matches') is False
-        assert await page.evaluate('matchMedia("print").matches')
-        await page.emulateMedia(None)
-        assert await page.evaluate('matchMedia("screen").matches')
-        assert await page.evaluate('matchMedia("print").matches') is False
+        for emulateMediaFunc in [page.emulateMediaType, page.emulateMedia]:
+            assert await page.evaluate('matchMedia("screen").matches')
+            assert await page.evaluate('matchMedia("print").matches') is False
+            await emulateMediaFunc('print')
+            assert await page.evaluate('matchMedia("screen").matches') is False
+            assert await page.evaluate('matchMedia("print").matches')
+            await emulateMediaFunc()
+            assert await page.evaluate('matchMedia("screen").matches')
+            assert await page.evaluate('matchMedia("print").matches') is False
 
     @sync
     async def test_throws_err_if_bad_arg(self, isolated_page):
