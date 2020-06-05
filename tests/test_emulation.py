@@ -36,7 +36,7 @@ class TestPageViewport:
         await page.goto(server / 'mobile.html')
         assert await page.evaluate('"ontouchstart" in window') is False
         await page.setViewport(iPhone['viewport'])
-        assert await page.evaluate('"ontouchstart" in window') is True
+        assert await page.evaluate('"ontouchstart" in window')
         dispatchTouch = """() => {
                 let fulfill;
                 const promise = new Promise((x) => (fulfill = x));
@@ -71,7 +71,7 @@ class TestPageViewport:
         page = isolated_page
         await page.setViewport({'width': 800, 'height': 600, 'hasTouch': True})
         await page.addScriptTag(url=server / 'modernizr.js')
-        assert await page.evaluate('Modernizr.touchevents') is True
+        assert await page.evaluate('Modernizr.touchevents')
 
     @chrome_only
     @sync
@@ -115,13 +115,13 @@ class TestEmulateMediaType:
     async def test_emulation_media_type(self, isolated_page):
         """The emulation media type should work."""
         page = isolated_page
-        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("screen").matches')
         assert await page.evaluate('matchMedia("print").matches') is False
         await page.emulateMediaType('print')
         assert await page.evaluate('matchMedia("screen").matches') is False
-        assert await page.evaluate('matchMedia("print").matches') is True
+        assert await page.evaluate('matchMedia("print").matches')
         await page.emulateMediaType(None)
-        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("screen").matches')
         assert await page.evaluate('matchMedia("print").matches') is False
 
     @chrome_only
@@ -129,13 +129,13 @@ class TestEmulateMediaType:
     async def test_emulation_media(self, isolated_page):
         """The `emulationMedia()` is a deprecated alias for `emulationMediaType()`."""
         page = isolated_page
-        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("screen").matches')
         assert await page.evaluate('matchMedia("print").matches') is False
         await page.emulateMedia('print')
         assert await page.evaluate('matchMedia("screen").matches') is False
-        assert await page.evaluate('matchMedia("print").matches') is True
+        assert await page.evaluate('matchMedia("print").matches')
         await page.emulateMedia(None)
-        assert await page.evaluate('matchMedia("screen").matches') is True
+        assert await page.evaluate('matchMedia("screen").matches')
         assert await page.evaluate('matchMedia("print").matches') is False
 
     @sync
@@ -153,22 +153,22 @@ class TestEmulateMediaFeatures:
         """The emulate media features work."""
         page = isolated_page
         await page.emulateMediaFeatures([{'name': 'prefers-reduced-motion', 'value': 'reduce'}])
-        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches") is True
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
         assert await page.evaluate("matchMedia('(prefers-reduced-motion: no-preference)').matches") is False
         await page.emulateMediaFeatures([{'name': 'prefers-color-scheme', 'value': 'light'}])
-        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") is True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches")
         assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") is False
         assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") is False
         await page.emulateMediaFeatures([{'name': 'prefers-color-scheme', 'value': 'dark'}])
-        assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") is True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches")
         assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") is False
         assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") is False
         await page.emulateMediaFeatures(
             [{'name': 'prefers-reduced-motion', 'value': 'reduce'}, {'name': 'prefers-color-scheme', 'value': 'light'}]
         )
-        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches") is True
+        assert await page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
         assert await page.evaluate("matchMedia('(prefers-reduced-motion: no-preference)').matches") is False
-        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches") is True
+        assert await page.evaluate("matchMedia('(prefers-color-scheme: light)').matches")
         assert await page.evaluate("matchMedia('(prefers-color-scheme: dark)').matches") is False
         assert await page.evaluate("matchMedia('(prefers-color-scheme: no-preference)').matches") is False
 
