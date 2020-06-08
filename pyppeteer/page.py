@@ -137,12 +137,12 @@ class Page(EventEmitter):
 
         self._workers: Dict[str, Worker] = dict()
 
-        def _onTargetAttached(event: Dict) -> None:
+        async def _onTargetAttached(event: Dict) -> None:
             targetInfo = event['targetInfo']
             if targetInfo['type'] != 'worker':
                 # If we don't detach from service workers, they will never die.
                 try:
-                    client.send('Target.detachFromTarget', {
+                    await client.send('Target.detachFromTarget', {
                         'sessionId': event['sessionId'],
                     })
                 except Exception as e:
