@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 
 """Coverage module."""
-
-from functools import cmp_to_key
+import asyncio
 import logging
-from typing import Any, Dict, List
+from functools import cmp_to_key
+from typing import Dict, List
 
-from pyppeteer import helper
+from pyppeteer import helpers
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PageError
 from pyppeteer.execution_context import EVALUATION_SCRIPT_URL
-from pyppeteer.helper import debugError
-from pyppeteer.util import merge_dict
+from pyppeteer.models import CoverageResult, NestedRangeItemInput, NestedRangeItem, Protocol
+
 
 logger = logging.getLogger(__name__)
 
 
-class Coverage(object):
+class Coverage:
     """Coverage class.
 
     Coverage gathers information about parts of JavaScript and CSS that were
@@ -50,16 +50,13 @@ class Coverage(object):
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(self, options: Dict = None, **kwargs: Any
-                              ) -> None:
+    async def startJSCoverage(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
         """Start JS coverage measurement.
 
-        Available options are:
-
-        * ``resetOnNavigation`` (bool): Whether to reset coverage on every
-          navigation. Defaults to ``True``.
-        * ``reportAnonymousScript`` (bool): Whether anonymous script generated
-          by the page should be reported. Defaults to ``False``.
+        :param resetOnNavigation: Whether to reset coverage on every
+          navigation.
+        :param reportAnonymousScripts: Whether anonymous script generated
+          by the page should be reported.
 
         .. note::
             Anonymous scripts are ones that don't have an associated url. These
@@ -68,8 +65,9 @@ class Coverage(object):
             ``True``, anonymous scripts will have
             ``__pyppeteer_evaluation_script__`` as their url.
         """
-        options = merge_dict(options, kwargs)
-        await self._jsCoverage.start(options)
+        await self._jsCoverage.start(
+            resetOnNavigation=resetOnNavigation, reportAnonymousScripts=reportAnonymousScripts,
+        )
 
     async def stopJSCoverage(self) -> List:
         """Stop JS coverage measurement and get result.
@@ -90,17 +88,14 @@ class Coverage(object):
         """
         return await self._jsCoverage.stop()
 
-    async def startCSSCoverage(self, options: Dict = None, **kwargs: Any
-                               ) -> None:
+    async def startCSSCoverage(self, resetOnNavigation: bool = True) -> None:
         """Start CSS coverage measurement.
 
-        Available options are:
 
-        * ``resetOnNavigation`` (bool): Whether to reset coverage on every
-          navigation. Defaults to ``True``.
+        :param resetOnNavigation: Whether to reset coverage on every
+          navigation.
         """
-        options = merge_dict(options, kwargs)
-        await self._cssCoverage.start(options)
+        await self._cssCoverage.start(resetOnNavigation=resetOnNavigation)
 
     async def stopCSSCoverage(self) -> List:
         """Stop CSS coverage measurement and get result.
@@ -123,42 +118,40 @@ class Coverage(object):
         return await self._cssCoverage.stop()
 
 
-class JSCoverage(object):
+class JSCoverage:
     """JavaScript Coverage class."""
 
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._scriptURLs: Dict = dict()
-        self._scriptSources: Dict = dict()
-        self._eventListeners: List = list()
+        self._scriptURLs = {}
+        self._scriptSources = {}
+        self._eventListeners = []
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(self, resetOnNavigation: bool = True, reportAnonymousScripts: bool = False,) -> None:
         """Start coverage measurement."""
-        options = merge_dict(options, kwargs)
         if self._enabled:
-            raise PageError('JSCoverage is always enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
-        self._reportAnonymousScript = bool(options.get('reportAnonymousScript'))  # noqa: E501
+            raise PageError('JSCoverage is already enabled.')
+        self._resetOnNavigation = resetOnNavigation
+        self._reportAnonymousScript = reportAnonymousScripts
         self._enabled = True
         self._scriptURLs.clear()
         self._scriptSources.clear()
         self._eventListeners = [
-            helper.addEventListener(
-                self._client, 'Debugger.scriptParsed',
-                lambda e: self._client._loop.create_task(
-                    self._onScriptParsed(e))),
-            helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+            helpers.addEventListener(
+                self._client, 'Debugger.scriptParsed', lambda e: self._onScriptParsed(e)
+            ),
+            helpers.addEventListener(
+                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+            ),
         ]
-        await self._client.send('Profiler.enable')
-        await self._client.send('Profiler.startPreciseCoverage',
-                                {'callCount': False, 'detailed': True})
-        await self._client.send('Debugger.enable')
-        await self._client.send('Debugger.setSkipAllPauses', {'skip': True})
+        await asyncio.gather(
+            self._client.send('Profiler.enable'),
+            self._client.send('Profiler.startPreciseCoverage', {'callCount': False, 'detailed': True}),
+            self._client.send('Debugger.enable'),
+            self._client.send('Debugger.setSkipAllPauses', {'skip': True}),
+        )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
         if not self._resetOnNavigation:
@@ -166,7 +159,7 @@ class JSCoverage(object):
         self._scriptURLs.clear()
         self._scriptSources.clear()
 
-    async def _onScriptParsed(self, event: Dict) -> None:
+    async def _onScriptParsed(self, event: Protocol.Debugger.scriptParsedPayload) -> None:
         # Ignore pyppeteer-injected scripts
         if event.get('url') == EVALUATION_SCRIPT_URL:
             return
@@ -177,38 +170,38 @@ class JSCoverage(object):
 
         scriptId = event.get('scriptId')
         url = event.get('url')
-        if not url and self._reportAnonymousScript:
-            url = f'debugger://VM{scriptId}'
         try:
-            response = await self._client.send(
-                'Debugger.getScriptSource',
-                {'scriptId': scriptId}
-            )
+            response = await self._client.send('Debugger.getScriptSource', {'scriptId': scriptId})
             self._scriptURLs[scriptId] = url
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
-            # This might happen if the page has already navigated away.
-            debugError(logger, e)
+            logger.error(f'An exception occurred during _onScriptParsed handling: {e}'
+                         f'\nThis might happen if the page has already navigated away.')
 
     async def stop(self) -> List:
         """Stop coverage measurement and return results."""
         if not self._enabled:
-            raise PageError('JSCoverage is not enabled.')
+            raise PageError('JSCoverage is not enabled')
         self._enabled = False
 
-        result = await self._client.send('Profiler.takePreciseCoverage')
-        await self._client.send('Profiler.stopPreciseCoverage')
-        await self._client.send('Profiler.disable')
-        await self._client.send('Debugger.disable')
-        helper.removeEventListeners(self._eventListeners)
+        result, *_ = await asyncio.gather(
+            self._client.send('Profiler.takePreciseCoverage'),
+            self._client.send('Profiler.stopPreciseCoverage'),
+            self._client.send('Profiler.disable'),
+            self._client.send('Debugger.disable'),
+        )
+        helpers.removeEventListeners(self._eventListeners)
 
-        coverage: List = []
+        coverage = []
         for entry in result.get('result', []):
-            url = self._scriptURLs.get(entry.get('scriptId'))
-            text = self._scriptSources.get(entry.get('scriptId'))
+            scriptId = entry.get('scriptId')
+            url = self._scriptURLs.get(scriptId)
+            if not url and self._reportAnonymousScript:
+                url = f'debugger://VM{scriptId}'
+            text = self._scriptSources.get(scriptId)
             if text is None or url is None:
                 continue
-            flattenRanges: List = []
+            flattenRanges = []
             for func in entry.get('functions', []):
                 flattenRanges.extend(func.get('ranges', []))
             ranges = convertToDisjointRanges(flattenRanges)
@@ -216,39 +209,38 @@ class JSCoverage(object):
         return coverage
 
 
-class CSSCoverage(object):
+class CSSCoverage:
     """CSS Coverage class."""
 
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._stylesheetURLs: Dict = dict()
-        self._stylesheetSources: Dict = dict()
+        self._stylesheetURLs: Dict = {}
+        self._stylesheetSources: Dict = {}
         self._eventListeners: List = []
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(self, resetOnNavigation: bool = True) -> None:
         """Start coverage measurement."""
-        options = merge_dict(options, kwargs)
         if self._enabled:
             raise PageError('CSSCoverage is already enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
+        self._resetOnNavigation = resetOnNavigation
         self._enabled = True
         self._stylesheetURLs.clear()
         self._stylesheetSources.clear()
         self._eventListeners = [
-            helper.addEventListener(
-                self._client, 'CSS.styleSheetAdded',
-                lambda e: self._client._loop.create_task(
-                    self._onStyleSheet(e))),
-            helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+            helpers.addEventListener(
+                self._client, 'CSS.styleSheetAdded', lambda e: self._client.loop.create_task(self._onStyleSheet(e))
+            ),
+            helpers.addEventListener(
+                self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared
+            ),
         ]
-        await self._client.send('DOM.enable')
-        await self._client.send('CSS.enable')
-        await self._client.send('CSS.startRuleUsageTracking')
+        await asyncio.gather(
+            self._client.send('DOM.enable'),
+            self._client.send('CSS.enable'),
+            self._client.send('CSS.startRuleUsageTracking'),
+        )
 
     def _onExecutionContextsCleared(self, event: Dict) -> None:
         if not self._resetOnNavigation:
@@ -262,60 +254,59 @@ class CSSCoverage(object):
         if not header.get('sourceURL'):
             return
         try:
-            response = await self._client.send(
-                'CSS.getStyleSheetText',
-                {'styleSheetId': header['styleSheetId']}
-            )
+            response = await self._client.send('CSS.getStyleSheetText', {'styleSheetId': header['styleSheetId']})
             self._stylesheetURLs[header['styleSheetId']] = header['sourceURL']
             self._stylesheetSources[header['styleSheetId']] = response['text']
         except Exception as e:
             # This might happen if the page has already navigated away.
-            debugError(logger, e)
+            logger.error(f'An exception occurred: {e}')
 
-    async def stop(self) -> List:
+    async def stop(self) -> List[CoverageResult]:
         """Stop coverage measurement and return results."""
         if not self._enabled:
             raise PageError('CSSCoverage is not enabled.')
         self._enabled = False
-        result = await self._client.send('CSS.stopRuleUsageTracking')
-        await self._client.send('CSS.disable')
-        await self._client.send('DOM.disable')
-        helper.removeEventListeners(self._eventListeners)
+        ruleTrackingResponse = await self._client.send('CSS.stopRuleUsageTracking')
+        await asyncio.gather(self._client.send('CSS.disable'), self._client.send('DOM.disable'))
+        helpers.removeEventListeners(self._eventListeners)
 
         # aggregate by styleSheetId
-        styleSheetIdToCoverage: Dict = {}
-        for entry in result['ruleUsage']:
+        styleSheetIdToCoverage: Dict[str, List[Dict[str, str]]] = {}
+        for entry in ruleTrackingResponse['ruleUsage']:
             ranges = styleSheetIdToCoverage.get(entry['styleSheetId'])
             if not ranges:
                 ranges = []
                 styleSheetIdToCoverage[entry['styleSheetId']] = ranges
-            ranges.append({
-                'startOffset': entry['startOffset'],
-                'endOffset': entry['endOffset'],
-                'count': 1 if entry['used'] else 0
-            })
+            ranges.append(
+                {
+                    'startOffset': entry['startOffset'],
+                    'endOffset': entry['endOffset'],
+                    'count': 1 if entry['used'] else 0,
+                }
+            )
 
         coverage = []
         for styleSheetId in self._stylesheetURLs:
             url = self._stylesheetURLs.get(styleSheetId)
             text = self._stylesheetSources.get(styleSheetId)
-            ranges = convertToDisjointRanges(
-                styleSheetIdToCoverage.get(styleSheetId, [])
-            )
+            ranges = convertToDisjointRanges(styleSheetIdToCoverage.get(styleSheetId, []))
             coverage.append({'url': url, 'ranges': ranges, 'text': text})
 
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
-                            ) -> List[Any]:
-    """Convert ranges."""
+def convertToDisjointRanges(nestedRanges: List[NestedRangeItemInput]) -> List[NestedRangeItem]:
+    """
+    Convert ranges.
+    NestedRange members support keys:
+        * startOffset: float
+        * endOffset: float
+        * count: int
+    """
     points: List = []
     for nested_range in nestedRanges:
-        points.append({'offset': nested_range['startOffset'], 'type': 0,
-                       'range': nested_range})
-        points.append({'offset': nested_range['endOffset'], 'type': 1,
-                       'range': nested_range})
+        points.append({'offset': nested_range['startOffset'], 'type': 0, 'range': nested_range})
+        points.append({'offset': nested_range['endOffset'], 'type': 1, 'range': nested_range})
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:
@@ -335,14 +326,12 @@ def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
 
     points.sort(key=cmp_to_key(_sort_func))
 
-    hitCountStack: List[int] = []
-    results: List[Dict] = []
+    hitCountStack = []
+    results = []
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:
-        if (hitCountStack and
-                lastOffset < point['offset'] and
-                hitCountStack[len(hitCountStack) - 1] > 0):
+        if hitCountStack and lastOffset < point['offset'] and hitCountStack[len(hitCountStack) - 1] > 0:
             lastResult = results[-1] if results else None
             if lastResult and lastResult['end'] == lastOffset:
                 lastResult['end'] = point['offset']

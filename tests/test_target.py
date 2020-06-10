@@ -6,22 +6,19 @@ import unittest
 
 from syncer import sync
 
-from .base import BaseTestCase
 
-
-class TestTarget(BaseTestCase):
+class TestTarget:
     @sync
     async def test_targets(self):
         targets = self.browser.targets()
-        _list = [target for target in targets
-                 if target.type == 'page' and target.url == 'about:blank']
+        _list = [target for target in targets if target.type == 'page' and target.url == 'about:blank']
         self.assertTrue(any(_list))
         target_types = [t.type for t in targets]
         self.assertIn('browser', target_types)
 
     @sync
     async def test_return_all_pages(self):
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertEqual(len(pages), 1)
         self.assertIn(self.page, pages)
 
@@ -33,29 +30,23 @@ class TestTarget(BaseTestCase):
 
     @sync
     async def test_default_page(self):
-        pages = await self.browser.pages()
+        pages = await self.browser.pages
         page = [page for page in pages if page != self.page][0]
-        self.assertEqual(await page.evaluate('["Hello", "world"].join(" ")'),
-                         'Hello world')
+        self.assertEqual(await page.evaluate('["Hello", "world"].join(" ")'), 'Hello world')
         self.assertTrue(await page.J('body'))
 
     @sync
     async def test_report_new_page(self):
         otherPagePromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetcreated',
-                          lambda target: otherPagePromise.set_result(target))
-        await self.page.evaluate(
-            'url => window.open(url)',
-            'http://127.0.0.1:{}'.format(self.port))
+        self.context.once('targetcreated', lambda target: otherPagePromise.set_result(target))
+        await self.page.evaluate('url => window.open(url)', 'http://127.0.0.1:{}'.format(self.port))
         otherPage = await (await otherPagePromise).page()
 
         self.assertIn('127.0.0.1', otherPage.url)
-        self.assertEqual(
-            await otherPage.evaluate('["Hello", "world"].join(" ")'),
-            'Hello world')
+        self.assertEqual(await otherPage.evaluate('["Hello", "world"].join(" ")'), 'Hello world')
         self.assertTrue(await otherPage.J('body'))
 
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertIn(self.page, pages)
         self.assertIn(otherPage, pages)
 
@@ -65,12 +56,11 @@ class TestTarget(BaseTestCase):
             page = await target.page()
             closePagePromise.set_result(page)
 
-        self.context.once('targetdestroyed',
-                          lambda t: asyncio.ensure_future(get_close_page(t)))
+        self.context.once('targetdestroyed', lambda t: asyncio.ensure_future(get_close_page(t)))
         await otherPage.close()
         self.assertEqual(await closePagePromise, otherPage)
 
-        pages = await self.context.pages()
+        pages = await self.context.pages
         self.assertIn(self.page, pages)
         self.assertNotIn(otherPage, pages)
 
@@ -78,20 +68,16 @@ class TestTarget(BaseTestCase):
     async def test_report_service_worker(self):
         await self.page.goto(self.url + 'empty')
         createdTargetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetcreated',
-                          lambda t: createdTargetPromise.set_result(t))
+        self.context.once('targetcreated', lambda t: createdTargetPromise.set_result(t))
 
-        await self.page.goto(self.url + 'static/serviceworkers/empty/sw.html')
+        await self.page.goto(self.url + 'assets/serviceworkers/empty/sw.html')
         createdTarget = await createdTargetPromise
         self.assertEqual(createdTarget.type, 'service_worker')
-        self.assertEqual(
-            createdTarget.url, self.url + 'static/serviceworkers/empty/sw.js')
+        self.assertEqual(createdTarget.url, self.url + 'assets/serviceworkers/empty/sw.js')
 
         destroyedTargetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetdestroyed',
-                          lambda t: destroyedTargetPromise.set_result(t))
-        await self.page.evaluate(
-            '() => window.registrationPromise.then(reg => reg.unregister())')
+        self.context.once('targetdestroyed', lambda t: destroyedTargetPromise.set_result(t))
+        await self.page.evaluate('() => window.registrationPromise.then(reg => reg.unregister())')
         destroyedTarget = await destroyedTargetPromise
         self.assertEqual(destroyedTarget, createdTarget)
 
@@ -100,16 +86,13 @@ class TestTarget(BaseTestCase):
         await self.page.goto(self.url + 'empty')
 
         changedTargetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetchanged',
-                          lambda t: changedTargetPromise.set_result(t))
+        self.context.once('targetchanged', lambda t: changedTargetPromise.set_result(t))
         await self.page.goto('http://127.0.0.1:{}/'.format(self.port))
         changedTarget = await changedTargetPromise
-        self.assertEqual(changedTarget.url,
-                         'http://127.0.0.1:{}/'.format(self.port))
+        self.assertEqual(changedTarget.url, 'http://127.0.0.1:{}/'.format(self.port))
 
         changedTargetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetchanged',
-                          lambda t: changedTargetPromise.set_result(t))
+        self.context.once('targetchanged', lambda t: changedTargetPromise.set_result(t))
         await self.page.goto(self.url + 'empty')
         changedTarget = await changedTargetPromise
         self.assertEqual(changedTarget.url, self.url + 'empty')
@@ -124,18 +107,15 @@ class TestTarget(BaseTestCase):
         self.context.on('targetchanged', listener)
 
         targetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetcreated',
-                          lambda t: targetPromise.set_result(t))
+        self.context.once('targetcreated', lambda t: targetPromise.set_result(t))
         newPagePromise = asyncio.ensure_future(self.context.newPage())
         target = await targetPromise
         self.assertEqual(target.url, 'about:blank')
 
         newPage = await newPagePromise
         targetPromise2 = asyncio.get_event_loop().create_future()
-        self.context.once('targetcreated',
-                          lambda t: targetPromise2.set_result(t))
-        evaluatePromise = asyncio.ensure_future(
-            newPage.evaluate('window.open("about:blank")'))
+        self.context.once('targetcreated', lambda t: targetPromise2.set_result(t))
+        evaluatePromise = asyncio.ensure_future(newPage.evaluate('window.open("about:blank")'))
         target2 = await targetPromise2
         self.assertEqual(target2.url, 'about:blank')
         await evaluatePromise
@@ -156,13 +136,11 @@ class TestTarget(BaseTestCase):
     async def test_opener(self):
         await self.page.goto(self.url + 'empty')
         targetPromise = asyncio.get_event_loop().create_future()
-        self.context.once('targetcreated',
-                          lambda target: targetPromise.set_result(target))
-        await self.page.goto(self.url + 'static/popup/window-open.html')
+        self.context.once('targetcreated', lambda target: targetPromise.set_result(target))
+        await self.page.goto(self.url + 'assets/popup/window-open.html')
         createdTarget = await targetPromise
         self.assertEqual(
-            (await createdTarget.page()).url,
-            self.url + 'static/popup/popup.html',
+            (await createdTarget.page()).url, self.url + 'assets/popup/popup.html',
         )
         self.assertEqual(createdTarget.opener, self.page.target)
         self.assertIsNone(self.page.target.opener)

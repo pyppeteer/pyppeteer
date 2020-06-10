@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""Keyboard and Mouse module."""
+"""
+Keyboard and Mouse module
+
+puppeteer equivalent: lib/Input.js
+"""
 
 import asyncio
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PyppeteerError
 from pyppeteer.us_keyboard_layout import keyDefinitions
-from pyppeteer.util import merge_dict
 
 if TYPE_CHECKING:
-    from typing import Set  # noqa: F401
+    from typing import Set
 
 
-class Keyboard(object):
+class Keyboard:
     """Keyboard class provides as api for managing a virtual keyboard.
 
     The high level api is :meth:`type`, which takes raw characters and
@@ -55,8 +58,7 @@ class Keyboard(object):
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
-    async def down(self, key: str, options: dict = None, **kwargs: Any
-                   ) -> None:
+    async def down(self, key: str, text: str = None) -> None:
         """Dispatch a ``keydown`` event with ``key``.
 
         If ``key`` is a single character and no modifier keys besides ``Shift``
@@ -68,37 +70,36 @@ class Keyboard(object):
         subsequent key presses will be sent with that modifier active. To
         release the modifier key, use :meth:`up` method.
 
-        :arg str key: Name of key to press, such as ``ArrowLeft``.
-        :arg dict options: Option can have ``text`` field, and if this option
-            specified, generate an input event with this text.
+        :arg key: Name of key to press, such as ``ArrowLeft``.
+        :arg text: generate an input event with this text.
 
         .. note::
             Modifier keys DO influence :meth:`down`. Holding down ``shift``
             will type the text in upper case.
         """
-        options = merge_dict(options, kwargs)
 
         description = self._keyDescriptionForString(key)
         autoRepeat = description['code'] in self._pressedKeys
         self._pressedKeys.add(description['code'])
         self._modifiers |= self._modifierBit(description['key'])
 
-        text = options.get('text')
-        if text is None:
-            text = description['text']
+        text = text or description['text']
 
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'keyDown' if text else 'rawKeyDown',
-            'modifiers': self._modifiers,
-            'windowsVirtualKeyCode': description['keyCode'],
-            'code': description['code'],
-            'key': description['key'],
-            'text': text,
-            'unmodifiedText': text,
-            'autoRepeat': autoRepeat,
-            'location': description['location'],
-            'isKeypad': description['location'] == 3,
-        })
+        await self._client.send(
+            'Input.dispatchKeyEvent',
+            {
+                'type': 'keyDown' if text else 'rawKeyDown',
+                'modifiers': self._modifiers,
+                'windowsVirtualKeyCode': description['keyCode'],
+                'code': description['code'],
+                'key': description['key'],
+                'text': text,
+                'unmodifiedText': text,
+                'autoRepeat': autoRepeat,
+                'location': description['location'],
+                'isKeypad': description['location'] == 3,
+            },
+        )
 
     def _modifierBit(self, key: str) -> int:
         if key == 'Alt':
@@ -123,32 +124,33 @@ class Keyboard(object):
 
         definition: Dict = keyDefinitions.get(keyString)  # type: ignore
         if not definition:
-            raise PyppeteerError(f'Unknown key: {keyString}')
+            raise PyppeteerError(f'Unknown key: "{keyString}"')
 
-        if 'key' in definition:
+        if definition.get('key'):
             description['key'] = definition['key']
         if shift and definition.get('shiftKey'):
             description['key'] = definition['shiftKey']
 
-        if 'keyCode' in definition:
+        if definition.get('keyCode'):
             description['keyCode'] = definition['keyCode']
         if shift and definition.get('shiftKeyCode'):
             description['keyCode'] = definition['shiftKeyCode']
 
-        if 'code' in definition:
+        if definition.get('code'):
             description['code'] = definition['code']
 
-        if 'location' in definition:
+        if definition.get('location'):
             description['location'] = definition['location']
 
         if len(description['key']) == 1:  # type: ignore
             description['text'] = description['key']
 
-        if 'text' in definition:
+        if definition.get('text'):
             description['text'] = definition['text']
         if shift and definition.get('shiftText'):
             description['text'] = definition['shiftText']
 
+        # if any modifiers besides shift are pressed, no text should be sent
         if self._modifiers & ~8:
             description['text'] = ''
 
@@ -164,14 +166,17 @@ class Keyboard(object):
         self._modifiers &= ~self._modifierBit(description['key'])
         if description['code'] in self._pressedKeys:
             self._pressedKeys.remove(description['code'])
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'keyUp',
-            'modifiers': self._modifiers,
-            'key': description['key'],
-            'windowsVirtualKeyCode': description['keyCode'],
-            'code': description['code'],
-            'location': description['location'],
-        })
+        await self._client.send(
+            'Input.dispatchKeyEvent',
+            {
+                'type': 'keyUp',
+                'modifiers': self._modifiers,
+                'key': description['key'],
+                'windowsVirtualKeyCode': description['keyCode'],
+                'code': description['code'],
+                'location': description['location'],
+            },
+        )
 
     async def sendCharacter(self, char: str) -> None:
         """Send character into the page.
@@ -185,8 +190,7 @@ class Keyboard(object):
         """
         await self._client.send('Input.insertText', {'text': char})
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
-                   ) -> None:
+    async def type(self, text: str, delay: float = 0) -> None:
         """Type characters into a focused element.
 
         This method sends ``keydown``, ``keypress``/``input``, and ``keyup``
@@ -195,27 +199,23 @@ class Keyboard(object):
         To press a special key, like ``Control`` or ``ArrowDown``, use
         :meth:`press` method.
 
-        :arg str text: Text to type into a focused element.
-        :arg dict options: Options can have ``delay`` (int|float) field, which
-          specifies time to wait between key presses in milliseconds. Defaults
+        :arg text: Text to type into a focused element.
+        :arg delay: Specifies time to wait between key presses in milliseconds, defaults
           to 0.
 
         .. note::
             Modifier keys DO NOT effect :meth:`type`. Holding down ``shift``
             will not type the text in upper case.
         """
-        options = merge_dict(options, kwargs)
-        delay = options.get('delay', 0)
         for char in text:
             if char in keyDefinitions:
-                await self.press(char, {'delay': delay})
+                await self.press(char, delay=delay)
             else:
+                if delay:
+                    await asyncio.sleep(delay / 1000)
                 await self.sendCharacter(char)
-            if delay:
-                await asyncio.sleep(delay / 1000)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
-                    ) -> None:
+    async def press(self, key: str, text: str = None, delay: float = 0) -> None:
         """Press ``key``.
 
         If ``key`` is a single character and no modifier keys besides
@@ -223,28 +223,24 @@ class Keyboard(object):
         generated. The ``text`` option can be specified to force an input event
         to be generated.
 
-        :arg str key: Name of key to press, such as ``ArrowLeft``.
-
-        This method accepts the following options:
-
-        * ``text`` (str): If specified, generates an input event with this
+        :arg key: Name of key to press, such as ``ArrowLeft``.
+        :arg text: If specified, generates an input event with this
           text.
-        * ``delay`` (int|float): Time to wait between ``keydown`` and
+        :arg delay: Time to wait between ``keydown`` and
           ``keyup``. Defaults to 0.
 
         .. note::
             Modifier keys DO effect :meth:`press`. Holding down ``Shift`` will
             type the text in upper case.
         """
-        options = merge_dict(options, kwargs)
 
-        await self.down(key, options)
-        if 'delay' in options:
-            await asyncio.sleep(options['delay'] / 1000)
+        await self.down(key, text)
+        if delay:
+            await asyncio.sleep(delay / 1000)
         await self.up(key)
 
 
-class Mouse(object):
+class Mouse:
     """Mouse class.
 
     The :class:`Mouse` operates in main-frame CSS pixels relative to the
@@ -258,93 +254,90 @@ class Mouse(object):
         self._y = 0.0
         self._button = 'none'
 
-    async def move(self, x: float, y: float, options: dict = None,
-                   **kwargs: Any) -> None:
+    async def move(self, x: float, y: float, steps: int = 1) -> None:
         """Move mouse cursor (dispatches a ``mousemove`` event).
 
-        Options can accepts ``steps`` (int) field. If this ``steps`` option
-        specified, Sends intermediate ``mousemove`` events. Defaults to 1.
+        :arg x: x-coordinate to move to
+        :arg y: y-coordinate to move to
+        :arg steps: number of steps to break movement into
         """
-        options = merge_dict(options, kwargs)
         fromX = self._x
         fromY = self._y
         self._x = x
         self._y = y
-        steps = options.get('steps', 1)
         for i in range(1, steps + 1):
-            x = round(fromX + (self._x - fromX) * (i / steps))
-            y = round(fromY + (self._y - fromY) * (i / steps))
-            await self._client.send('Input.dispatchMouseEvent', {
-                'type': 'mouseMoved',
-                'button': self._button,
-                'x': x,
-                'y': y,
-                'modifiers': self._keyboard._modifiers,
-            })
+            await self._client.send(
+                'Input.dispatchMouseEvent',
+                {
+                    'type': 'mouseMoved',
+                    'button': self._button,
+                    'x': round(fromX + (self._x - fromX) * (i / steps)),
+                    'y': round(fromY + (self._y - fromY) * (i / steps)),
+                    'modifiers': self._keyboard._modifiers,
+                },
+            )
 
-    async def click(self, x: float, y: float, options: dict = None,
-                    **kwargs: Any) -> None:
-        """Click button at (``x``, ``y``).
+    async def click(
+        self, x: float, y: float, button: str = 'left', clickCount: int = 1, delay: float = 0, steps: int = 1,
+    ) -> None:
+        """Click mouse button at (``x``, ``y``).
 
         Shortcut to :meth:`move`, :meth:`down`, and :meth:`up`.
 
-        This method accepts the following options:
+        :arg x: x coordinate to click
+        :arg y: y coordinate to click
+        :arg button: mouse button to use, one of ``left``, ``right``, or ``middle``, defaults to ``left``
+        :arg clickCount: number of times to click, defaults to 1
+        :arg delay: delay in ms between mouseDown and mouseUp events, defaults to 0
+        :arg steps: steps to break mouse movement into, defaults to 1
 
-        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
-          ``left``.
-        * ``clickCount`` (int): defaults to 1.
-        * ``delay`` (int|float): Time to wait between ``mousedown`` and
-          ``mouseup`` in milliseconds. Defaults to 0.
         """
-        options = merge_dict(options, kwargs)
-        await self.move(x, y)
-        await self.down(options)
-        if options and options.get('delay'):
-            await asyncio.sleep(options.get('delay', 0) / 1000)
-        await self.up(options)
+        await self.move(x, y, steps)
+        await self.down(button, clickCount)
+        if delay:
+            await asyncio.sleep(delay / 1000)
+        await self.up(button, clickCount)
 
-    async def down(self, options: dict = None, **kwargs: Any) -> None:
-        """Press down button (dispatches ``mousedown`` event).
+    async def down(self, button: str = 'left', clickCount: int = 1) -> None:
+        """Press mouse down
 
-        This method accepts the following options:
-
-        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
-          ``left``.
-        * ``clickCount`` (int): defaults to 1.
+        :arg button: mouse button to use, one of ``left``, ``right``, or ``middle``, defaults to ``left``
+        :arg clickCount: number of times to click, defaults to 1
         """
-        options = merge_dict(options, kwargs)
-        self._button = options.get('button', 'left')
-        await self._client.send('Input.dispatchMouseEvent', {
-            'type': 'mousePressed',
-            'button': self._button,
-            'x': self._x,
-            'y': self._y,
-            'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
-        })
+        self._button = button
+        await self._client.send(
+            'Input.dispatchMouseEvent',
+            {
+                'type': 'mousePressed',
+                'button': self._button,
+                'x': self._x,
+                'y': self._y,
+                'modifiers': self._keyboard._modifiers,
+                'clickCount': clickCount,
+            },
+        )
 
-    async def up(self, options: dict = None, **kwargs: Any) -> None:
-        """Release pressed button (dispatches ``mouseup`` event).
+    async def up(self, button: str = 'left', clickCount: int = 1) -> None:
+        """Release pressed mouse
 
-        This method accepts the following options:
-
-        * ``button`` (str): ``left``, ``right``, or ``middle``, defaults to
-          ``left``.
-        * ``clickCount`` (int): defaults to 1.
+        :arg button: mouse button to use, one of ``left``, ``right``, or ``middle``, defaults to ``left``
+        :arg clickCount: number of times to click, defaults to 1
         """
-        options = merge_dict(options, kwargs)
         self._button = 'none'
-        await self._client.send('Input.dispatchMouseEvent', {
-            'type': 'mouseReleased',
-            'button': options.get('button', 'left'),
-            'x': self._x,
-            'y': self._y,
-            'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
-        })
+        await self._client.send(
+            'Input.dispatchMouseEvent',
+            {
+                'type': 'mouseReleased',
+                'button': button,
+                'x': self._x,
+                'y': self._y,
+                'modifiers': self._keyboard._modifiers,
+                'clickCount': clickCount,
+            },
+        )
 
 
-class Touchscreen(object):
+class Touchscreen:
     """Touchscreen class."""
 
     def __init__(self, client: CDPSession, keyboard: Keyboard) -> None:
@@ -357,14 +350,22 @@ class Touchscreen(object):
 
         Dispatches a ``touchstart`` and ``touchend`` event.
         """
+        # Touches appear to be lost during the first frame after navigation.
+        # This waits a frame before sending the tap.
+        # see https://crbug.com/613219
+        await self._client.send(
+            'Runtime.evaluate',
+            {
+                'expression': 'new Promise(x => requestAnimationFrame(() => requestAnimationFrame(x)))',
+                'awaitPromise': True,
+            },
+        )
+
         touchPoints = [{'x': round(x), 'y': round(y)}]
-        await self._client.send('Input.dispatchTouchEvent', {
-            'type': 'touchStart',
-            'touchPoints': touchPoints,
-            'modifiers': self._keyboard._modifiers,
-        })
-        await self._client.send('Input.dispatchTouchEvent', {
-            'type': 'touchEnd',
-            'touchPoints': [],
-            'modifiers': self._keyboard._modifiers,
-        })
+        await self._client.send(
+            'Input.dispatchTouchEvent',
+            {'type': 'touchStart', 'touchPoints': touchPoints, 'modifiers': self._keyboard._modifiers,},
+        )
+        await self._client.send(
+            'Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': [], 'modifiers': self._keyboard._modifiers,}
+        )

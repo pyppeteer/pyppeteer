@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """Dialog module."""
-
 from types import SimpleNamespace
 
 from pyppeteer.connection import CDPSession
+from pyppeteer.errors import BrowserError
 
 
-class Dialog(object):
+class Dialog:
     """Dialog class.
 
     Dialog objects are dispatched by page via the ``dialog`` event.
@@ -32,17 +32,11 @@ class Dialog(object):
         await page.evaluate('() => alert("1")')
     """
 
-    Type = SimpleNamespace(
-        Alert='alert',
-        BeforeUnload='beforeunload',
-        Confirm='confirm',
-        Prompt='prompt',
-    )
+    Type = SimpleNamespace(Alert='alert', BeforeUnload='beforeunload', Confirm='confirm', Prompt='prompt',)
 
-    def __init__(self, client: CDPSession, type: str, message: str,
-                 defaultValue: str = '') -> None:
+    def __init__(self, client: CDPSession, type_: str, message: str, defaultValue: str = '') -> None:
         self._client = client
-        self._type = type
+        self._type = type_
         self._message = message
         self._handled = False
         self._defaultValue = defaultValue
@@ -75,14 +69,11 @@ class Dialog(object):
           is not prompt, this does not cause any effect.
         """
         self._handled = True
-        await self._client.send('Page.handleJavaScriptDialog', {
-            'accept': True,
-            'promptText': promptText,
-        })
+        await self._client.send('Page.handleJavaScriptDialog', {'accept': True, 'promptText': promptText,})
 
     async def dismiss(self) -> None:
         """Dismiss the dialog."""
+        if self._handled:
+            raise BrowserError('Cannot dismiss dialog which is already handled!')
         self._handled = True
-        await self._client.send('Page.handleJavaScriptDialog', {
-            'accept': False,
-        })
+        await self._client.send('Page.handleJavaScriptDialog', {'accept': False,})

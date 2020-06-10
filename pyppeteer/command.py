@@ -2,15 +2,21 @@
 # -*- coding: utf-8 -*-
 
 """Commands for Pyppeteer."""
+import argparse
 
-import logging
-
-from pyppeteer.chromium_downloader import check_chromium, download_chromium
+from pyppeteer.browser_fetcher import BrowserFetcher
 
 
 def install() -> None:
-    """Download chromium if not install."""
-    if not check_chromium():
-        download_chromium()
-    else:
-        logging.getLogger(__name__).warning('chromium is already installed.')
+    """Download and Chromium/Firefox to specified folder"""
+    parser = argparse.ArgumentParser(description=install.__doc__)
+    parser.add_argument('-r', '--revision', action="store", type=str, default=None)
+    parser.add_argument('-p', '--product', action="store", type=str, default=None)
+    parser.add_argument('-l', '--location', action="store")
+    parsed = parser.parse_args()
+    dl = BrowserFetcher(parsed.location)
+    dl.download(parsed.revision)
+
+
+if __name__ == '__main__':
+    install()
