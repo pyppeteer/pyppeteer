@@ -181,8 +181,9 @@ class ElementHandle(JSHandle):
         async def silent_get_quads():
             try:
                 return await self._client.send('DOM.getContentQuads', {'objectId': self._remoteObject['objectId']})
-            except NetworkError as e:
+            except NetworkError:
                 logger.exception('Failed to retrieve content quads')
+                return None
 
         result, layoutMetrics = await asyncio.gather(silent_get_quads(), self._client.send('Page.getLayoutMetrics'),)
         if not result or not result.get('quads'):
@@ -594,4 +595,4 @@ def computeQuadArea(quad: List[Dict]) -> float:
         p1 = quad[i]
         p2 = quad[(i + 1) % len(quad)]
         area += (p1['x'] * p2['y'] - p2['x'] * p1['y']) / 2
-    return area
+    return abs(area)
