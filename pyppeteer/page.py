@@ -123,7 +123,7 @@ class Page(AsyncIOEventEmitter):
                 try:
                     await client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    logger.error(f'An exception occurred: {e}')
+                    logger.exception(f'An exception occurred while trying to detach from target')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
