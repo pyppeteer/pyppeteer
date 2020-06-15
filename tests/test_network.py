@@ -11,7 +11,7 @@ from tests import utils
 
 
 def listener(request_container, request):
-    """Save a request if the request calls not a favicon."""
+    """Save a request if the request's url doesn't contain a favicon url."""
     if not utils.isFavicon(request):
         request_container.append(request)
 
@@ -20,7 +20,7 @@ class TestPageEventsRequest:
 
     @sync
     async def test_fires_for_nav_requests(self, server, isolated_page):
-        """The page event is fired for navigation requests."""
+        """The page event should be fired for navigation requests."""
         page = isolated_page
         requests = []
         page.on('request', lambda request: listener(requests, request))
@@ -30,7 +30,7 @@ class TestPageEventsRequest:
     @sync
     @chrome_only
     async def test_fires_for_iframes(self, server, isolated_page):
-        """The page event is fired for iframes."""
+        """The page event should be fired for iframes."""
         page = isolated_page
         requests = []
         page.on('request', lambda request: listener(requests, request))
@@ -40,7 +40,7 @@ class TestPageEventsRequest:
 
     @sync
     async def test_fires_for_fetches(self, server, isolated_page):
-        """The page event is fired for fetches."""
+        """The page event should be fired for fetches."""
         page = isolated_page
         requests = []
         page.on('request', lambda request: listener(requests, request))
@@ -48,51 +48,45 @@ class TestPageEventsRequest:
         await page.evaluate("fetch('/empty.html')")
         assert len(requests) == 2
 
+
+class TestRequestFrame:
+
+    @sync
+    async def test_works_for_main_frame_nav_request(self, server, isolated_page):
+        """Request frame should work for main frame navigation request."""
+        page = isolated_page
+        requests = []
+        page.on('request', lambda request: listener(requests, request))
+        await page.goto(server.empty_page)
+        assert len(requests) == 1
+        assert requests[0].frame == page.mainFrame
+
+    @sync
+    @chrome_only
+    async def test_works_for_subframe_nav_request(self, server, isolated_page):
+        """Request frame should work for subframe navigation request."""
+        page = isolated_page
+        requests = []
+        page.on('request', lambda request: listener(requests, request))
+        await page.goto(server.empty_page)
+        await utils.attachFrame(page, 'frame1', server.empty_page)
+        assert len(requests) == 2
+        assert requests[0].frame == page.frames[0]
+
+    @sync
+    @chrome_only
+    async def test_works_for_fetch_requests(self, server, isolated_page):
+        """Request frame should work for fetch requests."""
+        page = isolated_page
+        await page.goto(server.empty_page)
+
+        requests = []
+        page.on('request', lambda request: listener(requests, request))
+        await page.evaluate("fetch('/digits/1.png')")
+        assert len(requests) == 1
+        assert requests[0].frame == page.mainFrame
+
 """
-
-  describe('Request.frame', function () {
-    it('should work for main frame navigation request', async () => {
-      const { page, server } = getTestState();
-
-      const requests = [];
-      page.on(
-        'request',
-        (request) => !utils.isFavicon(request) && requests.push(request)
-      );
-      await page.goto(server.EMPTY_PAGE);
-      expect(requests.length).toBe(1);
-      expect(requests[0].frame()).toBe(page.mainFrame());
-    });
-    itFailsFirefox('should work for subframe navigation request', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.EMPTY_PAGE);
-      const requests = [];
-      page.on(
-        'request',
-        (request) => !utils.isFavicon(request) && requests.push(request)
-      );
-      await utils.attachFrame(page, 'frame1', server.EMPTY_PAGE);
-      expect(requests.length).toBe(1);
-      expect(requests[0].frame()).toBe(page.frames()[1]);
-    });
-    it('should work for fetch requests', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.EMPTY_PAGE);
-      let requests = [];
-      page.on(
-        'request',
-        (request) => !utils.isFavicon(request) && requests.push(request)
-      );
-      await page.evaluate(() => fetch('/digits/1.png'));
-      requests = requests.filter(
-        (request) => !request.url().includes('favicon')
-      );
-      expect(requests.length).toBe(1);
-      expect(requests[0].frame()).toBe(page.mainFrame());
-    });
-  });
 
   describeFailsFirefox('Request.headers', function () {
     it('should work', async () => {
