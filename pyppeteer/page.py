@@ -116,14 +116,14 @@ class Page(AsyncIOEventEmitter):
         self._workers: Dict[str, Worker] = {}
         self._disconnectPromise = None
 
-        def _onTargetAttached(event: Dict) -> None:
+        async def _onTargetAttached(event: Dict) -> None:
             targetInfo = event['targetInfo']
             if targetInfo['type'] != 'worker':
                 # If we don't detach from service workers, they will never die.
                 try:
-                    client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
+                    await client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    logger.error(f'An exception occurred: {e}')
+                    logger.exception(f'An exception occurred while trying to detach from target')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
