@@ -86,63 +86,66 @@ class TestRequestFrame:
         assert len(requests) == 1
         assert requests[0].frame == page.mainFrame
 
+
+class TestRequestHeader:
+
+    @sync
+    @chrome_only
+    async def test_header_contains_user_agent(self, server, isolated_page):
+        """Verify request contains a info about user agent in header."""
+        page = isolated_page
+        response = await page.goto(server.empty_page)
+        assert 'Chrome' in response.request.headers['user-agent']
+
+
+class TestResponseHeader:
+
+    @sync
+    @chrome_only
+    async def test_header_contains_info(self, server, isolated_page):
+        """Verify response header contains expected info."""
+        page = isolated_page
+        # server.setRoute('/empty.html', (req, res) = > {
+        #     res.setHeader('foo', 'bar')
+        #     res.end()
+        # })
+
+        response = await page.goto(server.empty_page)
+        assert response.headers['foo'] == 'bar'
+
+
+class TestResponseFromCache:
+
+    @sync
+    @chrome_only
+    async def test_returns_false_for_non_cached(self, server, isolated_page):
+        """Verify response `fromCache` property should return False for non-cached content."""
+        page = isolated_page
+        response = await page.goto(server.empty_page)
+        assert not response.fromCache
+
+    @sync
+    @chrome_only
+    async def test_returns_true_for_cached(self, server, isolated_page):
+        """Verify response `fromCache` property should return True for cached content."""
+        def listener_(request):
+            if not utils.isFavicon(request):
+                key = request.url.split("/").pop()
+                responses[key] = request
+
+        page = isolated_page
+        responses = {}
+        page.on('response', listener_)
+        # Load and re-load to make sure it's cached.
+        await page.goto(server / '/cached/one-style.html')
+        await page.reload()
+        assert len(responses) == 2
+        assert responses.get('one-style.css').status == 200
+        assert responses.get('one-style.css').fromCache == True
+        assert responses.get('one-style.html').status == 304
+        assert responses.get('one-style.html').fromCache == False
+
 """
-
-  describeFailsFirefox('Request.headers', function () {
-    it('should work', async () => {
-      const { page, server, isChrome } = getTestState();
-
-      const response = await page.goto(server.EMPTY_PAGE);
-      if (isChrome)
-        expect(response.request().headers()['user-agent']).toContain('Chrome');
-      else
-        expect(response.request().headers()['user-agent']).toContain('Firefox');
-    });
-  });
-
-  describeFailsFirefox('Response.headers', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      server.setRoute('/empty.html', (req, res) => {
-        res.setHeader('foo', 'bar');
-        res.end();
-      });
-      const response = await page.goto(server.EMPTY_PAGE);
-      expect(response.headers()['foo']).toBe('bar');
-    });
-  });
-
-  describeFailsFirefox('Response.fromCache', function () {
-    it('should return |false| for non-cached content', async () => {
-      const { page, server } = getTestState();
-
-      const response = await page.goto(server.EMPTY_PAGE);
-      expect(response.fromCache()).toBe(false);
-    });
-
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      const responses = new Map();
-      page.on(
-        'response',
-        (r) =>
-          !utils.isFavicon(r.request()) &&
-          responses.set(r.url().split('/').pop(), r)
-      );
-
-      // Load and re-load to make sure it's cached.
-      await page.goto(server.PREFIX + '/cached/one-style.html');
-      await page.reload();
-
-      expect(responses.size).toBe(2);
-      expect(responses.get('one-style.css').status()).toBe(200);
-      expect(responses.get('one-style.css').fromCache()).toBe(true);
-      expect(responses.get('one-style.html').status()).toBe(304);
-      expect(responses.get('one-style.html').fromCache()).toBe(false);
-    });
-  });
 
   describeFailsFirefox('Response.fromServiceWorker', function () {
     it('should return |false| for non-service-worker content', async () => {
