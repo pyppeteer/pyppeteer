@@ -173,32 +173,42 @@ class TestResponseFromServiceWorker:
         assert responses.get('sw.html').fromServiceWorker
         assert responses.get('style.css').status == 200
         assert responses.get('style.css').fromServiceWorker
+
+
+class TestRequestPostData:
+
+    @sync
+    @chrome_only
+    async def test_request_is_null_if_no_post_data(self, server, isolated_page):
+        """Verify request post data is None if no post data."""
+        page = isolated_page
+        response = await page.goto(server.empty_page)
+        assert response.request.postData is None
+
+    @sync
+    @chrome_only
+    async def test_request_has_post_data(self, server, isolated_page):
+        """Verify request has post data."""
+        def callback(r):
+            nonlocal request_
+            request_ = r
+
+        page = isolated_page
+        await page.goto(server.empty_page)
+        # server.app.('/post', (req, res) => res.end());
+        request_ = None
+        page.on('request', callback)
+        await page.evaluate("""
+            fetch('./post', {
+              method: 'POST',
+              body: JSON.stringify({ foo: 'bar' }),
+            })
+        """)
+        assert request_
+        assert request_.postData == '{"foo":"bar"}'
+
+
 """
-
-  describeFailsFirefox('Request.postData', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.EMPTY_PAGE);
-      server.setRoute('/post', (req, res) => res.end());
-      let request = null;
-      page.on('request', (r) => (request = r));
-      await page.evaluate(() =>
-        fetch('./post', {
-          method: 'POST',
-          body: JSON.stringify({ foo: 'bar' }),
-        })
-      );
-      expect(request).toBeTruthy();
-      expect(request.postData()).toBe('{"foo":"bar"}');
-    });
-    it('should be |undefined| when there is no post data', async () => {
-      const { page, server } = getTestState();
-
-      const response = await page.goto(server.EMPTY_PAGE);
-      expect(response.request().postData()).toBe(undefined);
-    });
-  });
 
   describeFailsFirefox('Response.text', function () {
     it('should work', async () => {
