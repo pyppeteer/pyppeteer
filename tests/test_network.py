@@ -105,10 +105,7 @@ class TestResponseHeader:
     async def test_header_contains_info(self, server, isolated_page):
         """Verify response header contains expected info."""
         page = isolated_page
-        # server.setRoute('/empty.html', (req, res) = > {
-        #     res.setHeader('foo', 'bar')
-        #     res.end()
-        # })
+        server.app.set_one_time_response(server.empty_page, b'', headers={'foo': 'bar'})
 
         response = await page.goto(server.empty_page)
         assert response.headers['foo'] == 'bar'
