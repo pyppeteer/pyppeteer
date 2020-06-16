@@ -105,8 +105,7 @@ class TestResponseHeader:
     async def test_header_contains_info(self, server, isolated_page):
         """Verify response header contains expected info."""
         page = isolated_page
-        server.app.set_one_time_response(server.empty_page, b'', headers={'foo': 'bar'})
-
+        server.app.set_one_time_response(server.empty_page, b"headers={'foo': 'bar'}")
         response = await page.goto(server.empty_page)
         assert response.headers['foo'] == 'bar'
 
@@ -138,40 +137,43 @@ class TestResponseFromCache:
         await page.reload()
         assert len(responses) == 2
         assert responses.get('one-style.css').status == 200
-        assert responses.get('one-style.css').fromCache == True
+        assert responses.get('one-style.css').fromCache
         assert responses.get('one-style.html').status == 304
-        assert responses.get('one-style.html').fromCache == False
+        assert responses.get('one-style.html').fromCache is False
 
+
+class TestResponseFromServiceWorker:
+
+    @sync
+    @chrome_only
+    async def test_returns_false_for_non_service_worker(self, server, isolated_page):
+        """Verify it should return False for non-service-worker content."""
+        page = isolated_page
+        response = await page.goto(server.empty_page)
+        assert response.fromServiceWorker is False
+
+    @sync
+    @chrome_only
+    async def test_returns_true_for_service_worker(self, server, isolated_page):
+        """Verify it should return True for service-worker content."""
+
+        def listener_(request):
+            key = request.url.split("/").pop()
+            responses[key] = request
+
+        page = isolated_page
+        responses = {}
+        page.on('response', listener_)
+        # Load and re-load to make sure serviceworker is installed and running.
+        await page.goto(server / '/serviceworkers/fetch/sw.html', waitUntil='networkidle2')
+        await page.evaluate('async () => await window.activationPromise')
+        await page.reload()
+        assert len(responses) == 2
+        assert responses.get('sw.html').status == 200
+        assert responses.get('sw.html').fromServiceWorker
+        assert responses.get('style.css').status == 200
+        assert responses.get('style.css').fromServiceWorker
 """
-
-  describeFailsFirefox('Response.fromServiceWorker', function () {
-    it('should return |false| for non-service-worker content', async () => {
-      const { page, server } = getTestState();
-
-      const response = await page.goto(server.EMPTY_PAGE);
-      expect(response.fromServiceWorker()).toBe(false);
-    });
-
-    it('Response.fromServiceWorker', async () => {
-      const { page, server } = getTestState();
-
-      const responses = new Map();
-      page.on('response', (r) => responses.set(r.url().split('/').pop(), r));
-
-      // Load and re-load to make sure serviceworker is installed and running.
-      await page.goto(server.PREFIX + '/serviceworkers/fetch/sw.html', {
-        waitUntil: 'networkidle2',
-      });
-      await page.evaluate(async () => await window.activationPromise);
-      await page.reload();
-
-      expect(responses.size).toBe(2);
-      expect(responses.get('sw.html').status()).toBe(200);
-      expect(responses.get('sw.html').fromServiceWorker()).toBe(true);
-      expect(responses.get('style.css').status()).toBe(200);
-      expect(responses.get('style.css').fromServiceWorker()).toBe(true);
-    });
-  });
 
   describeFailsFirefox('Request.postData', function () {
     it('should work', async () => {
