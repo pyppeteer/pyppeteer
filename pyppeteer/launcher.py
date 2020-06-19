@@ -104,8 +104,14 @@ class Launcher(object):
 
         self.temporaryUserDataDir: Optional[str] = None
 
-        if not any(arg for arg in self.chromeArguments if arg.startswith('--remote-debugging-')):
+        remote_debugging_args = [arg for arg in self.chromeArguments
+                                 if arg.startswith('--remote-debugging-')]
+        if not any(remote_debugging_args):
             self.chromeArguments.append(f'--remote-debugging-port={self.port}')
+        else:
+            # Replace the auto-generated port with the provided one
+            self.port = remote_debugging_args[0].split("=")[1]
+            self.url = f'http://127.0.0.1:{self.port}'
 
         if not any(arg for arg in self.chromeArguments if arg.startswith('--user-data-dir')):
             if not CHROME_PROFILE_PATH.exists():
