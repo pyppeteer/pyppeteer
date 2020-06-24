@@ -52,7 +52,7 @@ class DOMWorld:
             self._contextResolveCallback(context)
             self._contextResolveCallback = None
             for waitTask in self._waitTasks:
-                waitTask.rerun()
+                self.loop.create_task(waitTask.rerun())
         else:
             self._documentTask = None
             self._contextFuture = self.loop.create_future()
