@@ -12,10 +12,10 @@ import math
 import mimetypes
 import re
 import sys
+import warnings
 from copy import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
-import warnings
 
 from pyee import AsyncIOEventEmitter
 from pyppeteer import helpers
@@ -954,10 +954,10 @@ class Page(AsyncIOEventEmitter):
         self, delta: int, timeout: float = None, waitUntil: Union[str, List[str]] = None,
     ) -> Optional[Response]:
         history = await self._client.send('Page.getNavigationHistory')
-        entries = history.get('entries', [])
-        if entries:
+        try:
+            entry = history['entries'][history['currentIndex'] + delta]
+        except IndexError:
             return None
-        entry = entries[history.get('currentIndex', 0) + delta]
         return (
             await asyncio.gather(
                 self.waitForNavigation(timeout=timeout, waitUntil=waitUntil),
@@ -1015,10 +1015,12 @@ class Page(AsyncIOEventEmitter):
 
     async def emulateMedia(self, mediaType: str = None) -> None:
         """Deprecated alias for ``emulateMediaType()``"""
-        warnings.warn('Deprecated: this method is kept for backwards compatibility, '
-                      'but may be removed in a future version. '
-                      'Use `emulateMediaType(mediaType)` instead',
-                      category=DeprecationWarning)
+        warnings.warn(
+            'Deprecated: this method is kept for backwards compatibility, '
+            'but may be removed in a future version. '
+            'Use `emulateMediaType(mediaType)` instead',
+            category=DeprecationWarning,
+        )
         await self.emulateMediaType(mediaType)
 
     async def emulateMediaType(self, mediaType: str = None) -> None:
