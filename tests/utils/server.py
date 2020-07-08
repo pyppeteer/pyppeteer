@@ -94,12 +94,12 @@ class WrappedApplication(web.Application):
             self.add_pre_request_subscriber(last_path, partial(redirect_raiser, to_path), should_return=True)
             last_path = to_path
 
-    def set_one_time_response(self, path: str, response: str = None, status: int = 200):
+    def set_one_time_response(self, path: str, response: str = None, status: int = 200, headers: Dict = None):
         def responder():
 
             if status in self.raisable_statuses:
                 raise self.raisable_statuses[status]
-            return web.Response(body=response, status=status)
+            return web.Response(body=response, status=status, headers=headers or {})
 
         self.add_pre_request_subscriber(path, responder, should_return=True)
 
@@ -165,7 +165,7 @@ async def app_runner(assets_path, free_port):
         file_path = assets_path / request.match_info['path']
         if not file_path.exists():
             raise HTTPNotFound()  # ie 404
-        return web.FileResponse(file_path)
+        return web.FileResponse(file_path, headers=headers)
 
     app = WrappedApplication()
     app.add_routes([web.get('/{path:.*}', static_file_serve), web.post('/{path:.*}', static_file_serve)])
