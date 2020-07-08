@@ -103,6 +103,15 @@ class WrappedApplication(web.Application):
 
         self.add_pre_request_subscriber(path, responder, should_return=True)
 
+    def one_time_request_delay(self, path: str):
+        fut = asyncio.get_event_loop().create_future()
+
+        async def holder():
+            await fut
+
+        self.add_pre_request_subscriber(path, holder, should_return=False)
+        return fut
+
     def waitForRequest(self, path: str):
         fut = asyncio.get_event_loop().create_future()
 
