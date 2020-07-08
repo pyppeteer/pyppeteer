@@ -5,7 +5,7 @@ import ssl
 from functools import partial
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterable, Mapping, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, Iterable, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 from aiohttp import web
@@ -42,7 +42,9 @@ class WrappedApplication(web.Application):
             loop=loop,
             debug=debug,
         )
+        # required so that we can dynamically add and remove routes
         self.router._frozen = False
+        self.headers = {}
 
     @staticmethod
     def get_pre_request_caller(precondition: RequestPrecondition):
@@ -131,6 +133,10 @@ def create_request_content_cache_fn(content):
 async def app_runner(assets_path, free_port):
     async def static_file_serve(request):
         path = request.match_info['path']
+        try:
+            headers = request.app.headers.pop(path)
+        except KeyError:
+            headers = {}
 
         # cache the request's content for later use
         request.read = create_request_content_cache_fn(await request.read())
