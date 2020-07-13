@@ -305,12 +305,13 @@ class TestPage:
             assert 'grid.html' in resp.url
 
         @sync
-        @pytest.mark.skip()
         async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server, event_loop):
 
             continue_resp = server.app.one_time_request_delay(server / 'one-style.css')
             nav_promise = event_loop.create_task(isolated_page.goto(server / 'one-style.html'))
-            domcontentloaded_task = event_loop.create_task(isolated_page.waitForNavigation())
+            domcontentloaded_task = event_loop.create_task(
+                isolated_page.waitForNavigation(waitUntil='domcontentloaded')
+            )
 
             both_fired = False
 
