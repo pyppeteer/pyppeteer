@@ -451,7 +451,7 @@ class TestFrame:
 
         @sync
         async def test_rejects_when_frame_detaches(self, isolated_page, server, event_loop):
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
 
             frame_that_will_be_detached = isolated_page.frames[1]
 
@@ -494,7 +494,7 @@ class TestFrame:
     class TestWaitForNavigation:
         @sync
         async def test_basic_usage(self, isolated_page, server):
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
             frame = isolated_page.frames[1]
             resp, *_ = await gather_with_timeout(
                 frame.waitForNavigation(), frame.evaluate('url => window.location.href = url', server / 'grid.html')
@@ -507,7 +507,7 @@ class TestFrame:
         @sync
         async def test_fails_when_frame_detaches(self, isolated_page, server, event_loop):
             # see corresponding Page test
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
             frame = isolated_page.frames[1]
 
             nav_task = event_loop.create_task(frame.waitForNavigation())
