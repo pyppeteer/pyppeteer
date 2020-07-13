@@ -8,7 +8,7 @@ from contextlib import suppress
 import pytest
 import tests.utils.server
 from aiohttp import web
-from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
+from pyppeteer.errors import BrowserError, NetworkError, PageError, TimeoutError
 from pyppeteer.helpers import waitForEvent
 from syncer import sync
 from tests.conftest import needs_server_side_implementation
@@ -456,17 +456,20 @@ class TestFrame:
 
             frame_that_will_be_detached = isolated_page.frames[1]
 
-            async def detach_it():
-                try:
-                    await frame_that_will_be_detached.goto(server.empty_page)
-                except Exception:
-                    pass
+            async def navigate_the_detaching_frame():
+                await frame_that_will_be_detached.goto(server.empty_page)
 
-            nav_task = event_loop.create_task(detach_it())
+            # this delays the response indefinately
+            # the response from the server will be cancelled when the client disconnects
+            # which it will because the frame is detached
+            server.app.one_time_request_delay(server.empty_page)
 
+            nav_task = event_loop.create_task(navigate_the_detaching_frame())
+
+            await server.app.waitForRequest(server.empty_page)
             await isolated_page.Jeval('iframe', 'f => f.remove()')
 
-            with pytest.raises(NetworkError, match='frame was detached'):
+            with pytest.raises(PageError, match='frame was detached'):
                 await nav_task
 
         @sync
