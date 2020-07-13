@@ -31,7 +31,7 @@ class WrappedApplication(web.Application):
     ) -> None:
         self.pre_request_subscribers = {}
         self.raisable_statuses = {
-            204: web.HTTPNoContent(),
+            204: lambda: web.HTTPNoContent(),
         }
         super().__init__(
             logger=logger,
@@ -100,7 +100,7 @@ class WrappedApplication(web.Application):
         def responder():
 
             if status in self.raisable_statuses:
-                raise self.raisable_statuses[status]
+                raise self.raisable_statuses[status]()
             return web.Response(body=response, status=status, headers=headers or {}, content_type=content_type)
 
         self.add_pre_request_subscriber(path, responder, should_return=True)
