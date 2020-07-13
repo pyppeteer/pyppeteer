@@ -55,7 +55,6 @@ class TestPage:
             await isolated_page.goto(server / 'frames/one-frame.html')
 
         @sync
-        @pytest.mark.skip
         async def test_fail_when_server_204s(self, isolated_page, server):
             server.app.set_one_time_response(server.empty_page, response='', status=204)
             with pytest.raises(BrowserError, match='_ABORTED'):
@@ -455,6 +454,11 @@ class TestFrame:
             await isolated_page.goto(server / 'frames/one-frame.html')
 
             frame_that_will_be_detached = isolated_page.frames[1]
+
+            # this delays the response indefinately
+            # the response from the server will be cancelled when the client disconnects
+            # which it will because the frame is detached
+            server.app.one_time_request_delay(server.empty_page)
 
             async def navigate_the_detaching_frame():
                 await frame_that_will_be_detached.goto(server.empty_page)
