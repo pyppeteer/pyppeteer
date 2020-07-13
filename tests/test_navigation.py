@@ -306,6 +306,7 @@ class TestPage:
             assert 'grid.html' in resp.url
 
         @sync
+        @pytest.mark.skip()
         async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server, event_loop):
 
             continue_resp = server.app.one_time_request_delay(server / 'one-style.css')
@@ -502,7 +503,7 @@ class TestFrame:
             assert resp.ok
             assert 'grid.html' in resp.url
             assert resp.frame == frame
-            assert 'one-frame.html' in resp.url
+            assert 'one-frame.html' in isolated_page.url
 
         @sync
         async def test_fails_when_frame_detaches(self, isolated_page, server, event_loop):
