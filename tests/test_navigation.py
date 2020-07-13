@@ -158,11 +158,12 @@ class TestPage:
 
         @sync
         async def test_prioritizes_nav_timeout_of_default(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            delayer = server.app.one_time_request_delay(server.empty_page)
             isolated_page.setDefaultTimeout(0)
             isolated_page.setDefaultNavigationTimeout(1)
             with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
+            delayer.set_result(None)
 
         @sync
         async def test_timeout_disabled_when_equal_to_0(self, isolated_page, server):
