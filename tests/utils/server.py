@@ -94,12 +94,14 @@ class WrappedApplication(web.Application):
             self.add_pre_request_subscriber(last_path, partial(redirect_raiser, to_path), should_return=True)
             last_path = to_path
 
-    def set_one_time_response(self, path: str, response: str = None, status: int = 200, headers: Dict = None):
+    def set_one_time_response(
+        self, path: str, response: str = None, status: int = 200, headers: Dict = None, content_type: str = 'text/html'
+    ):
         def responder():
 
             if status in self.raisable_statuses:
                 raise self.raisable_statuses[status]
-            return web.Response(body=response, status=status, headers=headers or {})
+            return web.Response(body=response, status=status, headers=headers or {}, content_type=content_type)
 
         self.add_pre_request_subscriber(path, responder, should_return=True)
 
