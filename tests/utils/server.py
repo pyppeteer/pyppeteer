@@ -31,7 +31,7 @@ class WrappedApplication(web.Application):
     ) -> None:
         self.pre_request_subscribers = {}
         self.raisable_statuses = {
-            204: lambda: web.HTTPNoContent(),
+            204: web.HTTPNoContent,
         }
         super().__init__(
             logger=logger,
