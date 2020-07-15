@@ -39,17 +39,19 @@ def pytest_configure(config):
 
 
 class ServerURL:
-    def __init__(self, port, app, cross_process: bool = False, https: bool = False, child_instance: bool = False):
+    def __init__(
+        self, port_0, port_1, app, cross_process: bool = False, https: bool = False, child_instance: bool = False
+    ):
         self.app: WrappedApplication = app
         # https will be at port+1
-        self.port = port + int(https)
-        del port  # make sure we always refer to updated port
+        self.port = port_1 if https else port_0
+        # del port  # make sure we always refer to updated port
         self.base = f'http{"s" if https else ""}://{"127.0.0.1" if cross_process else "localhost"}:{self.port}'
         if not child_instance:
             if not https:
-                self.https = ServerURL(self.port, app, https=True, child_instance=True)
+                self.https = ServerURL(None, self.port, app, https=True, child_instance=True)
             if not cross_process:
-                self.cross_process_server = ServerURL(self.port, app, cross_process=True, child_instance=True)
+                self.cross_process_server = ServerURL(self.port, None, app, cross_process=True, child_instance=True)
 
         else:
             self.https = None
@@ -157,8 +159,10 @@ def isolated_page(isolated_context) -> Page:
 
 @pytest.fixture(scope='session')
 def server(assets):
-    app = sync(app_runner(assets_path=assets, free_port=_port))
-    yield ServerURL(_port, app)
+    port_0 = get_free_port()
+    port_1 = get_free_port()
+    app = sync(app_runner(assets, port_0, port_1))
+    yield ServerURL(port_0, port_1, app)
     sync(app.shutdown())
     sync(app.cleanup())
 

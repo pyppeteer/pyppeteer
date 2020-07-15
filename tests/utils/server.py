@@ -141,7 +141,7 @@ def create_request_content_cache_fn(content):
     return cached_content
 
 
-async def app_runner(assets_path, free_port):
+async def app_runner(assets_path, free_port_0, free_port_1):
     async def static_file_serve(request):
         path = request.match_info['path']
         try:
@@ -176,14 +176,14 @@ async def app_runner(assets_path, free_port):
     ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     cert_dir = Path(__file__).parent
     ssl_ctx.load_cert_chain(certfile=cert_dir / 'cert.pem', keyfile=cert_dir / 'private.key')
-    http_site = web.TCPSite(runner, port=free_port)
-    https_site = web.TCPSite(runner, port=free_port + 1, ssl_context=ssl_ctx)
+    http_site = web.TCPSite(runner, port=free_port_0, reuse_address=True)
+    https_site = web.TCPSite(runner, port=free_port_1, ssl_context=ssl_ctx, reuse_address=True)
     await asyncio.gather(http_site.start(), https_site.start())
     return app
 
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(app_runner(Path(__file__).parents[1] / 'assets_path', 55015))
+    loop.run_until_complete(app_runner(Path(__file__).parents[1] / 'assets_path', 55015, 55025))
     while True:
         loop.run_until_complete(asyncio.sleep(0.5))
