@@ -3,6 +3,7 @@
 Test Pyppeteer Network functionality.
 
 """
+import asyncio
 import pytest
 from syncer import sync
 
@@ -101,12 +102,11 @@ class TestRequestHeader:
 @chrome_only
 class TestResponseHeader:
 
-    @pytest.mark.skip("Need implementation server.app.set_one_time_response")
     @sync
     async def test_header_contains_info(self, server, isolated_page):
         """Verify response header contains expected info."""
         page = isolated_page
-        server.app.set_one_time_response(server.empty_page, b"headers={'foo': 'bar'}")
+        server.app.set_one_time_response(server.empty_page, headers={'foo': 'bar'})
         response = await page.goto(server.empty_page)
         assert response.headers['foo'] == 'bar'
 
@@ -230,10 +230,10 @@ class TestResponseText:
         responseText = await resp.text
         assert responseText.rstrip() == '{"foo": "bar"}'
 
-    @pytest.mark.skip("No error for redirect response.")
+    # @pytest.mark.skip("No error for redirect response.")
     @sync
-    async def test_response_text_is_uncompressed(self, server, isolated_page):
-        """Verify it should throw when requesting body of redirected response."""
+    async def test_error_for_text_in_redirected_response(self, server, isolated_page):
+        """Verify error should be thrown when requesting body of redirected response."""
         page = isolated_page
         server.app.set_one_time_redirects('/foo.html', '/empty.html')
         resp = await page.goto(server / '/foo.html')
@@ -242,49 +242,43 @@ class TestResponseText:
         redirected = redirectChain[0].response
         assert redirected.status == 302
         with pytest.raises(Exception, match='Response body is unavailable for redirect responses'):
+            # it returns empty string and doesn't throw error
             await redirected.text
 
+    # @sync
+    # async def test_waits_for_response_to_complete(self, server, isolated_page):
+    #     """Verify it should wait until response completes."""
+    #     page = isolated_page
+    #     await page.goto(server.empty_page)
+    #     # Setup server to trap request
+    #     serverResponse = None
+    #     # server.setRoute('/get', (req, res) => {
+    #     #     serverResponse = res;
+    #     #     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    #     #     res.write('hello ');
+    #     # })
+    #     # Setup page to trap response
+    #     requestFinished = False
+    #     page.on('requestfinished', lambda r: requestFinished == requestFinished or r.url().includes('/get'))
+    #     # send request and wait for server response
+    #     pageResponse = None
+    #     # pageResponse = await asyncio.gather(
+    #     #     page.waitForResponse(lambda r: utils.isFavicon(r.request())),
+    #     #     page.evaluate(() => fetch('./get', { method: 'GET' })),
+    #     #     server.waitForRequest('/get'),
+    #     # )
+    #     assert serverResponse
+    #     assert pageResponse
+    #     assert pageResponse.status == 200
+    #     assert requestFinished == False
+    #     responseText = pageResponse.text
+    #     # Write part of the response and wait for it to be flushed
+    #     await lambda x: serverResponse.write('wor', x)
+    #     # Finish response
+    #     await new Promise((x) => serverResponse.end('ld!', x));
+    #     assert await responseText == 'hello world!'
+
 """
-
-    it('should wait until response completes', async () => {
-      const { page, server } = getTestState();
-
-      await page.goto(server.EMPTY_PAGE);
-      // Setup server to trap request.
-      let serverResponse = null;
-      server.setRoute('/get', (req, res) => {
-        serverResponse = res;
-        // In Firefox, |fetch| will be hanging until it receives |Content-Type| header
-        // from server.
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.write('hello ');
-      });
-      // Setup page to trap response.
-      let requestFinished = false;
-      page.on(
-        'requestfinished',
-        (r) => (requestFinished = requestFinished || r.url().includes('/get'))
-      );
-      // send request and wait for server response
-      const [pageResponse] = await Promise.all([
-        page.waitForResponse((r) => !utils.isFavicon(r.request())),
-        page.evaluate(() => fetch('./get', { method: 'GET' })),
-        server.waitForRequest('/get'),
-      ]);
-
-      expect(serverResponse).toBeTruthy();
-      expect(pageResponse).toBeTruthy();
-      expect(pageResponse.status()).toBe(200);
-      expect(requestFinished).toBe(false);
-
-      const responseText = pageResponse.text();
-      // Write part of the response and wait for it to be flushed.
-      await new Promise((x) => serverResponse.write('wor', x));
-      // Finish response.
-      await new Promise((x) => serverResponse.end('ld!', x));
-      expect(await responseText).toBe('hello world!');
-    });
-  });
 
   describeFailsFirefox('Response.json', function () {
     it('should work', async () => {
