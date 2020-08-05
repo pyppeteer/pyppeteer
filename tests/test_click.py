@@ -1,10 +1,9 @@
 from asyncio import gather
 
 import pytest
-from syncer import sync
-
 from pyppeteer import devices
 from pyppeteer.errors import BrowserError, NetworkError
+from syncer import sync
 from tests.utils import attachFrame
 
 
@@ -117,10 +116,10 @@ async def test_triple_click(isolated_page, server):
     await p.click('textarea', clickCount=3)
     assert (
         await p.evaluate(
-            """{
-    const textarea = document.querySelector('textarea');
-    return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
-    }"""
+            """() => {
+        const textarea = document.querySelector('textarea');
+        return textarea.value.substring(textarea.selectionStart, textarea.selectionEnd);
+        }"""
         )
         == text
     )

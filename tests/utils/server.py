@@ -5,7 +5,7 @@ import ssl
 from functools import partial
 from inspect import isawaitable
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterable, Mapping, Optional, Union
+from typing import Any, Awaitable, Callable, Dict, Iterable, Mapping, Optional, Union
 from urllib.parse import urlparse
 
 from aiohttp import web
@@ -31,7 +31,7 @@ class WrappedApplication(web.Application):
     ) -> None:
         self.pre_request_subscribers = {}
         self.raisable_statuses = {
-            204: web.HTTPNoContent(),
+            204: lambda: web.HTTPNoContent(),
         }
         super().__init__(
             logger=logger,
@@ -42,7 +42,9 @@ class WrappedApplication(web.Application):
             loop=loop,
             debug=debug,
         )
+        # required so that we can dynamically add and remove routes
         self.router._frozen = False
+        self.headers = {}
 
     @staticmethod
     def get_pre_request_caller(precondition: RequestPrecondition):
@@ -92,14 +94,25 @@ class WrappedApplication(web.Application):
             self.add_pre_request_subscriber(last_path, partial(redirect_raiser, to_path), should_return=True)
             last_path = to_path
 
-    def set_one_time_response(self, path: str, response: str = None, status: int = 200):
+    def set_one_time_response(
+        self, path: str, response: str = None, status: int = 200, headers: Dict = None, content_type: str = 'text/html'
+    ):
         def responder():
 
             if status in self.raisable_statuses:
-                raise self.raisable_statuses[status]
-            return web.Response(body=response, status=status)
+                raise self.raisable_statuses[status]()
+            return web.Response(body=response, status=status, headers=headers or {}, content_type=content_type)
 
         self.add_pre_request_subscriber(path, responder, should_return=True)
+
+    def one_time_request_delay(self, path: str):
+        fut = asyncio.get_event_loop().create_future()
+
+        async def holder():
+            await fut
+
+        self.add_pre_request_subscriber(path, holder, should_return=False)
+        return fut
 
     def waitForRequest(self, path: str):
         fut = asyncio.get_event_loop().create_future()
@@ -131,6 +144,10 @@ def create_request_content_cache_fn(content):
 async def app_runner(assets_path, free_port):
     async def static_file_serve(request):
         path = request.match_info['path']
+        try:
+            headers = request.app.headers.pop(path)
+        except KeyError:
+            headers = {}
 
         # cache the request's content for later use
         request.read = create_request_content_cache_fn(await request.read())
@@ -150,7 +167,7 @@ async def app_runner(assets_path, free_port):
         file_path = assets_path / request.match_info['path']
         if not file_path.exists():
             raise HTTPNotFound()  # ie 404
-        return web.FileResponse(file_path)
+        return web.FileResponse(file_path, headers=headers)
 
     app = WrappedApplication()
     app.add_routes([web.get('/{path:.*}', static_file_serve), web.post('/{path:.*}', static_file_serve)])
