@@ -12,6 +12,7 @@ import math
 import mimetypes
 import re
 import sys
+import warnings
 from copy import copy
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Sequence, Union
@@ -115,14 +116,14 @@ class Page(AsyncIOEventEmitter):
         self._workers: Dict[str, Worker] = {}
         self._disconnectPromise = None
 
-        def _onTargetAttached(event: Dict) -> None:
+        async def _onTargetAttached(event: Dict) -> None:
             targetInfo = event['targetInfo']
             if targetInfo['type'] != 'worker':
                 # If we don't detach from service workers, they will never die.
                 try:
-                    client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
+                    await client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
                 except Exception as e:
-                    logger.error(f'An exception occurred: {e}')
+                    logger.exception(f'An exception occurred while trying to detach from target')
                 return
             sessionId = event['sessionId']
             session = Connection.fromSession(client).session(sessionId)
@@ -953,10 +954,10 @@ class Page(AsyncIOEventEmitter):
         self, delta: int, timeout: float = None, waitUntil: Union[str, List[str]] = None,
     ) -> Optional[Response]:
         history = await self._client.send('Page.getNavigationHistory')
-        entries = history.get('entries', [])
-        if entries:
+        try:
+            entry = history['entries'][history['currentIndex'] + delta]
+        except IndexError:
             return None
-        entry = entries[history.get('currentIndex', 0) + delta]
         return (
             await asyncio.gather(
                 self.waitForNavigation(timeout=timeout, waitUntil=waitUntil),
@@ -1013,6 +1014,16 @@ class Page(AsyncIOEventEmitter):
         await self._client.send('Page.setBypassCSP', {'enabled': enabled})
 
     async def emulateMedia(self, mediaType: str = None) -> None:
+        """Deprecated alias for ``emulateMediaType()``"""
+        warnings.warn(
+            'Deprecated: this method is kept for backwards compatibility, '
+            'but may be removed in a future version. '
+            'Use `emulateMediaType(mediaType)` instead',
+            category=DeprecationWarning,
+        )
+        await self.emulateMediaType(mediaType)
+
+    async def emulateMediaType(self, mediaType: str = None) -> None:
         """Emulate css media type of the page.
 
         :arg str mediaType: Changes the CSS media type of the page. The only

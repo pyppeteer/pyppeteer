@@ -8,7 +8,7 @@ from contextlib import suppress
 import pytest
 import tests.utils.server
 from aiohttp import web
-from pyppeteer.errors import BrowserError, NetworkError, TimeoutError
+from pyppeteer.errors import BrowserError, NetworkError, PageError, TimeoutError
 from pyppeteer.helpers import waitForEvent
 from syncer import sync
 from tests.conftest import needs_server_side_implementation
@@ -36,7 +36,6 @@ class TestPage:
         @sync
         async def test_works_with_redirects(self, isolated_page, server):
             server.app.set_one_time_redirects('/redirect/1.html', '/redirect/2.html', server.empty_page)
-
             await isolated_page.goto(server / 'redirect/1.html')
             assert isolated_page.url == server.empty_page
 
@@ -135,31 +134,35 @@ class TestPage:
 
         @sync
         async def test_fails_on_exceeding_nav_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            holder = server.app.one_time_request_delay(server.empty_page)
             with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page, timeout=1)
+            holder.set_result(None)
 
         @sync
         async def test_fails_on_exceeding_default_nav_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            holder = server.app.one_time_request_delay(server.empty_page)
             isolated_page.setDefaultNavigationTimeout(1)
             with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
+            holder.set_result(None)
 
         @sync
         async def test_fails_on_exceeding_default_timeout(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            holder = server.app.one_time_request_delay(server.empty_page)
             isolated_page.setDefaultTimeout(1)
-            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH) as excpt:
+            with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
+            holder.set_result(None)
 
         @sync
         async def test_prioritizes_nav_timeout_of_default(self, isolated_page, server):
-            server.app.add_one_time_request_delay(server.empty_page, 1)
+            delayer = server.app.one_time_request_delay(server.empty_page)
             isolated_page.setDefaultTimeout(0)
             isolated_page.setDefaultNavigationTimeout(1)
             with pytest.raises(TimeoutError, match=NAV_TIMEOUT_MATCH):
                 await isolated_page.goto(server.empty_page)
+            delayer.set_result(None)
 
         @sync
         async def test_timeout_disabled_when_equal_to_0(self, isolated_page, server):
@@ -180,7 +183,7 @@ class TestPage:
 
         @sync
         async def test_returns_last_response_in_redirect_chain(self, isolated_page, server):
-            server.app.set_one_time_redirect(
+            server.app.set_one_time_redirects(
                 '/redirect/1.html', '/redirect/2.html' '/redirect/3.html', server.empty_page
             )
             resp = await isolated_page.goto(server / 'redirect/1.html')
@@ -245,7 +248,7 @@ class TestPage:
         async def test_navs_to_dataURL_and_fires_dataURL_reqs(self, isolated_page, server):
             requests = []
 
-            isolated_page.on('request', lambda r: requests.append(r) if isFavicon(r) else None)
+            isolated_page.on('request', lambda r: requests.append(r) if not isFavicon(r) else None)
             data_url = 'data:text/html,<div>yo</div>'
             resp = await isolated_page.goto(data_url)
             assert resp.status == 200
@@ -303,11 +306,12 @@ class TestPage:
 
         @sync
         async def test_works_with_both_domcontentloaded_and_load(self, isolated_page, server, event_loop):
-            continue_resp = event_loop.create_future()
 
-            server.app.add_one_time_request_precondition(server / 'one-style.css', continue_resp)
+            continue_resp = server.app.one_time_request_delay(server / 'one-style.css')
             nav_promise = event_loop.create_task(isolated_page.goto(server / 'one-style.html'))
-            domcontentloaded_task = event_loop.create_task(isolated_page.waitForNavigation())
+            domcontentloaded_task = event_loop.create_task(
+                isolated_page.waitForNavigation(waitUntil='domcontentloaded')
+            )
 
             both_fired = False
 
@@ -448,17 +452,25 @@ class TestFrame:
 
         @sync
         async def test_rejects_when_frame_detaches(self, isolated_page, server, event_loop):
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
 
-            nav_task = event_loop.create_task(await isolated_page.frames[1].goto(server.empty_page))
+            frame_that_will_be_detached = isolated_page.frames[1]
+
+            # this delays the response indefinately
+            # the response from the server will be cancelled when the client disconnects
+            # which it will because the frame is detached
+            server.app.one_time_request_delay(server.empty_page)
+
+            async def navigate_the_detaching_frame():
+                await frame_that_will_be_detached.goto(server.empty_page)
+
+            nav_task = event_loop.create_task(navigate_the_detaching_frame())
 
             await server.app.waitForRequest(server.empty_page)
             await isolated_page.Jeval('iframe', 'f => f.remove()')
 
-            with pytest.raises(NetworkError) as excpt:
+            with pytest.raises(PageError, match='frame was detached'):
                 await nav_task
-
-            assert 'frame was detached' in str(excpt)
 
         @sync
         async def test_returns_matching_responses(self, isolated_page, server):
@@ -474,7 +486,7 @@ class TestFrame:
             server_resps = ['aaa', 'bbb', 'ccc']
             navigations = []
             for resp, frame in zip(server_resps, frames):
-                server.app.add_one_time_request_resp('/one-style.html', resp.encode())
+                server.app.set_one_time_response('/one-style.html', resp.encode())
                 _, nav = await asyncio.gather(
                     server.app.waitForRequest('/one-style.html'), frame.goto(server / 'one-style.html'),
                 )
@@ -486,7 +498,7 @@ class TestFrame:
     class TestWaitForNavigation:
         @sync
         async def test_basic_usage(self, isolated_page, server):
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
             frame = isolated_page.frames[1]
             resp, *_ = await gather_with_timeout(
                 frame.waitForNavigation(), frame.evaluate('url => window.location.href = url', server / 'grid.html')
@@ -494,19 +506,25 @@ class TestFrame:
             assert resp.ok
             assert 'grid.html' in resp.url
             assert resp.frame == frame
-            assert 'one-frame.html' in resp.url
+            assert 'one-frame.html' in isolated_page.url
 
         @sync
         async def test_fails_when_frame_detaches(self, isolated_page, server, event_loop):
             # see corresponding Page test
-            await isolated_page.goto(server / 'frame/one-frame.html')
+            await isolated_page.goto(server / 'frames/one-frame.html')
             frame = isolated_page.frames[1]
 
             nav_task = event_loop.create_task(frame.waitForNavigation())
 
-            await gather_with_timeout(
-                server.app.waitForRequest(server.empty_page), isolated_page.Jeval('iframe', 'f => f.remove()'),
-            )
+            # this delays the response indefinately
+            # the response from the server will be cancelled when the client disconnects
+            # which it will because the frame is to be detached
+            server.app.one_time_request_delay(server.empty_page)
 
-            with pytest.raises(NetworkError, match='frame was detached') as excpt:
+            await gather_with_timeout(
+                frame.evaluate(f'window.location = "{server.empty_page}"'),
+                server.app.waitForRequest(server.empty_page),
+            )
+            await isolated_page.Jeval('iframe', 'frame => frame.remove()')
+            with pytest.raises(PageError, match='frame was detached') as excpt:
                 await nav_task
