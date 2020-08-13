@@ -122,7 +122,7 @@ class BrowserFetcher:
         return request.urlopen(request.Request(url, method='HEAD')) == 200
 
     def download(self, revision: Optional[str] = None) -> RevisionInfo:
-        revision = revision or __chromium_revision__
+        revision = revision or os.environ.get('PYPPETEER_CHROMIUM_REVISION') or __chromium_revision__
         url = download_url(self.platform, self.downloadHost, revision)
         folder_path = self._get_folder_path(revision)
         if folder_path.exists():
