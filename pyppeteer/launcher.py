@@ -282,13 +282,11 @@ class ChromeLauncher(BaseBrowserLauncher):
         else:
             chrome_executable = executablePath
 
-        usePipe = False
-        if '--remote-debugging-pipe' in chrome_args:
-            usePipe = True
+        usePipe = '--remote-debugging-pipe' in chrome_args
 
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
-            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio,
+            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio, autoClose=kwargs.get('autoClose')
         )
 
         try:
