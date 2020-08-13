@@ -519,7 +519,20 @@ async def test_correct_stack_for_timeout(isolated_page, server):
 
 
 @sync
+async def test_fancy_xpath(isolated_page, server):
+    p = isolated_page
+    await p.setContent('<p>red herring</p><p>hello  world  </p>')
+    waitForXpath = p.waitForXpath('//p[normalize-space(.)="hello world"]')
+    result = await p.evaluate(
+        'x => x.textContent, await waitForXpath',
+        {'waitForXpath': waitForXpath})
+    assert result == 'hello  world  '
+
+
+
+@sync
 async def test_waitfor_timeout(isolated_page, server):
+    """should respect timeout"""
     p = isolated_page
     start = perf_counter_ms()
     timeout = 42
