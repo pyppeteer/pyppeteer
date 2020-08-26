@@ -648,7 +648,7 @@ class Response:
 class SecurityDetails:
     """Class represents responses which are received by page."""
 
-    _recorded_attributes = {'subjectName', 'issuer', 'validFrom', 'validTo', 'protocol'}
+    _recorded_attributes = {'subjectName', 'sanList', 'issuer', 'validFrom', 'validTo', 'protocol'}
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -659,6 +659,11 @@ class SecurityDetails:
     def subjectName(self) -> str:
         """Return the subject to which the certificate was issued to."""
         return self._subjectName
+
+    @property
+    def sanList(self) -> List[str]:
+        """Return the list of subject alternative names to which the certificate was issued to."""
+        return self._sanList
 
     @property
     def issuer(self) -> str:
