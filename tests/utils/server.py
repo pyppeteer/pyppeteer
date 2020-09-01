@@ -98,6 +98,9 @@ class WrappedApplication(web.Application):
         self, path: str, response: str = None, status: int = 200, headers: Dict = None,
             content_type: str = 'text/html', **kwargs
     ):
+        """
+        kwargs - any param web_response::Response class allows.
+        """
         def responder():
 
             if status in self.raisable_statuses:
