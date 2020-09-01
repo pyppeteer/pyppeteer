@@ -4,6 +4,8 @@ Test Pyppeteer Network functionality.
 
 """
 import asyncio
+import os
+
 import pytest
 from syncer import sync
 
@@ -294,31 +296,33 @@ class TestResponseJson:
         assert await response.json == {'foo': 'bar'}
 
 
+@chrome_only
+class TestResponseBuffer:
+
+    @sync
+    async def test_gets_response_buffer(self, server, isolated_page):
+        """Verify """
+        page = isolated_page
+        response = await page.goto(server / '/pptr.png')
+        with open(os.path.join(os.getcwd(), 'assets', 'pptr.png'), 'rb') as imageFile:
+            imageBuffer = imageFile.read()
+            responseBuffer = await response.buffer()
+            assert responseBuffer == imageBuffer
+
+    @pytest.mark.skip(reason='server.enableGzip is not implemented')
+    @sync
+    async def test_resp_buffer_works_with_compression(self, server, isolated_page):
+        """Verify response buffer works with compression."""
+        page = isolated_page
+        server.enableGzip('/pptr.png')
+        response = await page.goto(server / '/pptr.png')
+        with open(os.path.join(os.getcwd(), 'assets', 'pptr.png'), 'rb') as imageFile:
+            imageBuffer = imageFile.read()
+            responseBuffer = await response.buffer()
+            assert responseBuffer == imageBuffer
+
+
 """
-  describeFailsFirefox('Response.buffer', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      const response = await page.goto(server.PREFIX + '/pptr.png');
-      const imageBuffer = fs.readFileSync(
-        path.join(__dirname, 'assets', 'pptr.png')
-      );
-      const responseBuffer = await response.buffer();
-      expect(responseBuffer.equals(imageBuffer)).toBe(true);
-    });
-    it('should work with compression', async () => {
-      const { page, server } = getTestState();
-
-      server.enableGzip('/pptr.png');
-      const response = await page.goto(server.PREFIX + '/pptr.png');
-      const imageBuffer = fs.readFileSync(
-        path.join(__dirname, 'assets', 'pptr.png')
-      );
-      const responseBuffer = await response.buffer();
-      expect(responseBuffer.equals(imageBuffer)).toBe(true);
-    });
-  });
-
   describeFailsFirefox('Response.statusText', function () {
     it('should work', async () => {
       const { page, server } = getTestState();
