@@ -247,50 +247,54 @@ class TestResponseText:
             # FIX NEEDED ? it returns empty string and doesn't throw error
             await redirected.text
 
-    # @sync
-    # async def test_waits_for_response_to_complete(self, server, isolated_page):
-    #     """Verify it should wait until response completes."""
-    #     page = isolated_page
-    #     await page.goto(server.empty_page)
-    #     # Setup server to trap request
-    #     serverResponse = None
-    #     # server.setRoute('/get', (req, res) => {
-    #     #     serverResponse = res;
-    #     #     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    #     #     res.write('hello ');
-    #     # })
-    #     # Setup page to trap response
-    #     requestFinished = False
-    #     page.on('requestfinished', lambda r: requestFinished == requestFinished or r.url().includes('/get'))
-    #     # send request and wait for server response
-    #     pageResponse = None
-    #     # pageResponse = await asyncio.gather(
-    #     #     page.waitForResponse(lambda r: utils.isFavicon(r.request())),
-    #     #     page.evaluate(() => fetch('./get', { method: 'GET' })),
-    #     #     server.waitForRequest('/get'),
-    #     # )
-    #     assert serverResponse
-    #     assert pageResponse
-    #     assert pageResponse.status == 200
-    #     assert requestFinished == False
-    #     responseText = pageResponse.text
-    #     # Write part of the response and wait for it to be flushed
-    #     await lambda x: serverResponse.write('wor', x)
-    #     # Finish response
-    #     await new Promise((x) => serverResponse.end('ld!', x));
-    #     assert await responseText == 'hello world!'
+    @pytest.mark.skip("No idea how to implement this.")
+    @sync
+    async def test_waits_for_response_to_complete(self, server, isolated_page):
+        """Verify it should wait until response completes."""
+        page = isolated_page
+        await page.goto(server.empty_page)
+        # Setup server to trap request
+        serverResponse = None
+        # server.setRoute('/get', (req, res) => {
+        #     serverResponse = res;
+        #     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        #     res.write('hello ');
+        # })
+        # Setup page to trap response
+        requestFinished = False
+        page.on('requestfinished',
+                lambda r: requestFinished == requestFinished or r.url().includes('/get'))
+        # send request and wait for server response
+        pageResponse = None
+        # pageResponse = await asyncio.gather(
+        #     page.waitForResponse(lambda r: utils.isFavicon(r.request())),
+        #     page.evaluate(() => fetch('./get', { method: 'GET' })),
+        #     server.waitForRequest('/get'),
+        # )
+        assert serverResponse
+        assert pageResponse
+        assert pageResponse.status == 200
+        assert not requestFinished
+        responseText = pageResponse.text
+        # Write part of the response and wait for it to be flushed
+        # await lambda x: serverResponse.write('wor', x)
+        # Finish response
+        await serverResponse.end('ld!', 'x')
+        assert await responseText == 'hello world!'
+
+
+@chrome_only
+class TestResponseJson:
+
+    @sync
+    async def test_gets_response_json(self, server, isolated_page):
+        """Verify it gets JSON from response."""
+        page = isolated_page
+        response = await page.goto(server / '/simple.json')
+        assert await response.json == {'foo': 'bar'}
+
 
 """
-
-  describeFailsFirefox('Response.json', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      const response = await page.goto(server.PREFIX + '/simple.json');
-      expect(await response.json()).toEqual({ foo: 'bar' });
-    });
-  });
-
   describeFailsFirefox('Response.buffer', function () {
     it('should work', async () => {
       const { page, server } = getTestState();
