@@ -301,7 +301,7 @@ class TestResponseBuffer:
 
     @sync
     async def test_gets_response_buffer(self, server, isolated_page):
-        """Verify """
+        """Verify response buffer."""
         page = isolated_page
         response = await page.goto(server / '/pptr.png')
         with open(os.path.join(os.getcwd(), 'assets', 'pptr.png'), 'rb') as imageFile:
@@ -314,7 +314,7 @@ class TestResponseBuffer:
     async def test_resp_buffer_works_with_compression(self, server, isolated_page):
         """Verify response buffer works with compression."""
         page = isolated_page
-        server.enableGzip('/pptr.png')
+        server.app.set_one_time_response('/pptr.png')
         response = await page.goto(server / '/pptr.png')
         with open(os.path.join(os.getcwd(), 'assets', 'pptr.png'), 'rb') as imageFile:
             imageBuffer = imageFile.read()
@@ -322,35 +322,38 @@ class TestResponseBuffer:
             assert responseBuffer == imageBuffer
 
 
+@chrome_only
+class TestResponseStatusText:
+
+    @sync
+    async def test_response_status_text(self, server, isolated_page):
+        """Verify response has a status text."""
+        page = isolated_page
+        server.app.set_one_time_response(server / '/no_such_page', status=200, reason='cool!')
+        response = await page.goto(server / '/no_such_page')
+        assert response.statusText == 'cool!'
+
+
+# @chrome_only
+# class TestResponseStatusText:
+#   describeFailsFirefox('Network Events', function () {
+#     it('Page.Events.Request', async () => {
+#       const { page, server } = getTestState();
+#
+#       const requests = [];
+#       page.on('request', (request) => requests.push(request));
+#       await page.goto(server.EMPTY_PAGE);
+#       expect(requests.length).toBe(1);
+#       expect(requests[0].url()).toBe(server.EMPTY_PAGE);
+#       expect(requests[0].resourceType()).toBe('document');
+#       expect(requests[0].method()).toBe('GET');
+#       expect(requests[0].response()).toBeTruthy();
+#       expect(requests[0].frame() === page.mainFrame()).toBe(true);
+#       expect(requests[0].frame().url()).toBe(server.EMPTY_PAGE);
+#     });
+
+
 """
-  describeFailsFirefox('Response.statusText', function () {
-    it('should work', async () => {
-      const { page, server } = getTestState();
-
-      server.setRoute('/cool', (req, res) => {
-        res.writeHead(200, 'cool!');
-        res.end();
-      });
-      const response = await page.goto(server.PREFIX + '/cool');
-      expect(response.statusText()).toBe('cool!');
-    });
-  });
-
-  describeFailsFirefox('Network Events', function () {
-    it('Page.Events.Request', async () => {
-      const { page, server } = getTestState();
-
-      const requests = [];
-      page.on('request', (request) => requests.push(request));
-      await page.goto(server.EMPTY_PAGE);
-      expect(requests.length).toBe(1);
-      expect(requests[0].url()).toBe(server.EMPTY_PAGE);
-      expect(requests[0].resourceType()).toBe('document');
-      expect(requests[0].method()).toBe('GET');
-      expect(requests[0].response()).toBeTruthy();
-      expect(requests[0].frame() === page.mainFrame()).toBe(true);
-      expect(requests[0].frame().url()).toBe(server.EMPTY_PAGE);
-    });
     it('Page.Events.Response', async () => {
       const { page, server } = getTestState();
 
@@ -450,6 +453,8 @@ class TestResponseBuffer:
       );
     });
   });
+
+
 
   describe('Request.isNavigationRequest', () => {
     itFailsFirefox('should work', async () => {
