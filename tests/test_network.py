@@ -334,66 +334,65 @@ class TestResponseStatusText:
         assert response.statusText == 'cool!'
 
 
-# @chrome_only
-# class TestResponseStatusText:
-#   describeFailsFirefox('Network Events', function () {
-#     it('Page.Events.Request', async () => {
-#       const { page, server } = getTestState();
-#
-#       const requests = [];
-#       page.on('request', (request) => requests.push(request));
-#       await page.goto(server.EMPTY_PAGE);
-#       expect(requests.length).toBe(1);
-#       expect(requests[0].url()).toBe(server.EMPTY_PAGE);
-#       expect(requests[0].resourceType()).toBe('document');
-#       expect(requests[0].method()).toBe('GET');
-#       expect(requests[0].response()).toBeTruthy();
-#       expect(requests[0].frame() === page.mainFrame()).toBe(true);
-#       expect(requests[0].frame().url()).toBe(server.EMPTY_PAGE);
-#     });
+@chrome_only
+class TestNetworkEvents:
+
+    @sync
+    async def test_request_events(self, server, isolated_page):
+        """Verify Page Events Request."""
+        page = isolated_page
+        requests = []
+        page.on('request', lambda request: requests.append(request))
+        await page.goto(server.empty_page)
+        assert len(requests) == 1
+        assert requests[0].url == server.empty_page
+        assert requests[0].resourceType == 'document'
+        assert requests[0].method == 'GET'
+        assert requests[0].response
+        assert requests[0].frame == page.mainFrame
+        assert requests[0].frame.url == server.empty_page
+
+    @sync
+    async def test_response_events(self, server, isolated_page):
+        """Verify Page Events Response."""
+        page = isolated_page
+        responses = []
+        page.on('response', lambda response: responses.append(response))
+        await page.goto(server.empty_page)
+        assert len(responses) == 1
+        assert responses[0].url == server.empty_page
+        assert responses[0].status == 200
+        assert responses[0].ok
+        assert responses[0].request
+        remoteAddress = responses[0].remoteAddress
+        assert (remoteAddress['ip'] == '127.0.0.1' or '::1' in remoteAddress.ip)
+        assert remoteAddress['port'] == server.port
+
+    @pytest.mark.skip(reason='Fails with pyppeteer.errors.TimeoutError')
+    @sync
+    async def test_request_failed_events(self, server, isolated_page):
+        """Verify Page.Events.RequestFailed"""
+        def on_request(request):
+            url_: str = request.url
+            if url_.endswith('css'):
+                request.abort()
+            else:
+                request.continue_()
+
+        page = isolated_page
+        await page.setRequestInterception(True)
+        page.on('request', on_request)
+        failedRequests = []
+        page.on('requestfailed', lambda request: failedRequests.append(request))
+        await page.goto(server / 'one-style.html')
+        assert len(failedRequests) == 1
+        assert 'one-style.css' in failedRequests[0].url
+        assert not failedRequests[0].response
+        assert failedRequests[0].resourceType == 'stylesheet'
+        assert failedRequests[0].failure.errorText == 'net::ERR_FAILED'
 
 
 """
-    it('Page.Events.Response', async () => {
-      const { page, server } = getTestState();
-
-      const responses = [];
-      page.on('response', (response) => responses.push(response));
-      await page.goto(server.EMPTY_PAGE);
-      expect(responses.length).toBe(1);
-      expect(responses[0].url()).toBe(server.EMPTY_PAGE);
-      expect(responses[0].status()).toBe(200);
-      expect(responses[0].ok()).toBe(true);
-      expect(responses[0].request()).toBeTruthy();
-      const remoteAddress = responses[0].remoteAddress();
-      // Either IPv6 or IPv4, depending on environment.
-      expect(
-        remoteAddress.ip.includes('::1') || remoteAddress.ip === '127.0.0.1'
-      ).toBe(true);
-      expect(remoteAddress.port).toBe(server.PORT);
-    });
-
-    it('Page.Events.RequestFailed', async () => {
-      const { page, server, isChrome } = getTestState();
-
-      await page.setRequestInterception(true);
-      page.on('request', (request) => {
-        if (request.url().endsWith('css')) request.abort();
-        else request.continue();
-      });
-      const failedRequests = [];
-      page.on('requestfailed', (request) => failedRequests.push(request));
-      await page.goto(server.PREFIX + '/one-style.html');
-      expect(failedRequests.length).toBe(1);
-      expect(failedRequests[0].url()).toContain('one-style.css');
-      expect(failedRequests[0].response()).toBe(null);
-      expect(failedRequests[0].resourceType()).toBe('stylesheet');
-      if (isChrome)
-        expect(failedRequests[0].failure().errorText).toBe('net::ERR_FAILED');
-      else
-        expect(failedRequests[0].failure().errorText).toBe('NS_ERROR_FAILURE');
-      expect(failedRequests[0].frame()).toBeTruthy();
-    });
     it('Page.Events.RequestFinished', async () => {
       const { page, server } = getTestState();
 
