@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import mimetypes
+import os
 from contextlib import suppress
 from pathlib import Path
 from shutil import copyfile
@@ -63,6 +64,18 @@ class ServerURL:
     def __truediv__(self, other):
         """allows you to do stuff like ServerURL / 'button.html' which becomes 'http://localhost:453/button.html'"""
         return urljoin(self.base, other)
+
+
+@pytest.fixture
+def default_browser_options():
+    return {
+        'args': ['--no-sandbox'],
+        'handleSIGINT': False,
+        'executablePath': os.getenv('BINARY'),
+        'slowMo': os.getenv('SLOW_MO', 0),
+        'headless': os.getenv('HEADLESS', True),
+        'dumpio': (os.getenv('DUMPIO') is not None)
+    }
 
 
 @pytest.fixture(scope='session')
