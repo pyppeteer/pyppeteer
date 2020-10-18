@@ -88,7 +88,7 @@ class Launcher(object):
         self.defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})  # noqa: E501
         self.slowMo = options.get('slowMo', 0)
         self.timeout = options.get('timeout', 30000)
-        self.wsEndpointTimeout = options.get('ws_endpoint_timeout', 30000)
+        self.wsEndpointTimeout = options.get('wsEndpointTimeout', 30000)
         self.autoClose = options.get('autoClose', True)
 
         logLevel = options.get('logLevel')
