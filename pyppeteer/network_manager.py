@@ -285,6 +285,7 @@ class Request:
         self._interceptionHandled = False
         self._response = None
         self._failureText = None
+        self._initiator = event.get('initiator')
 
         request_event = event['request']
         self._url = request_event['url']
