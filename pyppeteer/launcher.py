@@ -79,7 +79,7 @@ class Launcher(object):
         ignoreDefaultArgs = options.get('ignoreDefaultArgs', False)
         args: List[str] = options.get('args', list())
         #default to True to avoid OS open file errors
-        self.dumpio = options.get('dumpio', True)
+        self.dumpio = options.get('dumpio', False)
         executablePath = options.get('executablePath')
         self.env = options.get('env')
         self.handleSIGINT = options.get('handleSIGINT', True)
