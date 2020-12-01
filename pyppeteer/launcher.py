@@ -11,7 +11,7 @@ import time
 from contextlib import suppress
 from pathlib import Path
 from signal import SIG_DFL, SIGINT, SIGTERM, signal
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 from urllib.error import URLError
 from urllib.request import urlopen
 
@@ -35,13 +35,6 @@ else:
 logger = logging.getLogger(__name__)
 
 
-def _restore_default_signal_handlers() -> None:
-    signal(SIGTERM, SIG_DFL)
-    signal(SIGINT, SIG_DFL)
-    if not sys.platform.startswith('win'):
-        signal(SIGHUP, SIG_DFL)
-
-
 class BrowserRunner:
     def __init__(
         self, executable_path: str, process_args: Sequence[str], temp_dir: tempfile.TemporaryDirectory = None,
@@ -53,6 +46,7 @@ class BrowserRunner:
         self.proc: Optional[subprocess.Popen] = None
         self.connection: Optional[Connection] = None
 
+        self._altered_sighandlers: Set[int] = set()
         self._closed = True
 
     def start(self, **kwargs: LaunchOptions) -> None:
@@ -88,12 +82,15 @@ class BrowserRunner:
             atexit.register(close_proc_wrapper)
         if kwargs.get('handleSIGINT'):
             signal(SIGINT, close_proc_wrapper)
+            self._altered_sighandlers.add(SIGINT)
         if kwargs.get('handleSIGTERM'):
             signal(SIGTERM, close_proc_wrapper)
+            self._altered_sighandlers.add(SIGTERM)
         if kwargs.get('handleSIGHUP'):
             # SIGHUP is not defined on windows
             if not sys.platform.startswith('win'):
                 signal(SIGHUP, close_proc_wrapper)
+                self._altered_sighandlers.add(SIGHUP)
             else:
                 logger.warning(f'SIGHUP is not available on win32')
 
@@ -116,7 +113,7 @@ class BrowserRunner:
 
     async def close(self) -> None:
         if not self._closed:
-            _restore_default_signal_handlers()
+            self._restore_default_signal_handlers()
             if self.temp_dir:
                 self.kill()
             elif self.connection:
@@ -129,7 +126,7 @@ class BrowserRunner:
 
     def kill(self) -> None:
         if self.proc and not self._closed and self.proc.returncode is not None:
-            _restore_default_signal_handlers()
+            self._restore_default_signal_handlers()
             try:
                 self.proc.kill()
                 if sys.platform.startswith('win'):
@@ -142,6 +139,15 @@ class BrowserRunner:
                 self.temp_dir.cleanup()
         except Exception as e:
             logger.warning(f'Failed to cleanup {self.temp_dir}: {e}')
+
+    def _restore_default_signal_handlers(self) -> None:
+        """
+        Restores the signals that were previously altered. This is contrary to
+        restoring all handlers, which panics in multithreaded applications
+        """
+        for signum in self._altered_sighandlers:
+            signal(signum, SIG_DFL)
+        self._altered_sighandlers = set()
 
     async def setupConnection(
         self, usePipe: bool = None, timeout: float = None, slowMo: float = 0, preferredRevision: str = None,
@@ -282,13 +288,11 @@ class ChromeLauncher(BaseBrowserLauncher):
         else:
             chrome_executable = executablePath
 
-        usePipe = False
-        if '--remote-debugging-pipe' in chrome_args:
-            usePipe = True
+        usePipe = '--remote-debugging-pipe' in chrome_args
 
         runner = BrowserRunner(chrome_executable, chrome_args, profile_path)
         runner.start(
-            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio,
+            handleSIGINT=handleSIGINT, handleSIGHUP=handleSIGHUP, handleSIGTERM=handleSIGTERM, env=env, dumpio=dumpio, autoClose=kwargs.get('autoClose')
         )
 
         try:
