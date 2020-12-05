@@ -140,7 +140,8 @@ class Launcher(object):
         options = dict()
         options['env'] = self.env
         if not self.dumpio:
-            options['stdout'] = subprocess.PIPE
+            # discard stdout, it's never read in any case.
+            options['stdout'] = subprocess.DEVNULL
             options['stderr'] = subprocess.STDOUT
 
         self.proc = subprocess.Popen(  # type: ignore
