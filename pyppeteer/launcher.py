@@ -78,7 +78,6 @@ class Launcher(object):
 
         ignoreDefaultArgs = options.get('ignoreDefaultArgs', False)
         args: List[str] = options.get('args', list())
-        #default to True to avoid OS open file errors
         self.dumpio = options.get('dumpio', False)
         executablePath = options.get('executablePath')
         self.env = options.get('env')
@@ -141,7 +140,7 @@ class Launcher(object):
         options = dict()
         options['env'] = self.env
         if not self.dumpio:
-            #changed from PIPE to DEVNULL since we never read the pipe
+            # discard stdout, it's never read in any case.
             options['stdout'] = subprocess.DEVNULL
             options['stderr'] = subprocess.STDOUT
 
