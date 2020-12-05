@@ -1,7 +1,11 @@
 History
 =======
 
-## Version 0.0.26 (next version)
+## Version 0.2.3 (next version)
+
+* Hotfix: random freezes from sending stdout to PIPE instead of DEVNULL
+
+## Version 0.0.26
 
 * Add `$PYPPETEER_NO_PROGRESS_BAR` environment variable
 * `pyppeteer.defaultArgs` now accepts that help infer chromium command-line flags.
