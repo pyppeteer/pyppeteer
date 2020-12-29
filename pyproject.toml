@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyppeteer"
-version = "0.2.3"
+version = "0.2.3.rc1"
 description = "Headless chrome/chromium automation library (unofficial port of puppeteer)"
 readme = 'README.md'
 license = "MIT"
@@ -31,7 +31,6 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGES.md",
-    "tests/*",
     "Makefile",
 ]
 exclude = [
