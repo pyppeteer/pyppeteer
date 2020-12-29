@@ -544,6 +544,7 @@ class Response:
         self._fromDiskCache = bool(responsePayload.get('fromDiskCache'))
         self._fromServiceWorker = bool(responsePayload.get('fromServiceWorker'))
         self._headers = {k.lower(): v for k, v in responsePayload.get('headers', {}).items()}
+        self._securityState = responsePayload.get('securityState')
         if responsePayload.get('securityDetails'):
             self._securityDetails = SecurityDetails(**responsePayload.get('securityDetails'))
         else:
@@ -576,6 +577,15 @@ class Response:
         All header names are lower-case.
         """
         return self._headers
+
+    @property
+    def securityState(self) -> str:
+        """
+        Returns the security state of the response.
+
+        Possible Values: unknown, neutral, insecure, secure, info, insecure-broken
+        """
+        return self._securityState
 
     @property
     def securityDetails(self) -> Optional['SecurityDetails']:
@@ -638,7 +648,7 @@ class Response:
 class SecurityDetails:
     """Class represents responses which are received by page."""
 
-    _recorded_attributes = {'subjectName', 'issuer', 'validFrom', 'validTo', 'protocol'}
+    _recorded_attributes = {'subjectName', 'sanList', 'issuer', 'validFrom', 'validTo', 'protocol'}
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
@@ -649,6 +659,11 @@ class SecurityDetails:
     def subjectName(self) -> str:
         """Return the subject to which the certificate was issued to."""
         return self._subjectName
+
+    @property
+    def sanList(self) -> List[str]:
+        """Return the list of subject alternative names to which the certificate was issued to."""
+        return self._sanList
 
     @property
     def issuer(self) -> str:
