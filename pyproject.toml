@@ -11,6 +11,7 @@ authors = [
     "pyppeteer <pyppeteer@protonmail.com>",
     "granitosaurus <bernardas.alisauskas@pm.me>",
     "Hiroyuki Takagi <miyako.dev@gmail.com>",
+    "Mattwmaster58 <mattwmaster58@gmail.com>"
 ]
 classifiers = [
         'Development Status :: 3 - Alpha',
@@ -21,6 +22,7 @@ classifiers = [
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ]
 packages = [
     { include = "pyppeteer" },
@@ -30,7 +32,6 @@ include = [
     "LICENSE",
     "CHANGES.md",
     "tests/*",
-    "docs/*",
     "Makefile",
 ]
 exclude = [
