@@ -4,7 +4,7 @@ History
 ## Version 0.2.3 (next version)
 
 * Hotfix: random freezes from sending stdout to PIPE instead of DEVNULL
-* Fix `tests` package being installed
+* Fix `tests` package being installed for no reason
 
 ## Version 0.0.26
 
