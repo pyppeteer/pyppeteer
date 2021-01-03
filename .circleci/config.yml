@@ -79,7 +79,7 @@ jobs:
 
   test_310:
     docker:
-      - image: circleci/python:3.10
+      - image: circleci/python:3.10-rc
     environment:
       TOXENV: py310
       PYTEST_ADDOPTS: *pytest_default
