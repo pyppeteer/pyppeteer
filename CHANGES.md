@@ -1,6 +1,10 @@
 History
 =======
 
+## Version ?.?.? (next version, pup2.1.1 overhaul)
+
+* [populate me]
+
 ## Version 0.2.4
 
 * Update `pyee` dependency breaking build failures on NixOS + Fedora packaging systems (#207)
