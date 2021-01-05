@@ -1,7 +1,11 @@
 History
 =======
 
-## Version 0.2.3 (next version)
+## Version 0.2.4
+
+* Update `pyee` dependency breaking build failures on NixOS + Fedora packaging systems (#207)
+
+## Version 0.2.3
 
 * Hotfix: random freezes from sending stdout to PIPE instead of DEVNULL
 * Fix `tests` package being installed for no reason
