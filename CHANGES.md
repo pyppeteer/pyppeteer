@@ -5,6 +5,11 @@ History
 
 * [populate me]
 
+## Version 0.2.5
+
+* Match package version and \_\_version__ (🤦‍♂️)
+* Use `importlib_metadata` so this isn't a problem in the future
+
 ## Version 0.2.4
 
 * Update `pyee` dependency breaking build failures on NixOS + Fedora packaging systems (#207)

@@ -6,11 +6,19 @@
 import logging
 import os
 
-from appdirs import AppDirs
+try:
+    # noinspection PyCompatibility
+    from importlib.metadata import version
+except ModuleNotFoundError:
+    # noinspection PyUnresolvedReferences
+    # <3.8 backport
+    from importlib_metadata import version
 
-__author__ = """Hiroyuki Takagi"""
-__email__ = 'miyako.dev@gmail.com'
-__version__ = '0.2.4'
+try:
+    __version__ = version('wheel')
+except Exception:
+    pass
+
 __chromium_revision__ = '588429'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get(
