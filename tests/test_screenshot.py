@@ -14,7 +14,7 @@ blank_png_path = root_path / 'blank_800x600.png'
 blank_pdf_path = root_path / 'blank.pdf'
 
 
-class TestScreenShot(TestCase):
+class TestScreenShot:
     def setUp(self):
         self.browser = sync(launch(args=['--no-sandbox']))
         self.target_path = Path(__file__).resolve().parent / 'test.png'
@@ -79,7 +79,7 @@ class TestScreenShot(TestCase):
             await page.screenshot(options)
 
 
-class TestPDF(TestCase):
+class TestPDF:
     def setUp(self):
         self.browser = sync(launch(args=['--no-sandbox']))
         self.target_path = Path(__file__).resolve().parent / 'test.pdf'

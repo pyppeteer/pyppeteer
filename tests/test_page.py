@@ -1,399 +1,241 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import asyncio
-import math
-import os
-from pathlib import Path
-import sys
-import time
-import unittest
+from contextlib import suppress
+from typing import List
 
+import pytest
+from aiohttp import web
+from pyppeteer import devices
+from pyppeteer.errors import BrowserError, ElementHandleError, NetworkError, PageError, TimeoutError
+from pyppeteer.page import ConsoleMessage
 from syncer import sync
-
-from pyppeteer.errors import ElementHandleError, NetworkError, PageError
-from pyppeteer.errors import TimeoutError
-
-from .base import BaseTestCase
-from .frame_utils import attachFrame
-from .utils import waitEvent
-
-iPhone = {
-    'name': 'iPhone 6',
-    'userAgent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',  # noqa: E501
-    'viewport': {
-        'width': 375,
-        'height': 667,
-        'deviceScaleFactor': 2,
-        'isMobile': True,
-        'hasTouch': True,
-        'isLandscape': False,
-    }
-}
+from tests.utils import attachFrame, gather_with_timeout, var_setter, waitEvent
 
 
-class TestEvaluate(BaseTestCase):
+@sync
+async def test_url_prop(isolated_page, server):
+    assert isolated_page.url == 'about:blank'
+    await isolated_page.goto(server.empty_page)
+    assert isolated_page.url == server.empty_page
+
+
+@sync
+async def test_save_PDF(isolated_page, tmp_path):
+    output_file = tmp_path / 'output.pdf'
+    await isolated_page.pdf(path=output_file)
+    assert output_file.exists()
+    assert output_file.stat().st_size
+
+
+@sync
+async def test_title_prop(isolated_page, server):
+    await isolated_page.goto(server / 'title.html')
+    assert await isolated_page.title == 'Woof-Woof'
+
+
+@sync
+async def test_browser_prop(isolated_page, shared_browser):
+    assert isolated_page.browser == shared_browser
+
+
+@sync
+async def test_context_prop(isolated_page, isolated_context):
+    assert isolated_page.browserContext == isolated_context
+
+
+class TestClose:
     @sync
-    async def test_evaluate(self):
-        result = await self.page.evaluate('() => 7 * 3')
-        self.assertEqual(result, 21)
+    async def test_reject_all_pending_promises(self, isolated_page, event_loop):
+        fut = event_loop.create_task(isolated_page.evaluate('()=>new Promise(resolve=>{})'))
+        await isolated_page.close()
+        with pytest.raises(Exception) as excpt:
+            await fut
+        assert 'Protocol error' in str(excpt)
 
     @sync
-    async def test_await_promise(self):
-        result = await self.page.evaluate('() => Promise.resolve(8 * 7)')
-        self.assertEqual(result, 56)
+    async def test_closed_page_removed_from_pages_prop(self, isolated_page, shared_browser):
+        assert isolated_page in await shared_browser.pages
+        await isolated_page.close()
+        assert isolated_page not in await shared_browser.pages
 
     @sync
-    async def test_error_on_reload(self):
-        with self.assertRaises(Exception) as cm:
-            await self.page.evaluate('''() => {
-                location.reload();
-                return new Promise(resolve => {
-                    setTimeout(() => resolve(1), 0);
-                }
-        )}''')
-        self.assertIn('Protocol error', cm.exception.args[0])
+    async def test_run_beforeunload(self, isolated_page, server, firefox, event_loop):
+        await isolated_page.goto(server / 'beforeunload.html')
+        # interact w/ page so beforeunload handler fires
+        await isolated_page.click('body')
+        page_closing_fut = event_loop.create_task(isolated_page.close(runBeforeUnload=True))
+        dialog = await waitEvent(isolated_page, 'dialog')
+        assert dialog.type == 'beforeunload'
+        assert dialog.defaultValue == ''
+        if not firefox:
+            assert dialog.message == ''
+        elif firefox:
+            assert (
+                dialog.message
+                == 'This page is asking you to confirm that you want to leave - data you have entered may not be saved.'
+            )
+        await dialog.accept()
+        await page_closing_fut
 
     @sync
-    async def test_after_framenavigation(self):
-        frameEvaluation = asyncio.get_event_loop().create_future()
+    async def test_not_run_beforeunload_by_default(self, isolated_page, server):
+        await isolated_page.goto(server / 'beforeunload.html')
+        # interact w/ page so beforeunload handler fires
+        await isolated_page.click('body')
+        # if beforeunload handlers are fired, this will timeout as a dialog will block the close of the page
+        await isolated_page.close()
 
-        async def evaluate_frame(frame):
-            frameEvaluation.set_result(await frame.evaluate('() => 6 * 7'))
+    @sync
+    async def test_set_page_close_state(self, isolated_page, server):
+        assert isolated_page.isClosed is False
+        await isolated_page.close()
+        assert isolated_page.isClosed
 
-        self.page.on(
-            'framenavigated',
-            lambda frame: asyncio.ensure_future(evaluate_frame(frame)),
+
+class TestBrowserContextOverridePermissions:
+    @staticmethod
+    def get_permission_state(page, name):
+        return page.evaluate('name => navigator.permissions.query({name}).then(result => result.state)', name)
+
+    @sync
+    async def test_prompt_by_default(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
+
+    @sync
+    async def test_deny_unlisted_permission(self, isolated_page, isolated_context, server):
+        await isolated_page.goto(server.empty_page)
+        await isolated_context.overridePermissions(server.empty_page, [])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'denied'
+
+    @sync
+    async def test_fail_on_bad_permission(self, isolated_page, isolated_context, server):
+        await isolated_page.goto(server.empty_page)
+        with pytest.raises(RuntimeError, match='Unknown permission: foo'):
+            await isolated_context.overridePermissions(server.empty_page, ['foo'])
+
+    @sync
+    async def test_grant_permission_when_overridden(self, isolated_page, isolated_context, server):
+        await isolated_context.overridePermissions(server.empty_page, ['geolocation'])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
+
+    @sync
+    async def test_reset_permissions(self, isolated_page, isolated_context, server):
+        await isolated_context.overridePermissions(server.empty_page, ['geolocation'])
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'granted'
+        await isolated_context.clearPermissionOverrides()
+        assert await self.get_permission_state(isolated_page, 'geolocation') == 'prompt'
+
+    @sync
+    async def test_permission_onchange_fired(self, isolated_page, isolated_context, server):
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.evaluate(
+            """
+        () => {
+            window.events = [];
+            return navigator.permissions.query({name: 'geolocation'}).then(function(result) {
+                window.events.push(result.state);
+                result.onchange = function() {
+                    window.events.push(result.state);
+                };
+            });
+        }
+        """
         )
-        await self.page.goto(self.url + 'empty')
-        await frameEvaluation
-        self.assertEqual(frameEvaluation.result(), 42)
+        assert await isolated_page.evaluate('() => window.events') == ['prompt']
+        await isolated_context.overridePermissions(server.empty_page, [])
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied']
+        await isolated_context.overridePermissions(server.empty_page, ['geolocation'])
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied', 'granted']
+        await isolated_context.clearPermissionOverrides()
+        assert await isolated_page.evaluate('() => window.events') == ['prompt', 'denied', 'granted', 'prompt']
 
-    @unittest.skip('Pyppeteer does not support async for exposeFunction')
+
+class TestSetGeolocation:
     @sync
-    async def test_inside_expose_function(self):
-        async def callController(a, b):
-            result = await self.page.evaluate('(a, b) => a + b', a, b)
-            return result
-
-        await self.page.exposeFunction(
-            'callController',
-            lambda *args: asyncio.ensure_future(callController(*args))
+    async def test_set_geolocation(self, isolated_page, isolated_context, server):
+        await isolated_context.overridePermissions(server.empty_page, ['geolocation'])
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.setGeolocation(longitude=10, latitude=10)
+        geolocation = await isolated_page.evaluate(
+            """
+        () => new Promise(resolve => navigator.geolocation.getCurrentPosition(position => {
+            resolve({latitude: position.coords.latitude, longitude: position.coords.longitude});
+        }))
+        """
         )
-        result = await self.page.evaluate(
-            'async function() { return await callController(9, 3); }'
-        )
-        self.assertEqual(result, 27)
+        assert geolocation == {'longitude': 10, 'latitude': 10}
 
     @sync
-    async def test_promise_reject(self):
-        with self.assertRaises(ElementHandleError) as cm:
-            await self.page.evaluate('() => not.existing.object.property')
-        self.assertIn('not is not defined', cm.exception.args[0])
+    async def test_rejects_invalid_lat_long(self, isolated_page):
+        with pytest.raises(NetworkError):
+            await isolated_page.setGeolocation(longitude=200, latitude=10)
+        with pytest.raises(NetworkError):
+            await isolated_page.setGeolocation(longitude=90, latitude=200)
+
+
+class TestSetOfflineMode:
+    @sync
+    async def test_set_offline_mode(self, isolated_page, server):
+        await isolated_page.setOfflineMode(True)
+        with pytest.raises(BrowserError):
+            await isolated_page.goto(server.empty_page)
+        await isolated_page.setOfflineMode(False)
+        resp = await isolated_page.reload()
+        assert resp.status == 200
 
     @sync
-    async def test_string_as_error_message(self):
-        with self.assertRaises(Exception) as cm:
-            await self.page.evaluate('() => { throw "qwerty"; }')
-        self.assertIn('qwerty', cm.exception.args[0])
+    async def test_emulate_navigator_online(self, isolated_page):
+        def nav_online():
+            return isolated_page.evaluate('() => window.navigator.onLine')
+
+        assert await nav_online()
+        await isolated_page.setOfflineMode(True)
+        assert await nav_online() is False
+        await isolated_page.setOfflineMode(False)
+        assert await nav_online()
+
+
+class TestExecutionContextQueryObjects:
+    @sync
+    async def test_queries_objects(self, isolated_page):
+        await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
+        proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
+        objs_handle = await isolated_page.queryObjects(proto_handle)
+        assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
+        assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
+            'hello',
+            'world',
+        ]
 
     @sync
-    async def test_number_as_error_message(self):
-        with self.assertRaises(Exception) as cm:
-            await self.page.evaluate('() => { throw 100500; }')
-        self.assertIn('100500', cm.exception.args[0])
+    async def test_queries_objects_non_blank_page(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.evaluate('() => window.set = new Set(["hello", "world"])')
+        proto_handle = await isolated_page.evaluateHandle('() => Set.prototype')
+        objs_handle = await isolated_page.queryObjects(proto_handle)
+        assert await isolated_page.evaluate('objects => objects.length', objs_handle) == 1
+        assert await isolated_page.evaluate('objects => Array.from(objects[0].values())', objs_handle) == [
+            'hello',
+            'world',
+        ]
 
     @sync
-    async def test_return_complex_object(self):
-        obj = {'foo': 'bar!'}
-        result = await self.page.evaluate('(a) => a', obj)
-        self.assertIsNot(result, obj)
-        self.assertEqual(result, obj)
+    async def test_fails_on_disposed_handles(self, isolated_page):
+        proto_handle = await isolated_page.evaluateHandle('() => HTMLBodyElement.prototype')
+        await proto_handle.dispose()
+        with pytest.raises(ElementHandleError, match='Prototype JSHandle is disposed'):
+            await isolated_page.queryObjects(proto_handle)
 
     @sync
-    async def test_return_nan(self):
-        result = await self.page.evaluate('() => NaN')
-        self.assertIsNone(result)
-
-    @sync
-    async def test_return_minus_zero(self):
-        result = await self.page.evaluate('() => -0')
-        self.assertEqual(result, -0)
-
-    @sync
-    async def test_return_infinity(self):
-        result = await self.page.evaluate('() => Infinity')
-        self.assertEqual(result, math.inf)
-
-    @sync
-    async def test_return_infinity_minus(self):
-        result = await self.page.evaluate('() => -Infinity')
-        self.assertEqual(result, -math.inf)
-
-    @sync
-    async def test_accept_none(self):
-        result = await self.page.evaluate(
-            '(a, b) => Object.is(a, null) && Object.is(b, "foo")',
-            None, 'foo',
-        )
-        self.assertTrue(result)
-
-    @sync
-    async def test_serialize_null_field(self):
-        result = await self.page.evaluate('() => ({a: undefined})')
-        self.assertEqual(result, {})
-
-    @sync
-    async def test_fail_window_object(self):
-        self.assertIsNone(await self.page.evaluate('() => window'))
-        self.assertIsNone(await self.page.evaluate('() => [Symbol("foo4")]'))
-
-    @sync
-    async def test_fail_for_circular_object(self):
-        result = await self.page.evaluate('''() => {
-            const a = {};
-            const b = {a};
-            a.b = b;
-            return a;
-        }''')
-        self.assertIsNone(result)
-
-    @sync
-    async def test_accept_string(self):
-        result = await self.page.evaluate('1 + 2')
-        self.assertEqual(result, 3)
-
-    @sync
-    async def test_evaluate_force_expression(self):
-        result = await self.page.evaluate(
-            '() => null;\n1 + 2;', force_expr=True)
-        self.assertEqual(result, 3)
-
-    @sync
-    async def test_accept_string_with_semicolon(self):
-        result = await self.page.evaluate('1 + 5;')
-        self.assertEqual(result, 6)
-
-    @sync
-    async def test_accept_string_with_comments(self):
-        result = await self.page.evaluate('2 + 5;\n// do some math!')
-        self.assertEqual(result, 7)
-
-    @sync
-    async def test_element_handle_as_argument(self):
-        await self.page.setContent('<section>42</section>')
-        element = await self.page.J('section')
-        text = await self.page.evaluate('(e) => e.textContent', element)
-        self.assertEqual(text, '42')
-
-    @sync
-    async def test_element_handle_disposed(self):
-        await self.page.setContent('<section>39</section>')
-        element = await self.page.J('section')
-        self.assertTrue(element)
-        await element.dispose()
-        with self.assertRaises(ElementHandleError) as cm:
-            await self.page.evaluate('(e) => e.textContent', element)
-        self.assertIn('JSHandle is disposed', cm.exception.args[0])
-
-    @sync
-    async def test_element_handle_from_other_frame(self):
-        await attachFrame(self.page, 'frame1', self.url + 'empty')
-        body = await self.page.frames[1].J('body')
-        with self.assertRaises(ElementHandleError) as cm:
-            await self.page.evaluate('body => body.innerHTML', body)
-        self.assertIn(
-            'JSHandles can be evaluated only in the context they were created',
-            cm.exception.args[0],
-        )
-
-    @sync
-    async def test_object_handle_as_argument(self):
-        navigator = await self.page.evaluateHandle('() => navigator')
-        self.assertTrue(navigator)
-        text = await self.page.evaluate('(e) => e.userAgent', navigator)
-        self.assertIn('Mozilla', text)
-
-    @sync
-    async def test_object_handle_to_primitive_value(self):
-        aHandle = await self.page.evaluateHandle('() => 5')
-        isFive = await self.page.evaluate('(e) => Object.is(e, 5)', aHandle)
-        self.assertTrue(isFive)
-
-    @sync
-    async def test_simulate_user_gesture(self):
-        playAudio = '''function playAudio() {
-            const audio = document.createElement('audio');
-            audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
-            return audio.play();
-        }'''  # noqa: E501
-        await self.page.evaluate(playAudio)
-        await self.page.evaluate('({})()'.format(playAudio), force_expr=True)
-
-    @sync
-    async def test_nice_error_after_navigation(self):
-        executionContext = await self.page.mainFrame.executionContext()
-
-        await asyncio.wait([
-            self.page.waitForNavigation(),
-            executionContext.evaluate('window.location.reload()'),
-        ])
-
-        with self.assertRaises(NetworkError) as cm:
-            await executionContext.evaluate('() => null')
-        self.assertIn('navigation', cm.exception.args[0])
+    async def test_fail_on_primitive_vals_as_proto(self, isolated_page):
+        proto_handle = await isolated_page.evaluateHandle('() => 42')
+        with pytest.raises(ElementHandleError, match='must not be referencing primitive value'):
+            await isolated_page.queryObjects(proto_handle)
 
 
-class TestOfflineMode(BaseTestCase):
-    @sync
-    async def test_offline_mode(self):
-        await self.page.setOfflineMode(True)
-        with self.assertRaises(PageError):
-            await self.page.goto(self.url)
-        await self.page.setOfflineMode(False)
-        res = await self.page.reload()
-        self.assertEqual(res.status, 200)
-
-    @sync
-    async def test_emulate_navigator_offline(self):
-        self.assertTrue(await self.page.evaluate('window.navigator.onLine'))
-        await self.page.setOfflineMode(True)
-        self.assertFalse(await self.page.evaluate('window.navigator.onLine'))
-        await self.page.setOfflineMode(False)
-        self.assertTrue(await self.page.evaluate('window.navigator.onLine'))
-
-
-class TestEvaluateHandle(BaseTestCase):
-    @sync
-    async def test_evaluate_handle(self):
-        windowHandle = await self.page.evaluateHandle('() => window')
-        self.assertTrue(windowHandle)
-
-
-class TestWaitFor(BaseTestCase):
-    @sync
-    async def test_wait_for_selector(self):
-        fut = asyncio.ensure_future(self.page.waitFor('div'))
-        fut.add_done_callback(lambda f: self.set_result(True))
-        await self.page.goto(self.url + 'empty')
-        self.assertFalse(self.result)
-        await self.page.goto(self.url + 'static/grid.html')
-        await fut
-        self.assertTrue(self.result)
-
-    @sync
-    async def test_wait_for_xpath(self):
-        waitFor = asyncio.ensure_future(self.page.waitFor('//div'))
-        waitFor.add_done_callback(lambda fut: self.set_result(True))
-        await self.page.goto(self.url + 'empty')
-        self.assertFalse(self.result)
-        await self.page.goto(self.url + 'static/grid.html')
-        await waitFor
-        self.assertTrue(self.result)
-
-    @sync
-    async def test_single_slash_fail(self):
-        await self.page.setContent('<div>some text</div>')
-        with self.assertRaises(Exception):
-            await self.page.waitFor('/html/body/div')
-
-    @sync
-    async def test_wait_for_timeout(self):
-        start_time = time.perf_counter()
-        fut = asyncio.ensure_future(self.page.waitFor(100))
-        fut.add_done_callback(lambda f: self.set_result(True))
-        await fut
-        self.assertGreater(time.perf_counter() - start_time, 0.1)
-        self.assertTrue(self.result)
-
-    @sync
-    async def test_wait_for_error_type(self):
-        with self.assertRaises(TypeError) as cm:
-            await self.page.waitFor({'a': 1})
-        self.assertIn('Unsupported target type', cm.exception.args[0])
-
-    @sync
-    async def test_wait_for_func_with_args(self):
-        await self.page.waitFor('(arg1, arg2) => arg1 !== arg2', {}, 1, 2)
-
-
-class TestConsole(BaseTestCase):
-    @sync
-    async def test_console_event(self):
-        messages = []
-        self.page.once('console', lambda m: messages.append(m))
-        await self.page.evaluate('() => console.log("hello", 5, {foo: "bar"})')
-        await asyncio.sleep(0.01)
-        self.assertEqual(len(messages), 1)
-
-        msg = messages[0]
-        self.assertEqual(msg.type, 'log')
-        self.assertEqual(msg.text, 'hello 5 JSHandle@object')
-        self.assertEqual(await msg.args[0].jsonValue(), 'hello')
-        self.assertEqual(await msg.args[1].jsonValue(), 5)
-        self.assertEqual(await msg.args[2].jsonValue(), {'foo': 'bar'})
-
-    @sync
-    async def test_console_event_many(self):
-        messages = []
-        self.page.on('console', lambda m: messages.append(m))
-        await self.page.evaluate('''
-// A pair of time/timeEnd generates only one Console API call.
-console.time('calling console.time');
-console.timeEnd('calling console.time');
-console.trace('calling console.trace');
-console.dir('calling console.dir');
-console.warn('calling console.warn');
-console.error('calling console.error');
-console.log(Promise.resolve('should not wait until resolved!'));
-        ''')
-        await asyncio.sleep(0.1)
-        self.assertEqual(
-            [msg.type for msg in messages],
-            ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log'],
-        )
-        self.assertIn('calling console.time', messages[0].text)
-        self.assertEqual([msg.text for msg in messages[1:]], [
-            'calling console.trace',
-            'calling console.dir',
-            'calling console.warn',
-            'calling console.error',
-            'JSHandle@promise',
-        ])
-
-    @sync
-    async def test_console_window(self):
-        messages = []
-        self.page.once('console', lambda m: messages.append(m))
-        await self.page.evaluate('console.error(window);')
-        await asyncio.sleep(0.1)
-        self.assertEqual(len(messages), 1)
-        msg = messages[0]
-        self.assertEqual(msg.text, 'JSHandle@object')
-
-    @sync
-    async def test_trigger_correct_log(self):
-        await self.page.goto('about:blank')
-        messages = []
-        self.page.on('console', lambda m: messages.append(m))
-        asyncio.ensure_future(self.page.evaluate(
-            'async url => fetch(url).catch(e => {})', self.url + 'empty'))
-        await waitEvent(self.page, 'console')
-        self.assertEqual(len(messages), 1)
-        message = messages[0]
-        self.assertIn('No \'Access-Control-Allow-Origin\'', message.text)
-        self.assertEqual(message.type, 'error')
-
-
-class TestDOMContentLoaded(BaseTestCase):
-    @sync
-    async def test_fired(self):
-        self.page.once('domcontentloaded', self.set_result(True))
-        self.assertTrue(self.result)
-
-
-class TestMetrics(BaseTestCase):
-    def checkMetrics(self, metrics):
+class TestMetrics:
+    @staticmethod
+    def check_metrics(metrics):
         metrics_to_check = {
             'Timestamp',
             'Documents',
@@ -410,1500 +252,873 @@ class TestMetrics(BaseTestCase):
             'JSHeapTotalSize',
         }
         for name, value in metrics.items():
-            self.assertTrue(name in metrics_to_check)
-            self.assertTrue(value >= 0)
+            assert name in metrics_to_check, f'Unrecognized/duplicate metric: {name}'
+            assert value >= 0
             metrics_to_check.remove(name)
-        self.assertEqual(len(metrics_to_check), 0)
+        assert len(metrics_to_check) == 0
 
     @sync
-    async def test_metrics(self):
-        await self.page.goto('about:blank')
-        metrics = await self.page.metrics()
-        self.checkMetrics(metrics)
+    async def test_retrieval_of_metrics(self, isolated_page):
+        await isolated_page.goto('about:blank')
+        self.check_metrics(await isolated_page.metrics())
 
     @sync
-    async def test_metrics_event(self):
-        fut = asyncio.get_event_loop().create_future()
-        self.page.on('metrics', lambda metrics: fut.set_result(metrics))
-        await self.page.evaluate('() => console.timeStamp("test42")')
-        metrics = await fut
-        self.assertEqual(metrics['title'], 'test42')
-        self.checkMetrics(metrics['metrics'])
+    async def test_metrics_event_fired_on_console_timestamp(self, event_loop, isolated_page):
+        await isolated_page.goto('about:blank')
+        metrics = event_loop.create_future()
+        isolated_page.once('metrics', lambda event: metrics.set_result(event))
+        await isolated_page.evaluate('() => console.timeStamp("test42")')
+        metrics = await asyncio.wait_for(metrics, 5)
+        assert metrics['title'] == 'test42'
 
 
-class TestGoto(BaseTestCase):
+class TestWaitForRequest:
     @sync
-    async def test_get_http(self):
-        response = await self.page.goto('http://example.com/')
-        self.assertEqual(response.status, 200)
-        self.assertEqual(self.page.url, 'http://example.com/')
-
-    @sync
-    async def test_goto_blank(self):
-        response = await self.page.goto('about:blank')
-        self.assertIsNone(response)
-
-    @sync
-    async def test_response_when_page_changes_url(self):
-        response = await self.page.goto(self.url + 'static/historyapi.html')
-        self.assertTrue(response)
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_goto_subframe_204(self):
-        await self.page.goto(self.url + 'static/frame-204.html')
-
-    @sync
-    async def test_goto_fail_204(self):
-        with self.assertRaises(PageError) as cm:
-            await self.page.goto('http://httpstat.us/204')
-        self.assertIn('net::ERR_ABORTED', cm.exception.args[0])
-
-    @sync
-    async def test_goto_documentloaded(self):
-        import logging
-        with self.assertLogs('pyppeteer', logging.WARNING):
-            response = await self.page.goto(
-                self.url + 'empty', waitUntil='documentloaded')
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_goto_domcontentloaded(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='domcontentloaded')
-        self.assertEqual(response.status, 200)
-
-    @unittest.skip('This test should be fixed')
-    @sync
-    async def test_goto_history_api_beforeunload(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.evaluate('''() => {
-            window.addEventListener(
-                'beforeunload',
-                () => history.replaceState(null, 'initial', window.location.href),
-                false,
-            );
-        }''')  # noqa: E501
-        response = await self.page.goto(self.url + 'static/grid.html')
-        self.assertTrue(response)
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_goto_networkidle(self):
-        with self.assertRaises(ValueError):
-            await self.page.goto(self.url + 'empty', waitUntil='networkidle')
-
-    @sync
-    async def test_nav_networkidle0(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle0')
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_nav_networkidle2(self):
-        response = await self.page.goto(self.url + 'empty',
-                                        waitUntil='networkidle2')
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_goto_bad_url(self):
-        with self.assertRaises(NetworkError):
-            await self.page.goto('asdf')
-
-    @sync
-    async def test_goto_bad_resource(self):
-        with self.assertRaises(PageError):
-            await self.page.goto('http://localhost:44123/non-existing-url')
-
-    @sync
-    async def test_timeout(self):
-        with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long', timeout=1)
-
-    @sync
-    async def test_timeout_default(self):
-        self.page.setDefaultNavigationTimeout(1)
-        with self.assertRaises(TimeoutError):
-            await self.page.goto(self.url + 'long')
-
-    @sync
-    async def test_no_timeout(self):
-        await self.page.goto(self.url + 'long', timeout=0)
-
-    @sync
-    async def test_valid_url(self):
-        response = await self.page.goto(self.url + 'empty')
-        self.assertEqual(response.status, 200)
-
-    @sync
-    async def test_data_url(self):
-        response = await self.page.goto('data:text/html,hello')
-        self.assertTrue(response.ok)
-
-    @sync
-    async def test_404(self):
-        response = await self.page.goto(self.url + '/not-found')
-        self.assertFalse(response.ok)
-        self.assertEqual(response.status, 404)
-
-    @sync
-    async def test_redirect(self):
-        response = await self.page.goto(self.url + 'redirect1')
-        self.assertTrue(response.ok)
-        self.assertEqual(response.url, self.url + 'redirect2')
-
-    @unittest.skip('This test is not implemented')
-    @sync
-    async def test_wait_for_network_idle(self):
-        pass
-
-    @sync
-    async def test_data_url_request(self):
-        requests = []
-        self.page.on('request', lambda req: requests.append(req))
-        dataURL = 'data:text/html,<div>yo</div>'
-        response = await self.page.goto(dataURL)
-        self.assertTrue(response.ok)
-        self.assertEqual(response.status, 200)
-        self.assertEqual(len(requests), 1)
-        self.assertEqual(requests[0].url, dataURL)
-
-    @sync
-    async def test_url_with_hash(self):
-        requests = []
-        self.page.on('request', lambda req: requests.append(req))
-        response = await self.page.goto(self.url + 'empty#hash')
-        self.assertEqual(response.status, 200)
-        self.assertEqual(response.url, self.url + 'empty')
-        self.assertEqual(len(requests), 1)
-        self.assertEqual(requests[0].url, self.url + 'empty')
-
-    @sync
-    async def test_self_request_page(self):
-        response = await self.page.goto(self.url + 'static/self-request.html')
-        self.assertEqual(response.status, 200)
-        self.assertIn('self-request.html', response.url)
-
-    @sync
-    async def test_show_url_in_error_message(self):
-        dummy_port = 9000 if '9000' not in self.url else 9001
-        url = 'http://localhost:{}/test/1.html'.format(dummy_port)
-        with self.assertRaises(PageError) as cm:
-            await self.page.goto(url)
-        self.assertIn(url, cm.exception.args[0])
-
-
-class TestWaitForNavigation(BaseTestCase):
-    @sync
-    async def test_wait_for_navigatoin(self):
-        await self.page.goto(self.url + 'empty')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.evaluate('(url) => window.location.href = url', self.url)
-        )
-        response = results[0]
-        self.assertEqual(response.status, 200)
-        self.assertEqual(response.url, self.url)
-
-    @unittest.skip('Need server-side implementation')
-    @sync
-    async def test_both_domcontentloaded_loaded(self):
-        pass
-
-    @sync
-    async def test_click_anchor_link(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.setContent('<a href="#foobar">foobar</a>')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
-        )
-        self.assertIsNone(results[0])
-        self.assertEqual(self.page.url, self.url + 'empty#foobar')
-
-    @sync
-    async def test_return_nevigated_response_reload(self):
-        await self.page.goto(self.url + 'empty')
-        navPromise = asyncio.ensure_future(self.page.waitForNavigation())
-        await self.page.reload()
-        response = await navPromise
-        self.assertEqual(response.url, self.url + 'empty')
-
-    @sync
-    async def test_history_push_state(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
-            <a onclick='javascript:pushState()'>SPA</a>
-            <script>
-                function pushState() { history.pushState({}, '', 'wow.html') }
-            </script>
-        ''')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
-        )
-        self.assertIsNone(results[0])
-        self.assertEqual(self.page.url, self.url + 'wow.html')
-
-    @sync
-    async def test_history_replace_state(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
-            <a onclick='javascript:replaceState()'>SPA</a>
-            <script>
-                function replaceState() {
-                    history.replaceState({}, '', 'replaced.html');
-                }
-            </script>
-        ''')
-        results = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a'),
-        )
-        self.assertIsNone(results[0])
-        self.assertEqual(self.page.url, self.url + 'replaced.html')
-
-    @sync
-    async def test_dom_history_back_forward(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.setContent('''
-            <a id="back" onclick='javascript:goBack()'>back</a>
-            <a id="forward" onclick='javascript:goForward()'>forward</a>
-            <script>
-                function goBack() { history.back(); }
-                function goForward() { history.forward(); }
-                history.pushState({}, '', '/first.html');
-                history.pushState({}, '', '/second.html');
-            </script>
-        ''')
-        self.assertEqual(self.page.url, self.url + 'second.html')
-        results_back = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a#back'),
-        )
-        self.assertIsNone(results_back[0])
-        self.assertEqual(self.page.url, self.url + 'first.html')
-
-        results_forward = await asyncio.gather(
-            self.page.waitForNavigation(),
-            self.page.click('a#forward'),
-        )
-        self.assertIsNone(results_forward[0])
-        self.assertEqual(self.page.url, self.url + 'second.html')
-
-    @sync
-    async def test_subframe_issues(self):
-        navigationPromise = asyncio.ensure_future(
-            self.page.goto(self.url + 'static/one-frame.html'))
-        frame = await waitEvent(self.page, 'frameattached')
-        fut = asyncio.get_event_loop().create_future()
-
-        def is_same_frame(f):
-            if f == frame:
-                fut.set_result(True)
-
-        self.page.on('framenavigated', is_same_frame)
-        asyncio.ensure_future(frame.evaluate('window.stop()'))
-        await navigationPromise
-
-
-class TestWaitForRequest(BaseTestCase):
-    @sync
-    async def test_wait_for_request(self):
-        await self.page.goto(self.url + 'empty')
-        results = await asyncio.gather(
-            self.page.waitForRequest(self.url + 'static/digits/2.png'),
-            self.page.evaluate('''() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }''')
-        )
-        request = results[0]
-        self.assertEqual(request.url, self.url + 'static/digits/2.png')
-
-    @sync
-    async def test_predicate(self):
-        await self.page.goto(self.url + 'empty')
-
-        def predicate(req):
-            return req.url == self.url + 'static/digits/2.png'
-
-        results = await asyncio.gather(
-            self.page.waitForRequest(predicate),
-            self.page.evaluate('''() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }''')
-        )
-        request = results[0]
-        self.assertEqual(request.url, self.url + 'static/digits/2.png')
-
-    @sync
-    async def test_no_timeout(self):
-        await self.page.goto(self.url + 'empty')
-        results = await asyncio.gather(
-            self.page.waitForRequest(
-                self.url + 'static/digits/2.png',
-                timeout=0,
+    async def test_basic_wait_for_request_usage(
+        self, isolated_page, server,
+    ):
+        await isolated_page.goto(server.empty_page)
+        request, *_ = await gather_with_timeout(
+            isolated_page.waitForRequest(server / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }"""
             ),
-            self.page.evaluate('''() => setTimeout(() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }, 50)''')
         )
-        request = results[0]
-        self.assertEqual(request.url, self.url + 'static/digits/2.png')
-
-
-class TestWaitForResponse(BaseTestCase):
-    @sync
-    async def test_wait_for_response(self):
-        await self.page.goto(self.url + 'empty')
-        results = await asyncio.gather(
-            self.page.waitForResponse(self.url + 'static/digits/2.png'),
-            self.page.evaluate('''() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }''')
-        )
-        response = results[0]
-        self.assertEqual(response.url, self.url + 'static/digits/2.png')
+        assert request.url == server / 'digits/2.png'
 
     @sync
-    async def test_predicate(self):
-        await self.page.goto(self.url + 'empty')
-
-        def predicate(response):
-            return response.url == self.url + 'static/digits/2.png'
-
-        results = await asyncio.gather(
-            self.page.waitForResponse(predicate),
-            self.page.evaluate('''() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }''')
-        )
-        response = results[0]
-        self.assertEqual(response.url, self.url + 'static/digits/2.png')
-
-    @sync
-    async def test_no_timeout(self):
-        await self.page.goto(self.url + 'empty')
-        results = await asyncio.gather(
-            self.page.waitForResponse(
-                self.url + 'static/digits/2.png',
-                timeout=0,
+    async def test_works_with_predicate(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        request, *_ = await gather_with_timeout(
+            isolated_page.waitForRequest(lambda r: r.url == server / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }"""
             ),
-            self.page.evaluate('''() => setTimeout(() => {
-                fetch('/static/digits/1.png');
-                fetch('/static/digits/2.png');
-                fetch('/static/digits/3.png');
-            }, 50)''')
         )
-        response = results[0]
-        self.assertEqual(response.url, self.url + 'static/digits/2.png')
-
-
-class TestGoBack(BaseTestCase):
-    @sync
-    async def test_back(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.goto(self.url + 'static/textarea.html')
-
-        response = await self.page.goBack()
-        self.assertTrue(response.ok)
-        self.assertIn('empty', response.url)
-
-        response = await self.page.goForward()
-        self.assertTrue(response.ok)
-        self.assertIn('static/textarea.html', response.url)
-
-        response = await self.page.goForward()
-        self.assertIsNone(response)
+        assert request.url == server / 'digits/2.png'
 
     @sync
-    async def test_history_api(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.evaluate('''() => {
-            history.pushState({}, '', '/first.html');
-            history.pushState({}, '', '/second.html');
-        }''')
-        self.assertEqual(self.page.url, self.url + 'second.html')
-
-        await self.page.goBack()
-        self.assertEqual(self.page.url, self.url + 'first.html')
-        await self.page.goBack()
-        self.assertEqual(self.page.url, self.url + 'empty')
-        await self.page.goForward()
-        self.assertEqual(self.page.url, self.url + 'first.html')
-
-
-class TestExposeFunction(BaseTestCase):
-    @sync
-    async def test_expose_function(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
-        self.assertEqual(result, 36)
+    async def test_respects_timeout(self, isolated_page):
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForRequest(lambda: False, timeout=1)
 
     @sync
-    async def test_call_from_evaluate_on_document(self):
-        await self.page.goto(self.url + 'empty')
-        called = list()
-
-        def woof():
-            called.append(True)
-
-        await self.page.exposeFunction('woof', woof)
-        await self.page.evaluateOnNewDocument('() => woof()')
-        await self.page.reload()
-        self.assertTrue(called)
+    async def test_respects_default_timeout(self, isolated_page):
+        isolated_page.setDefaultTimeout(1)
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForRequest(lambda: False)
 
     @sync
-    async def test_expose_function_other_page(self):
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        await self.page.goto(self.url + 'empty')
-        result = await self.page.evaluate('(a, b) => compute(a, b)', 9, 4)
-        self.assertEqual(result, 36)
+    async def test_works_with_no_timeout(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        request, *_ = await gather_with_timeout(
+            isolated_page.waitForRequest(server / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => setTimeout(() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }, 50)"""
+            ),
+        )
+        assert request.url == server / 'digits/2.png'
 
-    @unittest.skip('Python does not support promise in expose function')
+
+class TestWaitForResponse:
     @sync
-    async def test_expose_function_return_promise(self):
-        async def compute(a, b):
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(server / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }"""
+            ),
+        )
+        assert response.url == server / 'digits/2.png'
+
+    @sync
+    async def test_respects_timeout(self, isolated_page):
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForResponse(lambda: False, timeout=1),
+
+    @sync
+    async def test_respects_default_timeout(self, isolated_page):
+        isolated_page.setDefaultTimeout(1)
+        with pytest.raises(TimeoutError):
+            await isolated_page.waitForResponse(lambda: False)
+
+    @sync
+    async def test_works_with_predicate(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(lambda r: r.url == server / 'digits/2.png'),
+            isolated_page.evaluate(
+                """() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }"""
+            ),
+        )
+        assert response.url == server / 'digits/2.png'
+
+    @sync
+    async def test_works_with_no_timeout(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        response, *_ = await gather_with_timeout(
+            isolated_page.waitForResponse(server / 'digits/2.png', timeout=0),
+            isolated_page.evaluate(
+                """() => {
+                fetch('/digits/1.png');
+                fetch('/digits/2.png');
+                fetch('/digits/3.png');
+            }"""
+            ),
+        )
+        assert response.url == server / 'digits/2.png'
+
+
+class TestExposeFunction:
+    @sync
+    async def test_basic_usage(self, isolated_page):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        res = await isolated_page.evaluate('async() =>{  return await compute(9, 4); }')
+        assert res == 36
+
+    @sync
+    async def test_raises_exception_in_page_context(self, isolated_page):
+        def raise_me():
+            raise Exception('WOOF WOOF')
+
+        await isolated_page.exposeFunction('woof', raise_me)
+        message, stack = await isolated_page.evaluate(
+            """async() => {
+            try {
+                await woof();
+            } catch (e) {
+                return {message: e.message, stack: e.stack};
+            }
+        }
+        """
+        )
+        assert message == 'WOOF WOOF'
+        assert __file__ in stack
+
+    @sync
+    async def test_callable_within_evaluateOnNewDocument(self, isolated_page):
+        called = False
+
+        await isolated_page.exposeFunction('woof', var_setter('called', True))
+        await isolated_page.evaluateOnNewDocument('()=>woof()')
+        await isolated_page.reload()
+        assert called
+
+    @sync
+    async def test_survives_navigation(self, isolated_page, server):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        await isolated_page.goto(server.empty_page)
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
+        assert res == 36
+
+    @sync
+    async def test_awaits_returned_promise(self, isolated_page, event_loop):
+        def compute(a, b):
+            fut = event_loop.create_future()
+            fut.set_result(a * b)
+            return fut
+
+        await isolated_page.exposeFunction('compute', compute)
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
+        assert res == 36
+
+    @sync
+    async def test_works_on_frames(self, isolated_page, server):
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        await isolated_page.goto(server / 'frames/nested-frames.html')
+        frame = isolated_page.frames[0]
+        res = await frame.evaluate('async () => await compute(9, 4)')
+        assert res == 36
+
+    @sync
+    async def test_works_on_frames_before_navigation(self, isolated_page, server):
+        await isolated_page.goto(server / 'frames/nested-frames.html')
+        await isolated_page.exposeFunction('compute', lambda a, b: a * b)
+        frame = isolated_page.frames[0]
+        res = await frame.evaluate('async () => await compute(9, 4)')
+        assert res == 36
+
+    @sync
+    async def test_works_with_complex_obj(self, isolated_page):
+        await isolated_page.exposeFunction('complexObject', lambda a, b: {'x': a['x'] * b['x']})
+        res = await isolated_page.evaluate('async(a,b) => complexObject(a,b)', {'x': 9}, {'x': 4})
+        assert res == {'x': 36}
+
+    @sync
+    async def test_works_with_async_exposed_func(self, isolated_page):
+        async def my_async_func(a, b):
             return a * b
 
-        await self.page.exposeFunction('compute', compute)
-        result = await self.page.evaluate('() => compute(3, 5)')
-        self.assertEqual(result, 15)
+        await isolated_page.exposeFunction('compute', my_async_func)
+        res = await isolated_page.evaluate('async () => await compute(9, 4)')
+        assert res == 36
 
+
+class TestSetUserAgent:
     @sync
-    async def test_expose_function_frames(self):
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        await self.page.goto(self.url + 'static/nested-frames.html')
-        frame = self.page.frames[1]
-        result = await frame.evaluate('() => compute(3, 5)')
-        self.assertEqual(result, 15)
-
-    @sync
-    async def test_expose_function_frames_before_navigation(self):
-        await self.page.goto(self.url + 'static/nested-frames.html')
-        await self.page.exposeFunction('compute', lambda a, b: a * b)
-        frame = self.page.frames[1]
-        result = await frame.evaluate('() => compute(3, 5)')
-        self.assertEqual(result, 15)
-
-
-class TestErrorPage(BaseTestCase):
-    @sync
-    async def test_error_page(self):
-        error = None
-
-        def check(e):
-            nonlocal error
-            error = e
-
-        self.page.on('pageerror', check)
-        await self.page.goto(self.url + 'static/error.html')
-        self.assertIsNotNone(error)
-        self.assertIn('Fancy', error.args[0])
-
-
-class TestRequest(BaseTestCase):
-    @sync
-    async def test_request(self):
-        requests = []
-        self.page.on('request', lambda req: requests.append(req))
-        await self.page.goto(self.url + 'empty')
-        await attachFrame(self.page, 'frame1', self.url + 'empty')
-        self.assertEqual(len(requests), 2)
-        self.assertEqual(requests[0].url, self.url + 'empty')
-        self.assertEqual(requests[0].frame, self.page.mainFrame)
-        self.assertEqual(requests[0].frame.url, self.url + 'empty')
-        self.assertEqual(requests[1].url, self.url + 'empty')
-        self.assertEqual(requests[1].frame, self.page.frames[1])
-        self.assertEqual(requests[1].frame.url, self.url + 'empty')
-
-
-class TestQuerySelector(BaseTestCase):
-    @sync
-    async def test_jeval(self):
-        await self.page.setContent(
-            '<section id="testAttribute">43543</section>')
-        idAttribute = await self.page.Jeval('section', 'e => e.id')
-        self.assertEqual(idAttribute, 'testAttribute')
-
-    @sync
-    async def test_jeval_argument(self):
-        await self.page.setContent('<section>hello</section>')
-        text = await self.page.Jeval(
-            'section', '(e, suffix) => e.textContent + suffix', ' world!')
-        self.assertEqual(text, 'hello world!')
-
-    @sync
-    async def test_jeval_argument_element(self):
-        await self.page.setContent('<section>hello</section><div> world</div>')
-        divHandle = await self.page.J('div')
-        text = await self.page.Jeval(
-            'section',
-            '(e, div) => e.textContent + div.textContent',
-            divHandle,
+    async def test_basic_usage(self, isolated_page, server):
+        assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
+        await isolated_page.setUserAgent('foobar')
+        request, *_ = await gather_with_timeout(
+            server.app.waitForRequest(server.empty_page), isolated_page.goto(server.empty_page),
         )
-        self.assertEqual(text, 'hello world')
+        assert request.headers.get('user-agent') == 'foobar'
 
     @sync
-    async def test_jeval_not_found(self):
-        await self.page.goto(self.url + 'empty')
-        with self.assertRaises(ElementHandleError) as cm:
-            await self.page.Jeval('section', 'e => e.id')
-        self.assertIn(
-            'failed to find element matching selector "section"',
-            cm.exception.args[0],
+    async def test_works_with_subframes(self, isolated_page, server):
+        assert 'Mozilla' in await isolated_page.evaluate("() => navigator.userAgent")
+        await isolated_page.setUserAgent('foobar')
+        request, *_ = await gather_with_timeout(
+            server.app.waitForRequest(server.empty_page), attachFrame(isolated_page, server.empty_page),
         )
+        assert request.headers.get('user-agent') == 'foobar'
 
     @sync
-    async def test_JJeval(self):
-        await self.page.setContent(
-            '<div>hello</div><div>beautiful</div><div>world</div>')
-        divsCount = await self.page.JJeval('div', 'divs => divs.length')
-        self.assertEqual(divsCount, 3)
+    async def test_emulates_device_ua(self, isolated_page, server):
+        await isolated_page.goto(server / 'mobile.html')
+        assert 'iPhone' not in await isolated_page.evaluate("() => navigator.userAgent")
+        await isolated_page.setUserAgent(devices['iPhone 6']['userAgent'])
+        assert 'iPhone' in await isolated_page.evaluate("() => navigator.userAgent")
+
+
+class TestSetContent:
+    expected = '<html><head></head><body><div>hello</div></body></html>'
 
     @sync
-    async def test_query_selector(self):
-        await self.page.setContent('<section>test</section>')
-        element = await self.page.J('section')
-        self.assertTrue(element)
-
-    @unittest.skipIf(sys.version_info < (3, 6), 'Elements order is unstable')
-    @sync
-    async def test_query_selector_all(self):
-        await self.page.setContent('<div>A</div><br/><div>B</div>')
-        elements = await self.page.JJ('div')
-        self.assertEqual(len(elements), 2)
-        results = []
-        for e in elements:
-            results.append(await self.page.evaluate('e => e.textContent', e))
-        self.assertEqual(results, ['A', 'B'])
+    async def test_basic_usage(self, isolated_page):
+        await isolated_page.setContent('<div>hello</div>')
+        assert await isolated_page.content == self.expected
 
     @sync
-    async def test_query_selector_all_not_found(self):
-        await self.page.goto(self.url + 'empty')
-        elements = await self.page.JJ('div')
-        self.assertEqual(len(elements), 0)
-
-    @sync
-    async def test_xpath(self):
-        await self.page.setContent('<section>test</section>')
-        element = await self.page.xpath('/html/body/section')
-        self.assertTrue(element)
-
-    @sync
-    async def test_xpath_alias(self):
-        await self.page.setContent('<section>test</section>')
-        element = await self.page.Jx('/html/body/section')
-        self.assertTrue(element)
-
-    @sync
-    async def test_xpath_not_found(self):
-        element = await self.page.xpath('/html/body/no-such-tag')
-        self.assertEqual(element, [])
-
-    @sync
-    async def test_xpath_multiple(self):
-        await self.page.setContent('<div></div><div></div>')
-        element = await self.page.xpath('/html/body/div')
-        self.assertEqual(len(element), 2)
-
-
-class TestUserAgent(BaseTestCase):
-    @sync
-    async def test_user_agent(self):
-        self.assertIn('Mozilla', await self.page.evaluate(
-            '() => navigator.userAgent'))
-        await self.page.setUserAgent('foobar')
-        await self.page.goto(self.url)
-        self.assertEqual('foobar', await self.page.evaluate(
-            '() => navigator.userAgent'))
-
-    @sync
-    async def test_user_agent_mobile_emulate(self):
-        await self.page.goto(self.url + 'static/mobile.html')
-        self.assertIn(
-            'Chrome', await self.page.evaluate('navigator.userAgent'))
-        await self.page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1')  # noqa: E501
-        self.assertIn(
-            'Safari', await self.page.evaluate('navigator.userAgent'))
-
-
-class TestExtraHTTPHeader(BaseTestCase):
-    @sync
-    async def test_extra_http_header(self):
-        await self.page.setExtraHTTPHeaders({'foo': 'bar'})
-
-        from tornado.web import RequestHandler
-        requests = []
-
-        class HeaderFetcher(RequestHandler):
-            def get(self):
-                requests.append(self.request)
-                self.write('')
-
-        self.app.add_handlers('localhost', [('/header', HeaderFetcher)])
-        await self.page.goto(self.url + 'header')
-        self.assertEqual(len(requests), 1)
-        self.assertEqual(requests[0].headers['foo'], 'bar')
-
-    @sync
-    async def test_non_string_value(self):
-        with self.assertRaises(TypeError) as e:
-            await self.page.setExtraHTTPHeaders({'foo': 1})
-        self.assertIn(
-            'Expected value of header "foo" to be string', e.exception.args[0])
-
-
-class TestAuthenticate(BaseTestCase):
-    @sync
-    async def test_auth(self):
-        response = await self.page.goto(self.url + 'auth')
-        self.assertEqual(response.status, 401)
-        await self.page.authenticate({'username': 'user', 'password': 'pass'})
-        response = await self.page.goto(self.url + 'auth')
-        self.assertEqual(response.status, 200)
-
-
-class TestAuthenticateFailed(BaseTestCase):
-    @sync
-    async def test_auth_fail(self):
-        await self.page.authenticate({'username': 'foo', 'password': 'bar'})
-        response = await self.page.goto(self.url + 'auth')
-        self.assertEqual(response.status, 401)
-
-
-class TestAuthenticateDisable(BaseTestCase):
-    @sync
-    async def test_disable_auth(self):
-        await self.page.authenticate({'username': 'user', 'password': 'pass'})
-        response = await self.page.goto(self.url + 'auth')
-        self.assertEqual(response.status, 200)
-        await self.page.authenticate(None)
-        response = await self.page.goto(
-            'http://127.0.0.1:{}/auth'.format(self.port))
-        self.assertEqual(response.status, 401)
-
-
-class TestSetContent(BaseTestCase):
-    expectedOutput = '<html><head></head><body><div>hello</div></body></html>'
-
-    @sync
-    async def test_set_content(self):
-        await self.page.setContent('<div>hello</div>')
-        result = await self.page.content()
-        self.assertEqual(result, self.expectedOutput)
-
-    @sync
-    async def test_with_doctype(self):
+    async def test_works_with_doctype(self, isolated_page):
         doctype = '<!DOCTYPE html>'
-        await self.page.setContent(doctype + '<div>hello</div>')
-        result = await self.page.content()
-        self.assertEqual(result, doctype + self.expectedOutput)
+        await isolated_page.setContent(f'{doctype}<div>hello</div>')
+        assert await isolated_page.content == f'{doctype}{self.expected}'
 
     @sync
-    async def test_with_html4_doctype(self):
-        doctype = ('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" '
-                   '"http://www.w3.org/TR/html4/strict.dtd">')
-        await self.page.setContent(doctype + '<div>hello</div>')
-        result = await self.page.content()
-        self.assertEqual(result, doctype + self.expectedOutput)
-
-
-class TestSetBypassCSP(BaseTestCase):
-    @sync
-    async def test_bypass_csp_meta_tag(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with self.assertRaises(ElementHandleError):
-            await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertIsNone(await self.page.evaluate('window.__injected'))
-
-        await self.page.setBypassCSP(True)
-        await self.page.reload()
-        await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+    async def test_works_with_HTML4_doctype(self, isolated_page):
+        doctype = '<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">'
+        await isolated_page.setContent(f'{doctype}<div>hello</div>')
+        assert await isolated_page.content == f'{doctype}{self.expected}'
 
     @sync
-    async def test_bypass_csp_header(self):
-        await self.page.goto(self.url + 'csp')
-        with self.assertRaises(ElementHandleError):
-            await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertIsNone(await self.page.evaluate('window.__injected'))
-
-        await self.page.setBypassCSP(True)
-        await self.page.reload()
-        await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+    async def test_respects_timeout(self, isolated_page, server):
+        img_path = server / 'img.png'
+        # stall image response by 1s, causing the setContent to timeout
+        server.app.add_one_time_request_delay('/img.png', 1)
+        with pytest.raises(TimeoutError):
+            # note: timeout in ms
+            await isolated_page.setContent(f'<img src="{img_path}"/>', timeout=1)
 
     @sync
-    async def test_bypass_scp_cross_process(self):
-        await self.page.setBypassCSP(True)
-        await self.page.goto(self.url + 'static/csp.html')
-        await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
+    async def test_respects_default_timeout(self, isolated_page, server):
+        img_path = server / 'img.png'
+        # stall image response by 1s, causing the setContent to timeout
+        server.app.add_one_time_request_delay('/img.png', 1)
+        # note: timeout in ms
+        isolated_page.setDefaultNavigationTimeout(1)
+        with pytest.raises(TimeoutError):
+            await isolated_page.setContent(f'<img src="{img_path}"/>')
 
-        await self.page.goto(
-            'http://127.0.0.1:{}/static/csp.html'.format(self.port))
-        await self.page.addScriptTag(content='window.__injected = 42;')
-        self.assertEqual(await self.page.evaluate('window.__injected'), 42)
-
-
-class TestAddScriptTag(BaseTestCase):
+    # @pytest.mark.skip('need good way to determine if waiting for loading')
     @sync
-    async def test_script_tag_error(self):
-        await self.page.goto(self.url + 'empty')
-        with self.assertRaises(ValueError):
-            await self.page.addScriptTag('/static/injectedfile.js')
+    async def test_awaits_loading_of_resources(self, event_loop, isolated_page, server):
+        img_path = '/img.png'
+        img_fut = event_loop.create_future()
 
-    @sync
-    async def test_script_tag_url(self):
-        await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(
-            url='/static/injectedfile.js')
-        self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('__injected'), 42)
+        async def image_responder():
+            await img_fut
+            return web.Response(body='img')
 
-    @sync
-    async def test_script_tag_url_fail(self):
-        await self.page.goto(self.url + 'empty')
-        with self.assertRaises(PageError) as cm:
-            await self.page.addScriptTag({'url': '/nonexistsfile.js'})
-        self.assertEqual(cm.exception.args[0],
-                         'Loading script from /nonexistsfile.js failed')
+        server.app.add_pre_request_subscriber(img_path, image_responder, should_return=True)
 
-    @sync
-    async def test_script_tag_path(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedfile.js')
-        await self.page.goto(self.url + 'empty')
-        scriptHanlde = await self.page.addScriptTag(path=path)
-        self.assertIsNotNone(scriptHanlde.asElement())
-        self.assertEqual(await self.page.evaluate('__injected'), 42)
+        loaded = False
+
+        async def content_setter():
+            await isolated_page.setContent(f'<img src="{server / img_path}">')
+            nonlocal loaded
+            loaded = True
+
+        content_setter_task = event_loop.create_task(content_setter())
+
+        await server.app.waitForRequest(img_path)
+        assert loaded is False
+        img_fut.set_result(None)
+        await content_setter_task
 
     @sync
-    async def test_script_tag_path_source_map(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedfile.js')
-        await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(path=path)
-        result = await self.page.evaluate('__injectedError.stack')
-        self.assertIn(str(Path('static') / 'injectedfile.js'), result)
+    async def test_works_with_badly_formed_input(self, isolated_page, server):
+        await isolated_page.setContent('<div>Hello World</div>' + '\x7F')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == 'Hello World'
 
     @sync
-    async def test_script_tag_content(self):
-        await self.page.goto(self.url + 'empty')
-        scriptHandle = await self.page.addScriptTag(
-            content='window.__injected = 35;')
-        self.assertIsNotNone(scriptHandle.asElement())
-        self.assertEqual(await self.page.evaluate('__injected'), 35)
+    async def test_works_with_accents(self, isolated_page, server):
+        await isolated_page.setContent('<div>aberración</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == 'aberración'
 
     @sync
-    async def test_scp_error_content(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with self.assertRaises(ElementHandleError):
-            await self.page.addScriptTag(content='window.__injected = 35;')
+    async def test_works_with_emojis(self, isolated_page, server):
+        await isolated_page.setContent('<div>🐥</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == '🐥'
 
     @sync
-    async def test_scp_error_url(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with self.assertRaises(PageError):
-            await self.page.addScriptTag(
-                url='http://127.0.0.1:{}/static/injectedfile.js'.format(self.port)  # noqa: E501
+    async def test_works_with_newline(self, isolated_page, server):
+        await isolated_page.setContent('<div>\n</div>')
+        assert await isolated_page.Jeval('div', 'd => d.textContent') == '\n'
+
+
+class TestSetBypassCSP:
+    async def assert_working_CSP(self, page, server_):
+        # make sure CSP bypass is actually working
+        await page.goto(server_ / 'csp.html')
+        await page.addScriptTag(content='window.__injected = 42;')
+        assert await page.evaluate('window.__injected') is None
+
+    @sync
+    async def test_bypass_CSP_meta_tag(self, isolated_page, server):
+        await self.assert_working_CSP(isolated_page, server)
+
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_bypass_CSP_header(self, isolated_page, server):
+        server.app.add_one_time_header_for_request(
+            server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
+        )
+        # make sure CSP bypass is actually working
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') is None
+
+        server.app.add_one_time_header_for_request(
+            server.empty_page, {'Content-Security-Policy': 'default-src \'self\''}
+        )
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_bypass_persists_after_cross_platform_nav(self, isolated_page, server):
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.goto(server / 'csp.html')
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+        await isolated_page.goto(server.cross_process_server / 'csp.html')
+        await isolated_page.addScriptTag(content='window.__injected = 42;')
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_bypasses_CSP_in_iframes(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        # make sure CSP bypass is actually working
+        frame = await attachFrame(isolated_page, server / 'csp.html')
+        await frame.addScriptTag(content='window.__injected = 42;')
+        assert await frame.evaluate('window.__injected') is None
+
+        await isolated_page.setBypassCSP(True)
+        await isolated_page.reload()
+
+        frame = await attachFrame(isolated_page, server / 'csp.html')
+        await frame.addScriptTag(content='window.__injected = 42;')
+        assert await frame.evaluate('window.__injected') == 42
+
+
+class TestAddScriptTag:
+    @sync
+    async def test_raises_if_no_option_provided(self, isolated_page):
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag()
+
+    @sync
+    async def test_works_with_url(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(url='/injectedfile.js')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    async def test_works_with_url_type_module(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(url='/es6/es6import.js', _type='module')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('window.__injected') == 42
+
+    @sync
+    async def test_works_with_path_type_module(self, isolated_page, server, assets):
+        isolated_page.setDefaultTimeout(2000)
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(path=assets / 'es6/es6import.js', _type='module')
+        await isolated_page.waitForFunction('window.__es6injected')
+        assert await isolated_page.evaluate('__es6injected') == 42
+
+    @sync
+    async def test_works_with_content_and_type_module(self, isolated_page, server):
+        isolated_page.setDefaultTimeout(2000)
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(
+            content="import num from '/es6/es6module.js';window.__es6injected = num;", _type='module'
+        )
+        await isolated_page.waitForFunction('window.__es6injected')
+        assert await isolated_page.evaluate('__es6injected') == 42
+
+    @sync
+    async def test_raises_on_url_load_failure(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(url='/nonexistantfile.js')
+
+    @sync
+    async def test_works_with_path(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    async def test_includes_sourcemap_when_path_provided(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(path=assets / 'injectedfile.js')
+        res = await isolated_page.evaluate('() => __injectedError.stack')
+        assert (assets / 'injectedfile.js').name in res
+
+    @sync
+    async def test_works_with_content(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        script_handle = await isolated_page.addScriptTag(content='window.__injected = 42')
+        assert script_handle.asElement()
+        assert await isolated_page.evaluate('__injected') == 42
+
+    @sync
+    @pytest.mark.skip(
+        'chrome no longer throws exceptions when not executing inline script tags due to CSP: '
+        'https://github.com/puppeteer/puppeteer/issues/4840'
+    )
+    async def test_raises_when_script_added_to_CSP_page_via_content(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(content='window.__injected = 42')
+
+    @sync
+    async def test_raises_when_script_added_to_CSP_page_via_url(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addScriptTag(url=server.cross_process_server / 'injectedfile.js')
+
+
+class TestAddStyleTag:
+    GET_BG_COLOR_JS = 'window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")'
+
+    @sync
+    async def test_raises_if_no_option_provided(self, isolated_page):
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag()
+
+    @sync
+    async def test_works_with_url(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(url='/injectedstyle.css')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(255, 0, 0)'
+
+    @sync
+    async def test_raises_on_url_loading_failure(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(url='/nonexistantfile.css')
+
+    @sync
+    async def test_works_with_path(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(path=assets / 'injectedstyle.css')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(255, 0, 0)'
+
+    @sync
+    async def test_includes_sourcemap_when_path_provided(self, isolated_page, server, assets):
+        await isolated_page.goto(server.empty_page)
+        await isolated_page.addScriptTag(path=assets / 'injectedstyle.css')
+        style_handle = await isolated_page.J('style')
+        res = await isolated_page.evaluate('style => style.innerHTML', style_handle)
+        assert (assets / 'injectedstyle.css').name in res
+
+    @sync
+    async def test_works_with_content(self, isolated_page, server):
+        await isolated_page.goto(server.empty_page)
+        style_handle = await isolated_page.addStyleTag(content='body { background-color: green; }')
+        assert style_handle.asElement()
+        assert await isolated_page.evaluate(self.GET_BG_COLOR_JS) == 'rgb(0, 128, 0)'
+
+    @sync
+    @pytest.mark.skip(
+        'chrome no longer throws exceptions when not executing inline style tags due to CSP: '
+        'https://github.com/puppeteer/puppeteer/issues/4840'
+    )
+    async def test_raises_on_added_style_CSP_via_content(self, isolated_page, server):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(content='body { background-color: green; }')
+
+    @sync
+    async def test_raises_on_added_style_CSP_via_url(self, isolated_page, server, assets):
+        await isolated_page.goto(server / 'csp.html')
+        with pytest.raises(BrowserError):
+            await isolated_page.addStyleTag(url=server.cross_process_server / 'injectedstyle.css')
+
+
+class TestSetJSEnabled:
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.setJavaScriptEnabled(False)
+        await isolated_page.goto('data:text/html, <script>var something = "forbidden"</script>')
+        with pytest.raises(BrowserError):
+            await isolated_page.evaluate('something')
+
+        await isolated_page.setJavaScriptEnabled(True)
+        await isolated_page.goto('data:text/html, <script>something = "forbidden"</script>')
+        assert await isolated_page.evaluate('something') == 'forbidden'
+
+
+class TestSetCacheEnabled:
+    @sync
+    async def test_basic_usage(self, isolated_page, server):
+        await isolated_page.goto(server / 'cached/one-style.html')
+        cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert cached_req.headers.get('if-modified-since')
+
+        await isolated_page.setCacheEnabled(False)
+        non_cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert non_cached_req.headers.get('if-modified-since') is None
+
+    @sync
+    async def test_stays_disabled_when_toggling_request_interception(self, isolated_page, server):
+        await isolated_page.setCacheEnabled(False)
+        await isolated_page.setRequestInterception(True)
+        await isolated_page.setRequestInterception(False)
+
+        await isolated_page.goto(server / 'cached/one-style.html')
+        non_cached_req, *_ = await gather_with_timeout(
+            server.app.waitForRequest('/cached/one-style.html'), isolated_page.reload()
+        )
+        assert non_cached_req.headers.get('if-modified-since') is None
+
+
+class TestSelect:
+    @sync
+    async def test_selects_single_options(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+
+    @sync
+    async def test_selects_only_first_options(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue', 'green', 'red')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+
+    @sync
+    async def test_does_not_raise_when_select_causes_nav(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.Jeval(
+            'select', 'select => select.addEventListener(\'input\', () => window.location = \'/empty.html\')'
+        )
+        await gather_with_timeout(
+            isolated_page.select('select', 'blue'), isolated_page.waitForNavigation(),
+        )
+        assert server.empty_page in isolated_page.url
+
+    @sync
+    async def test_selects_multiple_options(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        await isolated_page.select('select', 'blue', 'green', 'red')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue', 'green', 'red']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue', 'green', 'red']
+
+    @sync
+    async def test_respects_event_bubbling(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onBubblingChange') == ['blue']
+        assert await isolated_page.evaluate('() => result.onBubblingInput') == ['blue']
+
+    @sync
+    async def test_raises_when_element_is_not_select_elem(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        with pytest.raises(ElementHandleError, match='Element is not a <select> element.'):
+            await isolated_page.select('body')
+
+    @sync
+    async def test_returns_empty_list_on_no_matched_value(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select', '42', 'abc')
+        assert res == []
+
+    @sync
+    async def test_returns_list_of_matched_vals(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        res = await isolated_page.select('select', 'blue', 'black', 'magenta')
+        assert set(res) == {'blue', 'black', 'magenta'}
+
+    @sync
+    async def test_returns_list_of_one_when_multiple_not_set(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select', 'blue', 'black', 'magenta')
+        assert len(res) == 1
+
+    @sync
+    async def test_returns_list_of_no_values(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        res = await isolated_page.select('select')
+        assert res == []
+
+    @sync
+    async def test_deselects_all_opts_when_passed_no_vals_for_multi_select(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => makeMultiple()')
+        await isolated_page.select('select', 'blue', 'black', 'magenta')
+        await isolated_page.select('select')
+        assert await isolated_page.Jeval('select', 's => Array.from(s.options).every(o => !o.selected)')
+
+    @sync
+    async def test_deselects_all_opts_when_passed_no_vals_for_select(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.select('select', 'blue', 'black', 'magenta')
+        await isolated_page.select('select')
+        assert await isolated_page.Jeval('select', 's => Array.from(s.options).every(o => !o.selected)')
+
+    @sync
+    async def test_raises_on_nonstrings(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        with pytest.raises(ElementHandleError):
+            # noinspection PyTypeChecker
+            await isolated_page.select(420)
+
+    # see https://github.com/puppeteer/puppeteer/issues/3327
+    @sync
+    async def test_works_even_with_redefined_top_level_Event_class(self, isolated_page, server):
+        await isolated_page.goto(server / 'input/select.html')
+        await isolated_page.evaluate('() => window.Event = null')
+        await isolated_page.select('select', 'blue')
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+        assert await isolated_page.evaluate('() => result.onInput') == ['blue']
+
+
+class TestEvents:
+    class TestClose:
+        @sync
+        @pytest.mark.skip('needs implementation')
+        async def test_works_with_window_close(self, isolated_context, isolated_page):
+            pass
+
+        @sync
+        async def test_works_with_page_close(self, isolated_context, event_loop):
+            page = await isolated_context.newPage()
+            close_event = waitEvent(page, 'close')
+            await page.close()
+            await gather_with_timeout(close_event)
+
+    class TestPopup:
+        @sync
+        async def test_popup_props(self, isolated_page):
+            popup, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'popup'), isolated_page.evaluate('() => window.open("about:blank")'),
             )
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener')
 
-    @sync
-    async def test_module_url(self):
-        await self.page.goto(self.url + 'empty')
-        await self.page.addScriptTag(
-            url='/static/es6/es6import.js', type='module')
-        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
-
-    @sync
-    async def test_module_path(self):
-        await self.page.goto(self.url + 'empty')
-        curdir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(curdir, 'static', 'es6', 'es6pathimport.js')
-        await self.page.addScriptTag(path=path, type='module')
-        await self.page.waitForFunction('window.__es6injected')
-        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
-
-    @sync
-    async def test_module_content(self):
-        await self.page.goto(self.url + 'empty')
-        content = '''
-            import num from '/static/es6/es6module.js';
-            window.__es6injected = num;
-        '''
-        await self.page.addScriptTag(content=content, type='module')
-        await self.page.waitForFunction('window.__es6injected')
-        self.assertEqual(await self.page.evaluate('__es6injected'), 42)
-
-
-class TestAddStyleTag(BaseTestCase):
-    @sync
-    async def test_style_tag_error(self):
-        await self.page.goto(self.url + 'empty')
-        with self.assertRaises(ValueError):
-            await self.page.addStyleTag('/static/injectedstyle.css')
-
-    async def get_bgcolor(self):
-        return await self.page.evaluate('() => window.getComputedStyle(document.querySelector("body")).getPropertyValue("background-color")')  # noqa: E501
-
-    @sync
-    async def test_style_tag_url(self):
-        await self.page.goto(self.url + 'empty')
-        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        styleHandle = await self.page.addStyleTag(url='/static/injectedstyle.css')  # noqa: E501
-        self.assertIsNotNone(styleHandle.asElement())
-        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
-
-    @sync
-    async def test_style_tag_url_fail(self):
-        await self.page.goto(self.url + 'empty')
-        with self.assertRaises(PageError) as cm:
-            await self.page.addStyleTag(url='/nonexistfile.css')
-        self.assertEqual(cm.exception.args[0],
-                         'Loading style from /nonexistfile.css failed')
-
-    @sync
-    async def test_style_tag_path(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedstyle.css')
-        await self.page.goto(self.url + 'empty')
-        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        styleHandle = await self.page.addStyleTag(path=path)
-        self.assertIsNotNone(styleHandle.asElement())
-        self.assertEqual(await self.get_bgcolor(), 'rgb(255, 0, 0)')
-
-    @sync
-    async def test_style_tag_path_source_map(self):
-        curdir = Path(__file__).parent
-        path = str(curdir / 'static' / 'injectedstyle.css')
-        await self.page.goto(self.url + 'empty')
-        await self.page.addStyleTag(path=str(path))
-        styleHandle = await self.page.J('style')
-        styleContent = await self.page.evaluate(
-            'style => style.innerHTML', styleHandle)
-        self.assertIn(str(Path('static') / 'injectedstyle.css'), styleContent)
-
-    @sync
-    async def test_style_tag_content(self):
-        await self.page.goto(self.url + 'empty')
-        self.assertEqual(await self.get_bgcolor(), 'rgba(0, 0, 0, 0)')
-        styleHandle = await self.page.addStyleTag(content=' body {background-color: green;}')  # noqa: E501
-        self.assertIsNotNone(styleHandle.asElement())
-        self.assertEqual(await self.get_bgcolor(), 'rgb(0, 128, 0)')
-
-    @sync
-    async def test_csp_error_content(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with self.assertRaises(ElementHandleError):
-            await self.page.addStyleTag(
-                content='body { background-color: green; }')
-
-    @sync
-    async def test_csp_error_url(self):
-        await self.page.goto(self.url + 'static/csp.html')
-        with self.assertRaises(PageError):
-            await self.page.addStyleTag(
-                url='http://127.0.0.1:{}/static/injectedstyle.css'.format(self.port)  # noqa: E501
+        @sync
+        async def test_popup_noopener(self, isolated_page):
+            popup, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'popup'),
+                isolated_page.evaluate('() => window.open("about:blank", null, "noopener")'),
             )
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener') is False
 
+        @sync
+        async def test_clicking_target_blank(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent('<a target=_blank href="/one-style.html">yo</a>')
+            popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'),)
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener')
 
-class TestUrl(BaseTestCase):
-    @sync
-    async def test_url(self):
-        await self.page.goto('about:blank')
-        self.assertEqual(self.page.url, 'about:blank')
-        await self.page.goto(self.url + 'empty')
-        self.assertEqual(self.page.url, self.url + 'empty')
+        @sync
+        async def test_fake_clicking_target_and_noopener(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.setContent('<a target=_blank rel=noopener href="/one-style.html">yo</a>')
+            popup, *_ = await gather_with_timeout(waitEvent(isolated_page, 'popup'), isolated_page.click('a'))
+            assert await isolated_page.evaluate('() => !!window.opener') is False
+            assert await popup.evaluate('() => !!window.opener') is False
 
+    class TestConsole:
+        @sync
+        async def test_console_works(self, isolated_page):
+            message = None
+            isolated_page.once('console', var_setter('message'))
+            await gather_with_timeout(
+                isolated_page.evaluate('() => console.log("hello", 5, {foo: "bar"})'),
+                waitEvent(isolated_page, 'console'),
+            )
+            assert message.text == 'hello 5 JSHandle@object'
+            assert message.type == 'log'
+            assert await message.args[0].jsonValue() == 'hello'
+            assert await message.args[1].jsonValue() == 5
+            assert await message.args[2].jsonValue() == {'foo': 'bar'}
 
-class TestViewport(BaseTestCase):
-    iPhoneViewport = iPhone['viewport']
+        @sync
+        async def test_different_console_apis(self, isolated_page):
+            messages: List[ConsoleMessage] = []
 
-    @sync
-    async def test_viewport(self):
-        self.assertEqual(self.page.viewport, {'width': 800, 'height': 600})
-        await self.page.setViewport({'width': 123, 'height': 456})
-        self.assertEqual(self.page.viewport, {'width': 123, 'height': 456})
+            def append_msg(m):
+                nonlocal messages
+                messages.append(m)
 
-    @sync
-    async def test_mobile_emulation(self):
-        await self.page.goto(self.url + 'static/mobile.html')
-        self.assertEqual(await self.page.evaluate('window.innerWidth'), 800)
-        await self.page.setViewport(self.iPhoneViewport)
-        self.assertEqual(await self.page.evaluate('window.innerWidth'), 375)
-        await self.page.setViewport({'width': 400, 'height': 300})
-        self.assertEqual(await self.page.evaluate('window.innerWidth'), 400)
-
-    @sync
-    async def test_touch_emulation(self):
-        await self.page.goto(self.url + 'static/mobile.html')
-        self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
-        await self.page.setViewport(self.iPhoneViewport)
-        self.assertTrue(await self.page.evaluate('"ontouchstart" in window'))
-
-        dispatchTouch = '''() => {
-            let fulfill;
-            const promise = new Promise(x => fulfill = x);
-            window.ontouchstart = function(e) {
-                fulfill('Received touch');
-            };
-            window.dispatchEvent(new Event('touchstart'));
-
-            fulfill('Did not receive touch');
-
-            return promise;
-        }'''
-        self.assertEqual(
-            await self.page.evaluate(dispatchTouch), 'Received touch')
-
-        await self.page.setViewport({'width': 100, 'height': 100})
-        self.assertFalse(await self.page.evaluate('"ontouchstart" in window'))
-
-    @sync
-    async def test_detect_by_modernizr(self):
-        await self.page.goto(self.url + 'static/detect-touch.html')
-        self.assertEqual(
-            await self.page.evaluate('document.body.textContent.trim()'),
-            'NO'
-        )
-        await self.page.setViewport(self.iPhoneViewport)
-        self.assertEqual(
-            await self.page.evaluate('document.body.textContent.trim()'),
-            'YES'
-        )
-
-    @sync
-    async def test_detect_touch_viewport_touch(self):
-        await self.page.setViewport({'width': 800, 'height': 600, 'hasTouch': True})  # noqa: E501
-        await self.page.addScriptTag({'url': self.url + 'static/modernizr.js'})
-        self.assertTrue(await self.page.evaluate('() => Modernizr.touchevents'))  # noqa: E501
-
-    @sync
-    async def test_landscape_emulation(self):
-        await self.page.goto(self.url + 'static/mobile.html')
-        self.assertEqual(
-            await self.page.evaluate('screen.orientation.type'),
-            'portrait-primary',
-        )
-        iPhoneLandscapeViewport = self.iPhoneViewport.copy()
-        iPhoneLandscapeViewport['isLandscape'] = True
-        await self.page.setViewport(iPhoneLandscapeViewport)
-        self.assertEqual(
-            await self.page.evaluate('screen.orientation.type'),
-            'landscape-primary',
-        )
-        await self.page.setViewport({'width': 100, 'height': 100})
-        self.assertEqual(
-            await self.page.evaluate('screen.orientation.type'),
-            'portrait-primary',
-        )
-
-
-class TestEmulate(BaseTestCase):
-    @sync
-    async def test_emulate(self):
-        await self.page.goto(self.url + 'static/mobile.html')
-        await self.page.emulate(iPhone)
-        self.assertEqual(await self.page.evaluate('window.innerWidth'), 375)
-        self.assertIn(
-            'Safari', await self.page.evaluate('navigator.userAgent'))
-
-    @sync
-    async def test_click(self):
-        await self.page.emulate(iPhone)
-        await self.page.goto(self.url + 'static/button.html')
-        button = await self.page.J('button')
-        await self.page.evaluate(
-            'button => button.style.marginTop = "200px"', button)
-        await button.click()
-        self.assertEqual(await self.page.evaluate('result'), 'Clicked')
-
-
-class TestEmulateMedia(BaseTestCase):
-    @sync
-    async def test_emulate_media(self):
-        self.assertTrue(
-            await self.page.evaluate('matchMedia("screen").matches'))
-        self.assertFalse(
-            await self.page.evaluate('matchMedia("print").matches'))
-        await self.page.emulateMedia('print')
-        self.assertFalse(
-            await self.page.evaluate('matchMedia("screen").matches'))
-        self.assertTrue(
-            await self.page.evaluate('matchMedia("print").matches'))
-        await self.page.emulateMedia(None)
-        self.assertTrue(
-            await self.page.evaluate('matchMedia("screen").matches'))
-        self.assertFalse(
-            await self.page.evaluate('matchMedia("print").matches'))
-
-    @sync
-    async def test_emulate_media_bad_arg(self):
-        with self.assertRaises(ValueError) as cm:
-            await self.page.emulateMedia('bad')
-        self.assertEqual(cm.exception.args[0], 'Unsupported media type: bad')
-
-
-class TestJavaScriptEnabled(BaseTestCase):
-    @sync
-    async def test_set_javascript_enabled(self):
-        await self.page.setJavaScriptEnabled(False)
-        await self.page.goto(
-            'data:text/html, <script>var something = "forbidden"</script>')
-        with self.assertRaises(ElementHandleError) as cm:
-            await self.page.evaluate('something')
-        self.assertIn('something is not defined', cm.exception.args[0])
-
-        await self.page.setJavaScriptEnabled(True)
-        await self.page.goto(
-            'data:text/html, <script>var something = "forbidden"</script>')
-        self.assertEqual(await self.page.evaluate('something'), 'forbidden')
-
-
-class TestEvaluateOnNewDocument(BaseTestCase):
-    @sync
-    async def test_evaluate_before_else_on_page(self):
-        await self.page.evaluateOnNewDocument('() => window.injected = 123')
-        await self.page.goto(self.url + 'static/temperable.html')
-        self.assertEqual(await self.page.evaluate('window.result'), 123)
-
-    @sync
-    async def test_csp(self):
-        await self.page.evaluateOnNewDocument('() => window.injected = 123')
-        await self.page.goto(self.url + 'csp')
-        self.assertEqual(await self.page.evaluate('window.injected'), 123)
-        with self.assertRaises(ElementHandleError):
-            await self.page.addScriptTag(content='window.e = 10;')
-        self.assertIsNone(await self.page.evaluate('window.e'))
-
-
-class TestCacheEnabled(BaseTestCase):
-    @sync
-    async def test_cache_enable_disable(self):
-        responses = {}
-
-        def set_response(res):
-            responses[res.url.split('/').pop()] = res
-
-        self.page.on('response', set_response)
-        await self.page.goto(self.url + 'static/cached/one-style.html',
-                             waitUntil='networkidle2')
-        await self.page.reload(waitUntil='networkidle2')
-        self.assertTrue(responses.get('one-style.css').fromCache)
-
-        await self.page.setCacheEnabled(False)
-        await self.page.reload(waitUntil='networkidle2')
-        self.assertFalse(responses.get('one-style.css').fromCache)
-
-
-class TestPDF(BaseTestCase):
-    @sync
-    async def test_pdf(self):
-        outfile = Path(__file__).parent / 'output.pdf'
-        await self.page.pdf({'path': str(outfile)})
-        self.assertTrue(outfile.is_file())
-        with outfile.open('rb') as f:
-            pdf = f.read()
-        self.assertGreater(len(pdf), 0)
-        outfile.unlink()
-
-
-class TestTitle(BaseTestCase):
-    @sync
-    async def test_title(self):
-        await self.page.goto(self.url + 'static/button.html')
-        self.assertEqual(await self.page.title(), 'Button test')
-
-
-class TestSelect(BaseTestCase):
-    def setUp(self):
-        super().setUp()
-        sync(self.page.goto(self.url + 'static/select.html'))
-
-    @sync
-    async def test_select(self):
-        value = await self.page.select('select', 'blue')
-        self.assertEqual(value, ['blue'])
-        _input = await self.page.evaluate('result.onInput')
-        self.assertEqual(_input, ['blue'])
-        change = await self.page.evaluate('result.onChange')
-        self.assertEqual(change, ['blue'])
-
-        _input = await self.page.evaluate('result.onBubblingInput')
-        self.assertEqual(_input, ['blue'])
-        change = await self.page.evaluate('result.onBubblingChange')
-        self.assertEqual(change, ['blue'])
-
-    @sync
-    async def test_select_first_item(self):
-        await self.page.select('select', 'blue', 'green', 'red')
-        self.assertEqual(await self.page.evaluate('result.onInput'), ['blue'])
-        self.assertEqual(await self.page.evaluate('result.onChange'), ['blue'])
-
-    @sync
-    async def test_select_multiple(self):
-        await self.page.evaluate('makeMultiple();')
-        values = await self.page.select('select', 'blue', 'green', 'red')
-        self.assertEqual(values, ['blue', 'green', 'red'])
-        _input = await self.page.evaluate('result.onInput')
-        self.assertEqual(_input, ['blue', 'green', 'red'])
-        change = await self.page.evaluate('result.onChange')
-        self.assertEqual(change, ['blue', 'green', 'red'])
-
-    @sync
-    async def test_select_not_select_element(self):
-        with self.assertRaises(ElementHandleError):
-            await self.page.select('body', '')
-
-    @sync
-    async def test_select_no_match(self):
-        values = await self.page.select('select', 'abc', 'def')
-        self.assertEqual(values, [])
-
-    @sync
-    async def test_return_selected_elements(self):
-        await self.page.evaluate('makeMultiple()')
-        result = await self.page.select('select', 'blue', 'black', 'magenta')
-        self.assertEqual(len(result), 3)
-        self.assertEqual(set(result), {'blue', 'black', 'magenta'})
-
-    @sync
-    async def test_select_not_multiple(self):
-        values = await self.page.select('select', 'blue', 'green', 'red')
-        self.assertEqual(len(values), 1)
-
-    @sync
-    async def test_select_no_value(self):
-        values = await self.page.select('select')
-        self.assertEqual(values, [])
-
-    @sync
-    async def test_select_deselect(self):
-        await self.page.select('select', 'blue', 'green', 'red')
-        await self.page.select('select')
-        result = await self.page.Jeval(
-            'select',
-            'elm => Array.from(elm.options).every(option => !option.selected)'
-        )
-        self.assertTrue(result)
-
-    @sync
-    async def test_select_deselect_multiple(self):
-        await self.page.evaluate('makeMultiple();')
-        await self.page.select('select', 'blue', 'green', 'red')
-        await self.page.select('select')
-        result = await self.page.Jeval(
-            'select',
-            'elm => Array.from(elm.options).every(option => !option.selected)'
-        )
-        self.assertTrue(result)
-
-    @sync
-    async def test_select_nonstring(self):
-        with self.assertRaises(TypeError):
-            await self.page.select('select', 12)
-
-
-class TestCookie(BaseTestCase):
-    @sync
-    async def test_cookies(self):
-        await self.page.goto(self.url)
-        cookies = await self.page.cookies()
-        self.assertEqual(cookies, [])
-        await self.page.evaluate(
-            'document.cookie = "username=John Doe"'
-        )
-        cookies = await self.page.cookies()
-        self.assertEqual(cookies, [{
-            'name': 'username',
-            'value': 'John Doe',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 16,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
-        await self.page.setCookie({'name': 'password', 'value': '123456'})
-        cookies = await self.page.evaluate(
-            '() => document.cookie'
-        )
-        self.assertEqual(cookies, 'username=John Doe; password=123456')
-        cookies = await self.page.cookies()
-        self.assertIn(cookies, [
-            [
-                {
-                    'name': 'password',
-                    'value': '123456',
-                    'domain': 'localhost',
-                    'path': '/',
-                    'expires': -1,
-                    'size': 14,
-                    'httpOnly': False,
-                    'secure': False,
-                    'session': True,
-                }, {
-                    'name': 'username',
-                    'value': 'John Doe',
-                    'domain': 'localhost',
-                    'path': '/',
-                    'expires': -1,
-                    'size': 16,
-                    'httpOnly': False,
-                    'secure': False,
-                    'session': True,
-                }
-            ],
-            [
-                {
-                    'name': 'username',
-                    'value': 'John Doe',
-                    'domain': 'localhost',
-                    'path': '/',
-                    'expires': -1,
-                    'size': 16,
-                    'httpOnly': False,
-                    'secure': False,
-                    'session': True,
-                }, {
-                    'name': 'password',
-                    'value': '123456',
-                    'domain': 'localhost',
-                    'path': '/',
-                    'expires': -1,
-                    'size': 14,
-                    'httpOnly': False,
-                    'secure': False,
-                    'session': True,
-                }
+            isolated_page.on('console', append_msg)
+            await isolated_page.evaluate(
+                """() => {
+                // A pair of time/timeEnd generates only one Console API call.
+                console.time('calling console.time');
+                console.timeEnd('calling console.time');
+                console.trace('calling console.trace');
+                console.dir('calling console.dir');
+                console.warn('calling console.warn');
+                console.error('calling console.error');
+                console.log(Promise.resolve('should not wait until resolved!'));
+            }"""
+            )
+            assert [m.type for m in messages] == ['timeEnd', 'trace', 'dir', 'warning', 'error', 'log']
+            assert 'calling console.time' in messages[0].text
+            assert [m.text for m in messages[1:]] == [
+                'calling console.trace',
+                'calling console.dir',
+                'calling console.warn',
+                'calling console.error',
+                'JSHandle@promise',
             ]
-        ])
-        await self.page.deleteCookie({'name': 'username'})
-        cookies = await self.page.evaluate(
-            '() => document.cookie'
-        )
-        self.assertEqual(cookies, 'password=123456')
-        cookies = await self.page.cookies()
-        self.assertEqual(cookies, [{
-            'name': 'password',
-            'value': '123456',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
 
-    @sync
-    async def test_cookie_blank_page(self):
-        await self.page.goto('about:blank')
-        with self.assertRaises(NetworkError):
-            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
-
-    @sync
-    async def test_cookie_blank_page2(self):
-        with self.assertRaises(PageError):
-            await self.page.setCookie(
-                {'name': 'example-cookie', 'value': 'best'},
-                {'url': 'about:blank',
-                 'name': 'example-cookie-blank',
-                 'value': 'best'}
+        @sync
+        async def test_works_with_window_obj(self, isolated_page):
+            message = None
+            isolated_page.once('console', var_setter('message'))
+            await gather_with_timeout(
+                isolated_page.evaluate('() => console.error(window)'), waitEvent(isolated_page, 'console'),
             )
+            assert message.text == 'JSHandle@object'
 
-    @sync
-    async def test_cookie_data_url_page(self):
-        await self.page.goto('data:,hello')
-        with self.assertRaises(NetworkError):
-            await self.page.setCookie({'name': 'example-cookie', 'value': 'a'})
-
-    @sync
-    async def test_cookie_data_url_page2(self):
-        with self.assertRaises(PageError):
-            await self.page.setCookie(
-                {'name': 'example-cookie', 'value': 'best'},
-                {'url': 'data:,hello',
-                 'name': 'example-cookie-blank',
-                 'value': 'best'}
+        @sync
+        async def test_triggers_correct_log(self, isolated_page, firefox, server):
+            await isolated_page.goto('about:blank')
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'),
+                isolated_page.evaluate('async url => fetch(url).catch(e => {})', server.empty_page),
             )
+            assert 'Access-Control-Allow-Origin' in message.text
+            if firefox:
+                assert message.type == 'warn'
+            else:
+                assert message.type == 'error'
 
+        @sync
+        async def test_has_location_on_fetch_failure(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'),
+                isolated_page.setContent('<script>fetch("http://wat");</script>', server.empty_page),
+            )
+            assert 'ERR_NAME_NOT_RESOLVED' in message.text
+            assert message.type == 'error'
+            assert message.location == {'lineNumber': None, 'url': 'http://wat/'}
 
-class TestCookieWithPath(BaseTestCase):
-    @sync
-    async def test_set_cookie_with_path(self):
-        await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'gridcookie',
-            'value': 'GRID',
-            'path': '/static/grid.html',
-        })
-        self.assertEqual(await self.page.cookies(), [{
-            'name': 'gridcookie',
-            'value': 'GRID',
-            'path': '/static/grid.html',
-            'domain': 'localhost',
-            'expires': -1,
-            'size': 14,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
+        @sync
+        async def test_location_for_console_API_calls(self, isolated_page, server, firefox):
+            await isolated_page.goto(server.empty_page)
+            message, *_ = await gather_with_timeout(
+                waitEvent(isolated_page, 'console'), isolated_page.goto(server / 'consolelog.html'),
+            )
+            assert message.text == 'yellow'
+            assert message.type == 'log'
+            assert message.location == {
+                'url': server / 'consolelog.html',
+                'lineNumber': 7,
+                'columnNumber': 6 if firefox else 14,  # console.|log vs |console.log
+            }
 
-
-class TestCookieDelete(BaseTestCase):
-    @sync
-    async def test_delete_cookie(self):
-        await self.page.goto(self.url)
-        await self.page.setCookie({
-            'name': 'cookie1',
-            'value': '1',
-        }, {
-            'name': 'cookie2',
-            'value': '2',
-        }, {
-            'name': 'cookie3',
-            'value': '3',
-        })
-        self.assertEqual(
-            await self.page.evaluate('document.cookie'),
-            'cookie1=1; cookie2=2; cookie3=3'
-        )
-        await self.page.deleteCookie({'name': 'cookie2'})
-        self.assertEqual(
-            await self.page.evaluate('document.cookie'),
-            'cookie1=1; cookie3=3'
-        )
-
-
-class TestCookieDomain(BaseTestCase):
-    @sync
-    async def test_different_domain(self):
-        await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'example-cookie',
-            'value': 'best',
-            'url': 'https://www.example.com',
-        })
-        self.assertEqual(await self.page.evaluate('document.cookie'), '')
-        self.assertEqual(await self.page.cookies(), [])
-        self.assertEqual(await self.page.cookies('https://www.example.com'), [{
-            'name': 'example-cookie',
-            'value': 'best',
-            'domain': 'www.example.com',
-            'path': '/',
-            'expires': -1,
-            'size': 18,
-            'httpOnly': False,
-            'secure': True,
-            'session': True,
-        }])
-
-
-class TestCookieFrames(BaseTestCase):
-    @sync
-    async def test_frame(self):
-        await self.page.goto(self.url + 'static/grid.html')
-        await self.page.setCookie({
-            'name': 'localhost-cookie',
-            'value': 'best',
-        })
-        url_127 = 'http://127.0.0.1:{}'.format(self.port)
-        await self.page.evaluate('''src => {
-            let fulfill;
-            const promise = new Promise(x => fulfill = x);
-            const iframe = document.createElement('iframe');
-            document.body.appendChild(iframe);
-            iframe.onload = fulfill;
-            iframe.src = src;
-            return promise;
-        }''', url_127)
-        await self.page.setCookie({
-            'name': '127-cookie',
-            'value': 'worst',
-            'url': url_127,
-        })
-
-        self.assertEqual(
-            await self.page.evaluate('document.cookie'),
-            'localhost-cookie=best',
-        )
-        self.assertEqual(
-            await self.page.frames[1].evaluate('document.cookie'),
-            '127-cookie=worst',
-        )
-
-        self.assertEqual(await self.page.cookies(), [{
-            'name': 'localhost-cookie',
-            'value': 'best',
-            'domain': 'localhost',
-            'path': '/',
-            'expires': -1,
-            'size': 20,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
-        self.assertEqual(await self.page.cookies(url_127), [{
-            'name': '127-cookie',
-            'value': 'worst',
-            'domain': '127.0.0.1',
-            'path': '/',
-            'expires': -1,
-            'size': 15,
-            'httpOnly': False,
-            'secure': False,
-            'session': True,
-        }])
-
-
-class TestEvents(BaseTestCase):
-    @sync
-    async def test_close_window_close(self):
-        loop = asyncio.get_event_loop()
-        newPagePromise = loop.create_future()
-
-        async def page_created(target):
-            page = await target.page()
-            newPagePromise.set_result(page)
-
-        self.context.once(
-            'targetcreated',
-            lambda target: loop.create_task(page_created(target)),
-        )
-        await self.page.evaluate(
-            'window["newPage"] = window.open("about:blank")')
-        newPage = await newPagePromise
-
-        closedPromise = loop.create_future()
-        newPage.on('close', lambda: closedPromise.set_result(True))
-        await self.page.evaluate('window["newPage"].close()')
-        await closedPromise
+        # @see https://github.com/puppeteer/puppeteer/issues/3865
+        @sync
+        async def test_gracefully_accepts_messages_from_detached_iframes(self, isolated_page, server):
+            await isolated_page.goto(server.empty_page)
+            await isolated_page.evaluate(
+                """async() => {
+                // 1. Create a popup that Puppeteer is not connected to.
+                const win = window.open(window.location.href, 'Title', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=780,height=200,top=0,left=0');
+                await new Promise(x => win.onload = x);
+                // 2. In this popup, create an iframe that console.logs a message.
+                win.document.body.innerHTML = `<iframe src='/consolelog.html'></iframe>`;
+                const frame = win.document.querySelector('iframe');
+                await new Promise(x => frame.onload = x);
+                // 3. After that, remove the iframe.
+                frame.remove();
+            }"""
+            )
+            popup_targ = [x for x in isolated_page.browserContext.targets() if x != isolated_page.target][0]
+            # 4. Connect to the popup and make sure it doesn't throw.
+            await popup_targ.page()
 
     @sync
-    async def test_close_page_close(self):
-        newPage = await self.context.newPage()
-        closedPromise = asyncio.get_event_loop().create_future()
-        newPage.on('close', lambda: closedPromise.set_result(True))
-        await newPage.close()
-        await closedPromise
+    async def test_domcontentloaded_fired(self, isolated_page):
+        await isolated_page.goto('about:blank')
+        await asyncio.wait_for(waitEvent(isolated_page, 'domcontentloaded'), timeout=5)
 
-
-class TestBrowser(BaseTestCase):
     @sync
-    async def test_get_browser(self):
-        self.assertIs(self.page.browser, self.browser)
+    async def test_load_event_fired(self, isolated_page):
+        event = waitEvent(isolated_page, 'load')
+        done, _ = await asyncio.wait((isolated_page.goto('about:blank'), event), timeout=5)
+        assert len(done) == 2
+
+    @sync
+    async def test_pageerror_fired(self, isolated_page, server):
+        error = None
+        isolated_page.once('pageerror', var_setter('error'))
+        await gather_with_timeout(isolated_page.goto(server / 'error.html'), waitEvent(isolated_page, 'pageerror'))
+        assert 'Fancy' in str(error)
+
+    @sync
+    async def test_error_event_raises_on_page_crash(self, event_loop, isolated_page):
+        error = waitEvent(isolated_page, 'error')
+        with suppress(asyncio.TimeoutError):
+            await isolated_page.goto('chrome://crash', timeout=2_000)
+        assert str(await error) == 'Page crashed!'
