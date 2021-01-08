@@ -19,6 +19,8 @@ try:
 except Exception:
     pass
 
+from appdirs import AppDirs
+
 __chromium_revision__ = '588429'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get(
