@@ -68,8 +68,6 @@ pytest-xdist = "^1.31.0"
 readme_renderer = "^24.0"
 sphinx = "^2.4.0"
 sphinxcontrib-asyncio = "^0.2.0"
-syncer = "^1.3.0"
-tox = "^3.14.3"
 
 [build-system]
 requires = ["poetry>=0.12"]
