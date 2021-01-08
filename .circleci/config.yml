@@ -11,6 +11,8 @@ workflows:
       - test_36
       - test_37
       - test_38
+      - test_39
+      - test_310
 
 
 jobs:
@@ -64,6 +66,22 @@ jobs:
       - image: circleci/python:3.8
     environment:
       TOXENV: py38
+      PYTEST_ADDOPTS: *pytest_default
+    steps: *step_template
+
+  test_39:
+    docker:
+      - image: circleci/python:3.9
+    environment:
+      TOXENV: py39
+      PYTEST_ADDOPTS: *pytest_default
+    steps: *step_template
+
+  test_310:
+    docker:
+      - image: circleci/python:3.10-rc
+    environment:
+      TOXENV: py310
       PYTEST_ADDOPTS: *pytest_default
     steps: *step_template
 

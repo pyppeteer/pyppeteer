@@ -8,9 +8,10 @@ homepage = "https://github.com/pyppeteer/pyppeteer"
 repository = "https://github.com/pyppeteer/pyppeteer"
 keywords=['pyppeteer', 'puppeteer', 'chrome', 'chromium']
 authors = [
-    "pyppeteer <pyppeteer@protonmail.com>",
     "granitosaurus <bernardas.alisauskas@pm.me>",
     "Hiroyuki Takagi <miyako.dev@gmail.com>",
+    "Mattwmaster58 <mattwmaster58@gmail.com>",
+    "pyppeteer <pyppeteer@protonmail.com>",
 ]
 classifiers = [
         'Development Status :: 3 - Alpha',
@@ -21,6 +22,7 @@ classifiers = [
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'
     ]
 packages = [
     { include = "pyppeteer" },
@@ -29,8 +31,6 @@ include = [
     "README.md",
     "LICENSE",
     "CHANGES.md",
-    "tests/*",
-    "docs/*",
 ]
 exclude = [
     '*/__pycache__',
@@ -50,7 +50,7 @@ appdirs = "^1.4.3"
 certifi = ">=2019.11.28"
 ordered_set = "^4.0.1"
 pillow = "^7.1.2"
-pyee = "^7.0.1"
+pyee = "^8.1.0"
 tqdm = "^4.42.1"
 typing_extensions = { version ="^3.7.4", python = '<3.8'}
 typing_inspect = { version ="^0.5.0", python = '<3.8'}
