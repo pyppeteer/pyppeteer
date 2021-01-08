@@ -147,8 +147,7 @@ class Page(AsyncIOEventEmitter):
         _fm.on(Events.FrameManager.FrameDetached, lambda event: self.emit(Events.Page.FrameDetached, event))
         _fm.on(Events.FrameManager.FrameNavigated, lambda event: self.emit(Events.Page.FrameNavigated, event))
 
-        networkManager = self._frameManager.networkManager
-        _nm = networkManager
+        _nm = self._frameManager.networkManager
         _nm.on(Events.NetworkManager.Request, lambda event: self.emit(Events.Page.Request, event))
         _nm.on(Events.NetworkManager.Response, lambda event: self.emit(Events.Page.Response, event))
         _nm.on(Events.NetworkManager.RequestFailed, lambda event: self.emit(Events.Page.RequestFailed, event))
