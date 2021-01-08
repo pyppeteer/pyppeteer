@@ -84,4 +84,4 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-known_third_party = ["PIL", "aiohttp", "appdirs", "certifi", "diff_match_patch", "livereload", "networkx", "ordered_set", "pixelmatch", "pyee", "pyppeteer", "pytest", "syncer", "tests", "tqdm", "urllib3", "websockets"]
+known_third_party = ["appdirs", "livereload", "pyee", "pyppeteer", "syncer", "tornado", "tqdm", "urllib3", "websockets"]
