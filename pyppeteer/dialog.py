@@ -27,7 +27,7 @@ class Dialog:
 
         page.on(
             'dialog',
-            lambda dialog: asyncio.ensure_future(close_dialog(dialog))
+            close_dialog
         )
         await page.evaluate('() => alert("1")')
     """

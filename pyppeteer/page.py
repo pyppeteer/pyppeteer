@@ -157,14 +157,14 @@ class Page(AsyncIOEventEmitter):
 
         client.on('Page.domContentEventFired', lambda event: self.emit(Events.Page.DOMContentLoaded))
         client.on('Page.loadEventFired', lambda event: self.emit(Events.Page.Load))
-        client.on('Runtime.consoleAPICalled', lambda event: self._onConsoleAPI(event))
-        client.on('Runtime.bindingCalled', lambda event: self._onBindingCalled(event))
-        client.on('Page.javascriptDialogOpening', lambda event: self._onDialog(event))
+        client.on('Runtime.consoleAPICalled', self._onConsoleAPI)
+        client.on('Runtime.bindingCalled', self._onBindingCalled)
+        client.on('Page.javascriptDialogOpening', self._onDialog)
         client.on('Runtime.exceptionThrown', lambda exception: self._handleException(exception.get('exceptionDetails')))
-        client.on('Inspector.targetCrashed', lambda event: self._onTargetCrashed())
-        client.on('Performance.metrics', lambda event: self._emitMetrics(event))
-        client.on('Log.entryAdded', lambda event: self._onLogEntryAdded(event))
-        client.on('Page.fileChooserOpened', lambda event: self._onFileChooser(event))
+        client.on('Inspector.targetCrashed', self._onTargetCrashed)
+        client.on('Performance.metrics', self._emitMetrics)
+        client.on('Log.entryAdded', self._onLogEntryAdded)
+        client.on('Page.fileChooserOpened', self._onFileChooser)
 
         def closed(*_: Any) -> None:
             self.emit(Events.Page.Close)
@@ -236,8 +236,8 @@ class Page(AsyncIOEventEmitter):
     def browserContext(self) -> 'BrowserContext':
         return self._target.browserContext
 
-    def _onTargetCrashed(self) -> None:
-        self.emit('error', PageError('Page crashed!'))
+    def _onTargetCrashed(self, _) -> None:
+        self.emit('error', PageError(f'Page crashed! {_}'))
 
     def _onLogEntryAdded(self, event: Dict) -> None:
         entry = event.get('entry', {})

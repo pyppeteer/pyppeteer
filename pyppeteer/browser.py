@@ -63,15 +63,9 @@ class Browser(AsyncIOEventEmitter):
 
         self._targets: Dict[str, Target] = {}
         self._connection.on(Events.Connection.Disconnected, lambda: self.emit(Events.Browser.Disconnected))
-        self._connection.on(
-            'Target.targetCreated', lambda event: self.loop.create_task(self._targetCreated(event)),
-        )
-        self._connection.on(
-            'Target.targetDestroyed', lambda event: self.loop.create_task(self._targetDestroyed(event)),
-        )
-        self._connection.on(
-            'Target.targetInfoChanged', lambda event: self.loop.create_task(self._targetInfoChanged(event)),
-        )
+        self._connection.on('Target.targetCreated', self._targetCreated)
+        self._connection.on('Target.targetDestroyed', self._targetDestroyed)
+        self._connection.on('Target.targetInfoChanged', self._targetInfoChanged)
 
     @property
     def process(self) -> Optional[Popen]:
