@@ -89,17 +89,17 @@ def download_zip(url: str) -> BytesIO:
         except (KeyError, ValueError, AttributeError):
             total_length = 0
 
-        process_bar = tqdm(
-            total=total_length,
-            file=os.devnull if NO_PROGRESS_BAR else None,
-        )
-
         # 10 * 1024
         _data = BytesIO()
-        for chunk in data.stream(10240):
-            _data.write(chunk)
-            process_bar.update(len(chunk))
-        process_bar.close()
+        if NO_PROGRESS_BAR:
+            for chunk in data.stream(10240):
+                _data.write(chunk)
+        else:
+            process_bar = tqdm(total=total_length)
+            for chunk in data.stream(10240):
+                _data.write(chunk)
+                process_bar.update(len(chunk))
+            process_bar.close()
 
     logger.warning('\nchromium download done.')
     return _data
