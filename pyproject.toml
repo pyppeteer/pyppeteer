@@ -51,7 +51,7 @@ importlib-metadata = { version = "^2.1.1", python = "<3.8" }
 pyee = "^8.1.0"
 tqdm = "^4.42.1"
 urllib3 = "^1.25.8"
-websockets = "^8.1"
+websockets = ">=8.1"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.20.1"

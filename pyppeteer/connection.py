@@ -10,6 +10,10 @@ from typing import Awaitable, Callable, Dict, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
+try:
+    from websockets.legacy.client import connect as ws_connect
+except:  # websockets <9.0
+    from websockets.client import connect as ws_connect
 
 from pyppeteer.errors import NetworkError
 
@@ -40,8 +44,7 @@ class Connection(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self.connection: CDPSession
         self._connected = False
-        self._ws = websockets.client.connect(
-            self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None)
+        self._ws = ws_connect(self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None)
         self._recv_fut = self._loop.create_task(self._recv_loop())
         self._closeCallback: Optional[Callable[[], None]] = None
 
