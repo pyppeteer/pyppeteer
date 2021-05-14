@@ -13,7 +13,7 @@ from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 from typing import TYPE_CHECKING
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -39,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Page(EventEmitter):
+class Page(AsyncIOEventEmitter):
     """Page class.
 
     This class provides methods to interact with a single tab of chrome. One
