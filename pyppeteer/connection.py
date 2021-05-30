@@ -10,10 +10,7 @@ from typing import Awaitable, Callable, Dict, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
-try:
-    from websockets.legacy.client import connect as ws_connect
-except:  # websockets <9.0
-    from websockets.client import connect as ws_connect
+from websockets.legacy.client import connect as ws_connect
 
 from pyppeteer.errors import NetworkError
 
