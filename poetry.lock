@@ -830,7 +830,7 @@ python-versions = "*"
 
 [[package]]
 name = "websockets"
-version = "8.1"
+version = "9.0"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
 category = "main"
 optional = false
