@@ -264,6 +264,9 @@ class Browser(EventEmitter):
     async def disconnect(self) -> None:
         """Disconnect browser."""
         await self._connection.dispose()
+        for target in self._targets.values():
+            if not target._isInitialized:
+                target._initializedCallback(False)
 
     def _getVersion(self) -> Awaitable:
         return self._connection.send('Browser.getVersion')
