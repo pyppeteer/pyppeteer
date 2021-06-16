@@ -207,7 +207,7 @@ class CDPSession(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self._loop = loop
 
-    def send(self, method: str, params: dict = None) -> Awaitable:
+    def send_unshield(self, method: str, params: dict = None) -> Awaitable:
         """Send message to the connected session.
 
         :arg str method: Protocol method name.
@@ -242,6 +242,15 @@ class CDPSession(EventEmitter):
                     e.args[0],
                 ))
         return callback
+
+    async def send(self, method: str, params: dict = None) -> Awaitable:
+        future = self.send_unshield(method, params)
+        try:
+            return await asyncio.shield(future)
+        except asyncio.CancelledError:
+            if not future.done():
+                await future
+            raise
 
     def _on_message(self, msg: str) -> None:  # noqa: C901
         logger_session.debug(f'RECV: {msg}')
