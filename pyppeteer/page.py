@@ -89,25 +89,36 @@ class Page(EventEmitter):
                      ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                      screenshotTaskQueue: list = None) -> 'Page':
         """Async function which makes new page object."""
-        await client.send('Page.enable'),
-        frameTree = (await client.send('Page.getFrameTree'))['frameTree']
-        page = Page(client, target, frameTree, ignoreHTTPSErrors,
-                    screenshotTaskQueue)
+        try:
+            await client.send('Page.enable')
+            frameTree = (await client.send('Page.getFrameTree'))['frameTree']
+            page = Page(client, target, frameTree, ignoreHTTPSErrors,
+                        screenshotTaskQueue)
 
-        await asyncio.gather(
-            client.send('Target.setAutoAttach', {'autoAttach': True, 'waitForDebuggerOnStart': False}),  # noqa: E501
-            client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
-            client.send('Network.enable', {}),
-            client.send('Runtime.enable', {}),
-            client.send('Security.enable', {}),
-            client.send('Performance.enable', {}),
-            client.send('Log.enable', {}),
-        )
-        if ignoreHTTPSErrors:
-            await client.send('Security.setIgnoreCertificateErrors',
-                              {'ignore': True})
-        if defaultViewport:
-            await page.setViewport(defaultViewport)
+            errors = await asyncio.gather(
+                client.send('Target.setAutoAttach', {'autoAttach': True, 'waitForDebuggerOnStart': False}),  # noqa: E501
+                client.send('Page.setLifecycleEventsEnabled', {'enabled': True}),
+                client.send('Network.enable', {}),
+                client.send('Runtime.enable', {}),
+                client.send('Security.enable', {}),
+                client.send('Performance.enable', {}),
+                client.send('Log.enable', {}),
+                return_exceptions=True,
+            )
+            if [e for e in errors if e]:
+                raise [e for e in errors if e][0]
+
+            if ignoreHTTPSErrors:
+                await client.send('Security.setIgnoreCertificateErrors',
+                                  {'ignore': True})
+            if defaultViewport:
+                await page.setViewport(defaultViewport)
+        except BaseException as e:
+            await client._connection.send('Target.closeTarget',
+                                          {'targetId': target._targetId})
+            await target._isClosedPromise
+            raise e
+
         return page
 
     def __init__(self, client: CDPSession, target: 'Target',  # noqa: C901
