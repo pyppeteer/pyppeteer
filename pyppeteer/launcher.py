@@ -9,6 +9,7 @@ from copy import copy
 import json
 from urllib.request import urlopen
 from urllib.error import URLError
+from http.client import HTTPException
 import logging
 import os
 import os.path
@@ -227,8 +228,8 @@ def get_ws_endpoint(url) -> str:
             with urlopen(url) as f:
                 data = json.loads(f.read().decode())
             break
-        except URLError as e:
-            continue
+        except (URLError, HTTPException):
+            pass
         time.sleep(0.1)
 
     return data['webSocketDebuggerUrl']
