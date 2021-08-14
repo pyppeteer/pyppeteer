@@ -5,6 +5,13 @@ History
 
 * [populate me]
 
+## Version 0.2.6
+
+* Fix encoding error #226 @aleksei140888
+* support websockets 9.0 #252 @mborsetti
+* Fix tqdm exception when NO_PROGRESS_BAR is True #224 @
+* fix(browser): Clean up coroutine Browser._targetCreated() #271 @H--o-I
+
 ## Version 0.2.5
 
 * Match package version and \_\_version__ (🤦‍♂️)
