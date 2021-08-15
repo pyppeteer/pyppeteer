@@ -4,10 +4,10 @@ pyppeteer
 [![PyPI](https://img.shields.io/pypi/v/pyppeteer.svg)](https://pypi.python.org/pypi/pyppeteer)
 [![PyPI version](https://img.shields.io/pypi/pyversions/pyppeteer.svg)](https://pypi.python.org/pypi/pyppeteer)
 [![Documentation](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://pyppeteer.github.io/pyppeteer/)
-[![CircleCI](https://circleci.com/gh/pyppeteer/pyppeteer.svg?style=shield)](https://circleci.com/gh/circleci/circleci-docs)
+[![CircleCI](https://circleci.com/gh/pyppeteer/pyppeteer.svg?style=shield)](https://circleci.com/gh/pyppeteer/pyppeteer)
 [![codecov](https://codecov.io/gh/pyppeteer/pyppeteer/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer)
 
-_Note: this is a continuation of the [pyppeteer project](https://github.com/miyakogi/pyppeteer)_
+_Note: this is a continuation of the [pyppeteer project](https://github.com/miyakogi/pyppeteer)_. Before undertaking any sort of developement, it is highly recommended that you take a look at [#16](https://github.com/pyppeteer/pyppeteer/pull/16) for the ongoing effort to update this library to avoid duplicating efforts.
 
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
@@ -34,7 +34,7 @@ pip install -U git+https://github.com/pyppeteer/pyppeteer@dev
 
 > **Note**: When you run pyppeteer for the first time, it downloads the latest version of Chromium (~150MB) if it is not found on your system. If you don't prefer this behavior, ensure that a suitable Chrome binary is installed. One way to do this is to run `pyppeteer-install` command before prior to using this library.
 
-Full documentation can be found [here](https://pyppeteer.github.io/pyppeteer/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [its troubleshooting guide](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for puppeteer2 users.
+Full documentation can be found [here](https://pyppeteer.github.io/pyppeteer/reference.html). [Puppeteer's documentation](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#) and [its troubleshooting guide](https://github.com/GoogleChrome/puppeteer/blob/master/docs/troubleshooting.md) are also great resources for pyppeteer users.
 
 ### Examples
 

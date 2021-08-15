@@ -33,7 +33,7 @@ if NO_PROGRESS_BAR.lower() in ('1', 'true'):
 
 # Windows archive name changed at r591479.
 windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
-    
+
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
     'mac': f'{BASE_URL}/Mac/{REVISION}/chrome-mac.zip',
@@ -89,17 +89,17 @@ def download_zip(url: str) -> BytesIO:
         except (KeyError, ValueError, AttributeError):
             total_length = 0
 
-        process_bar = tqdm(
-            total=total_length,
-            file=os.devnull if NO_PROGRESS_BAR else None,
-        )
-
         # 10 * 1024
         _data = BytesIO()
-        for chunk in data.stream(10240):
-            _data.write(chunk)
-            process_bar.update(len(chunk))
-        process_bar.close()
+        if NO_PROGRESS_BAR:
+            for chunk in data.stream(10240):
+                _data.write(chunk)
+        else:
+            process_bar = tqdm(total=total_length)
+            for chunk in data.stream(10240):
+                _data.write(chunk)
+                process_bar.update(len(chunk))
+            process_bar.close()
 
     logger.warning('\nchromium download done.')
     return _data
@@ -148,7 +148,6 @@ def download_chromium() -> None:
 
 def chromium_excutable() -> Path:
     """[Deprecated] miss-spelled function.
-
     Use `chromium_executable` instead.
     """
     logger.warning(

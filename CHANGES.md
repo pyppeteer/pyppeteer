@@ -1,7 +1,32 @@
 History
 =======
 
-## Version 0.0.26 (next version)
+## Version ?.?.? (next version, pup2.1.1 overhaul)
+
+* [populate me]
+
+## Version 0.2.6
+
+* Fix encoding error #226 @aleksei140888
+* support websockets 9.0 #252 @mborsetti
+* Fix tqdm exception when NO_PROGRESS_BAR is True #224 @
+* fix(browser): Clean up coroutine Browser._targetCreated() #271 @H--o-I
+
+## Version 0.2.5
+
+* Match package version and \_\_version__ (🤦‍♂️)
+* Use `importlib_metadata` so this isn't a problem in the future
+
+## Version 0.2.4
+
+* Update `pyee` dependency breaking build failures on NixOS + Fedora packaging systems (#207)
+
+## Version 0.2.3
+
+* Hotfix: random freezes from sending stdout to PIPE instead of DEVNULL
+* Fix `tests` package being installed for no reason
+
+## Version 0.0.26
 
 * Add `$PYPPETEER_NO_PROGRESS_BAR` environment variable
 * `pyppeteer.defaultArgs` now accepts that help infer chromium command-line flags.
