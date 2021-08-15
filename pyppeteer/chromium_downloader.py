@@ -72,36 +72,41 @@ def get_url() -> str:
 
 def download_zip(url: str) -> BytesIO:
     """Download data from url."""
-    logger.warning('start chromium download.\n'
+    logger.warning('Starting Chromium download. '
                    'Download may take a few minutes.')
 
-    # disable warnings so that we don't need a cert.
-    # see https://urllib3.readthedocs.io/en/latest/advanced-usage.html for more
-    urllib3.disable_warnings()
+    # Uncomment the statement below to disable HTTPS warnings and allow
+    # download without certificate verification. This is *strongly* as it
+    # opens the code to man-in-the-middle (and other) vulnerabilities; see
+    # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
+    # for more.
+    # urllib3.disable_warnings()
 
     with urllib3.PoolManager() as http:
         # Get data from url.
         # set preload_content=False means using stream later.
-        data = http.request('GET', url, preload_content=False)
-
-        try:
-            total_length = int(data.headers['content-length'])
-        except (KeyError, ValueError, AttributeError):
-            total_length = 0
+        r = http.request('GET', url, preload_content=False)
+        if r.status >= 400:
+            raise OSError(f'Chromium downloadable not found at {url}: '
+                          f'Received {r.data.decode()}.\n')
 
         # 10 * 1024
         _data = BytesIO()
         if NO_PROGRESS_BAR:
-            for chunk in data.stream(10240):
+            for chunk in r.stream(10240):
                 _data.write(chunk)
         else:
+            try:
+                total_length = int(r.headers['content-length'])
+            except (KeyError, ValueError, AttributeError):
+                total_length = 0
             process_bar = tqdm(total=total_length)
-            for chunk in data.stream(10240):
+            for chunk in r.stream(10240):
                 _data.write(chunk)
                 process_bar.update(len(chunk))
             process_bar.close()
 
-    logger.warning('\nchromium download done.')
+    logger.warning('\nChromium download done.')
     return _data
 
 
