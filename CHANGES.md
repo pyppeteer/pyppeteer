@@ -7,6 +7,7 @@ History
 
 ## Version 0.2.6
 
+* Change build backend to poetry-core (allows for faster PEP517 package building) #262 @fabaff
 * Chromium download fixes (file not found) #245 @mborsetti
 * Do not try to set an exception on finished futures #216 @polyfloyd
 * Add HTTPException to caught exceptions in launch #293 @raymondguo-db
