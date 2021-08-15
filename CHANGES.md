@@ -7,6 +7,7 @@ History
 
 ## Version 0.2.6
 
+* Chromium download fixes (file not found) #245 @mborsetti
 * Do not try to set an exception on finished futures #216 @polyfloyd
 * Add HTTPException to caught exceptions in launch #293 @raymondguo-db
 * Fix encoding error #226 @aleksei140888
