@@ -98,7 +98,7 @@ def download_zip(url: str) -> BytesIO:
                 process_bar.update(len(chunk))
             process_bar.close()
 
-    logger.warning('\nChromium download done.')
+    logger.warning('Chromium download done.')
     return _data
 
 
