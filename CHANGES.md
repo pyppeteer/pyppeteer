@@ -7,9 +7,10 @@ History
 
 ## Version 0.2.6
 
+* Add HTTPException to caught exceptions in launch #293 @raymondguo-db
 * Fix encoding error #226 @aleksei140888
 * support websockets 9.0 #252 @mborsetti
-* Fix tqdm exception when NO_PROGRESS_BAR is True #224 @
+* Fix tqdm exception when NO_PROGRESS_BAR is True #224 @mborsetti
 * fix(browser): Clean up coroutine Browser._targetCreated() #271 @H--o-I
 
 ## Version 0.2.5
