@@ -11,6 +11,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
+import certifi
 import urllib3
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
 from tqdm import tqdm
@@ -68,14 +69,7 @@ def download_zip(url: str) -> BytesIO:
     """Download data from url."""
     logger.warning('Starting Chromium download. ' 'Download may take a few minutes.')
 
-    # Uncomment the statement below to disable HTTPS warnings and allow
-    # download without certificate verification. This is *strongly* as it
-    # opens the code to man-in-the-middle (and other) vulnerabilities; see
-    # https://urllib3.readthedocs.io/en/latest/advanced-usage.html#tls-warnings
-    # for more.
-    # urllib3.disable_warnings()
-
-    with urllib3.PoolManager() as http:
+    with urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where()) as http:
         # Get data from url.
         # set preload_content=False means using stream later.
         r = http.request('GET', url, preload_content=False)
