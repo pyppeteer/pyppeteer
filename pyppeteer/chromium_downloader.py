@@ -143,7 +143,7 @@ def download_chromium() -> None:
     if current_platform() == 'arm_linux':
         exec_path = chromium_executable()
         if not exec_path.exists():
-            logger.warning("Please install chromium via apt-get, eg 'sudo apt-get install chromium'")
+            logger.warning("Please install chromium via your package manager, eg 'sudo apt-get install chromium'")
     else:
         extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
 
