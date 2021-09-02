@@ -51,6 +51,7 @@ pyee = "^8.1.0"
 tqdm = "^4.42.1"
 urllib3 = "^1.25.8"
 websockets = "^9.1"
+certifi = ">=2021"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.20.1"
