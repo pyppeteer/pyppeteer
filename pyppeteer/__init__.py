@@ -28,13 +28,9 @@ __pyppeteer_home__ = os.environ.get(
 DEBUG = False
 
 # Setup root logger
-_logger = logging.getLogger('pyppeteer')
-_log_handler = logging.StreamHandler()
 _fmt = '[{levelname[0]}:{name}] {msg}'
-_formatter = logging.Formatter(fmt=_fmt, style='{')
-_log_handler.setFormatter(_formatter)
-_log_handler.setLevel(logging.DEBUG)
-_logger.addHandler(_log_handler)
+logging.basicConfig(level=logging.DEBUG, format=_fmt)
+_logger = logging.getLogger('pyppeteer')
 _logger.propagate = False
 
 from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
