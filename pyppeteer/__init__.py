@@ -30,7 +30,7 @@ DEBUG = False
 # Setup root logger
 _fmt = '[{levelname[0]}:{name}] {msg}'
 logging.basicConfig(level=logging.DEBUG, format=_fmt)
-_logger = logging.getLogger('pyppeteer')
+_logger = logging.getLogger(__name__)
 _logger.propagate = False
 
 from pyppeteer.launcher import connect, launch, executablePath  # noqa: E402
