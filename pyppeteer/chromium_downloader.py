@@ -67,7 +67,7 @@ def get_url() -> str:
 
 def download_zip(url: str) -> BytesIO:
     """Download data from url."""
-    logger.warning('Starting Chromium download. ' 'Download may take a few minutes.')
+    logger.info('Starting Chromium download. Download may take a few minutes.')
 
     with urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where()) as http:
         # Get data from url.
@@ -92,7 +92,7 @@ def download_zip(url: str) -> BytesIO:
                 process_bar.update(len(chunk))
             process_bar.close()
 
-    logger.warning('Chromium download done.')
+    logger.info('Chromium download done.')
     return _data
 
 
