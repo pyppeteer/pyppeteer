@@ -125,7 +125,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
     exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP | stat.S_IXUSR)
-    logger.warning(f'chromium extracted to: {path}')
+    logger.info(f'chromium extracted to: {path}')
 
 
 def download_chromium() -> None:
