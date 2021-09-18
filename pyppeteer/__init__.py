@@ -29,7 +29,7 @@ DEBUG = False
 
 # Setup root logger
 _fmt = '[{levelname[0]}:{name}] {msg}'
-logging.basicConfig(level=logging.DEBUG, format=_fmt)
+logging.basicConfig(level=logging.DEBUG, format=_fmt, style='{')
 _logger = logging.getLogger(__name__)
 _logger.propagate = False
 
