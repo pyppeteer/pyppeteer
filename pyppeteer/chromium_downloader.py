@@ -103,7 +103,7 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         import subprocess
         import shutil
 
-        zip_path = path / 'chrome.zip'
+        zip_path = path + '/chrome.zip'
         if not path.exists():
             path.mkdir(parents=True)
         with zip_path.open('wb') as f:
