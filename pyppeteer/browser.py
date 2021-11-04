@@ -8,7 +8,7 @@ from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from pyee import EventEmitter
+from pyee import AsyncIOEventEmitter
 
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
@@ -18,7 +18,7 @@ from pyppeteer.target import Target
 logger = logging.getLogger(__name__)
 
 
-class Browser(EventEmitter):
+class Browser(AsyncIOEventEmitter):
     """Browser class.
 
     A Browser object is created when pyppeteer connects to chrome, either
@@ -272,7 +272,7 @@ class Browser(EventEmitter):
         return self._connection.send('Browser.getVersion')
 
 
-class BrowserContext(EventEmitter):
+class BrowserContext(AsyncIOEventEmitter):
     """BrowserContext provides multiple independent browser sessions.
 
     When a browser is launched, it has a single BrowserContext used by default.
