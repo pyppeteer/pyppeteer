@@ -44,7 +44,7 @@ exclude = [
 pyppeteer-install = 'pyppeteer.command:install'
 
 [tool.poetry.dependencies]
-python = "^3.6.1"
+python = "^3.7"
 appdirs = "^1.4.3"
 importlib-metadata = ">=1.4"
 pyee = "^8.1.0"
@@ -86,4 +86,4 @@ multi_line_output = 3
 include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
-known_third_party = ["appdirs", "livereload", "pyee", "pyppeteer", "syncer", "tornado", "tqdm", "urllib3", "websockets"]
+known_third_party = ["appdirs", "certifi", "livereload", "pyee", "pyppeteer", "syncer", "tornado", "tqdm", "urllib3", "websockets"]
