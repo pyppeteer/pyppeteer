@@ -5,6 +5,12 @@ History
 
 * [populate me]
 
+## Version 1.0.0
+
+* hotfix: websockets 10 for python 3.10 #321, #327
+  * removes support for python 3.6
+* remove `Page.craete`
+
 ## Version 0.2.6
 
 * Change build backend to poetry-core (allows for faster PEP517 package building) #262 @fabaff
