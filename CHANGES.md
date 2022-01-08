@@ -1,7 +1,20 @@
 History
 =======
 
-## Version 0.0.26 (next version)
+## Version ?.?.? (next version, pup2.1.1 overhaul)
+
+* [populate me]
+
+## Version 0.2.4
+
+* Update `pyee` dependency breaking build failures on NixOS + Fedora packaging systems (#207)
+
+## Version 0.2.3
+
+* Hotfix: random freezes from sending stdout to PIPE instead of DEVNULL
+* Fix `tests` package being installed for no reason
+
+## Version 0.0.26
 
 * Add `$PYPPETEER_NO_PROGRESS_BAR` environment variable
 * `pyppeteer.defaultArgs` now accepts that help infer chromium command-line flags.
