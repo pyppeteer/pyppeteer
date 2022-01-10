@@ -5,9 +5,14 @@ History
 
 * [populate me]
 
+## Version 1.0.1
+
+* don't configure logging ourselves (#343)
+* make logging better for chromium downloader
+
 ## Version 1.0.0
 
-* hotfix: websockets 10 for python 3.10 #321, #327
+* hotfix: websockets 10 for python 3.10 (#321, #327)
   * removes support for python 3.6
 * remove `Page.craete`
 
