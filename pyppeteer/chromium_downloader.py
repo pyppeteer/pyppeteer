@@ -17,6 +17,12 @@ from pyppeteer import __chromium_revision__, __pyppeteer_home__
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+# add our own stream handler - we want some output here
+handler = logging.StreamHandler()
+handler.setFormatter(fmt=logging.Formatter(fmt="[{levelname}] {msg}", style="{"))
+handler.setLevel(logging.INFO)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
 
 DOWNLOADS_FOLDER = Path(__pyppeteer_home__) / 'local-chromium'
 DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
@@ -67,7 +73,7 @@ def get_url() -> str:
 
 def download_zip(url: str) -> BytesIO:
     """Download data from url."""
-    logger.info('Starting Chromium download. Download may take a few minutes.')
+    logger.info('Starting Chromium download.')
 
     with urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where()) as http:
         # Get data from url.
@@ -92,13 +98,13 @@ def download_zip(url: str) -> BytesIO:
                 process_bar.update(len(chunk))
             process_bar.close()
 
-    logger.info('Chromium download done.')
     return _data
 
 
 def extract_zip(data: BytesIO, path: Path) -> None:
     """Extract zipped data to path."""
     # On mac zipfile module cannot extract correctly, so use unzip instead.
+    logger.info('Beginning extraction')
     if current_platform() == 'mac':
         import subprocess
         import shutil
@@ -125,20 +131,12 @@ def extract_zip(data: BytesIO, path: Path) -> None:
     if not exec_path.exists():
         raise IOError('Failed to extract chromium.')
     exec_path.chmod(exec_path.stat().st_mode | stat.S_IXOTH | stat.S_IXGRP | stat.S_IXUSR)
-    logger.info(f'chromium extracted to: {path}')
+    logger.info(f'Chromium extracted to: {path}')
 
 
 def download_chromium() -> None:
     """Download and extract chromium."""
     extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
-
-
-def chromium_excutable() -> Path:
-    """[Deprecated] miss-spelled function.
-    Use `chromium_executable` instead.
-    """
-    logger.warning('`chromium_excutable` function is deprecated. ' 'Use `chromium_executable instead.')
-    return chromium_executable()
 
 
 def chromium_executable() -> Path:

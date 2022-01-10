@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyppeteer"
-version = "1.0.0"
+version = "1.0.1"
 description = "Headless chrome/chromium automation library (unofficial port of puppeteer)"
 readme = 'README.md'
 license = "MIT"
@@ -77,7 +77,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
-target-version = ['py37', 'py38', 'py39', 'py310']
+target-version = ['py37', 'py38']
 skip-string-normalization = true
 
 [tool.isort]
