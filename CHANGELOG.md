@@ -5,6 +5,10 @@ History
 
 * [populate me]
 
+## Version 1.0.2
+
+* Fix circular import as result of 1.0.1 (#344)
+
 ## Version 1.0.1
 
 * don't configure logging ourselves (#343)
@@ -13,7 +17,7 @@ History
 ## Version 1.0.0
 
 * hotfix: websockets 10 for python 3.10 (#321, #327)
-  * removes support for python 3.6
+  * removes support for python 3.6./
 * remove `Page.craete`
 
 ## Version 0.2.6
