@@ -209,16 +209,19 @@ class Page(EventEmitter):
         self.emit('error', PageError('Page crashed!'))
 
     def _onLogEntryAdded(self, event: Dict) -> None:
-        entry = event.get('entry', {})
-        level = entry.get('level', '')
-        text = entry.get('text', '')
-        args = entry.get('args', [])
-        source = entry.get('source', '')
-        for arg in args:
-            helper.releaseObject(self._client, arg)
+        try:
+            entry = event.get('entry', {})
+            level = entry.get('level', '')
+            text = entry.get('text', '')
+            args = entry.get('args', [])
+            source = entry.get('source', '')
+            for arg in args:
+                helper.releaseObject(self._client, arg)
 
-        if source != 'worker':
-            self.emit(Page.Events.Console, ConsoleMessage(level, text))
+            if source != 'worker':
+                self.emit(Page.Events.Console, ConsoleMessage(level, text))
+        except Exception as e:
+            debugError(logger, e)
 
     @property
     def mainFrame(self) -> Optional['Frame']:
@@ -684,12 +687,15 @@ function addPageBinding(bindingName) {
         self.emit(Page.Events.PageError, PageError(message))
 
     def _onConsoleAPI(self, event: dict) -> None:
-        _id = event['executionContextId']
-        context = self._frameManager.executionContextById(_id)
-        values: List[JSHandle] = []
-        for arg in event.get('args', []):
-            values.append(self._frameManager.createJSHandle(context, arg))
-        self._addConsoleMessage(event['type'], values)
+        try:
+            _id = event['executionContextId']
+            context = self._frameManager.executionContextById(_id)
+            values: List[JSHandle] = []
+            for arg in event.get('args', []):
+                values.append(self._frameManager.createJSHandle(context, arg))
+            self._addConsoleMessage(event['type'], values)
+        except Exception as e:
+            debugError(logger, e)
 
     def _onBindingCalled(self, event: Dict) -> None:
         obj = json.loads(event['payload'])
