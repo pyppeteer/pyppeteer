@@ -95,8 +95,10 @@ def valueFromRemoteObject(remoteObject: Dict) -> Any:
         elif value == '-Infinity':
             return -math.inf
         else:
+            type = remoteObject.get('type', None)
+            if type == 'bigint': return value
             raise ElementHandleError(
-                'Unsupported unserializable value: {}'.format(value))
+                'Unsupported unserializable value: {} for type: {}'.format(value, type))
     return remoteObject.get('value')
 
 
