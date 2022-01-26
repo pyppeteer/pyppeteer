@@ -90,6 +90,7 @@ class Launcher(object):
         self.slowMo = options.get('slowMo', 0)
         self.timeout = options.get('timeout', 30000)
         self.autoClose = options.get('autoClose', True)
+        self.waitForBrowserToClose = options.get('waitForBrowserToClose', False)
 
         logLevel = options.get('logLevel')
         if logLevel:
@@ -213,9 +214,12 @@ class Launcher(object):
             except Exception as e:
                 # ignore errors on browser termination process
                 debugError(logger, e)
-        if self.temporaryUserDataDir and os.path.exists(self.temporaryUserDataDir):  # noqa: E501
-            # Force kill chrome only when using temporary userDataDir
+        _remUserDD = (self.temporaryUserDataDir and os.path.exists(self.temporaryUserDataDir))
+        if _remUserDD or self.waitForBrowserToClose:
+            print("Waiting for Chrome To Close ...")
             self.waitForChromeToClose()
+
+        if _remUserDD:  # noqa: E501
             self._cleanup_tmp_user_data_dir()
 
 
