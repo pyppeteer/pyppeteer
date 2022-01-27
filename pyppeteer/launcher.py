@@ -96,9 +96,6 @@ class BrowserRunner:
 
     async def _close_proc(self) -> None:
         if not self._closed:
-            if self.connection and self.connection._connected:
-                await self.connection.send('Browser.close')
-                await self.connection.dispose()
             if self.temp_dir:
                 self._wait_for_proc_to_close()
                 self.temp_dir.cleanup()
@@ -108,6 +105,7 @@ class BrowserRunner:
             try:
                 self.proc.terminate()
                 self.proc.wait()
+                self._closed = True                
             except Exception as e:
                 logger.warning(f'error occurred on proc close: {e}')
 
@@ -119,6 +117,7 @@ class BrowserRunner:
             elif self.connection:
                 try:
                     await self.connection.send('Browser.close')
+                    await self.connection.dispose()
                 except Exception as e:
                     logger.error(f'An exception occurred: {e}')
                     self.kill()
@@ -274,12 +273,12 @@ class ChromeLauncher(BaseBrowserLauncher):
             chrome_args.extend([x for x in self.default_args(**kwargs) if x not in ignoreDefaultArgs])
         else:
             chrome_args.extend(args)
-
         if not any(x.startswith('--remote-debugging-') for x in chrome_args):
             chrome_args.append(f'--remote-debugging-port={get_free_port()}')
         if not any(x.startswith(f'--user-data-dir') for x in chrome_args):
             profile_path = tempfile.TemporaryDirectory(prefix='pyppeteer_chrome_profile_')
             chrome_args.append(f'--user-data-dir={profile_path.name}')
+        
 
         if not executablePath:
             chrome_executable, missing_text = resolveExecutablePath(self.projectRoot, self.preferredRevision)
