@@ -19,7 +19,7 @@ class Multimap(object):
         """Set value."""
         _set = self._map.get(key)
         if not _set:
-            _set = list()
+            _set = []
             self._map[key] = _set
         if value not in _set:
             _set.append(value)
@@ -68,7 +68,7 @@ class Multimap(object):
 
     def valuesArray(self) -> List[Any]:
         """Get all values as list."""
-        result: List[Any] = list()
+        result: List[Any] = []
         for values in self._map.values():
             result.extend(values)
         return result

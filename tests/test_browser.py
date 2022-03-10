@@ -2,16 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from copy import deepcopy
 import os
-from pathlib import Path
 import unittest
-
-from syncer import sync
+from copy import deepcopy
+from pathlib import Path
 
 from pyppeteer import connect, launch
+from syncer import sync
 
-from .base import BaseTestCase, DEFAULT_OPTIONS
+from .base import DEFAULT_OPTIONS, BaseTestCase
 from .utils import waitEvent
 
 
@@ -23,7 +22,7 @@ class TestBrowser(unittest.TestCase):
             '--no-sandbox',
             '--disable-extensions-except={}'.format(extensionPath),
             '--load-extensions={}'.format(extensionPath),
-        ]
+        ],
     }
 
     def waitForBackgroundPageTarget(self, browser):
@@ -81,19 +80,23 @@ class TestBrowser(unittest.TestCase):
         browser1.on('disconnected', lambda: discon1.append(1))
         browser2.on('disconnected', lambda: discon2.append(1))
 
-        await asyncio.wait([
-            browser2.disconnect(),
-            waitEvent(browser2, 'disconnected'),
-        ])
+        await asyncio.wait(
+            [
+                browser2.disconnect(),
+                waitEvent(browser2, 'disconnected'),
+            ]
+        )
         self.assertEqual(len(discon), 0)
         self.assertEqual(len(discon1), 0)
         self.assertEqual(len(discon2), 1)
 
-        await asyncio.wait([
-            waitEvent(browser1, 'disconnected'),
-            waitEvent(browser, 'disconnected'),
-            browser.close(),
-        ])
+        await asyncio.wait(
+            [
+                waitEvent(browser1, 'disconnected'),
+                waitEvent(browser, 'disconnected'),
+                browser.close(),
+            ]
+        )
         self.assertEqual(len(discon), 1)
         self.assertEqual(len(discon1), 1)
         self.assertEqual(len(discon2), 1)
@@ -137,12 +140,14 @@ class TestBrowser(unittest.TestCase):
             await req.respond({'body': 'YO, GOOGLE.COM'})
 
         page.on('request', lambda req: asyncio.ensure_future(intercept(req)))
-        await page.evaluate('''() => {
+        await page.evaluate(
+            '''() => {
             const frame = document.createElement('iframe');
             frame.setAttribute('src', 'https://google.com/');
             document.body.appendChild(frame);
             return new Promise(x => frame.onload = x);
-        }''')
+        }'''
+        )
         await page.waitForSelector('iframe[src="https://google.com/"]')
         urls = []
         for frame in page.frames:

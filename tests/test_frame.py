@@ -5,9 +5,8 @@ import asyncio
 import time
 import unittest
 
-from syncer import sync
-
 from pyppeteer.errors import ElementHandleError, NetworkError, TimeoutError
+from syncer import sync
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame, detachFrame, dumpFrames, navigateFrame
@@ -90,50 +89,46 @@ class TestEvaluate(BaseTestCase):
 class TestWaitForFunction(BaseTestCase):
     @sync
     async def test_wait_for_expression(self):
-        fut = asyncio.ensure_future(
-            self.page.waitForFunction('window.__FOO === 1')
-        )
+        fut = asyncio.ensure_future(self.page.waitForFunction('window.__FOO === 1'))
         await self.page.evaluate('window.__FOO = 1;')
         await fut
 
     @sync
     async def test_wait_for_function(self):
-        fut = asyncio.ensure_future(
-            self.page.waitForFunction('() => window.__FOO === 1')
-        )
+        fut = asyncio.ensure_future(self.page.waitForFunction('() => window.__FOO === 1'))
         await self.page.evaluate('window.__FOO = 1;')
         await fut
 
     @sync
     async def test_wait_for_function_args(self):
-        fut = asyncio.ensure_future(
-            self.page.waitForFunction(
-                '(a, b) => a + b === 3', {}, 1, 2)
-        )
+        fut = asyncio.ensure_future(self.page.waitForFunction('(a, b) => a + b === 3', {}, 1, 2))
         await fut
 
     @sync
     async def test_before_execution_context_resolved(self):
         await self.page.evaluateOnNewDocument('() => window.__RELOADED = true')
-        await self.page.waitForFunction('''() => {
+        await self.page.waitForFunction(
+            '''() => {
             if (!window.__RELOADED)
                 window.location.reload();
             return true;
-        }''')
+        }'''
+        )
 
     @sync
     async def test_poll_on_interval(self):
         result = []
         start_time = time.perf_counter()
-        fut = asyncio.ensure_future(self.page.waitForFunction(
-            '() => window.__FOO === "hit"', polling=100,
-        ))
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction(
+                '() => window.__FOO === "hit"',
+                polling=100,
+            )
+        )
         fut.add_done_callback(lambda _: result.append(True))
         await asyncio.sleep(0)  # once switch task
         await self.page.evaluate('window.__FOO = "hit"')
-        await self.page.evaluate(
-            'document.body.appendChild(document.createElement("div"))'
-        )
+        await self.page.evaluate('document.body.appendChild(document.createElement("div"))')
         await asyncio.sleep(0.02)
         self.assertFalse(result)
         await fut
@@ -143,26 +138,30 @@ class TestWaitForFunction(BaseTestCase):
     @sync
     async def test_poll_on_mutation(self):
         result = []
-        fut = asyncio.ensure_future(self.page.waitForFunction(
-            '() => window.__FOO === "hit"', polling='mutation',
-        ))
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction(
+                '() => window.__FOO === "hit"',
+                polling='mutation',
+            )
+        )
         fut.add_done_callback(lambda _: result.append(True))
         await asyncio.sleep(0)  # once switch task
         await self.page.evaluate('window.__FOO = "hit"')
         await asyncio.sleep(0.1)
         self.assertFalse(result)
-        await self.page.evaluate(
-            'document.body.appendChild(document.createElement("div"))'
-        )
+        await self.page.evaluate('document.body.appendChild(document.createElement("div"))')
         await fut
         self.assertTrue(result)
 
     @sync
     async def test_poll_on_raf(self):
         result = []
-        fut = asyncio.ensure_future(self.page.waitForFunction(
-            '() => window.__FOO === "hit"', polling='raf',
-        ))
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction(
+                '() => window.__FOO === "hit"',
+                polling='raf',
+            )
+        )
         fut.add_done_callback(lambda _: result.append(True))
         await asyncio.sleep(0)  # once switch task
         await self.page.evaluate('window.__FOO = "hit"')
@@ -174,10 +173,12 @@ class TestWaitForFunction(BaseTestCase):
     @sync
     async def test_csp(self):
         await self.page.goto(self.url + 'csp')
-        fut = asyncio.ensure_future(self.page.waitForFunction(
-            '() => window.__FOO === "hit"',
-            polling='raf',
-        ))
+        fut = asyncio.ensure_future(
+            self.page.waitForFunction(
+                '() => window.__FOO === "hit"',
+                polling='raf',
+            )
+        )
         await self.page.evaluate('window.__FOO = "hit"')
         await fut
 
@@ -191,8 +192,7 @@ class TestWaitForFunction(BaseTestCase):
     async def test_negative_polling_value(self):
         with self.assertRaises(ValueError) as cm:
             await self.page.waitForFunction('() => true', polling=-100)
-        self.assertIn('Cannot poll with non-positive interval',
-                      cm.exception.args[0])
+        self.assertIn('Cannot poll with non-positive interval', cm.exception.args[0])
 
     @sync
     async def test_wait_for_function_return_value(self):
@@ -207,8 +207,7 @@ class TestWaitForFunction(BaseTestCase):
     async def test_wait_for_function_arg_element(self):
         await self.page.setContent('<div></div>')
         div = await self.page.J('div')
-        fut = asyncio.ensure_future(
-            self.page.waitForFunction('e => !e.parentElement', {}, div))
+        fut = asyncio.ensure_future(self.page.waitForFunction('e => !e.parentElement', {}, div))
         fut.add_done_callback(lambda _: self.set_result(True))
         await asyncio.sleep(0.1)
         self.assertFalse(self.result)
@@ -278,7 +277,9 @@ class TestWaitForSelector(BaseTestCase):
     async def test_wait_for_selector_inner_html(self):
         fut = asyncio.ensure_future(self.page.waitForSelector('h3 div'))
         await self.page.evaluate(addElement, 'span')
-        await self.page.evaluate('() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"')  # noqa: E501
+        await self.page.evaluate(
+            '() => document.querySelector("span").innerHTML = "<h3><div></div></h3>"'
+        )  # noqa: E501
         await fut
 
     @sync
@@ -358,12 +359,9 @@ class TestWaitForSelector(BaseTestCase):
     @sync
     async def test_wait_for_selector_visible(self):
         div = []
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', visible=True))
+        fut = asyncio.ensure_future(self.page.waitForSelector('div', visible=True))
         fut.add_done_callback(lambda _: div.append(True))
-        await self.page.setContent(
-            '<div style="display: none; visibility: hidden;">1</div>'
-        )
+        await self.page.setContent('<div style="display: none; visibility: hidden;">1</div>')
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.removeProperty("display")')  # noqa: E501
@@ -376,13 +374,9 @@ class TestWaitForSelector(BaseTestCase):
     @sync
     async def test_wait_for_selector_visible_inner(self):
         div = []
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('div#inner', visible=True))
+        fut = asyncio.ensure_future(self.page.waitForSelector('div#inner', visible=True))
         fut.add_done_callback(lambda _: div.append(True))
-        await self.page.setContent(
-            '<div style="display: none; visibility: hidden;">'
-            '<div id="inner">hi</div></div>'
-        )
+        await self.page.setContent('<div style="display: none; visibility: hidden;">' '<div id="inner">hi</div></div>')
         await asyncio.sleep(0.1)
         self.assertFalse(div)
         await self.page.evaluate('() => document.querySelector("div").style.removeProperty("display")')  # noqa: E501
@@ -396,12 +390,13 @@ class TestWaitForSelector(BaseTestCase):
     async def test_wait_for_selector_hidden(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True))
+        fut = asyncio.ensure_future(self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda _: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
-        await self.page.evaluate('() => document.querySelector("div").style.setProperty("visibility", "hidden")')  # noqa: E501
+        await self.page.evaluate(
+            '() => document.querySelector("div").style.setProperty("visibility", "hidden")'
+        )  # noqa: E501
         await fut
         self.assertTrue(div)
 
@@ -409,12 +404,13 @@ class TestWaitForSelector(BaseTestCase):
     async def test_wait_for_selector_display_none(self):
         div = []
         await self.page.setContent('<div style="display: block;"></div>')
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True))
+        fut = asyncio.ensure_future(self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda _: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
-        await self.page.evaluate('() => document.querySelector("div").style.setProperty("display", "none")')  # noqa: E501
+        await self.page.evaluate(
+            '() => document.querySelector("div").style.setProperty("display", "none")'
+        )  # noqa: E501
         await fut
         self.assertTrue(div)
 
@@ -422,8 +418,7 @@ class TestWaitForSelector(BaseTestCase):
     async def test_wait_for_selector_remove(self):
         div = []
         await self.page.setContent('<div></div>')
-        fut = asyncio.ensure_future(
-            self.page.waitForSelector('div', hidden=True))
+        fut = asyncio.ensure_future(self.page.waitForSelector('div', hidden=True))
         fut.add_done_callback(lambda _: div.append(True))
         await asyncio.sleep(0.1)
         self.assertFalse(div)
@@ -457,9 +452,7 @@ class TestWaitForSelector(BaseTestCase):
         fut.add_done_callback(lambda _: div.append(True))
         await self.page.setContent('<div class="noCls"></div>')
         self.assertFalse(div)
-        await self.page.evaluate(
-            '() => document.querySelector("div").className="cls"'
-        )
+        await self.page.evaluate('() => document.querySelector("div").className="cls"')
         await asyncio.sleep(0.1)
         self.assertTrue(div)
 
@@ -478,10 +471,7 @@ class TestWaitForXPath(BaseTestCase):
     async def test_fancy_xpath(self):
         await self.page.setContent('<p>red herring</p><p>hello world  </p>')
         waitForXPath = await self.page.waitForXPath('//p[normalize-space(.)="hello world"]')  # noqa: E501
-        self.assertEqual(
-            await self.page.evaluate('x => x.textContent', waitForXPath),
-            'hello world  '
-        )
+        self.assertEqual(await self.page.evaluate('x => x.textContent', waitForXPath), 'hello world  ')
 
     @sync
     async def test_timeout(self):
@@ -508,8 +498,7 @@ class TestWaitForXPath(BaseTestCase):
 
     @sync
     async def test_evaluation_failed(self):
-        await self.page.evaluateOnNewDocument(
-            'function() {document.evaluate = null;}')
+        await self.page.evaluateOnNewDocument('function() {document.evaluate = null;}')
         await self.page.goto(self.url + 'empty')
         with self.assertRaises(ElementHandleError):
             await self.page.waitForXPath('*')
@@ -528,8 +517,7 @@ class TestWaitForXPath(BaseTestCase):
     @sync
     async def test_hidden(self):
         await self.page.setContent('<div style="display: block;"></div>')
-        waitForXPath = asyncio.ensure_future(
-            self.page.waitForXPath('//div', hidden=True))
+        waitForXPath = asyncio.ensure_future(self.page.waitForXPath('//div', hidden=True))
         waitForXPath.add_done_callback(lambda _: self.set_result(True))
         await self.page.waitForXPath('//div')
         self.assertFalse(self.result)
@@ -541,19 +529,13 @@ class TestWaitForXPath(BaseTestCase):
     async def test_return_element_handle(self):
         waitForXPath = self.page.waitForXPath('//*[@class="zombo"]')
         await self.page.setContent('<div class="zombo">anything</div>')
-        self.assertEqual(
-            await self.page.evaluate('x => x.textContent', await waitForXPath),
-            'anything'
-        )
+        self.assertEqual(await self.page.evaluate('x => x.textContent', await waitForXPath), 'anything')
 
     @sync
     async def test_text_node(self):
         await self.page.setContent('<div>some text</dev>')
         text = await self.page.waitForXPath('//div/text()')
-        self.assertEqual(
-            await (await text.getProperty('nodeType')).jsonValue(),
-            3  # Node.TEXT_NODE
-        )
+        self.assertEqual(await (await text.getProperty('nodeType')).jsonValue(), 3)  # Node.TEXT_NODE
 
     @sync
     async def test_single_slash(self):
@@ -572,13 +554,16 @@ class TestFrames(BaseTestCase):
         dumped_frames = dumpFrames(self.page.mainFrame)
         try:
             self.assertEqual(
-                dumped_frames, '''
+                dumped_frames,
+                '''
 http://localhost:{port}/static/nested-frames.html
     http://localhost:{port}/static/two-frames.html
         http://localhost:{port}/static/frame.html
         http://localhost:{port}/static/frame.html
     http://localhost:{port}/static/frame.html
-                '''.format(port=self.port).strip()
+                '''.format(
+                    port=self.port
+                ).strip(),
             )
         except AssertionError:
             print('\n== Nested frame test failed, which is unstable ==')
@@ -608,11 +593,13 @@ http://localhost:{port}/static/nested-frames.html
     @sync
     async def test_anchor_url(self):
         await self.page.goto(self.url + 'empty')
-        await asyncio.wait([
-            self.page.goto(self.url + 'empty#foo'),
-            waitEvent(self.page, 'framenavigated'),
-        ])
-        self.assertEqual(self.page.url, self.url+'empty#foo')
+        await asyncio.wait(
+            [
+                self.page.goto(self.url + 'empty#foo'),
+                waitEvent(self.page, 'framenavigated'),
+            ]
+        )
+        self.assertEqual(self.page.url, self.url + 'empty#foo')
 
     @sync
     async def test_frame_cross_process(self):
@@ -666,7 +653,9 @@ http://localhost:{port}/static/nested-frames.html
                 frame.src = url;
                 document.body.appendChild(frame);
                 return new Promise(x => frame.onload = x);
-            }''', self.url + 'empty')
+            }''',
+            self.url + 'empty',
+        )
         await asyncio.sleep(0.1)
 
         frame1 = self.page.frames[0]

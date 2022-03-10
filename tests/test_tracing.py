@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import json
-from pathlib import Path
 import unittest
-
-from syncer import sync
+from pathlib import Path
 
 from pyppeteer.errors import NetworkError
+from syncer import sync
 
 from .base import BaseTestCase
 
@@ -26,19 +25,19 @@ class TestTracing(BaseTestCase):
 
     @sync
     async def test_tracing(self):
-        await self.page.tracing.start({
-            'path': str(self.outfile)
-        })
+        await self.page.tracing.start({'path': str(self.outfile)})
         await self.page.goto(self.url)
         await self.page.tracing.stop()
         self.assertTrue(self.outfile.is_file())
 
     @sync
     async def test_custom_categories(self):
-        await self.page.tracing.start({
-            'path': str(self.outfile),
-            'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
-        })
+        await self.page.tracing.start(
+            {
+                'path': str(self.outfile),
+                'categories': ['disabled-by-default-v8.cpu_profiler.hires'],
+            }
+        )
         await self.page.tracing.stop()
         self.assertTrue(self.outfile.is_file())
         with self.outfile.open() as f:

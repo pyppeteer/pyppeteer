@@ -40,9 +40,11 @@ class TestPyppeteer(BaseTestCase):
     async def test_inject_file(self):  # deprecated
         tmp_file = Path('tmp.js')
         with tmp_file.open('w') as f:
-            f.write('''
+            f.write(
+                '''
 () => document.body.appendChild(document.createElement("section"))
-            '''.strip())
+            '''.strip()
+            )
         with self.assertLogs('pyppeteer', logging.WARN) as log:
             await self.page.injectFile(str(tmp_file))
             self.assertIn('deprecated', log.records[0].msg)
@@ -66,10 +68,12 @@ class TestScreenshot(BaseTestCase):
     @sync
     async def test_screenshot_large(self):
         page = await self.context.newPage()
-        await page.setViewport({
-            'width': 2000,
-            'height': 2000,
-        })
+        await page.setViewport(
+            {
+                'width': 2000,
+                'height': 2000,
+            }
+        )
         await page.goto(self.url + 'static/huge-page.html')
         options = {'path': str(self.target_path)}
         self.assertFalse(self.target_path.exists())

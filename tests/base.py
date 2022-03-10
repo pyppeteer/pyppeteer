@@ -3,10 +3,9 @@
 
 import unittest
 
-from syncer import sync
-
 from pyppeteer import launch
 from pyppeteer.util import get_free_port
+from syncer import sync
 
 from .server import get_application
 

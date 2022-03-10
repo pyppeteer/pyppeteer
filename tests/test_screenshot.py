@@ -5,9 +5,8 @@ import base64
 from pathlib import Path
 from unittest import TestCase
 
-from syncer import sync
-
 from pyppeteer import launch
+from syncer import sync
 
 root_path = Path(__file__).resolve().parent
 blank_png_path = root_path / 'blank_800x600.png'

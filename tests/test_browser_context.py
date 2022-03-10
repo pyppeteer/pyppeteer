@@ -6,7 +6,6 @@ import unittest
 
 from pyppeteer import connect
 from pyppeteer.errors import BrowserError
-
 from syncer import sync
 
 from .base import BaseTestCase
@@ -57,8 +56,7 @@ class TestBrowserContext(BrowserBaseTestCase):
         context = await self.browser.createIncognitoBrowserContext()
         page = await context.newPage()
         await page.goto(self.url + 'empty')
-        asyncio.ensure_future(
-            page.evaluate('url => window.open(url)', self.url + 'empty'))
+        asyncio.ensure_future(page.evaluate('url => window.open(url)', self.url + 'empty'))
         popupTarget = await waitEvent(self.browser, 'targetcreated')
         self.assertEqual(popupTarget.browserContext, context)
         await context.close()
@@ -73,11 +71,14 @@ class TestBrowserContext(BrowserBaseTestCase):
         page = await context.newPage()
         await page.goto(self.url + 'empty')
         await page.close()
-        self.assertEqual(events, [
-            'CREATED: about:blank',
-            'CHANGED: ' + self.url + 'empty',
-            'DESTROYED: ' + self.url + 'empty',
-        ])
+        self.assertEqual(
+            events,
+            [
+                'CREATED: about:blank',
+                'CHANGED: ' + self.url + 'empty',
+                'DESTROYED: ' + self.url + 'empty',
+            ],
+        )
 
     @unittest.skip('this test not pass in some environment')
     @sync
@@ -90,10 +91,12 @@ class TestBrowserContext(BrowserBaseTestCase):
         # create a page in the first incognito context
         page1 = await context1.newPage()
         await page1.goto(self.url + 'empty')
-        await page1.evaluate('''() => {
+        await page1.evaluate(
+            '''() => {
             localStorage.setItem('name', 'page1');
             document.cookie = 'name=page1';
-        }''')
+        }'''
+        )
 
         self.assertEqual(len(context1.targets()), 1)
         self.assertEqual(len(context2.targets()), 0)
@@ -101,10 +104,12 @@ class TestBrowserContext(BrowserBaseTestCase):
         # create a page in the second incognito context
         page2 = await context2.newPage()
         await page2.goto(self.url + 'empty')
-        await page2.evaluate('''() => {
+        await page2.evaluate(
+            '''() => {
             localStorage.setItem('name', 'page2');
             document.cookie = 'name=page2';
-        }''')
+        }'''
+        )
 
         self.assertEqual(len(context1.targets()), 1)
         self.assertEqual(context1.targets()[0], page1.target)
@@ -126,8 +131,7 @@ class TestBrowserContext(BrowserBaseTestCase):
         self.assertEqual(len(self.browser.browserContexts), 1)
         context = await self.browser.createIncognitoBrowserContext()
         self.assertEqual(len(self.browser.browserContexts), 2)
-        remoteBrowser = await connect(
-            browserWSEndpoint=self.browser.wsEndpoint)
+        remoteBrowser = await connect(browserWSEndpoint=self.browser.wsEndpoint)
         contexts = remoteBrowser.browserContexts
         self.assertEqual(len(contexts), 2)
         await remoteBrowser.disconnect()

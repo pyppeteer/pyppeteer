@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from pathlib import Path
 import sys
 import unittest
-
-from syncer import sync
+from pathlib import Path
 
 from pyppeteer.errors import NetworkError, PageError
+from syncer import sync
 
 from .base import BaseTestCase
 
@@ -165,8 +164,7 @@ class TestNetworkEvent(BaseTestCase):
         self.page.on('response', lambda res: pageResponse.set_result(res))
         self.page.on('requestfinished', lambda: finishedRequests.append(True))
 
-        asyncio.ensure_future(
-            self.page.evaluate('fetch("./get", {method: "GET"})'))
+        asyncio.ensure_future(self.page.evaluate('fetch("./get", {method: "GET"})'))
         response = await pageResponse
         self.assertTrue(serverResponses)
         self.assertTrue(response)
@@ -188,8 +186,7 @@ class TestNetworkEvent(BaseTestCase):
             else:
                 await req.continue_()
 
-        self.page.on(
-            'request', lambda req: asyncio.ensure_future(interception(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(interception(req)))
 
         failedRequests = []
         self.page.on('requestfailed', lambda req: failedRequests.append(req))
@@ -198,8 +195,7 @@ class TestNetworkEvent(BaseTestCase):
         self.assertIn('one-style.css', failedRequests[0].url)
         self.assertIsNone(failedRequests[0].response)
         self.assertEqual(failedRequests[0].resourceType, 'stylesheet')
-        self.assertEqual(
-            failedRequests[0].failure()['errorText'], 'net::ERR_FAILED')
+        self.assertEqual(failedRequests[0].failure()['errorText'], 'net::ERR_FAILED')
         self.assertTrue(failedRequests[0].frame)
 
     @sync
@@ -220,31 +216,29 @@ class TestNetworkEvent(BaseTestCase):
         events = []
         self.page.on('request', lambda req: events.append('request'))
         self.page.on('response', lambda res: events.append('response'))
-        self.page.on(
-            'requestfinished', lambda req: events.append('requestfinished'))
+        self.page.on('requestfinished', lambda req: events.append('requestfinished'))
         await self.page.goto(self.url + 'empty')
         self.assertEqual(events, ['request', 'response', 'requestfinished'])
 
     @sync
     async def test_redirects(self):
         events = []
-        self.page.on('request', lambda req: events.append(
-            '{} {}'.format(req.method, req.url)))
-        self.page.on('response', lambda res: events.append(
-            '{} {}'.format(res.status, res.url)))
-        self.page.on('requestfinished', lambda req: events.append(
-            'DONE {}'.format(req.url)))
-        self.page.on('requestfailed', lambda req: events.append(
-            'FAIL {}'.format(req.url)))
+        self.page.on('request', lambda req: events.append('{} {}'.format(req.method, req.url)))
+        self.page.on('response', lambda res: events.append('{} {}'.format(res.status, res.url)))
+        self.page.on('requestfinished', lambda req: events.append('DONE {}'.format(req.url)))
+        self.page.on('requestfailed', lambda req: events.append('FAIL {}'.format(req.url)))
         response = await self.page.goto(self.url + 'redirect1')
-        self.assertEqual(events, [
-            'GET {}'.format(self.url + 'redirect1'),
-            '302 {}'.format(self.url + 'redirect1'),
-            'DONE {}'.format(self.url + 'redirect1'),
-            'GET {}'.format(self.url + 'redirect2'),
-            '200 {}'.format(self.url + 'redirect2'),
-            'DONE {}'.format(self.url + 'redirect2'),
-        ])
+        self.assertEqual(
+            events,
+            [
+                'GET {}'.format(self.url + 'redirect1'),
+                '302 {}'.format(self.url + 'redirect1'),
+                'DONE {}'.format(self.url + 'redirect1'),
+                'GET {}'.format(self.url + 'redirect2'),
+                '200 {}'.format(self.url + 'redirect2'),
+                'DONE {}'.format(self.url + 'redirect2'),
+            ],
+        )
 
         # check redirect chain
         redirectChain = response.request.redirectChain
@@ -268,22 +262,20 @@ class TestRequestInterception(BaseTestCase):
             self.assertEqual(req.frame.url, 'about:blank')
             await req.continue_()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
         self.assertEqual(res.status, 200)
 
     @sync
     async def test_referer_header(self):
         await self.page.setRequestInterception(True)
-        requests = list()
+        requests = []
 
         async def set_request(req):
             requests.append(req)
             await req.continue_()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(set_request(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(set_request(req)))
         await self.page.goto(self.url + 'static/one-style.html')
         self.assertIn('/one-style.css', requests[1].url)
         self.assertIn('/one-style.html', requests[1].headers['referer'])
@@ -305,8 +297,7 @@ class TestRequestInterception(BaseTestCase):
     @sync
     async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
-        self.page.once('request',
-                       lambda req: asyncio.ensure_future(req.continue_()))
+        self.page.once('request', lambda req: asyncio.ensure_future(req.continue_()))
         await self.page.goto(self.url + 'empty')
         await self.page.setRequestInterception(False)
         await self.page.goto(self.url + 'empty')
@@ -320,8 +311,7 @@ class TestRequestInterception(BaseTestCase):
             self.assertEqual(req.headers['foo'], 'bar')
             await req.continue_()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
         self.assertEqual(res.status, 200)
 
@@ -335,8 +325,7 @@ class TestRequestInterception(BaseTestCase):
             self.assertEqual(req.headers['referer'], self.url + 'empty')
             await req.continue_()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         res = await self.page.goto(self.url + 'empty')
         self.assertEqual(res.status, 200)
 
@@ -351,8 +340,7 @@ class TestRequestInterception(BaseTestCase):
                 await req.continue_()
 
         failedRequests = []
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         self.page.on('requestfailed', lambda e: failedRequests.append(e))
         res = await self.page.goto(self.url + 'static/one-style.html')
         self.assertTrue(res.ok)
@@ -366,8 +354,7 @@ class TestRequestInterception(BaseTestCase):
         async def request_check(req):
             await req.abort('internetdisconnected')
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         failedRequests = []
         self.page.on('requestfailed', lambda req: failedRequests.append(req))
         with self.assertRaises(PageError):
@@ -391,8 +378,7 @@ class TestRequestInterception(BaseTestCase):
         async def request_check(req):
             await req.abort()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto(self.url + 'empty')
         self.assertIn('net::ERR_FAILED', cm.exception.args[0])
@@ -413,7 +399,7 @@ class TestRequestInterception(BaseTestCase):
     @sync
     async def test_redirect_for_subresource(self):
         await self.page.setRequestInterception(True)
-        requests = list()
+        requests = []
 
         async def check(req):
             await req.continue_()
@@ -466,8 +452,7 @@ class TestRequestInterception(BaseTestCase):
         async def request_check(req):
             await req.abort()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(request_check(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(request_check(req)))
         with self.assertRaises(PageError) as cm:
             await self.page.goto('data:text/html,No way!')
         self.assertIn('net::ERR_FAILED', cm.exception.args[0])
@@ -539,8 +524,7 @@ class TestRequestInterception(BaseTestCase):
             urls.append(req.url.split('/').pop())
             await req.continue_()
 
-        self.page.on(
-            'request', lambda req: asyncio.ensure_future(set_urls(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(set_urls(req)))
 
         def pathToFileURL(path: Path):
             pathName = str(path).replace('\\', '/')
@@ -559,14 +543,15 @@ class TestRequestInterception(BaseTestCase):
         await self.page.setRequestInterception(True)
 
         async def interception(req):
-            await req.respond({
-                'status': 201,
-                'headers': {'foo': 'bar'},
-                'body': 'intercepted',
-            })
+            await req.respond(
+                {
+                    'status': 201,
+                    'headers': {'foo': 'bar'},
+                    'body': 'intercepted',
+                }
+            )
 
-        self.page.on(
-            'request', lambda req: asyncio.ensure_future(interception(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(interception(req)))
         response = await self.page.goto(self.url + 'empty')
         self.assertEqual(response.status, 201)
         self.assertEqual(response.headers['foo'], 'bar')
@@ -582,7 +567,7 @@ class TestRequestInterception(BaseTestCase):
 class TestNavigationRequest(BaseTestCase):
     @sync
     async def test_navigation_request(self):
-        requests = dict()
+        requests = {}
 
         def set_request(req):
             requests[req.url.split('/').pop()] = req
@@ -597,14 +582,13 @@ class TestNavigationRequest(BaseTestCase):
 
     @sync
     async def test_interception(self):
-        requests = dict()
+        requests = {}
 
         async def on_request(req):
             requests[req.url.split('/').pop()] = req
             await req.continue_()
 
-        self.page.on('request',
-                     lambda req: asyncio.ensure_future(on_request(req)))
+        self.page.on('request', lambda req: asyncio.ensure_future(on_request(req)))
 
         await self.page.setRequestInterception(True)
         await self.page.goto(self.url + 'redirect3')

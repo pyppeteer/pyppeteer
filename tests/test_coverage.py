@@ -17,10 +17,13 @@ class TestJSCoverage(BaseTestCase):
         coverage = await self.page.coverage.stopJSCoverage()
         self.assertEqual(len(coverage), 1)
         self.assertIn('/jscoverage/simple.html', coverage[0]['url'])
-        self.assertEqual(coverage[0]['ranges'], [
-            {'start': 0, 'end': 17},
-            {'start': 35, 'end': 61},
-        ])
+        self.assertEqual(
+            coverage[0]['ranges'],
+            [
+                {'start': 0, 'end': 17},
+                {'start': 35, 'end': 61},
+            ],
+        )
 
     @sync
     async def test_js_coverage_source_url(self):
@@ -49,8 +52,7 @@ class TestJSCoverage(BaseTestCase):
         await self.page.coverage.startJSCoverage(reportAnonymousScript=True)
         await self.page.goto(self.url + 'static/jscoverage/eval.html')
         coverage = await self.page.coverage.stopJSCoverage()
-        self.assertTrue(any(entry for entry in coverage
-                            if entry['url'].startswith('debugger://')))
+        self.assertTrue(any(entry for entry in coverage if entry['url'].startswith('debugger://')))
         self.assertEqual(len(coverage), 2)
 
     @sync
@@ -91,7 +93,7 @@ class TestJSCoverage(BaseTestCase):
         self.assertEqual(len(entry['ranges']), 1)
         range = entry['ranges'][0]
         self.assertEqual(
-            entry['text'][range['start']:range['end']],
+            entry['text'][range['start'] : range['end']],
             'console.log(\'used!\');',
         )
 
@@ -147,7 +149,7 @@ class TestCSSCoverage(BaseTestCase):
         self.assertEqual(coverage[0]['ranges'], [{'start': 1, 'end': 22}])
         range = coverage[0]['ranges'][0]
         self.assertEqual(
-            coverage[0]['text'][range['start']:range['end']],
+            coverage[0]['text'][range['start'] : range['end']],
             'div { color: green; }',
         )
 
@@ -194,10 +196,13 @@ class TestCSSCoverage(BaseTestCase):
         coverage = await self.page.coverage.stopCSSCoverage()
         self.assertEqual(len(coverage), 1)
         range = coverage[0]['ranges']
-        self.assertEqual(range, [
-            {'start': 20, 'end': 168},
-            {'start': 198, 'end': 304},
-        ])
+        self.assertEqual(
+            range,
+            [
+                {'start': 20, 'end': 168},
+                {'start': 198, 'end': 304},
+            ],
+        )
 
     @sync
     async def test_css_ignore_injected_css(self):
@@ -205,8 +210,7 @@ class TestCSSCoverage(BaseTestCase):
         await self.page.coverage.startCSSCoverage()
         await self.page.addStyleTag(content='body { margin: 10px; }')
         # trigger style recalc
-        margin = await self.page.evaluate(
-            '() => window.getComputedStyle(document.body).margin')
+        margin = await self.page.evaluate('() => window.getComputedStyle(document.body).margin')
         self.assertEqual(margin, '10px')
         coverage = await self.page.coverage.stopCSSCoverage()
         self.assertEqual(coverage, [])

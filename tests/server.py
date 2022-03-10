@@ -10,7 +10,6 @@ from typing import Any, Callable
 from tornado import web
 from tornado.log import access_log
 
-
 BASE_HTML = '''
 <html>
 <head><title>main</title></head>
@@ -54,11 +53,13 @@ class LinkHandler1(BaseHandler):
     def get(self) -> None:
         super().get()
         self.set_status(200)
-        self.write('''
+        self.write(
+            '''
 <head><title>link1</title></head>
 <h1 id="link1">Link1</h1>
 <a id="back1" href="./">back1</a>
-        ''')
+        '''
+        )
 
 
 class RedirectHandler1(BaseHandler):
@@ -82,10 +83,7 @@ class RedirectHandler3(BaseHandler):
 class ResourceRedirectHandler(BaseHandler):
     def get(self) -> None:
         super().get()
-        self.write(
-            '<link rel="stylesheet" href="/one-style.css">'
-            '<div>hello, world!</div>'
-        )
+        self.write('<link rel="stylesheet" href="/one-style.css">' '<div>hello, world!</div>')
 
 
 class CSSRedirectHandler1(BaseHandler):
@@ -152,6 +150,7 @@ def basic_auth(auth: Callable[[str, str], bool]) -> Callable:
                 _request_auth(handler)
 
         return new_f
+
     return wrapper
 
 
@@ -166,9 +165,7 @@ def log_handler(handler: Any) -> None:
     """Override tornado's logging."""
     # log only errors (status >= 500)
     if handler.get_status() >= 500:
-        access_log.error(
-            '{} {}'.format(handler.get_status(), handler._request_summary())
-        )
+        access_log.error('{} {}'.format(handler.get_status(), handler._request_summary()))
 
 
 def get_application() -> web.Application:

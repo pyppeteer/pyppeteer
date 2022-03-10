@@ -4,10 +4,9 @@
 import logging
 import sys
 
-from syncer import sync
-
 import pyppeteer
 from pyppeteer.errors import ElementHandleError
+from syncer import sync
 
 from .base import BaseTestCase
 from .frame_utils import attachFrame
@@ -48,34 +47,41 @@ class TestBoundingBox(BaseTestCase):
     @sync
     async def test_force_layout(self):
         await self.page.setViewport({'width': 500, 'height': 500})
-        await self.page.setContent(
-            '<div style="width: 100px; height: 100px;">hello</div>')
+        await self.page.setContent('<div style="width: 100px; height: 100px;">hello</div>')
         elementHandle = await self.page.J('div')
         await self.page.evaluate(
             'element => element.style.height = "200px"',
             elementHandle,
         )
         box = await elementHandle.boundingBox()
-        self.assertEqual(box, {
-            'x': 8,
-            'y': 8,
-            'width': 100,
-            'height': 200,
-        })
+        self.assertEqual(
+            box,
+            {
+                'x': 8,
+                'y': 8,
+                'width': 100,
+                'height': 200,
+            },
+        )
 
     @sync
     async def test_svg(self):
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
             <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500">
                 <rect id="theRect" x="30" y="50" width="200" height="300"></rect>
             </svg>
-        ''')  # noqa: E501
+        '''
+        )  # noqa: E501
         element = await self.page.J('#therect')
         pptrBoundingBox = await element.boundingBox()
-        webBoundingBox = await self.page.evaluate('''e => {
+        webBoundingBox = await self.page.evaluate(
+            '''e => {
             const rect = e.getBoundingClientRect();
             return {x: rect.x, y: rect.y, width: rect.width, height: rect.height};
-        }''', element)  # noqa: E501
+        }''',
+            element,
+        )  # noqa: E501
         self.assertEqual(pptrBoundingBox, webBoundingBox)
 
 
@@ -93,20 +99,23 @@ class TestBoxModel(BaseTestCase):
         await self.page.goto(self.url + 'static/resetcss.html')
 
         # add frame and position it absolutely
-        await attachFrame(
-            self.page, 'frame1', self.url + 'static/resetcss.html')
-        await self.page.evaluate('''() => {
+        await attachFrame(self.page, 'frame1', self.url + 'static/resetcss.html')
+        await self.page.evaluate(
+            '''() => {
             const frame = document.querySelector('#frame1');
             frame.style = `
                 position: absolute;
                 left: 1px;
                 top: 2px;
             `;
-        }''')
+        }'''
+        )
 
         # add div and position it absolutely inside frame
         frame = self.page.frames[1]
-        divHandle = (await frame.evaluateHandle('''() => {
+        divHandle = (
+            await frame.evaluateHandle(
+                '''() => {
             const div = document.createElement('div');
             document.body.appendChild(div);
             div.style = `
@@ -121,28 +130,42 @@ class TestBoxModel(BaseTestCase):
                 height: 7px;
             `
             return div
-        }''')).asElement()
+        }'''
+            )
+        ).asElement()
 
         # query div's boxModel and assert box values
         box = await divHandle.boxModel()
         self.assertEqual(box['width'], 6)
         self.assertEqual(box['height'], 7)
-        self.assertEqual(box['margin'][0], {
-            'x': 1 + 4,
-            'y': 2 + 5,
-        })
-        self.assertEqual(box['border'][0], {
-            'x': 1 + 4 + 3,
-            'y': 2 + 5,
-        })
-        self.assertEqual(box['padding'][0], {
-            'x': 1 + 4 + 3 + 1,
-            'y': 2 + 5,
-        })
-        self.assertEqual(box['content'][0], {
-            'x': 1 + 4 + 3 + 1 + 2,
-            'y': 2 + 5,
-        })
+        self.assertEqual(
+            box['margin'][0],
+            {
+                'x': 1 + 4,
+                'y': 2 + 5,
+            },
+        )
+        self.assertEqual(
+            box['border'][0],
+            {
+                'x': 1 + 4 + 3,
+                'y': 2 + 5,
+            },
+        )
+        self.assertEqual(
+            box['padding'][0],
+            {
+                'x': 1 + 4 + 3 + 1,
+                'y': 2 + 5,
+            },
+        )
+        self.assertEqual(
+            box['content'][0],
+            {
+                'x': 1 + 4 + 3 + 1 + 2,
+                'y': 2 + 5,
+            },
+        )
 
     @sync
     async def test_box_model_invisible(self):
@@ -192,12 +215,10 @@ class TestClick(BaseTestCase):
     @sync
     async def test_text_node(self):
         await self.page.goto(self.url + 'static/button.html')
-        buttonTextNode = await self.page.evaluateHandle(
-            '() => document.querySelector("button").firstChild')
+        buttonTextNode = await self.page.evaluateHandle('() => document.querySelector("button").firstChild')
         with self.assertRaises(ElementHandleError) as cm:
             await buttonTextNode.click()
-        self.assertEqual('Node is not of type HTMLElement',
-                         cm.exception.args[0])
+        self.assertEqual('Node is not of type HTMLElement', cm.exception.args[0])
 
     @sync
     async def test_detached_node(self):
@@ -206,8 +227,7 @@ class TestClick(BaseTestCase):
         await self.page.evaluate('btn => btn.remove()', button)
         with self.assertRaises(ElementHandleError) as cm:
             await button.click()
-        self.assertEqual('Node is detached from document',
-                         cm.exception.args[0])
+        self.assertEqual('Node is detached from document', cm.exception.args[0])
 
     @sync
     async def test_hidden_node(self):
@@ -225,8 +245,7 @@ class TestClick(BaseTestCase):
     async def test_recursively_hidden_node(self):
         await self.page.goto(self.url + 'static/button.html')
         button = await self.page.J('button')
-        await self.page.evaluate(
-            'btn => btn.parentElement.style.display = "none"', button)
+        await self.page.evaluate('btn => btn.parentElement.style.display = "none"', button)
         with self.assertRaises(ElementHandleError) as cm:
             await button.click()
         self.assertEqual(
@@ -252,11 +271,7 @@ class TestHover(BaseTestCase):
         await self.page.goto(self.url + 'static/scrollable.html')
         button = await self.page.J('#button-6')
         await button.hover()
-        self.assertEqual(
-            await self.page.evaluate(
-                'document.querySelector("button:hover").id'),
-            'button-6'
-        )
+        self.assertEqual(await self.page.evaluate('document.querySelector("button:hover").id'), 'button-6')
 
 
 class TestIsIntersectingViewport(BaseTestCase):
@@ -273,7 +288,8 @@ class TestScreenshot(BaseTestCase):
     @sync
     async def test_screenshot_larger_than_viewport(self):
         await self.page.setViewport({'width': 500, 'height': 500})
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
 something above
 <style>
 div.to-screenshot {
@@ -289,21 +305,22 @@ div.to-screenshot {
 </style>
 
 <div class="to-screenshot"></div>
-                                   ''')
+                                   '''
+        )
         elementHandle = await self.page.J('div.to-screenshot')
         await elementHandle.screenshot()
-        size = await self.page.evaluate(
-            '() => ({ w: window.innerWidth, h: window.innerHeight })'
-        )
+        size = await self.page.evaluate('() => ({ w: window.innerWidth, h: window.innerHeight })')
         self.assertEqual({'w': 500, 'h': 500}, size)
 
 
 class TestQuerySelector(BaseTestCase):
     @sync
     async def test_J(self):
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
 <html><body><div class="second"><div class="inner">A</div></div></body></html>
-        ''')
+        '''
+        )
         html = await self.page.J('html')
         second = await html.J('.second')
         inner = await second.J('.inner')
@@ -312,28 +329,34 @@ class TestQuerySelector(BaseTestCase):
 
     @sync
     async def test_J_none(self):
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
 <html><body><div class="second"><div class="inner">A</div></div></body></html>
-        ''')
+        '''
+        )
         html = await self.page.J('html')
         second = await html.J('.third')
         self.assertIsNone(second)
 
     @sync
     async def test_Jeval(self):
-        await self.page.setContent('''<html><body>
+        await self.page.setContent(
+            '''<html><body>
             <div class="tweet">
                 <div class="like">100</div>
                 <div class="retweets">10</div>
             </div>
-        </body></html>''')
+        </body></html>'''
+        )
         tweet = await self.page.J('.tweet')
         content = await tweet.Jeval('.like', 'node => node.innerText')
         self.assertEqual(content, '100')
 
     @sync
     async def test_Jeval_subtree(self):
-        htmlContent = '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
+        htmlContent = (
+            '<div class="a">not-a-child-div</div><div id="myId"><div class="a">a-child-div</div></div>'  # noqa: E501
+        )
         await self.page.setContent(htmlContent)
         elementHandle = await self.page.J('#myId')
         content = await elementHandle.Jeval('.a', 'node => node.innerText')
@@ -346,30 +369,31 @@ class TestQuerySelector(BaseTestCase):
         elementHandle = await self.page.J('#myId')
         with self.assertRaises(ElementHandleError) as cm:
             await elementHandle.Jeval('.a', 'node => node.innerText')
-        self.assertIn('Error: failed to find element matching selector ".a"',
-                      cm.exception.args[0])
+        self.assertIn('Error: failed to find element matching selector ".a"', cm.exception.args[0])
 
     @sync
     async def test_JJ(self):
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
 <html><body><div>A</div><br/><div>B</div></body></html>
-        ''')
+        '''
+        )
         html = await self.page.J('html')
         elements = await html.JJ('div')
         self.assertEqual(len(elements), 2)
         if sys.version_info >= (3, 6):
             result = []
             for elm in elements:
-                result.append(
-                    await self.page.evaluate('(e) => e.textContent', elm)
-                )
+                result.append(await self.page.evaluate('(e) => e.textContent', elm))
             self.assertEqual(result, ['A', 'B'])
 
     @sync
     async def test_JJ_empty(self):
-        await self.page.setContent('''
+        await self.page.setContent(
+            '''
 <html><body><span>A</span><br/><span>B</span></body></html>
-        ''')
+        '''
+        )
         html = await self.page.J('html')
         elements = await html.JJ('div')
         self.assertEqual(len(elements), 0)
@@ -381,8 +405,7 @@ class TestQuerySelector(BaseTestCase):
             '<div class="like">10</div></div></body></html>'
         )
         tweet = await self.page.J('.tweet')
-        content = await tweet.JJeval(
-            '.like', 'nodes => nodes.map(n => n.innerText)')
+        content = await tweet.JJeval('.like', 'nodes => nodes.map(n => n.innerText)')
         self.assertEqual(content, ['100', '10'])
 
     @sync
@@ -395,14 +418,12 @@ class TestQuerySelector(BaseTestCase):
             '</div>'
         )
         elementHandle = await self.page.J('#myId')
-        content = await elementHandle.JJeval(
-            '.a', 'nodes => nodes.map(n => n.innerText)')
+        content = await elementHandle.JJeval('.a', 'nodes => nodes.map(n => n.innerText)')
         self.assertEqual(content, ['a1-child-div', 'a2-child-div'])
 
     @sync
     async def test_JJEval_missing_selector(self):
-        await self.page.setContent(
-            '<div class="a">not-a-child-div</div><div id="myId"></div>')
+        await self.page.setContent('<div class="a">not-a-child-div</div><div id="myId"></div>')
         elementHandle = await self.page.J('#myId')
         nodesLength = await elementHandle.JJeval('.a', 'nodes => nodes.length')
         self.assertEqual(nodesLength, 0)

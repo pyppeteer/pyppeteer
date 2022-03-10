@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from copy import deepcopy
 import glob
 import logging
 import os
@@ -12,16 +11,16 @@ import sys
 import tempfile
 import time
 import unittest
+from copy import deepcopy
 from unittest import mock
 
-from syncer import sync
 import websockets
-
-from pyppeteer import connect, launch, executablePath, defaultArgs
+from pyppeteer import connect, defaultArgs, executablePath, launch
 from pyppeteer.chromium_downloader import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
+from syncer import sync
 
 from .base import DEFAULT_OPTIONS
 from .server import get_application
@@ -40,8 +39,7 @@ class TestLauncher(unittest.TestCase):
     def check_default_args(self, launcher):
         for opt in self.headless_options:
             self.assertIn(opt, launcher.chromeArguments)
-        self.assertTrue(any(opt for opt in launcher.chromeArguments
-                            if opt.startswith('--user-data-dir')))
+        self.assertTrue(any(opt for opt in launcher.chromeArguments if opt.startswith('--user-data-dir')))
 
     def test_no_option(self):
         launcher = Launcher()
@@ -84,8 +82,7 @@ class TestLauncher(unittest.TestCase):
     def test_user_data_dir(self):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
         self.check_default_args(launcher)
-        self.assertIn('--user-data-dir=/path/to/profile',
-                      launcher.chromeArguments)
+        self.assertIn('--user-data-dir=/path/to/profile', launcher.chromeArguments)
         self.assertIsNone(launcher.temporaryUserDataDir)
 
     @sync
@@ -356,8 +353,7 @@ class TestUserDataDir(unittest.TestCase):
     async def test_user_data_dir_args(self):
         options = {}
         options.update(DEFAULT_OPTIONS)
-        options['args'] = (options['args'] +
-                           ['--user-data-dir={}'.format(self.datadir)])
+        options['args'] = options['args'] + ['--user-data-dir={}'.format(self.datadir)]
         browser = await launch(options)
         self.assertGreater(len(glob.glob(os.path.join(self.datadir, '**'))), 0)
         await browser.close()
@@ -381,8 +377,7 @@ class TestUserDataDir(unittest.TestCase):
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
     async def test_user_data_dir_restore_cookie_in_browser(self):
-        browser = await launch(
-            DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
+        browser = await launch(DEFAULT_OPTIONS, userDataDir=self.datadir, headless=False)
         page = await browser.newPage()
         await page.goto(self.url + 'empty')
         await page.evaluate('() => document.cookie = "foo=true; expires=Fri, 31 Dec 9999 23:59:59 GMT"')  # noqa: E501
@@ -412,7 +407,7 @@ class TestTargetEvents(unittest.TestCase):
     @sync
     async def test_target_events(self):
         browser = await launch(DEFAULT_OPTIONS)
-        events = list()
+        events = []
         browser.on('targetcreated', lambda _: events.append('CREATED'))
         browser.on('targetchanged', lambda _: events.append('CHANGED'))
         browser.on('targetdestroyed', lambda _: events.append('DESTROYED'))
