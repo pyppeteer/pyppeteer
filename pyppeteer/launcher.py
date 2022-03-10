@@ -5,32 +5,31 @@
 
 import asyncio
 import atexit
-from copy import copy
 import json
-from urllib.request import urlopen
-from urllib.error import URLError
-from http.client import HTTPException
 import logging
 import os
 import os.path
-from pathlib import Path
 import shutil
 import signal
 import subprocess
 import sys
 import tempfile
 import time
-from typing import Any, Dict, List, TYPE_CHECKING
+from copy import copy
+from http.client import HTTPException
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Dict, List
+from urllib.error import URLError
+from urllib.request import urlopen
 
 from pyppeteer import __pyppeteer_home__
 from pyppeteer.browser import Browser
-from pyppeteer.connection import Connection
 from pyppeteer.chromium_downloader import current_platform
+from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.helper import addEventListener, debugError, removeEventListeners
 from pyppeteer.target import Target
-from pyppeteer.util import check_chromium, chromium_executable
-from pyppeteer.util import download_chromium, merge_dict, get_free_port
+from pyppeteer.util import check_chromium, chromium_executable, download_chromium, get_free_port, merge_dict
 
 if TYPE_CHECKING:
     from typing import Optional  # noqa: F401
@@ -67,8 +66,7 @@ DEFAULT_ARGS = [
 class Launcher(object):
     """Chrome process launcher class."""
 
-    def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
-                 **kwargs: Any) -> None:
+    def __init__(self, options: Dict[str, Any] = None, **kwargs: Any) -> None:  # noqa: C901
         """Make new launcher."""
         options = merge_dict(options, kwargs)
 
@@ -95,11 +93,16 @@ class Launcher(object):
         if logLevel:
             logging.getLogger('pyppeteer').setLevel(logLevel)
 
-        self.chromeArguments: List[str] = list()
+        self.chromeArguments: List[str] = []
         if not ignoreDefaultArgs:
             self.chromeArguments.extend(defaultArgs(options))
         elif isinstance(ignoreDefaultArgs, list):
-            self.chromeArguments.extend(filter(lambda arg: arg not in ignoreDefaultArgs, defaultArgs(options), ))
+            self.chromeArguments.extend(
+                filter(
+                    lambda arg: arg not in ignoreDefaultArgs,
+                    defaultArgs(options),
+                )
+            )
         else:
             self.chromeArguments.extend(args)
 
@@ -138,15 +141,14 @@ class Launcher(object):
         self.chromeClosed = False
         self.connection: Optional[Connection] = None
 
-        options = dict()
+        options = {}
         options['env'] = self.env
         if not self.dumpio:
             # discard stdout, it's never read in any case.
             options['stdout'] = subprocess.DEVNULL
             options['stderr'] = subprocess.STDOUT
 
-        self.proc = subprocess.Popen(  # type: ignore
-            self.cmd, **options, )
+        self.proc = subprocess.Popen(self.cmd, **options)  # type: ignore[arg-type]
 
         def _close_process(*args: Any, **kwargs: Any) -> None:
             if not self.chromeClosed:
@@ -167,9 +169,14 @@ class Launcher(object):
         connectionDelay = self.slowMo
         self.browserWSEndpoint = get_ws_endpoint(self.url)
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
-        self.connection = Connection(self.browserWSEndpoint, self._loop, connectionDelay, )
-        browser = await Browser.create(self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc,
-                                       self.killChrome)
+        self.connection = Connection(
+            self.browserWSEndpoint,
+            self._loop,
+            connectionDelay,
+        )
+        browser = await Browser.create(
+            self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc, self.killChrome
+        )
         await self.ensureInitialPage(browser)
         return browser
 
@@ -222,7 +229,7 @@ class Launcher(object):
 def get_ws_endpoint(url) -> str:
     url = url + '/json/version'
     timeout = time.time() + 30
-    while (True):
+    while True:
         if time.time() > timeout:
             raise BrowserError('Browser closed unexpectedly:\n')
         try:
@@ -353,8 +360,14 @@ async def connect(options: dict = None, **kwargs: Any) -> Browser:
     browserContextIds = (await connection.send('Target.getBrowserContexts')).get('browserContextIds', [])
     ignoreHTTPSErrors = bool(options.get('ignoreHTTPSErrors', False))
     defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})
-    return await Browser.create(connection, browserContextIds, ignoreHTTPSErrors, defaultViewport, None,
-                                lambda: connection.send('Browser.close'))
+    return await Browser.create(
+        connection,
+        browserContextIds,
+        ignoreHTTPSErrors,
+        defaultViewport,
+        None,
+        lambda: connection.send('Browser.close'),
+    )
 
 
 def executablePath() -> str:
@@ -387,7 +400,13 @@ def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901
     if devtools:
         chromeArguments.append('--auto-open-devtools-for-tabs')
     if headless:
-        chromeArguments.extend(('--headless', '--hide-scrollbars', '--mute-audio',))
+        chromeArguments.extend(
+            (
+                '--headless',
+                '--hide-scrollbars',
+                '--mute-audio',
+            )
+        )
         if current_platform().startswith('win'):
             chromeArguments.append('--disable-gpu')
 

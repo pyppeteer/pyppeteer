@@ -7,8 +7,7 @@ import gc
 import socket
 from typing import Dict, Optional
 
-from pyppeteer.chromium_downloader import check_chromium, chromium_executable
-from pyppeteer.chromium_downloader import download_chromium
+from pyppeteer.chromium_downloader import check_chromium, chromium_executable, download_chromium
 
 __all__ = [
     'check_chromium',

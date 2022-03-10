@@ -14,7 +14,7 @@ from zipfile import ZipFile
 import certifi
 import urllib3
 from pyppeteer import __chromium_revision__, __pyppeteer_home__
-from tqdm import tqdm
+from tqdm import tqdm  # type: ignore[import]
 
 logger = logging.getLogger(__name__)
 # add our own stream handler - we want some output here
@@ -60,7 +60,7 @@ def current_platform() -> str:
     elif sys.platform.startswith('darwin'):
         return 'mac'
     elif sys.platform.startswith('win') or sys.platform.startswith('msys') or sys.platform.startswith('cyg'):
-        if sys.maxsize > 2 ** 31 - 1:
+        if sys.maxsize > 2**31 - 1:
             return 'win64'
         return 'win32'
     raise OSError('Unsupported platform: ' + sys.platform)
@@ -117,7 +117,10 @@ def extract_zip(data: BytesIO, path: Path) -> None:
         if not shutil.which('unzip'):
             raise OSError('Failed to automatically extract chromium.' f'Please unzip {zip_path} manually.')
         proc = subprocess.run(
-            ['unzip', str(zip_path)], cwd=str(path), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            ['unzip', str(zip_path)],
+            cwd=str(path),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
         )
         if proc.returncode != 0:
             logger.error(proc.stdout.decode())

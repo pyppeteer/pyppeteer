@@ -4,19 +4,17 @@
 """Frame Manager module."""
 
 import asyncio
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, Generator, List, Optional, Set, Union
 
-from pyee import EventEmitter
-
+from pyee import EventEmitter  # type: ignore[import]
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.element_handle import ElementHandle
-from pyppeteer.errors import NetworkError
+from pyppeteer.errors import ElementHandleError, NetworkError, PageError, TimeoutError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
-from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
 
 logger = logging.getLogger(__name__)
@@ -40,34 +38,28 @@ class FrameManager(EventEmitter):
         self._page = page
         self._frames: OrderedDict[str, Frame] = OrderedDict()
         self._mainFrame: Optional[Frame] = None
-        self._contextIdToContext: Dict[str, ExecutionContext] = dict()
+        self._contextIdToContext: Dict[str, ExecutionContext] = {}
 
-        client.on('Page.frameAttached',
-                  lambda event: self._onFrameAttached(
-                      event.get('frameId', ''), event.get('parentFrameId', ''))
-                  )
-        client.on('Page.frameNavigated',
-                  lambda event: self._onFrameNavigated(event.get('frame')))
-        client.on('Page.navigatedWithinDocument',
-                  lambda event: self._onFrameNavigatedWithinDocument(
-                      event.get('frameId'), event.get('url')
-                  ))
-        client.on('Page.frameDetached',
-                  lambda event: self._onFrameDetached(event.get('frameId')))
-        client.on('Page.frameStoppedLoading',
-                  lambda event: self._onFrameStoppedLoading(
-                      event.get('frameId')
-                  ))
-        client.on('Runtime.executionContextCreated',
-                  lambda event: self._onExecutionContextCreated(
-                      event.get('context')))
-        client.on('Runtime.executionContextDestroyed',
-                  lambda event: self._onExecutionContextDestroyed(
-                      event.get('executionContextId')))
-        client.on('Runtime.executionContextsCleared',
-                  lambda event: self._onExecutionContextsCleared())
-        client.on('Page.lifecycleEvent',
-                  lambda event: self._onLifecycleEvent(event))
+        client.on(
+            'Page.frameAttached',
+            lambda event: self._onFrameAttached(event.get('frameId', ''), event.get('parentFrameId', '')),
+        )
+        client.on('Page.frameNavigated', lambda event: self._onFrameNavigated(event.get('frame')))
+        client.on(
+            'Page.navigatedWithinDocument',
+            lambda event: self._onFrameNavigatedWithinDocument(event.get('frameId'), event.get('url')),
+        )
+        client.on('Page.frameDetached', lambda event: self._onFrameDetached(event.get('frameId')))
+        client.on('Page.frameStoppedLoading', lambda event: self._onFrameStoppedLoading(event.get('frameId')))
+        client.on(
+            'Runtime.executionContextCreated', lambda event: self._onExecutionContextCreated(event.get('context'))
+        )
+        client.on(
+            'Runtime.executionContextDestroyed',
+            lambda event: self._onExecutionContextDestroyed(event.get('executionContextId')),
+        )
+        client.on('Runtime.executionContextsCleared', lambda event: self._onExecutionContextsCleared())
+        client.on('Page.lifecycleEvent', lambda event: self._onLifecycleEvent(event))
 
         self._handleFrameTree(frameTree)
 
@@ -126,8 +118,7 @@ class FrameManager(EventEmitter):
         else:
             frame = self._frames.get(framePayload.get('id', ''))
         if not (isMainFrame or frame):
-            raise PageError('We either navigate top level or have old version '
-                            'of the navigated frame')
+            raise PageError('We either navigate top level or have old version ' 'of the navigated frame')
 
         # Detach all child frames first.
         if frame:
@@ -165,8 +156,7 @@ class FrameManager(EventEmitter):
             self._removeFramesRecursively(frame)
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
-        if (contextPayload.get('auxData') and
-                contextPayload['auxData'].get('frameId')):
+        if contextPayload.get('auxData') and contextPayload['auxData'].get('frameId'):
             frameId = contextPayload['auxData']['frameId']
         else:
             frameId = None
@@ -209,19 +199,15 @@ class FrameManager(EventEmitter):
         """Get stored ``ExecutionContext`` by ``id``."""
         context = self._contextIdToContext.get(contextId)
         if not context:
-            raise ElementHandleError(
-                f'INTERNAL ERROR: missing context with id = {contextId}'
-            )
+            raise ElementHandleError(f'INTERNAL ERROR: missing context with id = {contextId}')
         return context
 
-    def createJSHandle(self, context: ExecutionContext,
-                       remoteObject: Dict = None) -> JSHandle:
+    def createJSHandle(self, context: ExecutionContext, remoteObject: Dict = None) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
-            remoteObject = dict()
+            remoteObject = {}
         if remoteObject.get('subtype') == 'node':
-            return ElementHandle(context, self._client, remoteObject,
-                                 self._page, self)
+            return ElementHandle(context, self._client, remoteObject, self._page, self)
         return JSHandle(context, self._client, remoteObject)
 
     def _removeFramesRecursively(self, frame: 'Frame') -> None:
@@ -238,8 +224,7 @@ class Frame(object):
     Frame objects can be obtained via :attr:`pyppeteer.page.Page.mainFrame`.
     """
 
-    def __init__(self, client: CDPSession, parentFrame: Optional['Frame'],
-                 frameId: str) -> None:
+    def __init__(self, client: CDPSession, parentFrame: Optional['Frame'], frameId: str) -> None:
         self._client = client
         self._parentFrame = parentFrame
         self._url = ''
@@ -274,9 +259,7 @@ class Frame(object):
         else:
             self._documentPromise = None
             self._contextPromise = self._client._loop.create_future()
-            self._contextResolveCallback = (
-                lambda _context: self._contextPromise.set_result(_context)
-            )
+            self._contextResolveCallback = lambda _context: self._contextPromise.set_result(_context)
 
     async def executionContext(self) -> Optional[ExecutionContext]:
         """Return execution context of this frame.
@@ -296,8 +279,7 @@ class Frame(object):
             raise PageError('this frame has no context.')
         return await context.evaluateHandle(pageFunction, *args)
 
-    async def evaluate(self, pageFunction: str, *args: Any,
-                       force_expr: bool = False) -> Any:
+    async def evaluate(self, pageFunction: str, *args: Any, force_expr: bool = False) -> Any:
         """Evaluate pageFunction on this frame.
 
         Details see :meth:`pyppeteer.page.Page.evaluate`.
@@ -305,8 +287,7 @@ class Frame(object):
         context = await self.executionContext()
         if context is None:
             raise ElementHandleError('ExecutionContext is None.')
-        return await context.evaluate(
-            pageFunction, *args, force_expr=force_expr)
+        return await context.evaluate(pageFunction, *args, force_expr=force_expr)
 
     async def querySelector(self, selector: str) -> Optional[ElementHandle]:
         """Get element which matches `selector` string.
@@ -340,8 +321,7 @@ class Frame(object):
         value = await document.xpath(expression)
         return value
 
-    async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
         """Execute function on element which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorEval`.
@@ -349,8 +329,7 @@ class Frame(object):
         document = await self._document()
         return await document.querySelectorEval(selector, pageFunction, *args)
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Optional[Dict]:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Optional[Dict]:
         """Execute function on all elements which matches selector.
 
         Details see :meth:`pyppeteer.page.Page.querySelectorAllEval`.
@@ -381,7 +360,8 @@ class Frame(object):
 
     async def content(self) -> str:
         """Get the whole HTML contents of the page."""
-        return await self.evaluate('''
+        return await self.evaluate(
+            '''
 () => {
   let retVal = '';
   if (document.doctype)
@@ -390,7 +370,8 @@ class Frame(object):
     retVal += document.documentElement.outerHTML;
   return retVal;
 }
-        '''.strip())
+        '''.strip()
+        )
 
     async def setContent(self, html: str) -> None:
         """Set content to this page."""
@@ -435,8 +416,7 @@ function(html) {
 
     async def injectFile(self, filePath: str) -> str:
         """[Deprecated] Inject file to the frame."""
-        logger.warning('`injectFile` method is deprecated.'
-                       ' Use `addScriptTag` method instead.')
+        logger.warning('`injectFile` method is deprecated.' ' Use `addScriptTag` method instead.')
         with open(filePath) as f:
             contents = f.read()
         contents += '/* # sourceURL= {} */'.format(filePath.replace('\n', ''))
@@ -485,31 +465,26 @@ function(html) {
             if 'type' in options:
                 args.append(options['type'])
             try:
-                return (await context.evaluateHandle(*args)  # type: ignore
-                        ).asElement()
+                return (await context.evaluateHandle(*args)).asElement()  # type: ignore
             except ElementHandleError as e:
                 raise PageError(f'Loading script from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
-            contents = contents + '//# sourceURL={}'.format(
-                options['path'].replace('\n', ''))
+            contents = contents + '//# sourceURL={}'.format(options['path'].replace('\n', ''))
             args = [addScriptContent, contents]
             if 'type' in options:
                 args.append(options['type'])
-            return (await context.evaluateHandle(*args)  # type: ignore
-                    ).asElement()
+            return (await context.evaluateHandle(*args)).asElement()  # type: ignore
 
         if isinstance(options.get('content'), str):
             args = [addScriptContent, options['content']]
             if 'type' in options:
                 args.append(options['type'])
-            return (await context.evaluateHandle(*args)  # type: ignore
-                    ).asElement()
+            return (await context.evaluateHandle(*args)).asElement()  # type: ignore
 
-        raise ValueError(
-            'Provide an object with a `url`, `path` or `content` property')
+        raise ValueError('Provide an object with a `url`, `path` or `content` property')
 
     async def addStyleTag(self, options: Dict) -> ElementHandle:
         """Add style tag to this frame.
@@ -551,28 +526,22 @@ function(html) {
         if isinstance(options.get('url'), str):
             url = options['url']
             try:
-                return (await context.evaluateHandle(  # type: ignore
-                    addStyleUrl, url)).asElement()
+                return (await context.evaluateHandle(addStyleUrl, url)).asElement()  # type: ignore
             except ElementHandleError as e:
                 raise PageError(f'Loading style from {url} failed') from e
 
         if isinstance(options.get('path'), str):
             with open(options['path']) as f:
                 contents = f.read()
-            contents = contents + '/*# sourceURL={}*/'.format(
-                options['path'].replace('\n', ''))
-            return (await context.evaluateHandle(  # type: ignore
-                addStyleContent, contents)).asElement()
+            contents = contents + '/*# sourceURL={}*/'.format(options['path'].replace('\n', ''))
+            return (await context.evaluateHandle(addStyleContent, contents)).asElement()  # type: ignore
 
         if isinstance(options.get('content'), str):
-            return (await context.evaluateHandle(  # type: ignore
-                addStyleContent, options['content'])).asElement()
+            return (await context.evaluateHandle(addStyleContent, options['content'])).asElement()  # type: ignore
 
-        raise ValueError(
-            'Provide an object with a `url`, `path` or `content` property')
+        raise ValueError('Provide an object with a `url`, `path` or `content` property')
 
-    async def click(self, selector: str, options: dict = None, **kwargs: Any
-                    ) -> None:
+    async def click(self, selector: str, options: dict = None, **kwargs: Any) -> None:
         """Click element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.click`.
@@ -613,12 +582,10 @@ function(html) {
         """
         for value in values:
             if not isinstance(value, str):
-                raise TypeError(
-                    'Values must be string. '
-                    f'Found {value} of type {type(value)}'
-                )
+                raise TypeError('Values must be string. ' f'Found {value} of type {type(value)}')
         return await self.querySelectorEval(  # type: ignore
-            selector, '''
+            selector,
+            '''
 (element, values) => {
     if (element.nodeName.toLowerCase() !== 'select')
         throw new Error('Element is not a <select> element.');
@@ -635,7 +602,9 @@ function(html) {
     element.dispatchEvent(new Event('change', { 'bubbles': true }));
     return options.filter(option => option.selected).map(options => options.value)
 }
-        ''', values)  # noqa: E501
+        ''',
+            values,
+        )  # noqa: E501
 
     async def tap(self, selector: str) -> None:
         """Tap the element which matches the ``selector``.
@@ -648,8 +617,7 @@ function(html) {
         await handle.tap()
         await handle.dispose()
 
-    async def type(self, selector: str, text: str, options: dict = None,
-                   **kwargs: Any) -> None:
+    async def type(self, selector: str, text: str, options: dict = None, **kwargs: Any) -> None:
         """Type ``text`` on the element which matches ``selector``.
 
         Details see :meth:`pyppeteer.page.Page.type`.
@@ -661,35 +629,29 @@ function(html) {
         await handle.type(text, options)
         await handle.dispose()
 
-    def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, *args: Any, **kwargs: Any
-                ) -> Union[Awaitable, 'WaitTask']:
+    def waitFor(
+        self, selectorOrFunctionOrTimeout: Union[str, int, float], options: dict = None, *args: Any, **kwargs: Any
+    ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
         Details see :meth:`pyppeteer.page.Page.waitFor`.
         """
         options = merge_dict(options, kwargs)
         if isinstance(selectorOrFunctionOrTimeout, (int, float)):
-            fut: Awaitable[None] = self._client._loop.create_task(
-                asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
+            fut: Awaitable[None] = self._client._loop.create_task(asyncio.sleep(selectorOrFunctionOrTimeout / 1000))
             return fut
         if not isinstance(selectorOrFunctionOrTimeout, str):
             fut = self._client._loop.create_future()
-            fut.set_exception(TypeError(
-                'Unsupported target type: ' +
-                str(type(selectorOrFunctionOrTimeout))
-            ))
+            fut.set_exception(TypeError('Unsupported target type: ' + str(type(selectorOrFunctionOrTimeout))))
             return fut
 
         if args or helper.is_jsfunc(selectorOrFunctionOrTimeout):
-            return self.waitForFunction(
-                selectorOrFunctionOrTimeout, options, *args)
+            return self.waitForFunction(selectorOrFunctionOrTimeout, options, *args)
         if selectorOrFunctionOrTimeout.startswith('//'):
             return self.waitForXPath(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
-    def waitForSelector(self, selector: str, options: dict = None,
-                        **kwargs: Any) -> 'WaitTask':
+    def waitForSelector(self, selector: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``selector`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForSelector`.
@@ -697,8 +659,7 @@ function(html) {
         options = merge_dict(options, kwargs)
         return self._waitForSelectorOrXPath(selector, False, options)
 
-    def waitForXPath(self, xpath: str, options: dict = None,
-                     **kwargs: Any) -> 'WaitTask':
+    def waitForXPath(self, xpath: str, options: dict = None, **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
         Details see :meth:`pyppeteer.page.Page.waitForXPath`.
@@ -706,21 +667,19 @@ function(html) {
         options = merge_dict(options, kwargs)
         return self._waitForSelectorOrXPath(xpath, True, options)
 
-    def waitForFunction(self, pageFunction: str, options: dict = None,
-                        *args: Any, **kwargs: Any) -> 'WaitTask':
+    def waitForFunction(self, pageFunction: str, options: dict = None, *args: Any, **kwargs: Any) -> 'WaitTask':
         """Wait until the function completes.
 
         Details see :meth:`pyppeteer.page.Page.waitForFunction`.
         """
         options = merge_dict(options, kwargs)
-        timeout = options.get('timeout',  30000)  # msec
+        timeout = options.get('timeout', 30000)  # msec
         polling = options.get('polling', 'raf')
-        return WaitTask(self, pageFunction, 'function', polling, timeout,
-                        self._client._loop, *args)
+        return WaitTask(self, pageFunction, 'function', polling, timeout, self._client._loop, *args)
 
-    def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
-                                options: dict = None, **kwargs: Any
-                                ) -> 'WaitTask':
+    def _waitForSelectorOrXPath(
+        self, selectorOrXPath: str, isXPath: bool, options: dict = None, **kwargs: Any
+    ) -> 'WaitTask':
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout', 30000)
         waitForVisible = bool(options.get('visible'))
@@ -793,8 +752,7 @@ function(html) {
 
     def _detach(self) -> None:
         for waitTask in self._waitTasks:
-            waitTask.terminate(
-                PageError('waitForFunction failed: frame got detached.'))
+            waitTask.terminate(PageError('waitForFunction failed: frame got detached.'))
         self._detached = True
         if self._parentFrame:
             self._parentFrame._childFrames.remove(self)
@@ -807,17 +765,22 @@ class WaitTask(object):
     Instance of this class is awaitable.
     """
 
-    def __init__(self, frame: Frame, predicateBody: str,  # noqa: C901
-                 title: str, polling: Union[str, int], timeout: float,
-                 loop: asyncio.AbstractEventLoop, *args: Any) -> None:
+    def __init__(
+        self,
+        frame: Frame,
+        predicateBody: str,  # noqa: C901
+        title: str,
+        polling: Union[str, int],
+        timeout: float,
+        loop: asyncio.AbstractEventLoop,
+        *args: Any,
+    ) -> None:
         if isinstance(polling, str):
             if polling not in ['raf', 'mutation']:
                 raise ValueError(f'Unknown polling: {polling}')
         elif isinstance(polling, (int, float)):
             if polling <= 0:
-                raise ValueError(
-                    f'Cannot poll with non-positive interval: {polling}'
-                )
+                raise ValueError(f'Cannot poll with non-positive interval: {polling}')
         else:
             raise ValueError(f'Unknown polling option: {polling}')
 
@@ -840,9 +803,7 @@ class WaitTask(object):
         async def timer(timeout: Union[int, float]) -> None:
             await asyncio.sleep(timeout / 1000)
             self._timeoutError = True
-            self.terminate(TimeoutError(
-                f'Waiting for {title} failed: timeout {timeout}ms exceeds.'
-            ))
+            self.terminate(TimeoutError(f'Waiting for {title} failed: timeout {timeout}ms exceeds.'))
 
         if timeout:
             self._timeoutTimer = self._loop.create_task(timer(self._timeout))
@@ -892,8 +853,7 @@ class WaitTask(object):
 
         # Add try/except referring to puppeteer.
         try:
-            if not error and success and (
-                    await self._frame.evaluate('s => !s', success)):
+            if not error and success and (await self._frame.evaluate('s => !s', success)):
                 await success.dispose()
                 return
         except NetworkError:
@@ -903,13 +863,11 @@ class WaitTask(object):
 
         # page is navigated and context is destroyed.
         # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Execution context was destroyed' in error.args[0]):
+        if isinstance(error, NetworkError) and 'Execution context was destroyed' in error.args[0]:
             return
 
         # Try again in the new execution context.
-        if (isinstance(error, NetworkError) and
-                'Cannot find context with specified id' in error.args[0]):
+        if isinstance(error, NetworkError) and 'Cannot find context with specified id' in error.args[0]:
             return
 
         if error:

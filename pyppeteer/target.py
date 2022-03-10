@@ -4,8 +4,7 @@
 """Target module."""
 
 import asyncio
-from typing import Any, Callable, Coroutine, Dict, List, Optional
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Coroutine, Dict, List, Optional
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.page import Page
@@ -17,11 +16,16 @@ if TYPE_CHECKING:
 class Target(object):
     """Browser's target class."""
 
-    def __init__(self, targetInfo: Dict, browserContext: 'BrowserContext',
-                 sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
-                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                 screenshotTaskQueue: List, loop: asyncio.AbstractEventLoop
-                 ) -> None:
+    def __init__(
+        self,
+        targetInfo: Dict,
+        browserContext: 'BrowserContext',
+        sessionFactory: Callable[[], Coroutine[Any, Any, CDPSession]],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        screenshotTaskQueue: List,
+        loop: asyncio.AbstractEventLoop,
+    ) -> None:
         self._targetInfo = targetInfo
         self._browserContext = browserContext
         self._targetId = targetInfo.get('targetId', '')
@@ -34,8 +38,7 @@ class Target(object):
 
         self._initializedPromise = self._loop.create_future()
         self._isClosedPromise = self._loop.create_future()
-        self._isInitialized = (self._targetInfo['type'] != 'page'
-                               or self._targetInfo['url'] != '')
+        self._isInitialized = self._targetInfo['type'] != 'page' or self._targetInfo['url'] != ''
         if self._isInitialized:
             self._initializedCallback(True)
 
@@ -58,11 +61,11 @@ class Target(object):
         If the target is not of type "page" or "background_page", return
         ``None``.
         """
-        if (self._targetInfo['type'] in ['page', 'background_page'] and
-                self._page is None):
+        if self._targetInfo['type'] in ['page', 'background_page'] and self._page is None:
             client = await self._sessionFactory()
             new_page = await Page.create(
-                client, self,
+                client,
+                self,
                 self._ignoreHTTPSErrors,
                 self._defaultViewport,
                 self._screenshotTaskQueue,
@@ -112,8 +115,7 @@ class Target(object):
     def _targetInfoChanged(self, targetInfo: Dict) -> None:
         self._targetInfo = targetInfo
 
-        if not self._isInitialized and (self._targetInfo['type'] != 'page' or
-                                        self._targetInfo['url'] != ''):
+        if not self._isInitialized and (self._targetInfo['type'] != 'page' or self._targetInfo['url'] != ''):
             self._isInitialized = True
             self._initializedCallback(True)
             return

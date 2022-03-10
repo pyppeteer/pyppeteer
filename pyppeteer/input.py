@@ -4,7 +4,7 @@
 """Keyboard and Mouse module."""
 
 import asyncio
-from typing import Any, Dict, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PyppeteerError
@@ -55,8 +55,7 @@ class Keyboard(object):
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
-    async def down(self, key: str, options: dict = None, **kwargs: Any
-                   ) -> None:
+    async def down(self, key: str, options: dict = None, **kwargs: Any) -> None:
         """Dispatch a ``keydown`` event with ``key``.
 
         If ``key`` is a single character and no modifier keys besides ``Shift``
@@ -87,18 +86,21 @@ class Keyboard(object):
         if text is None:
             text = description['text']
 
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'keyDown' if text else 'rawKeyDown',
-            'modifiers': self._modifiers,
-            'windowsVirtualKeyCode': description['keyCode'],
-            'code': description['code'],
-            'key': description['key'],
-            'text': text,
-            'unmodifiedText': text,
-            'autoRepeat': autoRepeat,
-            'location': description['location'],
-            'isKeypad': description['location'] == 3,
-        })
+        await self._client.send(
+            'Input.dispatchKeyEvent',
+            {
+                'type': 'keyDown' if text else 'rawKeyDown',
+                'modifiers': self._modifiers,
+                'windowsVirtualKeyCode': description['keyCode'],
+                'code': description['code'],
+                'key': description['key'],
+                'text': text,
+                'unmodifiedText': text,
+                'autoRepeat': autoRepeat,
+                'location': description['location'],
+                'isKeypad': description['location'] == 3,
+            },
+        )
 
     def _modifierBit(self, key: str) -> int:
         if key == 'Alt':
@@ -164,14 +166,17 @@ class Keyboard(object):
         self._modifiers &= ~self._modifierBit(description['key'])
         if description['code'] in self._pressedKeys:
             self._pressedKeys.remove(description['code'])
-        await self._client.send('Input.dispatchKeyEvent', {
-            'type': 'keyUp',
-            'modifiers': self._modifiers,
-            'key': description['key'],
-            'windowsVirtualKeyCode': description['keyCode'],
-            'code': description['code'],
-            'location': description['location'],
-        })
+        await self._client.send(
+            'Input.dispatchKeyEvent',
+            {
+                'type': 'keyUp',
+                'modifiers': self._modifiers,
+                'key': description['key'],
+                'windowsVirtualKeyCode': description['keyCode'],
+                'code': description['code'],
+                'location': description['location'],
+            },
+        )
 
     async def sendCharacter(self, char: str) -> None:
         """Send character into the page.
@@ -185,8 +190,7 @@ class Keyboard(object):
         """
         await self._client.send('Input.insertText', {'text': char})
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
-                   ) -> None:
+    async def type(self, text: str, options: Dict = None, **kwargs: Any) -> None:
         """Type characters into a focused element.
 
         This method sends ``keydown``, ``keypress``/``input``, and ``keyup``
@@ -214,8 +218,7 @@ class Keyboard(object):
             if delay:
                 await asyncio.sleep(delay / 1000)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
-                    ) -> None:
+    async def press(self, key: str, options: Dict = None, **kwargs: Any) -> None:
         """Press ``key``.
 
         If ``key`` is a single character and no modifier keys besides
@@ -258,8 +261,7 @@ class Mouse(object):
         self._y = 0.0
         self._button = 'none'
 
-    async def move(self, x: float, y: float, options: dict = None,
-                   **kwargs: Any) -> None:
+    async def move(self, x: float, y: float, options: dict = None, **kwargs: Any) -> None:
         """Move mouse cursor (dispatches a ``mousemove`` event).
 
         Options can accepts ``steps`` (int) field. If this ``steps`` option
@@ -274,16 +276,18 @@ class Mouse(object):
         for i in range(1, steps + 1):
             x = round(fromX + (self._x - fromX) * (i / steps))
             y = round(fromY + (self._y - fromY) * (i / steps))
-            await self._client.send('Input.dispatchMouseEvent', {
-                'type': 'mouseMoved',
-                'button': self._button,
-                'x': x,
-                'y': y,
-                'modifiers': self._keyboard._modifiers,
-            })
+            await self._client.send(
+                'Input.dispatchMouseEvent',
+                {
+                    'type': 'mouseMoved',
+                    'button': self._button,
+                    'x': x,
+                    'y': y,
+                    'modifiers': self._keyboard._modifiers,
+                },
+            )
 
-    async def click(self, x: float, y: float, options: dict = None,
-                    **kwargs: Any) -> None:
+    async def click(self, x: float, y: float, options: dict = None, **kwargs: Any) -> None:
         """Click button at (``x``, ``y``).
 
         Shortcut to :meth:`move`, :meth:`down`, and :meth:`up`.
@@ -314,14 +318,17 @@ class Mouse(object):
         """
         options = merge_dict(options, kwargs)
         self._button = options.get('button', 'left')
-        await self._client.send('Input.dispatchMouseEvent', {
-            'type': 'mousePressed',
-            'button': self._button,
-            'x': self._x,
-            'y': self._y,
-            'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
-        })
+        await self._client.send(
+            'Input.dispatchMouseEvent',
+            {
+                'type': 'mousePressed',
+                'button': self._button,
+                'x': self._x,
+                'y': self._y,
+                'modifiers': self._keyboard._modifiers,
+                'clickCount': options.get('clickCount') or 1,
+            },
+        )
 
     async def up(self, options: dict = None, **kwargs: Any) -> None:
         """Release pressed button (dispatches ``mouseup`` event).
@@ -334,14 +341,17 @@ class Mouse(object):
         """
         options = merge_dict(options, kwargs)
         self._button = 'none'
-        await self._client.send('Input.dispatchMouseEvent', {
-            'type': 'mouseReleased',
-            'button': options.get('button', 'left'),
-            'x': self._x,
-            'y': self._y,
-            'modifiers': self._keyboard._modifiers,
-            'clickCount': options.get('clickCount') or 1,
-        })
+        await self._client.send(
+            'Input.dispatchMouseEvent',
+            {
+                'type': 'mouseReleased',
+                'button': options.get('button', 'left'),
+                'x': self._x,
+                'y': self._y,
+                'modifiers': self._keyboard._modifiers,
+                'clickCount': options.get('clickCount') or 1,
+            },
+        )
 
 
 class Touchscreen(object):
@@ -358,13 +368,19 @@ class Touchscreen(object):
         Dispatches a ``touchstart`` and ``touchend`` event.
         """
         touchPoints = [{'x': round(x), 'y': round(y)}]
-        await self._client.send('Input.dispatchTouchEvent', {
-            'type': 'touchStart',
-            'touchPoints': touchPoints,
-            'modifiers': self._keyboard._modifiers,
-        })
-        await self._client.send('Input.dispatchTouchEvent', {
-            'type': 'touchEnd',
-            'touchPoints': [],
-            'modifiers': self._keyboard._modifiers,
-        })
+        await self._client.send(
+            'Input.dispatchTouchEvent',
+            {
+                'type': 'touchStart',
+                'touchPoints': touchPoints,
+                'modifiers': self._keyboard._modifiers,
+            },
+        )
+        await self._client.send(
+            'Input.dispatchTouchEvent',
+            {
+                'type': 'touchEnd',
+                'touchPoints': [],
+                'modifiers': self._keyboard._modifiers,
+            },
+        )

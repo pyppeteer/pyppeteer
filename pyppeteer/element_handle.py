@@ -7,11 +7,11 @@ import copy
 import logging
 import math
 import os.path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pyppeteer.connection import CDPSession
-from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, NetworkError
+from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
 
@@ -37,9 +37,9 @@ class ElementHandle(JSHandle):
     :meth:`pyppeteer.page.Page.evaluate` methods.
     """
 
-    def __init__(self, context: ExecutionContext, client: CDPSession,
-                 remoteObject: dict, page: Any,
-                 frameManager: 'FrameManager') -> None:
+    def __init__(
+        self, context: ExecutionContext, client: CDPSession, remoteObject: dict, page: Any, frameManager: 'FrameManager'
+    ) -> None:
         super().__init__(context, client, remoteObject)
         self._client = client
         self._remoteObject = remoteObject
@@ -56,16 +56,20 @@ class ElementHandle(JSHandle):
 
         Return ``None`` if this handle is not referencing iframe.
         """
-        nodeInfo = await self._client.send('DOM.describeNode', {
-            'objectId': self._remoteObject.get('objectId'),
-        })
+        nodeInfo = await self._client.send(
+            'DOM.describeNode',
+            {
+                'objectId': self._remoteObject.get('objectId'),
+            },
+        )
         node_obj = nodeInfo.get('node', {})
         if not isinstance(node_obj.get('frameId'), str):
             return None
         return self._frameManager.frame(node_obj['frameId'])
 
     async def _scrollIntoViewIfNeeded(self) -> None:
-        error = await self.executionContext.evaluate('''
+        error = await self.executionContext.evaluate(
+            '''
             async (element, pageJavascriptEnabled) => {
                 if (!element.isConnected)
                     return 'Node is detached from document';
@@ -94,22 +98,27 @@ class ElementHandle(JSHandle):
                         behavior: 'instant',
                     });
                 return false;
-            }''', self, self._page._javascriptEnabled)
+            }''',
+            self,
+            self._page._javascriptEnabled,
+        )
         if error:
             raise ElementHandleError(error)
 
     async def _clickablePoint(self) -> Dict[str, float]:  # noqa: C901
         result = None
         try:
-            result = await self._client.send('DOM.getContentQuads', {
-                'objectId': self._remoteObject.get('objectId'),
-            })
+            result = await self._client.send(
+                'DOM.getContentQuads',
+                {
+                    'objectId': self._remoteObject.get('objectId'),
+                },
+            )
         except Exception as e:
             debugError(logger, e)
 
         if not result or not result.get('quads'):
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
+            raise ElementHandleError('Node is either not visible or not an HTMLElement')
 
         quads = []
         for _quad in result.get('quads'):
@@ -117,8 +126,7 @@ class ElementHandle(JSHandle):
             if _computeQuadArea(_q) > 1:
                 quads.append(_q)
         if not quads:
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
+            raise ElementHandleError('Node is either not visible or not an HTMLElement')
 
         quad = quads[0]
         x = 0
@@ -184,10 +192,7 @@ class ElementHandle(JSHandle):
         """Upload files."""
         files = [os.path.abspath(p) for p in filePaths]
         objectId = self._remoteObject.get('objectId')
-        return await self._client.send(
-            'DOM.setFileInputFiles',
-            {'objectId': objectId, 'files': files}
-        )
+        return await self._client.send('DOM.setFileInputFiles', {'objectId': objectId, 'files': files})
 
     async def tap(self) -> None:
         """Tap the center of this element.
@@ -203,11 +208,9 @@ class ElementHandle(JSHandle):
 
     async def focus(self) -> None:
         """Focus on this element."""
-        await self.executionContext.evaluate(
-            'element => element.focus()', self)
+        await self.executionContext.evaluate('element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
-                   ) -> None:
+    async def type(self, text: str, options: Dict = None, **kwargs: Any) -> None:
         """Focus the element and then type text.
 
         Details see :meth:`pyppeteer.input.Keyboard.type` method.
@@ -216,8 +219,7 @@ class ElementHandle(JSHandle):
         await self.focus()
         await self._page.keyboard.type(text, options)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
-                    ) -> None:
+    async def press(self, key: str, options: Dict = None, **kwargs: Any) -> None:
         """Press ``key`` onto the element.
 
         This method focuses the element, and then uses
@@ -305,22 +307,14 @@ class ElementHandle(JSHandle):
         needsViewportReset = False
         boundingBox = await self.boundingBox()
         if not boundingBox:
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
+            raise ElementHandleError('Node is either not visible or not an HTMLElement')
 
         original_viewport = copy.deepcopy(self._page.viewport)
 
-        if (boundingBox['width'] > original_viewport['width'] or
-                boundingBox['height'] > original_viewport['height']):
+        if boundingBox['width'] > original_viewport['width'] or boundingBox['height'] > original_viewport['height']:
             newViewport = {
-                'width': max(
-                    original_viewport['width'],
-                    math.ceil(boundingBox['width'])
-                ),
-                'height': max(
-                    original_viewport['height'],
-                    math.ceil(boundingBox['height'])
-                ),
+                'width': max(original_viewport['width'], math.ceil(boundingBox['width'])),
+                'height': max(original_viewport['height'], math.ceil(boundingBox['height'])),
             }
             new_viewport = copy.deepcopy(original_viewport)
             new_viewport.update(newViewport)
@@ -330,8 +324,7 @@ class ElementHandle(JSHandle):
         await self._scrollIntoViewIfNeeded()
         boundingBox = await self.boundingBox()
         if not boundingBox:
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
+            raise ElementHandleError('Node is either not visible or not an HTMLElement')
 
         _obj = await self._client.send('Page.getLayoutMetrics')
         pageX = _obj['layoutViewport']['pageX']
@@ -357,7 +350,8 @@ class ElementHandle(JSHandle):
         """
         handle = await self.executionContext.evaluateHandle(
             '(element, selector) => element.querySelector(selector)',
-            self, selector,
+            self,
+            selector,
         )
         element = handle.asElement()
         if element:
@@ -372,7 +366,8 @@ class ElementHandle(JSHandle):
         """
         arrayHandle = await self.executionContext.evaluateHandle(
             '(element, selector) => element.querySelectorAll(selector)',
-            self, selector,
+            self,
+            selector,
         )
         properties = await arrayHandle.getProperties()
         await arrayHandle.dispose()
@@ -383,8 +378,7 @@ class ElementHandle(JSHandle):
                 result.append(elementHandle)
         return result  # type: ignore
 
-    async def querySelectorEval(self, selector: str, pageFunction: str,
-                                *args: Any) -> Any:
+    async def querySelectorEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
         """Run ``Page.querySelectorEval`` within the element.
 
         This method runs ``document.querySelector`` within the element and
@@ -407,16 +401,12 @@ class ElementHandle(JSHandle):
         """  # noqa: E501
         elementHandle = await self.querySelector(selector)
         if not elementHandle:
-            raise ElementHandleError(
-                f'Error: failed to find element matching selector "{selector}"'
-            )
-        result = await self.executionContext.evaluate(
-            pageFunction, elementHandle, *args)
+            raise ElementHandleError(f'Error: failed to find element matching selector "{selector}"')
+        result = await self.executionContext.evaluate(pageFunction, elementHandle, *args)
         await elementHandle.dispose()
         return result
 
-    async def querySelectorAllEval(self, selector: str, pageFunction: str,
-                                   *args: Any) -> Any:
+    async def querySelectorAllEval(self, selector: str, pageFunction: str, *args: Any) -> Any:
         """Run ``Page.querySelectorAllEval`` within the element.
 
         This method runs ``Array.from(document.querySelectorAll)`` within the
@@ -442,11 +432,9 @@ class ElementHandle(JSHandle):
             assert (await feedHandle.JJeval('.tweet', '(nodes => nodes.map(n => n.innerText))')) == ['Hello!', 'Hi!']
         """  # noqa: E501
         arrayHandle = await self.executionContext.evaluateHandle(
-            '(element, selector) => Array.from(element.querySelectorAll(selector))',  # noqa: E501
-            self, selector
+            '(element, selector) => Array.from(element.querySelectorAll(selector))', self, selector  # noqa: E501
         )
-        result = await self.executionContext.evaluate(
-            pageFunction, arrayHandle, *args)
+        result = await self.executionContext.evaluate(pageFunction, arrayHandle, *args)
         await arrayHandle.dispose()
         return result
 
@@ -477,7 +465,10 @@ class ElementHandle(JSHandle):
                     array.push(item);
                 return array;
 
-            }''', self, expression)
+            }''',
+            self,
+            expression,
+        )
         properties = await arrayHandle.getProperties()
         await arrayHandle.dispose()
         result = []
@@ -492,7 +483,8 @@ class ElementHandle(JSHandle):
 
     async def isIntersectingViewport(self) -> bool:
         """Return ``True`` if the element is visible in the viewport."""
-        return await self.executionContext.evaluate('''async element => {
+        return await self.executionContext.evaluate(
+            '''async element => {
             const visibleRatio = await new Promise(resolve => {
                 const observer = new IntersectionObserver(entries => {
                     resolve(entries[0].intersectionRatio);
@@ -501,7 +493,9 @@ class ElementHandle(JSHandle):
                 observer.observe(element);
             });
             return visibleRatio > 0;
-        }''', self)
+        }''',
+            self,
+        )
 
 
 def _computeQuadArea(quad: List[Dict]) -> float:

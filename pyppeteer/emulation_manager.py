@@ -18,7 +18,7 @@ class EmulationManager(object):
 
     async def emulateViewport(self, viewport: dict) -> bool:
         """Evaluate viewport."""
-        options = dict()
+        options = {}
         mobile = viewport.get('isMobile', False)
         options['mobile'] = mobile
         if 'width' in viewport:
@@ -28,21 +28,18 @@ class EmulationManager(object):
 
         options['deviceScaleFactor'] = viewport.get('deviceScaleFactor', 1)
         if viewport.get('isLandscape'):
-            options['screenOrientation'] = {'angle': 90,
-                                            'type': 'landscapePrimary'}
+            options['screenOrientation'] = {'angle': 90, 'type': 'landscapePrimary'}
         else:
-            options['screenOrientation'] = {'angle': 0,
-                                            'type': 'portraitPrimary'}
+            options['screenOrientation'] = {'angle': 0, 'type': 'portraitPrimary'}
         hasTouch = viewport.get('hasTouch', False)
 
         await self._client.send('Emulation.setDeviceMetricsOverride', options)
-        await self._client.send('Emulation.setTouchEmulationEnabled', {
-            'enabled': hasTouch,
-            'configuration': 'mobile' if mobile else 'desktop'
-        })
+        await self._client.send(
+            'Emulation.setTouchEmulationEnabled',
+            {'enabled': hasTouch, 'configuration': 'mobile' if mobile else 'desktop'},
+        )
 
-        reloadNeeded = (self._emulatingMobile != mobile or
-                        self._hasTouch != hasTouch)
+        reloadNeeded = self._emulatingMobile != mobile or self._hasTouch != hasTouch
 
         self._emulatingMobile = mobile
         self._hasTouch = hasTouch

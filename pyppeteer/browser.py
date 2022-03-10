@@ -8,8 +8,7 @@ from subprocess import Popen
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
-from pyee import EventEmitter
-
+from pyee import EventEmitter  # type: ignore[import]
 from pyppeteer.connection import Connection
 from pyppeteer.errors import BrowserError
 from pyppeteer.page import Page
@@ -33,11 +32,16 @@ class Browser(EventEmitter):
         Disconnected='disconnected',
     )
 
-    def __init__(self, connection: Connection, contextIds: List[str],
-                 ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                 process: Optional[Popen] = None,
-                 closeCallback: Callable[[], Awaitable[None]] = None,
-                 **kwargs: Any) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
         self._defaultViewport = defaultViewport
@@ -57,14 +61,12 @@ class Browser(EventEmitter):
             self._closeCallback = _dummy_callback
 
         self._defaultContext = BrowserContext(self, None)
-        self._contexts: Dict[str, BrowserContext] = dict()
+        self._contexts: Dict[str, BrowserContext] = {}
         for contextId in contextIds:
             self._contexts[contextId] = BrowserContext(self, contextId)
 
-        self._targets: Dict[str, Target] = dict()
-        self._connection.setClosedCallback(
-            lambda: self.emit(Browser.Events.Disconnected)
-        )
+        self._targets: Dict[str, Target] = {}
+        self._connection.setClosedCallback(lambda: self.emit(Browser.Events.Disconnected))
         self._connection.on(
             'Target.targetCreated',
             lambda event: loop.create_task(self._targetCreated(event)),
@@ -92,10 +94,7 @@ class Browser(EventEmitter):
 
         Use :meth:`createIncognitoBrowserContext` method instead.
         """
-        logger.warning(
-            'createIncogniteBrowserContext is deprecated. '
-            'Use createIncognitoBrowserContext instead.'
-        )
+        logger.warning('createIncogniteBrowserContext is deprecated. ' 'Use createIncognitoBrowserContext instead.')
         return await self.createIncognitoBrowserContext()
 
     async def createIncognitoBrowserContext(self) -> 'BrowserContext':
@@ -130,20 +129,26 @@ class Browser(EventEmitter):
         return [self._defaultContext] + [context for context in self._contexts.values()]  # noqa: E501
 
     async def _disposeContext(self, contextId: str) -> None:
-        await self._connection.send('Target.disposeBrowserContext', {
-            'browserContextId': contextId,
-        })
+        await self._connection.send(
+            'Target.disposeBrowserContext',
+            {
+                'browserContextId': contextId,
+            },
+        )
         self._contexts.pop(contextId, None)
 
     @staticmethod
-    async def create(connection: Connection, contextIds: List[str],
-                     ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
-                     process: Optional[Popen] = None,
-                     closeCallback: Callable[[], Awaitable[None]] = None,
-                     **kwargs: Any) -> 'Browser':
+    async def create(
+        connection: Connection,
+        contextIds: List[str],
+        ignoreHTTPSErrors: bool,
+        defaultViewport: Optional[Dict],
+        process: Optional[Popen] = None,
+        closeCallback: Callable[[], Awaitable[None]] = None,
+        **kwargs: Any,
+    ) -> 'Browser':
         """Create browser object."""
-        browser = Browser(connection, contextIds, ignoreHTTPSErrors,
-                          defaultViewport, process, closeCallback)
+        browser = Browser(connection, contextIds, ignoreHTTPSErrors, defaultViewport, process, closeCallback)
         await connection.send('Target.setDiscoverTargets', {'discover': True})
         return browser
 
@@ -206,8 +211,7 @@ class Browser(EventEmitter):
         if contextId:
             options['browserContextId'] = contextId
 
-        targetId = (await self._connection.send(
-            'Target.createTarget', options)).get('targetId')
+        targetId = (await self._connection.send('Target.createTarget', options)).get('targetId')
         target = self._targets.get(targetId)
         if target is None:
             raise BrowserError('Failed to create target for page.')
@@ -224,8 +228,7 @@ class Browser(EventEmitter):
         In case of multiple browser contexts, the method will return a list
         with all the targets in all browser contexts.
         """
-        return [target for target in self._targets.values()
-                if target._isInitialized]
+        return [target for target in self._targets.values() if target._isInitialized]
 
     async def pages(self) -> List[Page]:
         """Get all pages of this browser.
@@ -237,7 +240,7 @@ class Browser(EventEmitter):
         with all the pages in all browser contexts.
         """
         # Using asyncio.gather is better for performance
-        pages: List[Page] = list()
+        pages: List[Page] = []
         for context in self.browserContexts:
             pages.extend(await context.pages())
         return pages
@@ -337,10 +340,7 @@ class BrowserContext(EventEmitter):
 
         Use :meth:`isIncognito` method instead.
         """
-        logger.warning(
-            'isIncognite is deprecated. '
-            'Use isIncognito instead.'
-        )
+        logger.warning('isIncognite is deprecated. ' 'Use isIncognito instead.')
         return self.isIncognito()
 
     def isIncognito(self) -> bool:

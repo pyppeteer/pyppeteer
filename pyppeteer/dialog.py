@@ -39,8 +39,7 @@ class Dialog(object):
         Prompt='prompt',
     )
 
-    def __init__(self, client: CDPSession, type: str, message: str,
-                 defaultValue: str = '') -> None:
+    def __init__(self, client: CDPSession, type: str, message: str, defaultValue: str = '') -> None:
         self._client = client
         self._type = type
         self._message = message
@@ -75,14 +74,20 @@ class Dialog(object):
           is not prompt, this does not cause any effect.
         """
         self._handled = True
-        await self._client.send('Page.handleJavaScriptDialog', {
-            'accept': True,
-            'promptText': promptText,
-        })
+        await self._client.send(
+            'Page.handleJavaScriptDialog',
+            {
+                'accept': True,
+                'promptText': promptText,
+            },
+        )
 
     async def dismiss(self) -> None:
         """Dismiss the dialog."""
         self._handled = True
-        await self._client.send('Page.handleJavaScriptDialog', {
-            'accept': False,
-        })
+        await self._client.send(
+            'Page.handleJavaScriptDialog',
+            {
+                'accept': False,
+            },
+        )

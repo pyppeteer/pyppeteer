@@ -3,8 +3,8 @@
 
 """Coverage module."""
 
-from functools import cmp_to_key
 import logging
+from functools import cmp_to_key
 from typing import Any, Dict, List
 
 from pyppeteer import helper
@@ -50,8 +50,7 @@ class Coverage(object):
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(self, options: Dict = None, **kwargs: Any
-                              ) -> None:
+    async def startJSCoverage(self, options: Dict = None, **kwargs: Any) -> None:
         """Start JS coverage measurement.
 
         Available options are:
@@ -90,8 +89,7 @@ class Coverage(object):
         """
         return await self._jsCoverage.stop()
 
-    async def startCSSCoverage(self, options: Dict = None, **kwargs: Any
-                               ) -> None:
+    async def startCSSCoverage(self, options: Dict = None, **kwargs: Any) -> None:
         """Start CSS coverage measurement.
 
         Available options are:
@@ -129,9 +127,9 @@ class JSCoverage(object):
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._scriptURLs: Dict = dict()
-        self._scriptSources: Dict = dict()
-        self._eventListeners: List = list()
+        self._scriptURLs: Dict = {}
+        self._scriptSources: Dict = {}
+        self._eventListeners: List = []
         self._resetOnNavigation = False
 
     async def start(self, options: Dict = None, **kwargs: Any) -> None:
@@ -139,24 +137,19 @@ class JSCoverage(object):
         options = merge_dict(options, kwargs)
         if self._enabled:
             raise PageError('JSCoverage is always enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
+        self._resetOnNavigation = True if 'resetOnNavigation' not in options else bool(options['resetOnNavigation'])
         self._reportAnonymousScript = bool(options.get('reportAnonymousScript'))  # noqa: E501
         self._enabled = True
         self._scriptURLs.clear()
         self._scriptSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'Debugger.scriptParsed',
-                lambda e: self._client._loop.create_task(
-                    self._onScriptParsed(e))),
-            helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+                self._client, 'Debugger.scriptParsed', lambda e: self._client._loop.create_task(self._onScriptParsed(e))
+            ),
+            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await self._client.send('Profiler.enable')
-        await self._client.send('Profiler.startPreciseCoverage',
-                                {'callCount': False, 'detailed': True})
+        await self._client.send('Profiler.startPreciseCoverage', {'callCount': False, 'detailed': True})
         await self._client.send('Debugger.enable')
         await self._client.send('Debugger.setSkipAllPauses', {'skip': True})
 
@@ -180,10 +173,7 @@ class JSCoverage(object):
         if not url and self._reportAnonymousScript:
             url = f'debugger://VM{scriptId}'
         try:
-            response = await self._client.send(
-                'Debugger.getScriptSource',
-                {'scriptId': scriptId}
-            )
+            response = await self._client.send('Debugger.getScriptSource', {'scriptId': scriptId})
             self._scriptURLs[scriptId] = url
             self._scriptSources[scriptId] = response.get('scriptSource')
         except Exception as e:
@@ -222,8 +212,8 @@ class CSSCoverage(object):
     def __init__(self, client: CDPSession) -> None:
         self._client = client
         self._enabled = False
-        self._stylesheetURLs: Dict = dict()
-        self._stylesheetSources: Dict = dict()
+        self._stylesheetURLs: Dict = {}
+        self._stylesheetSources: Dict = {}
         self._eventListeners: List = []
         self._resetOnNavigation = False
 
@@ -232,19 +222,15 @@ class CSSCoverage(object):
         options = merge_dict(options, kwargs)
         if self._enabled:
             raise PageError('CSSCoverage is already enabled.')
-        self._resetOnNavigation = (True if 'resetOnNavigation' not in options
-                                   else bool(options['resetOnNavigation']))
+        self._resetOnNavigation = True if 'resetOnNavigation' not in options else bool(options['resetOnNavigation'])
         self._enabled = True
         self._stylesheetURLs.clear()
         self._stylesheetSources.clear()
         self._eventListeners = [
             helper.addEventListener(
-                self._client, 'CSS.styleSheetAdded',
-                lambda e: self._client._loop.create_task(
-                    self._onStyleSheet(e))),
-            helper.addEventListener(
-                self._client, 'Runtime.executionContextsCleared',
-                self._onExecutionContextsCleared),
+                self._client, 'CSS.styleSheetAdded', lambda e: self._client._loop.create_task(self._onStyleSheet(e))
+            ),
+            helper.addEventListener(self._client, 'Runtime.executionContextsCleared', self._onExecutionContextsCleared),
         ]
         await self._client.send('DOM.enable')
         await self._client.send('CSS.enable')
@@ -262,10 +248,7 @@ class CSSCoverage(object):
         if not header.get('sourceURL'):
             return
         try:
-            response = await self._client.send(
-                'CSS.getStyleSheetText',
-                {'styleSheetId': header['styleSheetId']}
-            )
+            response = await self._client.send('CSS.getStyleSheetText', {'styleSheetId': header['styleSheetId']})
             self._stylesheetURLs[header['styleSheetId']] = header['sourceURL']
             self._stylesheetSources[header['styleSheetId']] = response['text']
         except Exception as e:
@@ -289,33 +272,30 @@ class CSSCoverage(object):
             if not ranges:
                 ranges = []
                 styleSheetIdToCoverage[entry['styleSheetId']] = ranges
-            ranges.append({
-                'startOffset': entry['startOffset'],
-                'endOffset': entry['endOffset'],
-                'count': 1 if entry['used'] else 0
-            })
+            ranges.append(
+                {
+                    'startOffset': entry['startOffset'],
+                    'endOffset': entry['endOffset'],
+                    'count': 1 if entry['used'] else 0,
+                }
+            )
 
         coverage = []
         for styleSheetId in self._stylesheetURLs:
             url = self._stylesheetURLs.get(styleSheetId)
             text = self._stylesheetSources.get(styleSheetId)
-            ranges = convertToDisjointRanges(
-                styleSheetIdToCoverage.get(styleSheetId, [])
-            )
+            ranges = convertToDisjointRanges(styleSheetIdToCoverage.get(styleSheetId, []))
             coverage.append({'url': url, 'ranges': ranges, 'text': text})
 
         return coverage
 
 
-def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
-                            ) -> List[Any]:
+def convertToDisjointRanges(nestedRanges: List[Any]) -> List[Any]:  # noqa: C901
     """Convert ranges."""
     points: List = []
     for nested_range in nestedRanges:
-        points.append({'offset': nested_range['startOffset'], 'type': 0,
-                       'range': nested_range})
-        points.append({'offset': nested_range['endOffset'], 'type': 1,
-                       'range': nested_range})
+        points.append({'offset': nested_range['startOffset'], 'type': 0, 'range': nested_range})
+        points.append({'offset': nested_range['endOffset'], 'type': 1, 'range': nested_range})
 
     # Sort points to form a valid parenthesis sequence.
     def _sort_func(a: Dict, b: Dict) -> int:
@@ -340,9 +320,7 @@ def convertToDisjointRanges(nestedRanges: List[Any]  # noqa: C901
     lastOffset = 0
     # Run scanning line to intersect all ranges.
     for point in points:
-        if (hitCountStack and
-                lastOffset < point['offset'] and
-                hitCountStack[len(hitCountStack) - 1] > 0):
+        if hitCountStack and lastOffset < point['offset'] and hitCountStack[len(hitCountStack) - 1] > 0:
             lastResult = results[-1] if results else None
             if lastResult and lastResult['end'] == lastOffset:
                 lastResult['end'] = point['offset']

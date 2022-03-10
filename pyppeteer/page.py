@@ -12,7 +12,7 @@ import mimetypes
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, Union
 
-from pyee import EventEmitter
+from pyee import EventEmitter  # type: ignore[import]
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
 from pyppeteer.coverage import Coverage
@@ -147,13 +147,23 @@ class Page(EventEmitter):
             if targetInfo['type'] != 'worker':
                 # If we don't detach from service workers, they will never die.
                 try:
-                    client.send('Target.detachFromTarget', {'sessionId': event['sessionId'],})
+                    client.send(
+                        'Target.detachFromTarget',
+                        {
+                            'sessionId': event['sessionId'],
+                        },
+                    )
                 except Exception as e:
                     debugError(logger, e)
                 return
             sessionId = event['sessionId']
             session = client._createSession(targetInfo['type'], sessionId)
-            worker = Worker(session, targetInfo['url'], self._addConsoleMessage, self._handleException,)
+            worker = Worker(
+                session,
+                targetInfo['url'],
+                self._addConsoleMessage,
+                self._handleException,
+            )
             self._workers[sessionId] = worker
             self.emit(Page.Events.WorkerCreated, worker)
 
@@ -465,7 +475,12 @@ class Page(EventEmitter):
         """
         if not urls:
             urls = (self.url,)
-        resp = await self._client.send('Network.getCookies', {'urls': urls,})
+        resp = await self._client.send(
+            'Network.getCookies',
+            {
+                'urls': urls,
+            },
+        )
         return resp.get('cookies', {})
 
     async def deleteCookie(self, *cookies: dict) -> None:
@@ -517,7 +532,12 @@ class Page(EventEmitter):
             items.append(item)
         await self.deleteCookie(*items)
         if items:
-            await self._client.send('Network.setCookies', {'cookies': items,})
+            await self._client.send(
+                'Network.setCookies',
+                {
+                    'cookies': items,
+                },
+            )
 
     async def addScriptTag(self, options: Dict = None, **kwargs: str) -> ElementHandle:
         """Add script tag to this page.
@@ -669,7 +689,11 @@ function addPageBinding(bindingName) {
 
     def _emitMetrics(self, event: Dict) -> None:
         self.emit(
-            Page.Events.Metrics, {'title': event['title'], 'metrics': self._buildMetricsObject(event['metrics']),}
+            Page.Events.Metrics,
+            {
+                'title': event['title'],
+                'metrics': self._buildMetricsObject(event['metrics']),
+            },
         )
 
     def _buildMetricsObject(self, metrics: List) -> Dict[str, Any]:
@@ -707,7 +731,13 @@ function addPageBinding(bindingName) {
 
         expression = helper.evaluationString(deliverResult, name, seq, result)
         try:
-            self._client.send('Runtime.evaluate', {'expression': expression, 'contextId': event['executionContextId'],})
+            self._client.send(
+                'Runtime.evaluate',
+                {
+                    'expression': expression,
+                    'contextId': event['executionContextId'],
+                },
+            )
         except Exception as e:
             helper.debugError(logger, e)
 
@@ -821,7 +851,13 @@ function addPageBinding(bindingName) {
             if req.url not in requests:
                 requests[req.url] = req
 
-        eventListeners = [helper.addEventListener(self._networkManager, NetworkManager.Events.Request, set_request,)]
+        eventListeners = [
+            helper.addEventListener(
+                self._networkManager,
+                NetworkManager.Events.Request,
+                set_request,
+            )
+        ]
 
         timeout = options.get('timeout', self._defaultNavigationTimeout)
         watcher = NavigatorWatcher(self._frameManager, mainFrame, timeout, options)
@@ -851,7 +887,12 @@ function addPageBinding(bindingName) {
         Available options are same as :meth:`goto` method.
         """
         options = merge_dict(options, kwargs)
-        response = (await asyncio.gather(self.waitForNavigation(options), self._client.send('Page.reload'),))[0]
+        response = (
+            await asyncio.gather(
+                self.waitForNavigation(options),
+                self._client.send('Page.reload'),
+            )
+        )[0]
         return response
 
     async def waitForNavigation(self, options: dict = None, **kwargs: Any) -> Optional[Response]:
@@ -939,7 +980,11 @@ function addPageBinding(bindingName) {
             return False
 
         return await helper.waitForEvent(
-            self._networkManager, NetworkManager.Events.Request, predicate, timeout, self._client._loop,
+            self._networkManager,
+            NetworkManager.Events.Request,
+            predicate,
+            timeout,
+            self._client._loop,
         )
 
     async def waitForResponse(
@@ -973,7 +1018,11 @@ function addPageBinding(bindingName) {
             return False
 
         return await helper.waitForEvent(
-            self._networkManager, NetworkManager.Events.Response, predicate, timeout, self._client._loop,
+            self._networkManager,
+            NetworkManager.Events.Response,
+            predicate,
+            timeout,
+            self._client._loop,
         )
 
     async def goBack(self, options: dict = None, **kwargs: Any) -> Optional[Response]:
@@ -1051,7 +1100,12 @@ function addPageBinding(bindingName) {
         if self._javascriptEnabled == enabled:
             return
         self._javascriptEnabled = enabled
-        await self._client.send('Emulation.setScriptExecutionDisabled', {'value': not enabled,})
+        await self._client.send(
+            'Emulation.setScriptExecutionDisabled',
+            {
+                'value': not enabled,
+            },
+        )
 
     async def setBypassCSP(self, enabled: bool) -> None:
         """Toggles bypassing page's Content-Security-Policy.
@@ -1073,7 +1127,12 @@ function addPageBinding(bindingName) {
         """
         if mediaType not in ['screen', 'print', None, '']:
             raise ValueError(f'Unsupported media type: {mediaType}')
-        await self._client.send('Emulation.setEmulatedMedia', {'media': mediaType or '',})
+        await self._client.send(
+            'Emulation.setEmulatedMedia',
+            {
+                'media': mediaType or '',
+            },
+        )
 
     async def setViewport(self, viewport: dict) -> None:
         """Set viewport.
@@ -1125,7 +1184,12 @@ function addPageBinding(bindingName) {
           function is invoked in the context of the newly attached frame.
         """
         source = helper.evaluationString(pageFunction, *args)
-        await self._client.send('Page.addScriptToEvaluateOnNewDocument', {'source': source,})
+        await self._client.send(
+            'Page.addScriptToEvaluateOnNewDocument',
+            {
+                'source': source,
+            },
+        )
 
     async def setCacheEnabled(self, enabled: bool = True) -> None:
         """Enable/Disable cache for each request.
@@ -1179,7 +1243,12 @@ function addPageBinding(bindingName) {
         return await self._screenshotTask(screenshotType, options)
 
     async def _screenshotTask(self, format: str, options: dict) -> Union[bytes, str]:  # noqa: C901
-        await self._client.send('Target.activateTarget', {'targetId': self._target._targetId,})
+        await self._client.send(
+            'Target.activateTarget',
+            {
+                'targetId': self._target._targetId,
+            },
+        )
         clip, quality = options.get('clip'), options.get('quality')
 
         if clip:
@@ -1218,7 +1287,8 @@ function addPageBinding(bindingName) {
 
         if options.get('omitBackground'):
             await self._client.send(
-                'Emulation.setDefaultBackgroundColorOverride', {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}},
+                'Emulation.setDefaultBackgroundColorOverride',
+                {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}},
             )
         opt = {'format': format}
 

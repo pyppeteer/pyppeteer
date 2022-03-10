@@ -4,10 +4,9 @@
 """Worker module."""
 
 import logging
-from typing import Any, Callable, Dict, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Dict, List
 
-from pyee import EventEmitter
-
+from pyee import EventEmitter  # type: ignore[import]
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.helper import debugError
 
@@ -28,10 +27,13 @@ class Worker(EventEmitter):
         page.on('workercreated', lambda worker: print('Worker created:', worker.url))
     """  # noqa: E501
 
-    def __init__(self, client: 'CDPSession', url: str,  # noqa: C901
-                 consoleAPICalled: Callable[[str, List[JSHandle]], None],
-                 exceptionThrown: Callable[[Dict], None]
-                 ) -> None:
+    def __init__(
+        self,
+        client: 'CDPSession',
+        url: str,  # noqa: C901
+        consoleAPICalled: Callable[[str, List[JSHandle]], None],
+        exceptionThrown: Callable[[Dict], None],
+    ) -> None:
         super().__init__()
         self._client = client
         self._url = url
@@ -42,17 +44,16 @@ class Worker(EventEmitter):
             return None  # type: ignore
 
         def onExecutionContentCreated(event: Dict) -> None:
-            nonlocal jsHandleFactory
+            # mypy says: `already defined in local scope before nonlocal declaration`
+            nonlocal jsHandleFactory  # type: ignore[misc]
 
             def jsHandleFactory(remoteObject: Dict) -> JSHandle:
                 return JSHandle(executionContext, client, remoteObject)
 
-            executionContext = ExecutionContext(
-                client, event['context'], jsHandleFactory)
+            executionContext = ExecutionContext(client, event['context'], jsHandleFactory)
             self._executionContextCallback(executionContext)
 
-        self._client.on('Runtime.executionContextCreated',
-                        onExecutionContentCreated)
+        self._client.on('Runtime.executionContextCreated', onExecutionContentCreated)
         try:
             # This might fail if the target is closed before we receive all
             # execution contexts.
@@ -89,13 +90,11 @@ class Worker(EventEmitter):
 
         Shortcut for ``(await worker.executionContext).evaluate(pageFunction, *args)``.
         """  # noqa: E501
-        return await (await self._executionContextPromise).evaluate(
-            pageFunction, *args)
+        return await (await self._executionContextPromise).evaluate(pageFunction, *args)
 
     async def evaluateHandle(self, pageFunction: str, *args: Any) -> JSHandle:
         """Evaluate ``pageFunction`` with ``args`` and return :class:`~pyppeteer.execution_context.JSHandle`.
 
         Shortcut for ``(await worker.executionContext).evaluateHandle(pageFunction, *args)``.
         """  # noqa: E501
-        return await (await self._executionContextPromise).evaluateHandle(
-            pageFunction, *args)
+        return await (await self._executionContextPromise).evaluateHandle(pageFunction, *args)

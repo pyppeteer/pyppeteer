@@ -5,19 +5,22 @@
 
 import logging
 import os
+from typing import Optional
 
-from appdirs import AppDirs
+from appdirs import AppDirs  # type: ignore[import]
 
 try:
     # noinspection PyCompatibility
-    from importlib.metadata import version
+    from importlib.metadata import version as version_
 except ModuleNotFoundError:
     # noinspection PyUnresolvedReferences
     # <3.8 backport
-    from importlib_metadata import version
+    from importlib_metadata import version as version_
+
+__version__: Optional[str]
 
 try:
-    __version__ = version(__name__)
+    __version__ = version_(__name__)
 except Exception:
     __version__ = None
 
@@ -30,7 +33,7 @@ DEBUG = False
 from pyppeteer.launcher import connect, executablePath, launch, defaultArgs  # noqa: E402; noqa: E402
 
 version = __version__
-version_info = tuple(int(i) for i in version.split('.'))
+version_info = () if version is None else tuple(int(i) for i in version.split('.'))
 
 __all__ = [
     'connect',
