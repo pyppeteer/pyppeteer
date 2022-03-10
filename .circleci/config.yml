@@ -38,7 +38,7 @@ jobs:
               libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 \
               libpangocairo-1.0-0 libx11-xcb1 libxcomposite1 libxcursor1 \
               libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
-              lsb-release xdg-utils wget 
+              lsb-release xdg-utils wget
       - run:
           name: Install tox
           command: pip install tox
@@ -117,4 +117,3 @@ jobs:
       - run:
           name: Check code style
           command: tox
-
