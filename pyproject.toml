@@ -47,7 +47,7 @@ pyppeteer-install = 'pyppeteer.command:install'
 python = "^3.7"
 appdirs = "^1.4.3"
 importlib-metadata = ">=1.4"
-pyee = "^8.1.0"
+pyee = "^9.0.0"
 tqdm = "^4.42.1"
 urllib3 = "^1.25.8"
 websockets = "^10.0"
