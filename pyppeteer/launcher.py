@@ -172,6 +172,13 @@ class Launcher(object):
                                        self.killChrome)
         await self.ensureInitialPage(browser)
         return browser
+    
+    async def __aenter__(self) -> Browser:
+        self.__browser = await self.launch()
+        return self.__browser
+    
+    async def __aexit__(self, *args) -> None:
+        await self.__browser.close()
 
     async def ensureInitialPage(self, browser: Browser) -> None:
         """Wait for initial page target to be created."""
