@@ -40,7 +40,7 @@ downloadURLs = {
 }
 
 chromiumExecutable = {
-    'arm_linux': Path('/usr/bin/chromium'),
+    'arm_linux': Path('/usr/bin/chromium-browser'),
     'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chrome',
     'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'),
     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
@@ -50,7 +50,7 @@ chromiumExecutable = {
 
 def current_platform() -> str:
     """Get current platform name by short string."""
-    if ("system='Linux" and "machine='armv") in str(platform.uname()):
+    if sys.platform.startswith('linux') and platform.uname().machine.startswith('armv'):
         return 'arm_linux'
     elif sys.platform.startswith('linux'):
         return 'linux'
