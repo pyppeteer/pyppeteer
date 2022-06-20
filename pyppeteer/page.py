@@ -870,7 +870,7 @@ function addPageBinding(bindingName) {
 
         .. code::
 
-            navigationPromise = async.ensure_future(page.waitForNavigation())
+            navigationPromise = asyncio.ensure_future(page.waitForNavigation())
             await page.click('a.my-link')  # indirectly cause a navigation
             await navigationPromise  # wait until navigation finishes
 
