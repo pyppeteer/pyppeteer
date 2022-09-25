@@ -5,7 +5,7 @@
 
 from functools import cmp_to_key
 import logging
-from typing import Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 from pyppeteer import helper
 from pyppeteer.connection import CDPSession
@@ -50,7 +50,7 @@ class Coverage(object):
         self._jsCoverage = JSCoverage(client)
         self._cssCoverage = CSSCoverage(client)
 
-    async def startJSCoverage(self, options: Dict = None, **kwargs: Any
+    async def startJSCoverage(self, options: Optional[Dict] = None, **kwargs: Any
                               ) -> None:
         """Start JS coverage measurement.
 
@@ -90,7 +90,7 @@ class Coverage(object):
         """
         return await self._jsCoverage.stop()
 
-    async def startCSSCoverage(self, options: Dict = None, **kwargs: Any
+    async def startCSSCoverage(self, options: Optional[Dict] = None, **kwargs: Any
                                ) -> None:
         """Start CSS coverage measurement.
 
@@ -134,7 +134,7 @@ class JSCoverage(object):
         self._eventListeners: List = list()
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(self, options: Optional[Dict] = None, **kwargs: Any) -> None:
         """Start coverage measurement."""
         options = merge_dict(options, kwargs)
         if self._enabled:
@@ -227,7 +227,7 @@ class CSSCoverage(object):
         self._eventListeners: List = []
         self._resetOnNavigation = False
 
-    async def start(self, options: Dict = None, **kwargs: Any) -> None:
+    async def start(self, options: Optional[Dict] = None, **kwargs: Any) -> None:
         """Start coverage measurement."""
         options = merge_dict(options, kwargs)
         if self._enabled:

@@ -78,7 +78,7 @@ class Connection(EventEmitter):
                 callback.set_result(None)
                 await self.dispose()
 
-    def send(self, method: str, params: dict = None) -> Awaitable:
+    def send(self, method: str, params: Optional[dict] = None) -> Awaitable:
         """Send message via the connection."""
         # Detect connection availability from the second transmission
         if self._lastId and not self._connected:
@@ -207,7 +207,7 @@ class CDPSession(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self._loop = loop
 
-    def send(self, method: str, params: dict = None) -> Awaitable:
+    def send(self, method: str, params: Optional[dict] = None) -> Awaitable:
         """Send message to the connected session.
 
         :arg str method: Protocol method name.

@@ -36,7 +36,7 @@ class Browser(EventEmitter):
     def __init__(self, connection: Connection, contextIds: List[str],
                  ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                  process: Optional[Popen] = None,
-                 closeCallback: Callable[[], Awaitable[None]] = None,
+                 closeCallback: Optional[Callable[[], Awaitable[None]]] = None,
                  **kwargs: Any) -> None:
         super().__init__()
         self._ignoreHTTPSErrors = ignoreHTTPSErrors
@@ -139,7 +139,7 @@ class Browser(EventEmitter):
     async def create(connection: Connection, contextIds: List[str],
                      ignoreHTTPSErrors: bool, defaultViewport: Optional[Dict],
                      process: Optional[Popen] = None,
-                     closeCallback: Callable[[], Awaitable[None]] = None,
+                     closeCallback: Optional[Callable[[], Awaitable[None]]] = None,
                      **kwargs: Any) -> 'Browser':
         """Create browser object."""
         browser = Browser(connection, contextIds, ignoreHTTPSErrors,

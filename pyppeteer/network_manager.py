@@ -226,7 +226,7 @@ class NetworkManager(EventEmitter):
     def _handleRequestRedirect(self, request: 'Request', redirectStatus: int,
                                redirectHeaders: Dict, fromDiskCache: bool,
                                fromServiceWorker: bool,
-                               securityDetails: Dict = None) -> None:
+                               securityDetails: Optional[Dict] = None) -> None:
         response = Response(self._client, request, redirectStatus,
                             redirectHeaders, fromDiskCache, fromServiceWorker,
                             securityDetails)
@@ -427,7 +427,7 @@ class Request(object):
             return None
         return {'errorText': self._failureText}
 
-    async def continue_(self, overrides: Dict = None) -> None:
+    async def continue_(self, overrides: Optional[Dict] = None) -> None:
         """Continue request with optional request overrides.
 
         To use this method, request interception should be enabled by
@@ -589,7 +589,7 @@ class Response(object):
 
     def __init__(self, client: CDPSession, request: Request, status: int,
                  headers: Dict[str, str], fromDiskCache: bool,
-                 fromServiceWorker: bool, securityDetails: Dict = None
+                 fromServiceWorker: bool, securityDetails: Optional[Dict] = None
                  ) -> None:
         self._client = client
         self._request = request

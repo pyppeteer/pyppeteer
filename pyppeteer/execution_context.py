@@ -30,7 +30,7 @@ class ExecutionContext(object):
     """Execution Context class."""
 
     def __init__(self, client: CDPSession, contextPayload: Dict,
-                 objectHandleFactory: Any, frame: 'Frame' = None) -> None:
+                 objectHandleFactory: Any, frame: Optional['Frame'] = None) -> None:
         self._client = client
         self._frame = frame
         self._contextId = contextPayload.get('id')
