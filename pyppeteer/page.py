@@ -1185,6 +1185,8 @@ function addPageBinding(bindingName) {
         if clip:
             clip['scale'] = 1
 
+        scale = options.get('scale', 1)
+
         if options.get('fullPage'):
             metrics = await self._client.send('Page.getLayoutMetrics')
             width = math.ceil(metrics['contentSize']['width'])
@@ -1194,11 +1196,11 @@ function addPageBinding(bindingName) {
             clip = dict(x=0, y=0, width=width, height=height, scale=1)
             if self._viewport is not None:
                 mobile = self._viewport.get('isMobile', False)
-                deviceScaleFactor = self._viewport.get('deviceScaleFactor', 1)
+                deviceScaleFactor = self._viewport.get('deviceScaleFactor', scale)
                 landscape = self._viewport.get('isLandscape', False)
             else:
                 mobile = False
-                deviceScaleFactor = 1
+                deviceScaleFactor = scale
                 landscape = False
 
             if landscape:
