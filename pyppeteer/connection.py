@@ -235,8 +235,8 @@ class CDPSession(EventEmitter):
         except Exception as e:
             # The response from target might have been already dispatched
             if _id in self._callbacks:
-                del self._callbacks[_id]
                 _callback = self._callbacks[_id]
+                del self._callbacks[_id]
                 _callback.set_exception(_rewriteError(
                     _callback.error,  # type: ignore
                     e.args[0],
