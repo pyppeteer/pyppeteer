@@ -30,7 +30,7 @@ DEBUG = False
 from pyppeteer.launcher import connect, executablePath, launch, defaultArgs  # noqa: E402; noqa: E402
 
 version = __version__
-version_info = tuple(int(i) for i in version.split('.'))
+version_info = tuple(int(i) for i in version.split('.')) if version != None else (0, 0, 0)
 
 __all__ = [
     'connect',
