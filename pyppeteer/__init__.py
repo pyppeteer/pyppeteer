@@ -21,8 +21,8 @@ try:
 except Exception:
     __version__ = None
 
-
-__chromium_revision__ = '588429'
+# https://registry.npmmirror.com/binary.html?path=chromium-browser-snapshots , all platform has 1122184
+__chromium_revision__ = '1122184'
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 DEBUG = False
