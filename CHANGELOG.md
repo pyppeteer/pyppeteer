@@ -5,6 +5,8 @@ History
 
 * Bump pyee version, which removes support for Python 3.7
 * Bumped included browser version to revision 1181205. It may not match the base p*u*ppeteer version, but at least it runs
+* Fix invalid escape sequence (#453)
+* Fix deprecated asyncio wait in page.py (#451)
 
 ## Version 1.0.2
 
