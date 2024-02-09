@@ -7,6 +7,7 @@ History
 * Bumped included browser version to revision 1181205. It may not match the base p*u*ppeteer version, but at least it runs
 * Fix invalid escape sequence (#453)
 * Fix deprecated asyncio wait in page.py (#451)
+* Remove version_info. `version` is still present and can be parsed if necessary
 
 ## Version 1.0.2
 
