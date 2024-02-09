@@ -91,7 +91,7 @@ class Page(EventEmitter):
         screenshotTaskQueue: list = None,
     ) -> 'Page':
         """Async function which makes new page object."""
-        await client.send('Page.enable'),
+        await client.send('Page.enable')
         frameTree = (await client.send('Page.getFrameTree'))['frameTree']
         page = Page(client, target, frameTree, ignoreHTTPSErrors, screenshotTaskQueue)
 

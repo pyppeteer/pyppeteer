@@ -10,7 +10,7 @@ pyppeteer
 [![CircleCI](https://circleci.com/gh/pyppeteer/pyppeteer.svg?style=shield)](https://circleci.com/gh/pyppeteer/pyppeteer)
 [![codecov](https://codecov.io/gh/pyppeteer/pyppeteer/branch/dev/graph/badge.svg)](https://codecov.io/gh/pyppeteer/pyppeteer)
 
-_Note: this is a continuation of the [pyppeteer project](https://github.com/miyakogi/pyppeteer)_. Before undertaking any sort of developement, it is highly recommended that you take a look at [#16](https://github.com/pyppeteer/pyppeteer/pull/16) for the ongoing effort to update this library to avoid duplicating efforts.
+_Note: this is a continuation of the [pyppeteer project](https://github.com/miyakogi/pyppeteer)_
 
 Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer) JavaScript (headless) chrome/chromium browser automation library.
 
@@ -19,7 +19,7 @@ Unofficial Python port of [puppeteer](https://github.com/GoogleChrome/puppeteer)
 
 ## Installation
 
-pyppeteer requires Python >= 3.6
+pyppeteer requires Python >= 3.8
 
 Install with `pip` from PyPI:
 

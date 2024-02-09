@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pyppeteer"
-version = "1.0.2"
+version = "2.0.0rc0"
 description = "Headless chrome/chromium automation library (unofficial port of puppeteer)"
 readme = 'README.md'
 license = "MIT"
@@ -44,14 +44,14 @@ exclude = [
 pyppeteer-install = 'pyppeteer.command:install'
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 appdirs = "^1.4.3"
 importlib-metadata = ">=1.4"
-pyee = "^8.1.0"
+pyee = "^11.0.0"
 tqdm = "^4.42.1"
 urllib3 = "^1.25.8"
 websockets = "^10.0"
-certifi = ">=2021"
+certifi = ">=2023"
 
 [tool.poetry.dev-dependencies]
 tox = "^3.20.1"
@@ -77,7 +77,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.black]
 line-length = 120
-target-version = ['py37', 'py38']
+target-version = ['py38']
 skip-string-normalization = true
 
 [tool.isort]

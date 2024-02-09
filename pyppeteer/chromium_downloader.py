@@ -35,8 +35,7 @@ NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
 if NO_PROGRESS_BAR.lower() in ('1', 'true'):
     NO_PROGRESS_BAR = True  # type: ignore
 
-# Windows archive name changed at r591479.
-windowsArchive = 'chrome-win' if int(REVISION) > 591479 else 'chrome-win32'
+windowsArchive = 'chrome-win'
 
 downloadURLs = {
     'linux': f'{BASE_URL}/Linux_x64/{REVISION}/chrome-linux.zip',
