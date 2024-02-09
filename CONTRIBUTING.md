@@ -14,5 +14,6 @@ Changes worthy of a changelog entry should get one - simply follow the existing 
  - Make sure all relevant changes have been recorded in the changelog
  - Ensure that code is properly tested
  - Bump the version in `pyproject.toml`, then tag the release in git
+   - ex: `git tag -a 2.0.0rc1 -m "pypi release"`
  - Run `poetry build`
  - Run `poetry publish`
