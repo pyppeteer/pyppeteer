@@ -1,5 +1,5 @@
 ### Attention: This repo is unmaintained and has been outside of minor changes for a long time. Please consider [playwright-python](https://github.com/microsoft/playwright-python) as an alternative. 
-If you would like to overhaul this code to bring it up to date, please contact [me](https://github.com/Mattwmaster58)
+If you are interested in maintaining this, please contact [me](https://github.com/Mattwmaster58)
 
 pyppeteer
 ==========
