@@ -343,6 +343,26 @@ class Mouse(object):
             'clickCount': options.get('clickCount') or 1,
         })
 
+    async def wheel(self, options: dict = None, **kwargs: Any) -> None:
+        """Scroll mouse wheel (dispatches ``mousewheel`` event).
+
+        This method accepts the following options:
+
+        * ``deltaX``, ``deltaY`` (int): defaults to 0.
+        """
+        options = merge_dict(options, kwargs)
+        deltaX = options.get('deltaX', 0)
+        deltaY = options.get('deltaY', 0)
+
+        await self._client.send('Input.dispatchMouseEvent', {
+            'type': 'mouseWheel',
+            'x': self._x,
+            'y': self._y,
+            'deltaX': deltaX,
+            'deltaY': deltaY,
+            'modifiers': self._keyboard._modifiers,
+            'pointerType': 'mouse',
+        })
 
 class Touchscreen(object):
     """Touchscreen class."""
