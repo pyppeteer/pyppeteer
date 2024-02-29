@@ -4,7 +4,7 @@
 """Target module."""
 
 import asyncio
-from typing import Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional, Awaitable
 from typing import TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
@@ -30,7 +30,7 @@ class Target(object):
         self._defaultViewport = defaultViewport
         self._screenshotTaskQueue = screenshotTaskQueue
         self._loop = loop
-        self._page: Optional[Page] = None
+        self._page: Optional[Awaitable[Page]] = None
 
         self._initializedPromise = self._loop.create_future()
         self._isClosedPromise = self._loop.create_future()
@@ -52,24 +52,36 @@ class Target(object):
         """Create a Chrome Devtools Protocol session attached to the target."""
         return await self._sessionFactory()
 
+    async def _create_page(self) -> Page:
+        """Create the page of this target."""
+        client = await self._sessionFactory()
+        new_page = await Page.create(
+            client, self,
+            self._ignoreHTTPSErrors,
+            self._defaultViewport,
+            self._screenshotTaskQueue,
+        )
+        return new_page
+
     async def page(self) -> Optional[Page]:
         """Get page of this target.
 
         If the target is not of type "page" or "background_page", return
         ``None``.
         """
-        if (self._targetInfo['type'] in ['page', 'background_page'] and
-                self._page is None):
-            client = await self._sessionFactory()
-            new_page = await Page.create(
-                client, self,
-                self._ignoreHTTPSErrors,
-                self._defaultViewport,
-                self._screenshotTaskQueue,
-            )
-            self._page = new_page
-            return new_page
-        return self._page
+        if self._page is None:
+            if self._targetInfo['type'] in ['page', 'background_page']:
+                # Creation of page is seperated as a task for immediate updation
+                # of the self._page variable
+                self._page = new_page = asyncio.create_task(self._create_page())
+                return await new_page
+
+            # Returning None since target is not of type "page" or
+            # "backgroud_page"
+            return
+
+        # Awaiting the finished creation to get page object
+        return await self._page
 
     @property
     def url(self) -> str:
