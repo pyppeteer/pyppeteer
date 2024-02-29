@@ -4,7 +4,7 @@
 """Keyboard and Mouse module."""
 
 import asyncio
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Optional, Any, Dict, TYPE_CHECKING
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.errors import PyppeteerError
@@ -55,7 +55,7 @@ class Keyboard(object):
         self._modifiers = 0
         self._pressedKeys: Set[str] = set()
 
-    async def down(self, key: str, options: dict = None, **kwargs: Any
+    async def down(self, key: str, options: Optional[dict] = None, **kwargs: Any
                    ) -> None:
         """Dispatch a ``keydown`` event with ``key``.
 
@@ -185,7 +185,7 @@ class Keyboard(object):
         """
         await self._client.send('Input.insertText', {'text': char})
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
+    async def type(self, text: str, options: Optional[Dict] = None, **kwargs: Any
                    ) -> None:
         """Type characters into a focused element.
 
@@ -214,7 +214,7 @@ class Keyboard(object):
             if delay:
                 await asyncio.sleep(delay / 1000)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
+    async def press(self, key: str, options: Optional[Dict] = None, **kwargs: Any
                     ) -> None:
         """Press ``key``.
 
@@ -258,7 +258,7 @@ class Mouse(object):
         self._y = 0.0
         self._button = 'none'
 
-    async def move(self, x: float, y: float, options: dict = None,
+    async def move(self, x: float, y: float, options: Optional[dict] = None,
                    **kwargs: Any) -> None:
         """Move mouse cursor (dispatches a ``mousemove`` event).
 
@@ -282,7 +282,7 @@ class Mouse(object):
                 'modifiers': self._keyboard._modifiers,
             })
 
-    async def click(self, x: float, y: float, options: dict = None,
+    async def click(self, x: float, y: float, options: Optional[dict] = None,
                     **kwargs: Any) -> None:
         """Click button at (``x``, ``y``).
 
@@ -303,7 +303,7 @@ class Mouse(object):
             await asyncio.sleep(options.get('delay', 0) / 1000)
         await self.up(options)
 
-    async def down(self, options: dict = None, **kwargs: Any) -> None:
+    async def down(self, options: Optional[dict] = None, **kwargs: Any) -> None:
         """Press down button (dispatches ``mousedown`` event).
 
         This method accepts the following options:
@@ -323,7 +323,7 @@ class Mouse(object):
             'clickCount': options.get('clickCount') or 1,
         })
 
-    async def up(self, options: dict = None, **kwargs: Any) -> None:
+    async def up(self, options: Optional[dict] = None, **kwargs: Any) -> None:
         """Release pressed button (dispatches ``mouseup`` event).
 
         This method accepts the following options:

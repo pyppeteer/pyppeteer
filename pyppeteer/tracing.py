@@ -4,7 +4,7 @@
 """Tracing module."""
 
 from pathlib import Path
-from typing import Any
+from typing import Optional, Any
 
 from pyppeteer.connection import CDPSession
 from pyppeteer.util import merge_dict
@@ -29,7 +29,7 @@ class Tracing(object):
         self._recording = False
         self._path = ''
 
-    async def start(self, options: dict = None, **kwargs: Any) -> None:
+    async def start(self, options: Optional[dict] = None, **kwargs: Any) -> None:
         """Start tracing.
 
         Only one trace can be active at a time per browser.

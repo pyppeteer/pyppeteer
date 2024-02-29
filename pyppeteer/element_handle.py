@@ -159,7 +159,7 @@ class ElementHandle(JSHandle):
         y = obj.get('y', 0)
         await self._page.mouse.move(x, y)
 
-    async def click(self, options: dict = None, **kwargs: Any) -> None:
+    async def click(self, options: Optional[dict] = None, **kwargs: Any) -> None:
         """Click the center of this element.
 
         If needed, this method scrolls element into view. If the element is
@@ -206,7 +206,7 @@ class ElementHandle(JSHandle):
         await self.executionContext.evaluate(
             'element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
+    async def type(self, text: str, options: Optional[Dict] = None, **kwargs: Any
                    ) -> None:
         """Focus the element and then type text.
 
@@ -216,7 +216,7 @@ class ElementHandle(JSHandle):
         await self.focus()
         await self._page.keyboard.type(text, options)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
+    async def press(self, key: str, options: Optional[Dict] = None, **kwargs: Any
                     ) -> None:
         """Press ``key`` onto the element.
 
@@ -292,7 +292,7 @@ class ElementHandle(JSHandle):
             'height': model.get('height'),
         }
 
-    async def screenshot(self, options: Dict = None, **kwargs: Any) -> bytes:
+    async def screenshot(self, options: Optional[Dict] = None, **kwargs: Any) -> bytes:
         """Take a screenshot of this element.
 
         If the element is detached from DOM, this method raises an

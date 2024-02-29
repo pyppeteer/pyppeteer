@@ -215,7 +215,7 @@ class FrameManager(EventEmitter):
         return context
 
     def createJSHandle(self, context: ExecutionContext,
-                       remoteObject: Dict = None) -> JSHandle:
+                       remoteObject: Optional[Dict] = None) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
             remoteObject = dict()
@@ -571,7 +571,7 @@ function(html) {
         raise ValueError(
             'Provide an object with a `url`, `path` or `content` property')
 
-    async def click(self, selector: str, options: dict = None, **kwargs: Any
+    async def click(self, selector: str, options: Optional[dict] = None, **kwargs: Any
                     ) -> None:
         """Click element which matches ``selector``.
 
@@ -648,7 +648,7 @@ function(html) {
         await handle.tap()
         await handle.dispose()
 
-    async def type(self, selector: str, text: str, options: dict = None,
+    async def type(self, selector: str, text: str, options: Optional[dict] = None,
                    **kwargs: Any) -> None:
         """Type ``text`` on the element which matches ``selector``.
 
@@ -662,7 +662,7 @@ function(html) {
         await handle.dispose()
 
     def waitFor(self, selectorOrFunctionOrTimeout: Union[str, int, float],
-                options: dict = None, *args: Any, **kwargs: Any
+                options: Optional[dict] = None, *args: Any, **kwargs: Any
                 ) -> Union[Awaitable, 'WaitTask']:
         """Wait until `selectorOrFunctionOrTimeout`.
 
@@ -688,7 +688,7 @@ function(html) {
             return self.waitForXPath(selectorOrFunctionOrTimeout, options)
         return self.waitForSelector(selectorOrFunctionOrTimeout, options)
 
-    def waitForSelector(self, selector: str, options: dict = None,
+    def waitForSelector(self, selector: str, options: Optional[dict] = None,
                         **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``selector`` appears on page.
 
@@ -697,7 +697,7 @@ function(html) {
         options = merge_dict(options, kwargs)
         return self._waitForSelectorOrXPath(selector, False, options)
 
-    def waitForXPath(self, xpath: str, options: dict = None,
+    def waitForXPath(self, xpath: str, options: Optional[dict] = None,
                      **kwargs: Any) -> 'WaitTask':
         """Wait until element which matches ``xpath`` appears on page.
 
@@ -706,7 +706,7 @@ function(html) {
         options = merge_dict(options, kwargs)
         return self._waitForSelectorOrXPath(xpath, True, options)
 
-    def waitForFunction(self, pageFunction: str, options: dict = None,
+    def waitForFunction(self, pageFunction: str, options: Optional[dict] = None,
                         *args: Any, **kwargs: Any) -> 'WaitTask':
         """Wait until the function completes.
 
@@ -719,7 +719,7 @@ function(html) {
                         self._client._loop, *args)
 
     def _waitForSelectorOrXPath(self, selectorOrXPath: str, isXPath: bool,
-                                options: dict = None, **kwargs: Any
+                                options: Optional[dict] = None, **kwargs: Any
                                 ) -> 'WaitTask':
         options = merge_dict(options, kwargs)
         timeout = options.get('timeout', 30000)

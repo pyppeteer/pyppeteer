@@ -5,7 +5,7 @@
 
 import asyncio
 import concurrent.futures
-from typing import Any, Awaitable, Dict, List, Union
+from typing import Optional, Any, Awaitable, Dict, List, Union
 
 from pyppeteer import helper
 from pyppeteer.errors import TimeoutError
@@ -17,7 +17,7 @@ class NavigatorWatcher:
     """NavigatorWatcher class."""
 
     def __init__(self, frameManager: FrameManager, frame: Frame, timeout: int,
-                 options: Dict = None, **kwargs: Any) -> None:
+                 options: Optional[Dict] = None, **kwargs: Any) -> None:
         """Make new navigator watcher."""
         options = merge_dict(options, kwargs)
         self._validate_options(options)
@@ -105,13 +105,13 @@ class NavigatorWatcher:
         """Return navigation promise."""
         return self._navigationPromise
 
-    def _navigatedWithinDocument(self, frame: Frame = None) -> None:
+    def _navigatedWithinDocument(self, frame: Optional[Frame] = None) -> None:
         if frame != self._frame:
             return
         self._hasSameDocumentNavigation = True
         self._checkLifecycleComplete()
 
-    def _checkLifecycleComplete(self, frame: Frame = None) -> None:
+    def _checkLifecycleComplete(self, frame: Optional[Frame] = None) -> None:
         if (self._frame._loaderId == self._initialLoaderId and
                 not self._hasSameDocumentNavigation):
             return

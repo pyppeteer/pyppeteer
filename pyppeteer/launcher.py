@@ -67,7 +67,7 @@ DEFAULT_ARGS = [
 class Launcher(object):
     """Chrome process launcher class."""
 
-    def __init__(self, options: Dict[str, Any] = None,  # noqa: C901
+    def __init__(self, options: Optional[Dict[str, Any]] = None,  # noqa: C901
                  **kwargs: Any) -> None:
         """Make new launcher."""
         options = merge_dict(options, kwargs)
@@ -236,7 +236,7 @@ def get_ws_endpoint(url) -> str:
     return data['webSocketDebuggerUrl']
 
 
-async def launch(options: dict = None, **kwargs: Any) -> Browser:
+async def launch(options: Optional[dict] = None, **kwargs: Any) -> Browser:
     """Start chrome process and return :class:`~pyppeteer.browser.Browser`.
     This function is a shortcut to :meth:`Launcher(options, **kwargs).launch`.
     Available options are:
@@ -307,7 +307,7 @@ async def launch(options: dict = None, **kwargs: Any) -> Browser:
     return await Launcher(options, **kwargs).launch()
 
 
-async def connect(options: dict = None, **kwargs: Any) -> Browser:
+async def connect(options: Optional[dict] = None, **kwargs: Any) -> Browser:
     """Connect to the existing chrome.
     ``browserWSEndpoint`` or ``browserURL`` option is necessary to connect to
     the chrome. The format of ``browserWSEndpoint`` is
@@ -362,7 +362,7 @@ def executablePath() -> str:
     return str(chromium_executable())
 
 
-def defaultArgs(options: Dict = None, **kwargs: Any) -> List[str]:  # noqa: C901,E501
+def defaultArgs(options: Optional[Dict] = None, **kwargs: Any) -> List[str]:  # noqa: C901,E501
     """Get the default flags the chromium will be launched with.
     ``options`` or keyword arguments are set of configurable options to set on
     the browser. Can have the following fields:
