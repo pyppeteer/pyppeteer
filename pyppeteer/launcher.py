@@ -88,6 +88,7 @@ class Launcher(object):
         self.ignoreHTTPSErrors = options.get('ignoreHTTPSErrors', False)
         self.defaultViewport = options.get('defaultViewport', {'width': 800, 'height': 600})  # noqa: E501
         self.slowMo = options.get('slowMo', 0)
+        self.wsEndpointTimeout = options.get('wsEndpointTimeout', 30000)
         self.timeout = options.get('timeout', 30000)
         self.autoClose = options.get('autoClose', True)
 
@@ -165,7 +166,7 @@ class Launcher(object):
                 signal.signal(signal.SIGHUP, _close_process)
 
         connectionDelay = self.slowMo
-        self.browserWSEndpoint = get_ws_endpoint(self.url)
+        self.browserWSEndpoint = get_ws_endpoint(self.url, self.wsEndpointTimeout)
         logger.info(f'Browser listening on: {self.browserWSEndpoint}')
         self.connection = Connection(self.browserWSEndpoint, self._loop, connectionDelay, )
         browser = await Browser.create(self.connection, [], self.ignoreHTTPSErrors, self.defaultViewport, self.proc,
@@ -219,11 +220,11 @@ class Launcher(object):
             self._cleanup_tmp_user_data_dir()
 
 
-def get_ws_endpoint(url) -> str:
+def get_ws_endpoint(url, timeout) -> str:
     url = url + '/json/version'
-    timeout = time.time() + 30
+    _timeout = time.time() + (timeout / 1000)
     while (True):
-        if time.time() > timeout:
+        if time.time() > _timeout:
             raise BrowserError('Browser closed unexpectedly:\n')
         try:
             with urlopen(url) as f:
