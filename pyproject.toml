@@ -46,7 +46,6 @@ pyppeteer-install = 'pyppeteer.command:install'
 [tool.poetry.dependencies]
 python = "^3.8"
 appdirs = "^1.4.3"
-importlib-metadata = ">=1.4"
 pyee = "^11.0.0"
 tqdm = "^4.42.1"
 urllib3 = "^1.25.8"
