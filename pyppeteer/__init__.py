@@ -17,7 +17,12 @@ except Exception:
 
 
 # old chrome version panic upon launching - this one may not match the base puppeteer version, but at least it launches
-__chromium_revision__ = '1181205'
+__chromium_revisions__ = {
+'linux': '1300930',
+'mac': '1300885',
+'win32': '1300886',
+'win64': '1300870',
+}
 __base_puppeteer_version__ = 'v1.6.0'
 __pyppeteer_home__ = os.environ.get('PYPPETEER_HOME', AppDirs('pyppeteer').user_data_dir)  # type: str
 DEBUG = False

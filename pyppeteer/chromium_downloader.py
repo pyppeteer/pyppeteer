@@ -13,7 +13,7 @@ from zipfile import ZipFile
 
 import certifi
 import urllib3
-from pyppeteer import __chromium_revision__, __pyppeteer_home__
+from pyppeteer import __chromium_revisions__, __pyppeteer_home__
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,20 @@ DEFAULT_DOWNLOAD_HOST = 'https://storage.googleapis.com'
 DOWNLOAD_HOST = os.environ.get('PYPPETEER_DOWNLOAD_HOST', DEFAULT_DOWNLOAD_HOST)
 BASE_URL = f'{DOWNLOAD_HOST}/chromium-browser-snapshots'
 
-REVISION = os.environ.get('PYPPETEER_CHROMIUM_REVISION', __chromium_revision__)
+def current_platform() -> str:
+    """Get current platform name by short string."""
+    platform = sys.platform
+    if platform.startswith('linux'):
+        return 'linux'
+    elif platform.startswith('darwin'):
+        return 'mac'
+    elif platform.startswith('win') or platform.startswith('msys') or platform.startswith('cyg'):
+        if sys.maxsize > 2 ** 31 - 1:
+            return 'win64'
+        return 'win32'
+    raise OSError('Unsupported platform: ' + platform)
+
+REVISION = os.environ.get('PYPPETEER_CHROMIUM_REVISION', __chromium_revisions__[current_platform()])
 
 NO_PROGRESS_BAR = os.environ.get('PYPPETEER_NO_PROGRESS_BAR', '')
 if NO_PROGRESS_BAR.lower() in ('1', 'true'):
@@ -50,20 +63,6 @@ chromiumExecutable = {
     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
     'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
 }
-
-
-def current_platform() -> str:
-    """Get current platform name by short string."""
-    if sys.platform.startswith('linux'):
-        return 'linux'
-    elif sys.platform.startswith('darwin'):
-        return 'mac'
-    elif sys.platform.startswith('win') or sys.platform.startswith('msys') or sys.platform.startswith('cyg'):
-        if sys.maxsize > 2 ** 31 - 1:
-            return 'win64'
-        return 'win32'
-    raise OSError('Unsupported platform: ' + sys.platform)
-
 
 def get_url() -> str:
     """Get chromium download url."""
