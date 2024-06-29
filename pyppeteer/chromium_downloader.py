@@ -5,6 +5,7 @@
 
 import logging
 import os
+import platform
 import stat
 import sys
 from io import BytesIO
@@ -46,6 +47,8 @@ downloadURLs = {
 
 chromiumExecutable = {
     'linux': DOWNLOADS_FOLDER / REVISION / 'chrome-linux' / 'chrome',
+    'linux_arm': Path('/usr/bin/chromium-browser'),
+    'linux_arm64': Path('/usr/bin/chromium'),
     'mac': (DOWNLOADS_FOLDER / REVISION / 'chrome-mac' / 'Chromium.app' / 'Contents' / 'MacOS' / 'Chromium'),
     'win32': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
     'win64': DOWNLOADS_FOLDER / REVISION / windowsArchive / 'chrome.exe',
@@ -55,6 +58,13 @@ chromiumExecutable = {
 def current_platform() -> str:
     """Get current platform name by short string."""
     if sys.platform.startswith('linux'):
+        machine = platform.uname().machine
+        
+        if machine.startswith('armv'):
+            return 'linux_arm'
+        elif machine.startswith('aarch64'):
+            return 'linux_arm64'
+            
         return 'linux'
     elif sys.platform.startswith('darwin'):
         return 'mac'
@@ -134,8 +144,13 @@ def extract_zip(data: BytesIO, path: Path) -> None:
 
 
 def download_chromium() -> None:
-    """Download and extract chromium."""
-    extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
+    """Download and extract chromium."""    
+    if current_platform().startswith('linux_arm'):
+        exec_path = chromium_executable()
+        if not exec_path.exists():
+            logger.warning("Please install chromium via your package manager, eg 'sudo apt-get install chromium'")
+    else:
+        extract_zip(download_zip(get_url()), DOWNLOADS_FOLDER / REVISION)
 
 
 def chromium_executable() -> Path:
