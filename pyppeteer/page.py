@@ -1353,6 +1353,7 @@ function addPageBinding(bindingName) {
         printBackground = bool(options.get('printBackground'))
         landscape = bool(options.get('landscape'))
         pageRanges = options.get('pageRanges', '')
+        transferMode = options.get('transferMode', '')
 
         paperWidth = 8.5
         paperHeight = 11.0
@@ -1392,11 +1393,51 @@ function addPageBinding(bindingName) {
                 preferCSSPageSize=preferCSSPageSize,
             ),
         )
-        buffer = base64.b64decode(result.get('data', b''))
-        if 'path' in options:
-            with open(options['path'], 'wb') as f:
-                f.write(buffer)
+
+        if transferMode == "ReturnAsStream":
+            buffer = b''
+            stream_handle = result.get('stream')
+            if not stream_handle:
+                raise Exception('Failed to get PDF stream handle')
+
+            try:
+                if file_path:
+                    with open(file_path, 'wb') as f:
+                        async for chunk_b64 in self._stream_chunk_reader(stream_handle):
+                            chunk_bytes = base64.b64decode(chunk_b64)
+                            f.write(chunk_bytes)
+                            buffer += chunk_bytes
+                else:
+                    async for chunk_b64 in self._stream_chunk_reader(stream_handle):
+                        chunk_bytes = base64.b64decode(chunk_b64)
+                        buffer += chunk_bytes
+            finally:
+                await self._client.send('IO.close', {'handle': stream_handle})
+
+        else:
+            buffer = base64.b64decode(result.get('data', b''))
+            if 'path' in options:
+                with open(options['path'], 'wb') as f:
+                    f.write(buffer)
         return buffer
+
+    async def _stream_chunk_reader(self, stream_handle):
+        """
+        stream reader
+
+        Args:
+            stream_handle
+
+        Yields:
+            str: Base64
+        """
+        while True:
+            response = await self._client.send('IO.read', {'handle': stream_handle})
+            chunk_b64 = response.get('data', '')
+            if not chunk_b64:
+                break
+            yield chunk_b64
+
 
     async def plainText(self) -> str:
         """[Deprecated] Get page content as plain text."""
