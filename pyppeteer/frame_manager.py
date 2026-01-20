@@ -7,8 +7,7 @@ import asyncio
 from collections import OrderedDict
 import logging
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, Generator, List, Optional, Union
-from typing import TYPE_CHECKING
+from typing import Any, Awaitable, Dict, Generator, List, Optional, Set, Union
 
 from pyee import EventEmitter
 
@@ -19,9 +18,6 @@ from pyppeteer.errors import NetworkError
 from pyppeteer.execution_context import ExecutionContext, JSHandle
 from pyppeteer.errors import ElementHandleError, PageError, TimeoutError
 from pyppeteer.util import merge_dict
-
-if TYPE_CHECKING:
-    from typing import Set  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -170,49 +166,59 @@ class FrameManager(EventEmitter):
 
     def _onExecutionContextCreated(self, contextPayload: Dict) -> None:
         if (contextPayload.get('auxData') and
-                contextPayload['auxData']['isDefault']):
+                contextPayload['auxData'].get('frameId')):
             frameId = contextPayload['auxData']['frameId']
         else:
             frameId = None
 
-        frame = self._frames.get(frameId) if frameId else None
+        frame = self._frames.get(frameId)
+
+        def _createJSHandle(obj: Dict) -> JSHandle:
+            context = self.executionContextById(contextPayload['id'])
+            return self.createJSHandle(context, obj)
 
         context = ExecutionContext(
             self._client,
             contextPayload,
-            lambda obj: self.createJSHandle(contextPayload['id'], obj),
+            _createJSHandle,
             frame,
         )
         self._contextIdToContext[contextPayload['id']] = context
 
         if frame:
-            frame._setDefaultContext(context)
-
-    def _removeContext(self, context: ExecutionContext) -> None:
-        frame = self._frames[context._frameId] if context._frameId else None
-        if frame and context._isDefault:
-            frame._setDefaultContext(None)
+            frame._addExecutionContext(context)
 
     def _onExecutionContextDestroyed(self, executionContextId: str) -> None:
         context = self._contextIdToContext.get(executionContextId)
         if not context:
             return
         del self._contextIdToContext[executionContextId]
-        self._removeContext(context)
+
+        frame = context.frame
+        if frame:
+            frame._removeExecutionContext(context)
 
     def _onExecutionContextsCleared(self) -> None:
         for context in self._contextIdToContext.values():
-            self._removeContext(context)
+            frame = context.frame
+            if frame:
+                frame._removeExecutionContext(context)
         self._contextIdToContext.clear()
 
-    def createJSHandle(self, contextId: str, remoteObject: Dict = None
-                       ) -> JSHandle:
+    def executionContextById(self, contextId: str) -> ExecutionContext:
+        """Get stored ``ExecutionContext`` by ``id``."""
+        context = self._contextIdToContext.get(contextId)
+        if not context:
+            raise ElementHandleError(
+                f'INTERNAL ERROR: missing context with id = {contextId}'
+            )
+        return context
+
+    def createJSHandle(self, context: ExecutionContext,
+                       remoteObject: Dict = None) -> JSHandle:
         """Create JS handle associated to the context id and remote object."""
         if remoteObject is None:
             remoteObject = dict()
-        context = self._contextIdToContext.get(contextId)
-        if not context:
-            raise ElementHandleError(f'missing context with id = {contextId}')
         if remoteObject.get('subtype') == 'node':
             return ElementHandle(context, self._client, remoteObject,
                                  self._page, self)
@@ -250,6 +256,14 @@ class Frame(object):
         self._childFrames: Set[Frame] = set()  # maybe list
         if self._parentFrame:
             self._parentFrame._childFrames.add(self)
+
+    def _addExecutionContext(self, context: ExecutionContext) -> None:
+        if context._isDefault:
+            self._setDefaultContext(context)
+
+    def _removeExecutionContext(self, context: ExecutionContext) -> None:
+        if context._isDefault:
+            self._setDefaultContext(None)
 
     def _setDefaultContext(self, context: Optional[ExecutionContext]) -> None:
         if context is not None:
@@ -712,6 +726,12 @@ function(html) {
         waitForVisible = bool(options.get('visible'))
         waitForHidden = bool(options.get('hidden'))
         polling = 'raf' if waitForHidden or waitForVisible else 'mutation'
+        title = '{} "{}"{}'.format(
+            'XPath' if isXPath else 'selector',
+            selectorOrXPath,
+            ' to be hidden' if waitForHidden else '',
+        )
+
         predicate = '''
 (selectorOrXPath, isXPath, waitForVisible, waitForHidden) => {
     const node = isXPath
@@ -734,10 +754,11 @@ function(html) {
     }
 }
         '''  # noqa: E501
+
         return WaitTask(
             self,
             predicate,
-            f'{"XPath" if isXPath else "selector"} "{selectorOrXPath}"',
+            title,
             polling,
             timeout,
             self._client._loop,

@@ -15,18 +15,15 @@ class TestVersion(unittest.TestCase):
         self.assertTrue(isinstance(version, str))
         self.assertEqual(version.count('.'), 2)
 
-    def test_version_info(self):
-        vinfo = pyppeteer.version_info
-        self.assertEqual(len(vinfo), 3)
-        for i in vinfo:
-            self.assertTrue(isinstance(i, int))
+
 
 
 class TestDefaultArgs(unittest.TestCase):
     def test_default_args(self):
-        args = pyppeteer.defaultArgs()
-        self.assertIn('--no-first-run', args)
-        self.assertIn('--enable-automation', args)
+        self.assertIn('--no-first-run', pyppeteer.defaultArgs())
+        self.assertIn('--headless', pyppeteer.defaultArgs())
+        self.assertNotIn('--headless', pyppeteer.defaultArgs({'headless': False}))  # noqa: E501
+        self.assertIn('--user-data-dir=foo', pyppeteer.defaultArgs(userDataDir='foo'))  # noqa: E501
 
 
 class TestToInches(unittest.TestCase):

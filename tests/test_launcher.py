@@ -17,8 +17,8 @@ from unittest import mock
 from syncer import sync
 import websockets
 
-from pyppeteer import connect, launch, executablePath
-from pyppeteer.chromium_downloader import chromium_excutable, current_platform
+from pyppeteer import connect, launch, executablePath, defaultArgs
+from pyppeteer.chromium_downloader import chromium_executable, current_platform
 from pyppeteer.errors import NetworkError
 from pyppeteer.launcher import Launcher
 from pyppeteer.util import get_free_port
@@ -31,53 +31,62 @@ class TestLauncher(unittest.TestCase):
     def setUp(self):
         self.headless_options = [
             '--headless',
-            '--disable-gpu',
             '--hide-scrollbars',
             '--mute-audio',
         ]
+        if current_platform().startswith('win'):
+            self.headless_options.append('--disable-gpu')
 
     def check_default_args(self, launcher):
         for opt in self.headless_options:
-            self.assertIn(opt, launcher.chrome_args)
-        self.assertTrue(any(opt for opt in launcher.chrome_args
+            self.assertIn(opt, launcher.chromeArguments)
+        self.assertTrue(any(opt for opt in launcher.chromeArguments
                             if opt.startswith('--user-data-dir')))
 
     def test_no_option(self):
         launcher = Launcher()
         self.check_default_args(launcher)
-        self.assertEqual(launcher.exec, str(chromium_excutable()))
+        self.assertEqual(launcher.chromeExecutable, str(chromium_executable()))
 
     def test_disable_headless(self):
         launcher = Launcher({'headless': False})
         for opt in self.headless_options:
-            self.assertNotIn(opt, launcher.chrome_args)
+            self.assertNotIn(opt, launcher.chromeArguments)
 
     def test_disable_default_args(self):
         launcher = Launcher(ignoreDefaultArgs=True)
         # check default args
-        self.assertNotIn('--no-first-run', launcher.chrome_args)
-        # check devtools port
-        self.assertNotIn(
-            '--remote-debugging-port={}'.format(launcher.port),
-            launcher.chrome_args,
-        )
+        self.assertNotIn('--no-first-run', launcher.chromeArguments)
         # check automation args
-        self.assertNotIn('--enable-automation', launcher.chrome_args)
+        self.assertNotIn('--enable-automation', launcher.chromeArguments)
 
     def test_executable(self):
         launcher = Launcher({'executablePath': '/path/to/chrome'})
-        self.assertEqual(launcher.exec, '/path/to/chrome')
+        self.assertEqual(launcher.chromeExecutable, '/path/to/chrome')
 
     def test_args(self):
         launcher = Launcher({'args': ['--some-args']})
         self.check_default_args(launcher)
-        self.assertIn('--some-args', launcher.chrome_args)
+        self.assertIn('--some-args', launcher.chromeArguments)
+
+    def test_filter_ignore_default_args(self):
+        _defaultArgs = defaultArgs()
+        options = deepcopy(DEFAULT_OPTIONS)
+        launcher = Launcher(
+            options,
+            # ignore first and third default arguments
+            ignoreDefaultArgs=[_defaultArgs[0], _defaultArgs[2]],
+        )
+        self.assertNotIn(_defaultArgs[0], launcher.cmd)
+        self.assertIn(_defaultArgs[1], launcher.cmd)
+        self.assertNotIn(_defaultArgs[2], launcher.cmd)
 
     def test_user_data_dir(self):
         launcher = Launcher({'args': ['--user-data-dir=/path/to/profile']})
         self.check_default_args(launcher)
-        self.assertIn('--user-data-dir=/path/to/profile', launcher.chrome_args)
-        self.assertIsNone(launcher._tmp_user_data_dir)
+        self.assertIn('--user-data-dir=/path/to/profile',
+                      launcher.chromeArguments)
+        self.assertIsNone(launcher.temporaryUserDataDir)
 
     @sync
     async def test_close_no_connection(self):
@@ -103,6 +112,21 @@ class TestLauncher(unittest.TestCase):
         self.assertTrue(response.ok)
         await browser.close()
         server.stop()
+
+    @sync
+    async def test_ignore_https_errors_interception(self):
+        browser = await launch(DEFAULT_OPTIONS, ignoreHTTPSErrors=True)
+        page = await browser.newPage()
+        await page.setRequestInterception(True)
+
+        async def check(req) -> None:
+            await req.continue_()
+
+        page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        # TODO: should use user-signed cert
+        response = await page.goto('https://google.com/')
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status, 200)
 
     @sync
     async def test_await_after_close(self):
@@ -142,6 +166,28 @@ class TestLauncher(unittest.TestCase):
         # console.log output is sent to stderr
         self.assertNotIn('DUMPIO_TEST', proc.stdout.decode())
         self.assertIn('DUMPIO_TEST', proc.stderr.decode())
+
+    @sync
+    async def test_default_viewport(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['defaultViewport'] = {
+            'width': 456,
+            'height': 789,
+        }
+        browser = await launch(options)
+        page = await browser.newPage()
+        self.assertEqual(await page.evaluate('window.innerWidth'), 456)
+        self.assertEqual(await page.evaluate('window.innerHeight'), 789)
+        await browser.close()
+
+    @sync
+    async def test_disable_default_viewport(self):
+        options = deepcopy(DEFAULT_OPTIONS)
+        options['defaultViewport'] = None
+        browser = await launch(options)
+        page = await browser.newPage()
+        self.assertIsNone(page.viewport)
+        await browser.close()
 
 
 class TestDefaultURL(unittest.TestCase):
@@ -239,8 +285,13 @@ class TestLogLevel(unittest.TestCase):
         self.assertTrue(self.logger.isEnabledFor(logging.DEBUG))
 
         self.assertIn('listening on', self.mock.call_args_list[0][0][0])
-        self.assertIn('SEND', self.mock.call_args_list[2][0][0])
-        self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+        if self.mock.call_args_list[1][0][0] == '\n':
+            # python < 3.7.3
+            self.assertIn('SEND', self.mock.call_args_list[2][0][0])
+            self.assertIn('RECV', self.mock.call_args_list[4][0][0])
+        else:
+            self.assertIn('SEND', self.mock.call_args_list[1][0][0])
+            self.assertIn('RECV', self.mock.call_args_list[2][0][0])
 
     @unittest.skipIf(current_platform().startswith('win'), 'error on windows')
     @sync
@@ -343,6 +394,33 @@ class TestUserDataDir(unittest.TestCase):
         result = await page2.evaluate('() => document.cookie')
         await browser2.close()
         self.assertEqual(result, 'foo=true')
+
+
+class TestTargetEvents(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.port = get_free_port()
+        time.sleep(0.1)
+        cls.app = get_application()
+        cls.server = cls.app.listen(cls.port)
+        cls.url = 'http://localhost:{}/'.format(cls.port)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.stop()
+
+    @sync
+    async def test_target_events(self):
+        browser = await launch(DEFAULT_OPTIONS)
+        events = list()
+        browser.on('targetcreated', lambda _: events.append('CREATED'))
+        browser.on('targetchanged', lambda _: events.append('CHANGED'))
+        browser.on('targetdestroyed', lambda _: events.append('DESTROYED'))
+        page = await browser.newPage()
+        await page.goto(self.url + 'empty')
+        await page.close()
+        self.assertEqual(['CREATED', 'CHANGED', 'DESTROYED'], events)
+        await browser.close()
 
 
 class TestClose(unittest.TestCase):

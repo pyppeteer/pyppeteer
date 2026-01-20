@@ -324,7 +324,7 @@ class TestWaitForSelector(BaseTestCase):
 
     @sync
     async def test_fail_page_closed(self):
-        page = await self.browser.newPage()
+        page = await self.context.newPage()
         await page.goto(self.url + 'empty')
         task = page.waitForSelector('.box')
         await page.close()
@@ -437,6 +437,16 @@ class TestWaitForSelector(BaseTestCase):
             await self.page.waitForSelector('div', timeout=10)
         self.assertIn(
             'Waiting for selector "div" failed: timeout',
+            cm.exception.args[0],
+        )
+
+    @sync
+    async def test_error_msg_wait_for_hidden(self):
+        await self.page.setContent('<div></div>')
+        with self.assertRaises(TimeoutError) as cm:
+            await self.page.waitForSelector('div', hidden=True, timeout=10)
+        self.assertIn(
+            'Waiting for selector "div" to be hidden failed: timeout',
             cm.exception.args[0],
         )
 

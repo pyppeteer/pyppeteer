@@ -26,6 +26,22 @@ class TestBrowser(unittest.TestCase):
         ]
     }
 
+    def waitForBackgroundPageTarget(self, browser):
+        promise = asyncio.get_event_loop().create_future()
+        for target in browser.targets():
+            if target.type == 'background_page':
+                promise.set_result(target)
+                return promise
+
+        def _listener(target) -> None:
+            if target.type != 'background_page':
+                return
+            browser.removeListener(_listener)
+            promise.set_result(target)
+
+        browser.on('targetcreated', _listener)
+        return promise
+
     @sync
     async def test_browser_process(self):
         browser = await launch(DEFAULT_OPTIONS)
@@ -101,11 +117,10 @@ class TestBrowser(unittest.TestCase):
     async def test_background_target_type(self):
         browser = await launch(self.extensionOptions)
         page = await browser.newPage()
-        targets = browser.targets()
-        backgroundPageTargets = [t for t in targets if t.type == 'background_page']  # noqa: E501
+        backgroundPageTarget = await self.waitForBackgroundPageTarget(browser)
         await page.close()
         await browser.close()
-        self.assertTrue(backgroundPageTargets)
+        self.assertTrue(backgroundPageTarget)
 
     @unittest.skipIf('CI' in os.environ, 'skip in-browser test on CI server')
     @sync
@@ -140,11 +155,7 @@ class TestBrowser(unittest.TestCase):
     @sync
     async def test_background_page(self):
         browserWithExtension = await launch(self.extensionOptions)
-        targets = browserWithExtension.targets()
-        backgroundPageTarget = None
-        for target in targets:
-            if target.type == 'background_page':
-                backgroundPageTarget = target
+        backgroundPageTarget = await self.waitForBackgroundPageTarget(browserWithExtension)  # noqa: E501
         self.assertIsNotNone(backgroundPageTarget)
         page = await backgroundPageTarget.page()
         self.assertEqual(await page.evaluate('2 * 3'), 6)
@@ -154,14 +165,14 @@ class TestBrowser(unittest.TestCase):
 class TestPageClose(BaseTestCase):
     @sync
     async def test_not_visible_in_browser_pages(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         self.assertIn(newPage, await self.browser.pages())
         await newPage.close()
         self.assertNotIn(newPage, await self.browser.pages())
 
     @sync
     async def test_before_unload(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         await newPage.goto(self.url + 'static/beforeunload.html')
         await newPage.click('body')
         asyncio.ensure_future(newPage.close(runBeforeUnload=True))
@@ -174,7 +185,7 @@ class TestPageClose(BaseTestCase):
 
     @sync
     async def test_page_close_state(self):
-        newPage = await self.browser.newPage()
+        newPage = await self.context.newPage()
         self.assertFalse(newPage.isClosed())
         await newPage.close()
         self.assertTrue(newPage.isClosed())

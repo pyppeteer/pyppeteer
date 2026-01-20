@@ -79,6 +79,39 @@ class RedirectHandler3(BaseHandler):
         self.redirect('/static/one-frame.html')
 
 
+class ResourceRedirectHandler(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.write(
+            '<link rel="stylesheet" href="/one-style.css">'
+            '<div>hello, world!</div>'
+        )
+
+
+class CSSRedirectHandler1(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.redirect('/two-style.css')
+
+
+class CSSRedirectHandler2(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.redirect('/three-style.css')
+
+
+class CSSRedirectHandler3(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.redirect('/four-style.css')
+
+
+class CSSRedirectHandler4(BaseHandler):
+    def get(self) -> None:
+        super().get()
+        self.write('body {box-sizing: border-box;}')
+
+
 class CSPHandler(BaseHandler):
     def get(self) -> None:
         super().get()
@@ -146,6 +179,11 @@ def get_application() -> web.Application:
         ('/redirect1', RedirectHandler1),
         ('/redirect2', RedirectHandler2),
         ('/redirect3', RedirectHandler3),
+        ('/one-style.html', ResourceRedirectHandler),
+        ('/one-style.css', CSSRedirectHandler1),
+        ('/two-style.css', CSSRedirectHandler2),
+        ('/three-style.css', CSSRedirectHandler3),
+        ('/four-style.css', CSSRedirectHandler4),
         ('/auth', AuthHandler),
         ('/empty', EmptyHandler),
         ('/long', LongHandler),

@@ -1,0 +1,120 @@
+[project]
+name = "hungryroot-pyppeteer"
+dynamic = ["version", "dependencies", "optional-dependencies"]
+description = "Headless chrome/chromium automation library (unofficial port of puppeteer)"
+authors = [{ name = "Hungryroot", email = "dev@hungryroot.com" }]
+requires-python = ">= 3.10"
+readme = "README.md"
+license = "MIT"
+keywords = ["pyppeteer", "puppeteer", "chrome", "chromium"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/hungryroot/pyppeteer"
+Repository = "https://github.com/hungryroot/pyppeteer"
+"Bug Tracker" = "https://github.com/hungryroot/pyppeteer/issues"
+
+[project.scripts]
+pyppeteer-install = "pyppeteer.command:install"
+
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+optional-dependencies = { dev = { file = ["requirements-dev.txt"] } }
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests", "tests.*", "docs", "docs.*"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.setuptools_scm]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+lint.select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "ANN",
+    "ASYNC",
+    "B",
+    "A",
+    "COM",
+    "T20",
+    "Q",
+    "SIM",
+    "TCH",
+    "TID",
+    "RUF",
+]
+lint.ignore = ["ANN101", "ANN102", "RUF013", "E731", "COM812", "ANN401"]
+lint.flake8-annotations.allow-star-arg-any = true
+lint.extend-safe-fixes = ["SIM101", "TCH"]
+exclude = [".git", ".direnv", ".ruff_cache", ".mypy_cache", ".pytest_cache", "docs"]
+
+[tool.ruff.lint.flake8-type-checking]
+quote-annotations = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN"]
+
+[tool.mypy]
+warn_unused_configs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+packages = ["pyppeteer"]
+exclude = ["^tests/.*", "^docs/.*"]
+
+[[tool.mypy.overrides]]
+module = ["appdirs.*", "tqdm.*", "pyee.*", "websockets.*"]
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+skip-string-normalization = true
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+known_first_party = ["pyppeteer"]
+known_third_party = ["appdirs", "certifi", "pyee", "tqdm", "urllib3", "websockets"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-n 6"
+testpaths = ["tests"]
+junit_suite_name = "pyppeteer tests"
+junit_log_passing_tests = true
+junit_family = "xunit2"

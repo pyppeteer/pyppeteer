@@ -10,6 +10,7 @@ from typing import Awaitable, Callable, Dict, Union, TYPE_CHECKING
 
 from pyee import EventEmitter
 import websockets
+from websockets.legacy.client import connect as ws_connect
 
 from pyppeteer.errors import NetworkError
 
@@ -40,8 +41,7 @@ class Connection(EventEmitter):
         self._sessions: Dict[str, CDPSession] = dict()
         self.connection: CDPSession
         self._connected = False
-        self._ws = websockets.client.connect(
-            self._url, max_size=None, loop=self._loop)
+        self._ws = ws_connect(self._url, max_size=None, loop=self._loop, ping_interval=None, ping_timeout=None)
         self._recv_fut = self._loop.create_task(self._recv_loop())
         self._closeCallback: Optional[Callable[[], None]] = None
 
@@ -191,7 +191,7 @@ class CDPSession(EventEmitter):
     * protocol events can be subscribed to with :meth:`on` method.
 
     Documentation on DevTools Protocol can be found
-    `here <https://chromedevtools.github.io/devtools-protocol/>`_.
+    `here <https://chromedevtools.github.io/devtools-protocol/>`__.
     """
 
     def __init__(self, connection: Union[Connection, 'CDPSession'],
@@ -235,8 +235,8 @@ class CDPSession(EventEmitter):
         except Exception as e:
             # The response from target might have been already dispatched
             if _id in self._callbacks:
-                del self._callbacks[_id]
                 _callback = self._callbacks[_id]
+                del self._callbacks[_id]
                 _callback.set_exception(_rewriteError(
                     _callback.error,  # type: ignore
                     e.args[0],

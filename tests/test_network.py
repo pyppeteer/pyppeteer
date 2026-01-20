@@ -274,6 +274,35 @@ class TestRequestInterception(BaseTestCase):
         self.assertEqual(res.status, 200)
 
     @sync
+    async def test_referer_header(self):
+        await self.page.setRequestInterception(True)
+        requests = list()
+
+        async def set_request(req):
+            requests.append(req)
+            await req.continue_()
+
+        self.page.on('request',
+                     lambda req: asyncio.ensure_future(set_request(req)))
+        await self.page.goto(self.url + 'static/one-style.html')
+        self.assertIn('/one-style.css', requests[1].url)
+        self.assertIn('/one-style.html', requests[1].headers['referer'])
+
+    @sync
+    async def test_response_with_cookie(self):
+        await self.page.goto(self.url + 'empty')
+        await self.page.setCookie({'name': 'foo', 'value': 'bar'})
+
+        await self.page.setRequestInterception(True)
+
+        async def continue_(req):
+            await req.continue_()
+
+        self.page.on('request', lambda r: asyncio.ensure_future(continue_(r)))
+        response = await self.page.reload()
+        self.assertEqual(response.status, 200)
+
+    @sync
     async def test_request_interception_stop(self):
         await self.page.setRequestInterception(True)
         self.page.once('request',
@@ -380,6 +409,29 @@ class TestRequestInterception(BaseTestCase):
         self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
         response = await self.page.goto(self.url + 'redirect1')
         self.assertEqual(response.status, 200)
+
+    @sync
+    async def test_redirect_for_subresource(self):
+        await self.page.setRequestInterception(True)
+        requests = list()
+
+        async def check(req):
+            await req.continue_()
+            requests.append(req)
+
+        self.page.on('request', lambda req: asyncio.ensure_future(check(req)))
+        response = await self.page.goto(self.url + 'one-style.html')
+        self.assertEqual(response.status, 200)
+        self.assertIn('one-style.html', response.url)
+        self.assertEqual(len(requests), 5)
+        self.assertEqual(requests[0].resourceType, 'document')
+        self.assertEqual(requests[1].resourceType, 'stylesheet')
+
+        # check redirect chain
+        redirectChain = requests[1].redirectChain
+        self.assertEqual(len(redirectChain), 3)
+        self.assertIn('/one-style.css', redirectChain[0].url)
+        self.assertIn('/three-style.css', redirectChain[2].url)
 
     @unittest.skip('This test is not implemented')
     @sync

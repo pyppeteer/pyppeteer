@@ -94,6 +94,6 @@ class Tracing(object):
         result = ''.join(bufs)
         if path:
             file = Path(path)
-            with file.open('w') as f:
+            with file.open('w', encoding='utf-8') as f:
                 f.write(result)
         return result
